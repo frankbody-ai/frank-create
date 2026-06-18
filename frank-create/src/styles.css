@@ -5669,3 +5669,57 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.preset-library-card-head { position: relative; }
+.preset-remove-btn {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: inherit;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+.preset-library-card:hover .preset-remove-btn,
+.preset-library-card:focus-within .preset-remove-btn { opacity: 0.7; }
+.preset-remove-btn:hover { opacity: 1; background: rgba(255,255,255,0.08); }
+.preset-add-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-style: dashed;
+  opacity: 0.75;
+  font-size: 12px;
+}
+.preset-add-card:hover { opacity: 1; }
+.preset-new-form { gap: 8px; }
+.preset-new-form input,
+.preset-new-form textarea {
+  width: 100%;
+  background: var(--surface, rgba(255,255,255,0.04));
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  color: inherit;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 12px;
+  resize: vertical;
+}
+.preset-new-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.preset-new-save,
+.preset-new-cancel {
+  background: transparent;
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  color: inherit;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.preset-new-save { background: var(--accent, #f5a524); color: #111; border-color: transparent; }
