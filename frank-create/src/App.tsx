@@ -536,9 +536,13 @@ export default function App() {
     () => Object.values(providerKeyDraft).some((value) => value.trim().length > 0),
     [providerKeyDraft]
   );
+  const promptPresets = useMemo(
+    () => [...config.promptPresets, ...customPresets],
+    [config.promptPresets, customPresets]
+  );
   const activePreset = useMemo(
-    () => config.promptPresets.find((preset) => preset.key === selectedPresetKey) ?? config.promptPresets[0],
-    [config.promptPresets, selectedPresetKey]
+    () => promptPresets.find((preset) => preset.key === selectedPresetKey) ?? promptPresets[0],
+    [promptPresets, selectedPresetKey]
   );
   const productTaskShortcuts = useMemo(
     () => config.tasks.filter((task) => !["product-shot-lab", "prompt-remix"].includes(task.key)),
