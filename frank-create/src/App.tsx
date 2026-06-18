@@ -3256,13 +3256,15 @@ export default function App() {
           </div>
           <p className="section-help">Click a preset to load its prompt. Selected presets are appended to your brief.</p>
           <div className="preset-library-list">
-            {config.promptPresets.map((preset) => {
+            {promptPresets.map((preset) => {
               const isActive = selectedPresetKey === preset.key;
+              const isCustom = customPresetKeys.has(preset.key);
               return (
-                <button
+                <div
                   key={preset.key}
-                  type="button"
                   className={`preset-library-card ${isActive ? "selected" : ""}`}
+                  role="button"
+                  tabIndex={0}
                   aria-pressed={isActive}
                   onClick={() => {
                     setSelectedPresetKey(preset.key);
@@ -3273,15 +3275,91 @@ export default function App() {
                     );
                     setStatusText(`Loaded preset: ${preset.label}`);
                   }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }}
                 >
                   <span className="preset-library-card-head">
                     <strong>{preset.label}</strong>
                     {isActive ? <em>Active</em> : null}
+                    {isCustom ? (
+                      <button
+                        type="button"
+                        className="preset-remove-btn"
+                        aria-label={`Remove ${preset.label}`}
+                        title="Remove preset"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCustomPresets((current) => current.filter((p) => p.key !== preset.key));
+                          if (selectedPresetKey === preset.key) {
+                            setSelectedPresetKey(config.promptPresets[0]?.key ?? "product-shot-lab");
+                          }
+                          setStatusText(`Removed preset: ${preset.label}`);
+                        }}
+                      >
+                        ×
+                      </button>
+                    ) : null}
                   </span>
                   <small>{preset.prompt}</small>
-                </button>
+                </div>
               );
             })}
+            {newPresetOpen ? (
+              <form
+                className="preset-library-card preset-new-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const label = newPresetLabel.trim();
+                  const promptText = newPresetPrompt.trim();
+                  if (!label || !promptText) {
+                    setStatusText("Preset needs a label and prompt.");
+                    return;
+                  }
+                  const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "preset";
+                  const key = `custom-${slug}-${Math.random().toString(36).slice(2, 6)}`;
+                  const next: PromptPreset = { key, label, description: "Custom preset", prompt: promptText };
+                  setCustomPresets((current) => [...current, next]);
+                  setSelectedPresetKey(key);
+                  setPrompt((current) => current.trim() ? `${current.trim()}\n\n${promptText}` : promptText);
+                  setNewPresetLabel("");
+                  setNewPresetPrompt("");
+                  setNewPresetOpen(false);
+                  setStatusText(`Added preset: ${label}`);
+                }}
+              >
+                <input
+                  type="text"
+                  placeholder="Preset label"
+                  value={newPresetLabel}
+                  onChange={(e) => setNewPresetLabel(e.target.value)}
+                  autoFocus
+                />
+                <textarea
+                  placeholder="Prompt text"
+                  value={newPresetPrompt}
+                  onChange={(e) => setNewPresetPrompt(e.target.value)}
+                  rows={3}
+                />
+                <div className="preset-new-actions">
+                  <button type="submit" className="preset-new-save">Save</button>
+                  <button
+                    type="button"
+                    className="preset-new-cancel"
+                    onClick={() => { setNewPresetOpen(false); setNewPresetLabel(""); setNewPresetPrompt(""); }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <button
+                type="button"
+                className="preset-library-card preset-add-card"
+                onClick={() => setNewPresetOpen(true)}
+              >
+                <Plus size={14} />
+                <span>New preset</span>
+              </button>
+            )}
           </div>
         </section>
 
