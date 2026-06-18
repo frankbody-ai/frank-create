@@ -644,7 +644,7 @@ export default function App() {
   }
 
   function showProductShotLab() {
-    const productPreset = config.promptPresets.find((preset) => preset.key === "product-shot-lab") ?? config.promptPresets[0];
+    const productPreset = promptPresets.find((preset) => preset.key === "product-shot-lab") ?? promptPresets[0];
     setStudioMode("product-shot-lab");
     setReviewFilter("all");
     if (productPreset) {
@@ -2278,7 +2278,7 @@ export default function App() {
   function makeAnotherRound(asset: Asset, direction: "similar" | "cleanup" | "campaign") {
     const presetKey =
       direction === "cleanup" ? "clean-ecom" : direction === "campaign" ? "campaign-variants" : selectedPresetKey;
-    const preset = config.promptPresets.find((item) => item.key === presetKey) ?? activePreset;
+    const preset = promptPresets.find((item) => item.key === presetKey) ?? activePreset;
     const editModel =
       selectedModel?.capabilities.edit
         ? selectedModel
@@ -4187,7 +4187,7 @@ export default function App() {
             <h3>Brief shape</h3>
           </div>
           <div className="preset-list">
-            {config.promptPresets.map((preset) => (
+            {promptPresets.map((preset) => (
               <button
                 className={selectedPresetKey === preset.key ? "selected" : ""}
                 key={preset.key}
