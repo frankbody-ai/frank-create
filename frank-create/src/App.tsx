@@ -287,6 +287,21 @@ export default function App() {
   const [promptRemixes, setPromptRemixes] = useState<PromptRemixVariant[]>([]);
   const [selectedModelId, setSelectedModelId] = useState(() => preferredStudioModel(fallbackConfig.models).id);
   const [selectedPresetKey, setSelectedPresetKey] = useState("product-shot-lab");
+  const [customPresets, setCustomPresets] = useState<PromptPreset[]>(() => {
+    try {
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem("frank.customPromptPresets") : null;
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((p) => p && typeof p.key === "string" && typeof p.label === "string" && typeof p.prompt === "string") : [];
+    } catch { return []; }
+  });
+  const customPresetKeys = useMemo(() => new Set(customPresets.map((p) => p.key)), [customPresets]);
+  const [newPresetOpen, setNewPresetOpen] = useState(false);
+  const [newPresetLabel, setNewPresetLabel] = useState("");
+  const [newPresetPrompt, setNewPresetPrompt] = useState("");
+  useEffect(() => {
+    try { window.localStorage.setItem("frank.customPromptPresets", JSON.stringify(customPresets)); } catch { /* ignore */ }
+  }, [customPresets]);
   const [frankBodyMode, setFrankBodyMode] = useState(false);
   const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot">(() =>
     initialStudioMode()
