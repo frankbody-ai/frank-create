@@ -287,6 +287,21 @@ export default function App() {
   const [promptRemixes, setPromptRemixes] = useState<PromptRemixVariant[]>([]);
   const [selectedModelId, setSelectedModelId] = useState(() => preferredStudioModel(fallbackConfig.models).id);
   const [selectedPresetKey, setSelectedPresetKey] = useState("product-shot-lab");
+  const [customPresets, setCustomPresets] = useState<PromptPreset[]>(() => {
+    try {
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem("frank.customPromptPresets") : null;
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.filter((p) => p && typeof p.key === "string" && typeof p.label === "string" && typeof p.prompt === "string") : [];
+    } catch { return []; }
+  });
+  const customPresetKeys = useMemo(() => new Set(customPresets.map((p) => p.key)), [customPresets]);
+  const [newPresetOpen, setNewPresetOpen] = useState(false);
+  const [newPresetLabel, setNewPresetLabel] = useState("");
+  const [newPresetPrompt, setNewPresetPrompt] = useState("");
+  useEffect(() => {
+    try { window.localStorage.setItem("frank.customPromptPresets", JSON.stringify(customPresets)); } catch { /* ignore */ }
+  }, [customPresets]);
   const [frankBodyMode, setFrankBodyMode] = useState(false);
   const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot">(() =>
     initialStudioMode()
@@ -521,9 +536,13 @@ export default function App() {
     () => Object.values(providerKeyDraft).some((value) => value.trim().length > 0),
     [providerKeyDraft]
   );
+  const promptPresets = useMemo(
+    () => [...config.promptPresets, ...customPresets],
+    [config.promptPresets, customPresets]
+  );
   const activePreset = useMemo(
-    () => config.promptPresets.find((preset) => preset.key === selectedPresetKey) ?? config.promptPresets[0],
-    [config.promptPresets, selectedPresetKey]
+    () => promptPresets.find((preset) => preset.key === selectedPresetKey) ?? promptPresets[0],
+    [promptPresets, selectedPresetKey]
   );
   const productTaskShortcuts = useMemo(
     () => config.tasks.filter((task) => !["product-shot-lab", "prompt-remix"].includes(task.key)),
@@ -625,7 +644,7 @@ export default function App() {
   }
 
   function showProductShotLab() {
-    const productPreset = config.promptPresets.find((preset) => preset.key === "product-shot-lab") ?? config.promptPresets[0];
+    const productPreset = promptPresets.find((preset) => preset.key === "product-shot-lab") ?? promptPresets[0];
     setStudioMode("product-shot-lab");
     setReviewFilter("all");
     if (productPreset) {
@@ -2259,7 +2278,7 @@ export default function App() {
   function makeAnotherRound(asset: Asset, direction: "similar" | "cleanup" | "campaign") {
     const presetKey =
       direction === "cleanup" ? "clean-ecom" : direction === "campaign" ? "campaign-variants" : selectedPresetKey;
-    const preset = config.promptPresets.find((item) => item.key === presetKey) ?? activePreset;
+    const preset = promptPresets.find((item) => item.key === presetKey) ?? activePreset;
     const editModel =
       selectedModel?.capabilities.edit
         ? selectedModel
@@ -3237,13 +3256,15 @@ export default function App() {
           </div>
           <p className="section-help">Click a preset to load its prompt. Selected presets are appended to your brief.</p>
           <div className="preset-library-list">
-            {config.promptPresets.map((preset) => {
+            {promptPresets.map((preset) => {
               const isActive = selectedPresetKey === preset.key;
+              const isCustom = customPresetKeys.has(preset.key);
               return (
-                <button
+                <div
                   key={preset.key}
-                  type="button"
                   className={`preset-library-card ${isActive ? "selected" : ""}`}
+                  role="button"
+                  tabIndex={0}
                   aria-pressed={isActive}
                   onClick={() => {
                     setSelectedPresetKey(preset.key);
@@ -3254,15 +3275,91 @@ export default function App() {
                     );
                     setStatusText(`Loaded preset: ${preset.label}`);
                   }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }}
                 >
                   <span className="preset-library-card-head">
                     <strong>{preset.label}</strong>
                     {isActive ? <em>Active</em> : null}
+                    {isCustom ? (
+                      <button
+                        type="button"
+                        className="preset-remove-btn"
+                        aria-label={`Remove ${preset.label}`}
+                        title="Remove preset"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCustomPresets((current) => current.filter((p) => p.key !== preset.key));
+                          if (selectedPresetKey === preset.key) {
+                            setSelectedPresetKey(config.promptPresets[0]?.key ?? "product-shot-lab");
+                          }
+                          setStatusText(`Removed preset: ${preset.label}`);
+                        }}
+                      >
+                        ×
+                      </button>
+                    ) : null}
                   </span>
                   <small>{preset.prompt}</small>
-                </button>
+                </div>
               );
             })}
+            {newPresetOpen ? (
+              <form
+                className="preset-library-card preset-new-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const label = newPresetLabel.trim();
+                  const promptText = newPresetPrompt.trim();
+                  if (!label || !promptText) {
+                    setStatusText("Preset needs a label and prompt.");
+                    return;
+                  }
+                  const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "preset";
+                  const key = `custom-${slug}-${Math.random().toString(36).slice(2, 6)}`;
+                  const next: PromptPreset = { key, label, description: "Custom preset", prompt: promptText };
+                  setCustomPresets((current) => [...current, next]);
+                  setSelectedPresetKey(key);
+                  setPrompt((current) => current.trim() ? `${current.trim()}\n\n${promptText}` : promptText);
+                  setNewPresetLabel("");
+                  setNewPresetPrompt("");
+                  setNewPresetOpen(false);
+                  setStatusText(`Added preset: ${label}`);
+                }}
+              >
+                <input
+                  type="text"
+                  placeholder="Preset label"
+                  value={newPresetLabel}
+                  onChange={(e) => setNewPresetLabel(e.target.value)}
+                  autoFocus
+                />
+                <textarea
+                  placeholder="Prompt text"
+                  value={newPresetPrompt}
+                  onChange={(e) => setNewPresetPrompt(e.target.value)}
+                  rows={3}
+                />
+                <div className="preset-new-actions">
+                  <button type="submit" className="preset-new-save">Save</button>
+                  <button
+                    type="button"
+                    className="preset-new-cancel"
+                    onClick={() => { setNewPresetOpen(false); setNewPresetLabel(""); setNewPresetPrompt(""); }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <button
+                type="button"
+                className="preset-library-card preset-add-card"
+                onClick={() => setNewPresetOpen(true)}
+              >
+                <Plus size={14} />
+                <span>New preset</span>
+              </button>
+            )}
           </div>
         </section>
 
@@ -4168,7 +4265,7 @@ export default function App() {
             <h3>Brief shape</h3>
           </div>
           <div className="preset-list">
-            {config.promptPresets.map((preset) => (
+            {promptPresets.map((preset) => (
               <button
                 className={selectedPresetKey === preset.key ? "selected" : ""}
                 key={preset.key}
