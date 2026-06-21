@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS } from "./lib/supabaseClient";
-import { lovable } from "./lib/lovableAuth";
+
 
 
 type Status = "loading" | "signed-out" | "denied" | "ready";
