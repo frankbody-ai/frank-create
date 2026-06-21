@@ -37,14 +37,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   const signIn = async () => {
     setError(null);
-    const { error: err } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-        queryParams: { prompt: "select_account" },
-      },
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+      extraParams: { prompt: "select_account" },
     });
-    if (err) setError(err.message || "Sign-in failed");
+    if (result.error) setError(result.error.message || "Sign-in failed");
   };
 
   const signOut = async () => {
