@@ -469,6 +469,11 @@ export default function App() {
       setConnection("offline");
       setExports([]);
       setSelectedReferenceIds([]);
+      const persisted = loadLocalAssets();
+      if (persisted.length) {
+        setAssets(persisted);
+        setSelectedAsset(firstReviewableAsset(persisted));
+      }
         setStatusText("Preview backend offline. You can stage rounds here; live provider runs happen locally.");
       }
     }
