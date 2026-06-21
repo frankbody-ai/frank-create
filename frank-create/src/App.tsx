@@ -124,6 +124,7 @@ import type {
   WorkflowBlueprint,
   WorkflowBlueprintsResponse
 } from "./lib/types";
+import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 
 type WalkthroughTarget =
   | "app-header"
@@ -468,6 +469,11 @@ export default function App() {
       setConnection("offline");
       setExports([]);
       setSelectedReferenceIds([]);
+      const persisted = loadLocalAssets();
+      if (persisted.length) {
+        setAssets(persisted);
+        setSelectedAsset(firstReviewableAsset(persisted));
+      }
         setStatusText("Preview backend offline. You can stage rounds here; live provider runs happen locally.");
       }
     }
@@ -477,6 +483,11 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (connection !== "offline") return;
+    saveLocalAssets(assets);
+  }, [assets, connection]);
 
   useEffect(() => {
     if (connection !== "online" || providerAudit || checkingProviderAudit || !shouldAutoOpenProviderAudit()) {
