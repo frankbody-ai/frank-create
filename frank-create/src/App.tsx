@@ -124,6 +124,7 @@ import type {
   WorkflowBlueprint,
   WorkflowBlueprintsResponse
 } from "./lib/types";
+import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 
 type WalkthroughTarget =
   | "app-header"
