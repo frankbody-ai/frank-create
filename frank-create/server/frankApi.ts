@@ -213,7 +213,6 @@ async function lovableChat(messages: any[]) {
 }
 
 async function lovableImage(prompt: string): Promise<{ b64: string; mime: string }> {
-  // gemini-2.5-flash-image returns images in the assistant message as inline data
   const r = await fetch(`${LOVABLE_BASE}/chat/completions`, {
     method: "POST",
     headers: {
@@ -221,7 +220,7 @@ async function lovableImage(prompt: string): Promise<{ b64: string; mime: string
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash-image",
+      model: "google/gemini-3.1-flash-image-preview",
       messages: [{ role: "user", content: prompt }],
       modalities: ["image", "text"],
     }),
@@ -235,8 +234,9 @@ async function lovableImage(prompt: string): Promise<{ b64: string; mime: string
     const url: string = first.image_url?.url || first.url || "";
     const m = url.match(/^data:(image\/[a-z]+);base64,(.+)$/);
     if (m) return { b64: m[2], mime: m[1] };
+    if (url) return { b64: url, mime: "image/png" };
   }
-  throw new Error("Lovable AI returned no image data");
+  throw new Error(`Lovable AI returned no image data. Response: ${JSON.stringify(j).slice(0, 300)}`);
 }
 
 // ----- Route handlers ----------------------------------------------------
