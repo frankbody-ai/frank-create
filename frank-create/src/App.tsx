@@ -1785,9 +1785,11 @@ export default function App() {
         if (!images.length) throw new Error("No image returned");
 
         const nowIso = new Date().toISOString();
+        const turnId = makeLocalId("turn");
         const newAssets: Asset[] = images.map((dataUrl, idx) => ({
           id: makeLocalId("asset"),
           session_id: activeSession.id,
+          turn_id: turnId,
           kind: "generated",
           title: `Lovable AI pick ${idx + 1}`,
           media_type: "image",
@@ -1804,7 +1806,7 @@ export default function App() {
         }));
 
         const turn: StudioTurn = {
-          id: makeLocalId("turn"),
+          id: turnId,
           session_id: activeSession.id,
           kind: request.kind,
           provider: "lovable-ai",
