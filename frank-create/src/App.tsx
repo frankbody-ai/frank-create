@@ -485,6 +485,11 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (connection !== "offline") return;
+    saveLocalAssets(assets);
+  }, [assets, connection]);
+
+  useEffect(() => {
     if (connection !== "online" || providerAudit || checkingProviderAudit || !shouldAutoOpenProviderAudit()) {
       return;
     }
