@@ -307,7 +307,12 @@ async function handleInference(body: any, userId: string) {
 
   let img;
   try {
-    img = await lovableImage(prompt);
+    const refIds: string[] = [
+      ...(body.edit_source_asset_id ? [body.edit_source_asset_id] : []),
+      ...((body.reference_asset_ids as string[]) || []),
+    ];
+    const refUrls = await loadReferenceDataUrls(refIds, userId);
+    img = await lovableImage(prompt, refUrls);
   } catch (err) {
     await sb.from("messages").update({
       settings_snapshot_json: { ...settingsSnapshot, status: "failed", error: String(err) },
