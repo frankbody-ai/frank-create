@@ -343,6 +343,13 @@ export async function deleteAsset(assetId: string) {
   });
 }
 
+export async function deleteTurn(turnId: string) {
+  return fetchJson<{ ok: boolean }>(`/turns/${encodeURIComponent(turnId)}`, {
+    method: "DELETE"
+  });
+}
+
+
 export async function createExport(payload: Record<string, unknown>) {
   return fetchJson<{ export: ExportRecord; download_url?: string; metadata?: Record<string, unknown> }>("/exports", {
     method: "POST",
