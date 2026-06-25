@@ -2533,15 +2533,18 @@ export default function App() {
             <Sparkles size={16} />
             Brand Kit
           </button>
-          <button
-            className="sidebar-nav-button"
-            type="button"
-            aria-label="Open Raw Comfy"
-            onClick={() => openStudioLink(config.advancedGraphUrl, "Raw Comfy canvas")}
-          >
-            <GitBranch size={16} />
-            Raw Comfy
-          </button>
+          {isLovablePreview ? null : (
+            <button
+              className="sidebar-nav-button"
+              type="button"
+              aria-label="Open Raw Comfy"
+              onClick={() => openStudioLink(config.advancedGraphUrl, "Raw Comfy canvas")}
+            >
+              <GitBranch size={16} />
+              Raw Comfy
+            </button>
+          )}
+
           <button className="sidebar-nav-button" type="button" onClick={startWalkthrough}>
             <MessageSquareText size={16} />
             Demo Walkthrough
