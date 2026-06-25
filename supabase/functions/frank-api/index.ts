@@ -453,7 +453,7 @@ Deno.serve(async (req) => {
     }
     if (path.startsWith("/briefs")) return json({ briefs: [] });
     if (path.startsWith("/runs")) return json({ runs: [] });
-    if (path.startsWith("/exports")) return json({ exports: [] });
+
 
     // ---- Authenticated endpoints ----
     const userId = await requireUser(req);
