@@ -547,8 +547,123 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ---- Exports / handoff / review board ----
+    const exportMatch = path.match(/^\/exports\/([^/]+)\/download$/);
+    if (exportMatch && method === "GET") {
+      const assetId = exportMatch[1];
+      const { data: row, error } = await supabase().from("assets").select("*").eq("id", assetId).eq("user_id", userId).maybeSingle();
+      if (error || !row) return json({ error: { code: "not_found", message: "Export not found" } }, 404);
+      const url = await signed(row.storage_path);
+      if (url) return Response.redirect(url, 302);
+      return json({ error: { code: "not_found", message: "Asset storage missing" } }, 404);
+    }
+    if (path === "/exports" && method === "GET") {
+      const sid = url.searchParams.get("session_id");
+      const q = supabase().from("assets").select("*").eq("user_id", userId).eq("asset_type", "output").order("created_at", { ascending: false });
+      const { data } = sid ? await q.eq("session_id", sid) : await q;
+      const items = (data || []).map((r: any) => ({
+        id: r.id, asset_id: r.id, preset: "default",
+        file_path: r.storage_path, metadata_json: JSON.stringify(r.metadata_json || {}),
+        sync_status: "cloud", created_at: r.created_at,
+      }));
+      return json({ exports: items });
+    }
+    if (path === "/exports" && method === "POST") {
+      const body = await readJson(req);
+      const assetId = body.asset_id;
+      const { data: row, error } = await supabase().from("assets").select("*").eq("id", assetId).eq("user_id", userId).maybeSingle();
+      if (error || !row) return json({ error: { code: "not_found", message: "Asset not found" } }, 404);
+      const dl = await signed(row.storage_path);
+      const record = {
+        id: row.id, asset_id: row.id, preset: body.preset || "default",
+        file_path: row.storage_path, download_url: dl || undefined,
+        metadata_json: JSON.stringify({ preset: body.preset || "default", ...(body.metadata || {}) }),
+        sync_status: "cloud", created_at: nowIso(),
+      };
+      return json({ export: record, download_url: dl, metadata: { preset: body.preset || "default" } });
+    }
+    const exportSetMatch = path.match(/^\/assets\/([^/]+)\/export-set$/);
+    if (exportSetMatch && method === "POST") {
+      const assetId = exportSetMatch[1];
+      const { data: row, error } = await supabase().from("assets").select("*").eq("id", assetId).eq("user_id", userId).maybeSingle();
+      if (error || !row) return json({ error: { code: "not_found", message: "Asset not found" } }, 404);
+      const dl = await signed(row.storage_path);
+      const presets = ["instagram_square", "instagram_story", "web_hero"];
+      return json({
+        exports: presets.map((p) => ({
+          id: `${row.id}-${p}`, asset_id: row.id, preset: p,
+          file_path: row.storage_path, download_url: dl || undefined,
+          metadata_json: JSON.stringify({ preset: p }),
+          sync_status: "cloud", created_at: nowIso(),
+        })),
+        download_urls: Object.fromEntries(presets.map((p) => [p, dl])),
+      });
+    }
+    const reviewMatch = path.match(/^\/sessions\/([^/]+)\/review-board$/);
+    if (reviewMatch && method === "GET") {
+      const sid = reviewMatch[1];
+      const { data } = await supabase().from("assets").select("*")
+        .eq("user_id", userId).eq("session_id", sid).order("created_at", { ascending: false });
+      const items = await Promise.all((data || []).map(async (r: any) => rowToAsset(r, await signed(r.storage_path))));
+      return json({ board: { session_id: sid, generated_at: nowIso(), assets: items, approved: items.filter((a: any) => a.approval_status === "approved") } });
+    }
+    const syncMatch = path.match(/^\/sessions\/([^/]+)\/sync-manifest$/);
+    if (syncMatch && method === "GET") {
+      const sid = syncMatch[1];
+      const { data } = await supabase().from("assets").select("id,storage_path,created_at,asset_type")
+        .eq("user_id", userId).eq("session_id", sid);
+      return json({ manifest: { session_id: sid, generated_at: nowIso(), assets: data || [] } });
+    }
+    const handoffMatch = path.match(/^\/sessions\/([^/]+)\/handoff$/);
+    if (handoffMatch && method === "POST") {
+      const sid = handoffMatch[1];
+      const body = await readJson(req).catch(() => ({}));
+      const { data } = await supabase().from("assets").select("*")
+        .eq("user_id", userId).eq("session_id", sid);
+      const assets = await Promise.all((data || []).map(async (r: any) => rowToAsset(r, await signed(r.storage_path))));
+      const record = {
+        id: `handoff-${sid}-${Date.now()}`, asset_id: sid, preset: "handoff",
+        file_path: `cloud:handoff/${sid}`,
+        metadata_json: JSON.stringify({ summary: body.summary || "", asset_count: assets.length }),
+        sync_status: "cloud", created_at: nowIso(),
+      };
+      return json({ handoff: record, download_url: null, metadata: { summary: body.summary || "", asset_count: assets.length, assets } });
+    }
+
+    // ---- Demo receipts (minimal stubs) ----
+    if (path === "/demo/reset" && method === "POST") {
+      return json({ ok: true, reset_at: nowIso() });
+    }
+    if (path.startsWith("/demo/") && method === "POST") {
+      const kind = path.slice("/demo/".length);
+      const receipt = {
+        title: `Frank Create ${kind} receipt`,
+        generated_at: nowIso(),
+        session: { user_id: userId },
+        summary: {
+          style_guidance_chars: 0, negative_prompt_chars: 0, reference_notes_chars: 0,
+          reference_asset_count: 0, approved_asset_count: 0,
+          prompt_guided_status: "ready", lora_training_status: "starter",
+          prompt_guided_target: "ready", lora_training_target: "ready",
+        },
+        brand_kit: { style_guidance: "", negative_prompt: "", reference_notes: "", sync_status: "cloud" },
+        reference_assets: [], approved_assets: [],
+        training_recommendation: { status: "ready" },
+        next_inputs: [],
+      };
+      const filename = `${kind}-${Date.now()}`;
+      return json({
+        receipt,
+        markdown_path: `cloud:receipts/${filename}.md`,
+        json_path: `cloud:receipts/${filename}.json`,
+        markdown_file: `${filename}.md`,
+        json_file: `${filename}.json`,
+        markdown_url: "", json_url: "",
+      });
+    }
+
     return json({ error: { code: "not_found", message: `No handler for ${method} ${path}` } }, 404);
-  } catch (err) {
+
     if (err instanceof AuthError) {
       return json({ error: { code: "auth_error", message: err.message } }, err.status);
     }
