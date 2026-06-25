@@ -27,7 +27,13 @@ import type {
   WorkflowBlueprintsResponse
 } from "./types";
 
-const frankBase = "/api/frank";
+// In Lovable preview/production the SPA has no same-origin /api server.
+// Route every Frank Create call to the `frank-api` Supabase Edge Function.
+// Dev fallback: when running locally with the Vite plugin (frankApi.ts),
+// VITE_FRANK_API_BASE can be set to "/api/frank" via a local .env.
+const frankBase =
+  (import.meta.env?.VITE_FRANK_API_BASE as string | undefined) ||
+  "https://amwfmlqvaranonhyvqbj.supabase.co/functions/v1/frank-api";
 
 export async function fetchHealth() {
   return fetchJson<{ ok: boolean; product: string; store: string }>("/health");

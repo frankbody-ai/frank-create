@@ -1,57 +1,84 @@
-# Plan: Health & Error Visibility
+# Port Frank Create Backend to Lovable Cloud
 
-Add three small frontend-only features to `frank-create/` to improve troubleshooting visibility. No backend changes.
+## Goal
 
-## 1. Connection status banner
+Make the Lovable preview a fully working standalone app by reimplementing the `/api/frank/*` surface on top of Lovable Cloud (Supabase + Lovable AI Gateway), so the user no longer needs the local Python ComfyUI server to demo it.
 
-New component `src/components/StatusBanner.tsx` mounted in `main.tsx` above `<App />`.
+The existing Python backend (`custom_nodes/frank_create/*`, `scripts/Start-FrankCreate.ps1`) stays untouched — local power users can still run it. The Lovable preview gets its own backend that mimics the same JSON contracts the frontend already calls.
 
-- Tracks browser `online`/`offline` events.
-- Pings backend `GET /health` (via existing `fetchHealth()` in `src/lib/api.ts`) every 20s.
-- Listens for `window` `error` and `unhandledrejection` events plus a custom `frank:ws-error` event (dispatched from feature 3).
-- States: `healthy` (hidden), `reconnecting` (yellow, "Reconnecting to preview…"), `offline` (red, "Connection lost").
-- Slim bar pinned to top, dismissible per-session.
+## Architecture
 
-## 2. `/health` diagnostic page
+Frontend keeps calling `/api/frank/*` (no frontend refactor required). Those routes are reimplemented as TanStack server routes / `createServerFn` calls in this Lovable project, backed by:
 
-Since the app is a single-page Vite SPA (no router), gate on `window.location.pathname === "/health"` inside `main.tsx` and render `<HealthPage />` instead of `<App />` (no auth gate so it's reachable when broken).
+- **Supabase tables** for sessions, turns (rounds), assets, brand kit, projects, briefs, exports
+- **Supabase Storage** (`studio-images` bucket already exists) for generated images and uploads
+- **Lovable AI Gateway** for actual image generation (`google/gemini-3.1-flash-image` ≈ "Nano Banana", `google/gemini-3-pro-image`, `openai/gpt-image-2`)
+- **Auth**: Supabase user session (already wired). RLS scopes all rows to `auth.uid()`.
 
-New `src/components/HealthPage.tsx` runs checks on mount and shows pass/fail rows:
+Existing Supabase tables (`sessions`, `messages`, `assets`, `presets`, `model_capabilities`) get extended; missing ones (`turns`, `brand_kits`, `projects`, `briefs`, `exports`) get added.
 
-- Backend `/health` endpoint (uses `fetchHealth`)
-- Backend `/models` endpoint (uses `fetchModels`)
-- Supabase auth session (`supabase.auth.getSession()`)
-- Browser online status
-- LocalStorage read/write
+## Phasing
 
-Each row: name, status icon, latency ms, error text if any. Includes a "Re-run checks" button and a "Copy report" button that copies a JSON summary to clipboard.
+### Phase 1 — Critical path (fixes issues 1, 3, 4, 10)
 
-## 3. Error logging + toast with copy details
+Get a brand-new session to actually generate an image end-to-end.
 
-New `src/lib/errorReporter.ts`:
+Endpoints implemented:
+- `GET /api/frank/health` → `{ ok: true }`
+- `GET /api/frank/config` + `/models` → static config from a server module
+- `GET/POST/PATCH /api/frank/sessions` → CRUD on `sessions` table
+- `GET/POST/PATCH /api/frank/turns` → new `turns` table (one row per generation round)
+- `POST /api/frank/inference/turn` → calls Lovable AI Gateway image model, uploads result to `studio-images` storage, inserts an `assets` row, updates turn status `queued → running → complete/failed`
+- `GET/POST/PATCH/DELETE /api/frank/assets` + `GET /api/frank/assets/:id/download` → signed URL from storage
+- `POST /api/frank/prompt-remix` → Lovable AI chat (`google/gemini-3-flash-preview`) returning 3 variant prompts
 
-- Installs global `window.onerror`, `unhandledrejection`, and `console.error` wrapper handlers.
-- Detects WebSocket failures and 502/504 responses by patching `WebSocket` constructor and `fetch` to dispatch a `frank:ws-error` / `frank:net-error` custom event with `{ message, url, status, timestamp }`.
-- Keeps a rolling in-memory buffer (last 50 entries) exposed as `getErrorBuffer()`.
+Result after phase 1: persistent reconnecting banner gone, Generate works on a fresh session, Brief Remix works, images persist across reloads (already-implemented localAssets stays as a fallback cache).
 
-Toast surface uses existing `sonner` (already a dep — verify; if not, fall back to a minimal inline toast component). On a 502 or WS failure, show:
+### Phase 2 — Brand kit, briefs, projects, exports (fixes issues 5, 7, 8)
 
-> "Preview connection issue — retrying"
-> [Copy details] button → copies the last buffered error entry + buffer tail as text.
+- `GET/PATCH /api/frank/brand-kit` → new `brand_kits` table (one per user), removes the "Start ComfyUI to save" message
+- `GET/POST/PATCH /api/frank/projects` + `/briefs` + `/runs` → new tables
+- `POST /api/frank/exports` + `GET /api/frank/exports/:id/download` + `POST /api/frank/assets/:id/export-set` → renders channel-ready variants (server-side resize via Web `OffscreenCanvas` / `sharp`-free path; for v1, just record the export and return the original asset URL with metadata)
+- `GET /api/frank/sessions/:id/review-board` + `/sync-manifest` → JSON manifest endpoints
+- `POST /api/frank/sessions/:id/handoff` → JSON bundle download
 
-Debounced so repeated identical errors only toast once every 10s.
+### Phase 3 — Provider/diagnostics + UX polish (fixes issues 2, 6, 9)
 
-Initialized once from `main.tsx` before render.
+- `GET /api/frank/provider-env` + `/provider-status` + `/provider-audit` + `/activation-checklist` + `/demo-doctor` → return a Lovable-Cloud-flavored status (all green, Lovable AI as the provider, no env-key prompts)
+- `POST /api/frank/demo/*` (evidence, call-brief, readiness-pack, brand-context, provider-readiness) → generate JSON receipts and store them as exports
+- **Raw Comfy / Advanced Graph / `/comfy/`** → remove those sidebar links in Lovable preview (gated by a `VITE_IS_LOVABLE_PREVIEW` flag or by feature-detecting the absence of `/comfy/`) so users don't hit a dead "Not Found" page
+- **Session dropdown stale counters** → recompute counts from `turns`/`assets` rows on session-switch instead of reading the cached header value
+- **Open Review Board button** → either open a dedicated `/review/:sessionId` route rendering the review-board JSON, or remove the button. Picking the route option.
+
+### Phase 4 — Video + local engine (deferred / explicit "Lovable preview doesn't support this")
+
+- `POST /api/frank/videos` and `/local-engine/*` return `501` with a clear "video + local ComfyUI engine require the desktop install" message that the UI surfaces as a non-blocking notice. Most demo flows don't use these.
+
+## Database migrations (Phase 1 + 2)
+
+New tables (all RLS-scoped to `auth.uid()`, all with the required GRANTs):
+
+- `turns` — `id`, `session_id`, `user_id`, `model`, `prompt`, `negative_prompt`, `status`, `provider_payload jsonb`, `error jsonb`, `created_at`, `updated_at`
+- `brand_kits` — one row per user: `user_id` (PK), `name`, `palette jsonb`, `typography jsonb`, `voice jsonb`, `style_guidance text`, `assets jsonb`
+- `projects`, `briefs`, `runs`, `exports` — standard CRUD shapes mirroring the existing TypeScript types in `frank-create/src/lib/types.ts`
+
+Extend `sessions` (add `project_id`, `brief_id` optional FKs) and `assets` (add `turn_id`, `approval_status`, `is_favorite`, `export_metadata jsonb`).
 
 ## Files
 
-- New: `src/components/StatusBanner.tsx`
-- New: `src/components/HealthPage.tsx`
-- New: `src/lib/errorReporter.ts`
-- Edited: `src/main.tsx` (mount banner, init reporter, route `/health`)
-- Edited: `src/styles.css` (banner + health page styles)
+New server routes under `src/routes/api/frank/`:
+- `health.ts`, `config.ts`, `models.ts`, `sessions.ts`, `sessions.$id.ts`, `turns.ts`, `turns.$id.ts`, `assets.ts`, `assets.$id.ts`, `assets.$id.download.ts`, `inference.turn.ts`, `prompt-remix.ts`, `brand-kit.ts`, `projects.ts`, `briefs.ts`, `runs.ts`, `exports.ts`, `exports.$id.download.ts`, `provider-env.ts`, `provider-status.ts`, `activation-checklist.ts`, `demo-doctor.ts`, plus the `/demo/*` and `/sessions/:id/*` helpers
+
+All use `requireSupabaseAuth` middleware so RLS does the heavy lifting; the existing `frank-create/src/lib/api.ts` already sends the bearer token, so no frontend changes are needed for auth.
+
+Lovable AI Gateway helper: `src/lib/ai-gateway.server.ts` (the canonical `createLovableAiGatewayProvider`).
 
 ## Out of scope
 
-- No server route changes; `/health` is a client page that calls existing backend endpoints.
-- No persistent error log (in-memory only).
+- Rebuilding the local ComfyUI workflow execution. The "local engine" status simply reports unavailable in the cloud preview.
+- The Python backend itself — untouched.
+- Video generation (Phase 4 stub only).
+
+## Recommended execution order
+
+Phase 1 first as one batch (migration → server routes → quick browser test). Once you confirm a fresh session generates an image in the preview, we move on to Phase 2, then 3. Phase 4 is optional polish. Want me to start with Phase 1 only, or push straight through 1–3?
