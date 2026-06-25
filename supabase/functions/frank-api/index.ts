@@ -453,6 +453,26 @@ Deno.serve(async (req) => {
     }
     if (path.startsWith("/briefs")) return json({ briefs: [] });
     if (path.startsWith("/runs")) return json({ runs: [] });
+    if (path === "/local-engine/workflow-blueprints") {
+      return json({ blueprints: [], filePath: "cloud:blueprints", note: "Local ComfyUI blueprints require the desktop install." });
+    }
+    if (path === "/local-engine/setup" && method === "POST") {
+      return json({
+        created_dirs: [], readme_path: "cloud:local-engine",
+        localEngine: {
+          diffusion_ready: false, note: "Local engine not available in Lovable preview.",
+          checkpoints: [], ignored_checkpoints: [], recommended_checkpoints: [],
+          setup_steps: [], checkpoint_dir: "models/checkpoints",
+        },
+      });
+    }
+    if (path.startsWith("/local-engine/")) {
+      return json({ ok: false, note: "Local engine not available in Lovable preview." }, 200);
+    }
+    if (path === "/provider-preflight" && method === "POST") {
+      return json({ ok: true, provider: "lovable", checks: [], notes: ["Lovable AI Gateway connected."] });
+    }
+
 
 
     // ---- Authenticated endpoints ----
