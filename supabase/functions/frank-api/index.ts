@@ -509,6 +509,37 @@ Deno.serve(async (req) => {
       return json({ assets: items });
     }
 
+    const turnDelMatch = path.match(/^\/turns\/([^/]+)$/);
+    if (turnDelMatch && method === "DELETE") {
+      const tid = turnDelMatch[1];
+      const sb = supabase();
+      // Best-effort: remove storage objects, then asset rows, then the message row.
+      const { data: assetRows } = await sb.from("assets").select("id,storage_path")
+        .eq("user_id", userId).eq("message_id", tid);
+      const paths = (assetRows || []).map((r: any) => r.storage_path).filter(Boolean);
+      if (paths.length) {
+        try { await sb.storage.from("studio-images").remove(paths); } catch (_) { /* ignore */ }
+      }
+      await sb.from("assets").delete().eq("user_id", userId).eq("message_id", tid);
+      const { error } = await sb.from("messages").delete().eq("user_id", userId).eq("id", tid);
+      if (error) throw error;
+      return json({ ok: true });
+    }
+
+    const assetDelMatch = path.match(/^\/assets\/([^/]+)$/);
+    if (assetDelMatch && method === "DELETE") {
+      const aid = assetDelMatch[1];
+      const sb = supabase();
+      const { data: row } = await sb.from("assets").select("*").eq("user_id", userId).eq("id", aid).maybeSingle();
+      if (row?.storage_path) {
+        try { await sb.storage.from("studio-images").remove([row.storage_path]); } catch (_) { /* ignore */ }
+      }
+      const { error } = await sb.from("assets").delete().eq("user_id", userId).eq("id", aid);
+      if (error) throw error;
+      return json({ asset: row ? rowToAsset(row) : null });
+    }
+
+
     if (path === "/brand-kit" && (method === "GET" || method === "PATCH")) {
       const sb = supabase();
       if (method === "GET") {

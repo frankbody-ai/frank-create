@@ -19,6 +19,7 @@ import {
   Sparkles,
   Upload,
   Wand2,
+  X,
   XCircle
 } from "lucide-react";
 import {
@@ -54,6 +55,7 @@ import {
   createSessionHandoff,
   createVideoStoryboard,
   deleteAsset,
+  deleteTurn,
   exportDownloadUrl,
   fetchBrandKit,
   fetchConfig,
@@ -2085,6 +2087,28 @@ export default function App() {
     }
   }
 
+  async function removeTurnFromSession(turn: StudioTurn) {
+    const turnAssetIds = new Set(assets.filter((a) => a.turn_id === turn.id).map((a) => a.id));
+    try {
+      if (connection === "online") {
+        await deleteTurn(turn.id);
+      }
+      setTurns((current) => current.filter((t) => t.id !== turn.id));
+      setAssets((current) => current.filter((a) => !turnAssetIds.has(a.id)));
+      setExports((current) => current.filter((r) => !turnAssetIds.has(r.asset_id)));
+      setSelectedReferenceIds((current) => current.filter((id) => !turnAssetIds.has(id)));
+      setSelectedAsset((current) => (current && turnAssetIds.has(current.id) ? null : current));
+      if (lightboxAsset && turnAssetIds.has(lightboxAsset.id)) setLightboxAsset(null);
+      if (editSourceAsset && turnAssetIds.has(editSourceAsset.id)) {
+        // best-effort clear
+        try { clearEditSource(); } catch (_) { /* ignore */ }
+      }
+      setStatusText("Round deleted.");
+    } catch (error) {
+      setStatusText(error instanceof Error ? error.message : "Could not delete this round.");
+    }
+  }
+
   async function removeAssetFromSession(asset: Asset) {
     try {
       if (connection === "online") {
@@ -2631,7 +2655,27 @@ export default function App() {
           ) : null}
           {turns.length ? (
             turns.map((turn) => (
-              <article className="turn-card" key={turn.id}>
+              <article className="turn-card" key={turn.id} style={{ position: "relative" }}>
+                <button
+                  type="button"
+                  aria-label="Delete this round"
+                  title="Delete this round"
+                  onClick={() => {
+                    if (window.confirm("Delete this round and its generated images?")) {
+                      removeTurnFromSession(turn);
+                    }
+                  }}
+                  style={{
+                    position: "absolute", top: 8, right: 8,
+                    width: 22, height: 22, padding: 0,
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
+                    background: "rgba(255,255,255,0.85)", cursor: "pointer",
+                    color: "rgba(0,0,0,0.55)",
+                  }}
+                >
+                  <X size={12} />
+                </button>
                 <div className="turn-copy">
                   <span className={`status-dot ${turn.status}`} />
                   <div>
@@ -2655,6 +2699,7 @@ export default function App() {
                   selectedAssetId={selectedAsset?.id}
                 />
               </article>
+
             ))
           ) : (
             <div className="empty-thread">
