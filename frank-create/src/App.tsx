@@ -19,6 +19,7 @@ import {
   Sparkles,
   Upload,
   Wand2,
+  X,
   XCircle
 } from "lucide-react";
 import {
