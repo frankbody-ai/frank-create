@@ -78,6 +78,36 @@ export type Database = {
           },
         ]
       }
+      brand_kits: {
+        Row: {
+          created_at: string
+          id: string
+          negative_prompt: string
+          reference_notes: string
+          style_guidance: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          negative_prompt?: string
+          reference_notes?: string
+          style_guidance?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          negative_prompt?: string
+          reference_notes?: string
+          style_guidance?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
