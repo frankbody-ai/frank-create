@@ -3437,14 +3437,17 @@ export default function App() {
               <GitBranch size={14} />
               Workflow Map
             </button>
-            <button
-              className="mini-button provider-check-button"
-              type="button"
-              onClick={() => openStudioLink(config.advancedGraphUrl, "Raw Comfy canvas")}
-            >
-              <ExternalLink size={14} />
-              Raw Comfy
-            </button>
+            {isLovablePreview ? null : (
+              <button
+                className="mini-button provider-check-button"
+                type="button"
+                onClick={() => openStudioLink(config.advancedGraphUrl, "Raw Comfy canvas")}
+              >
+                <ExternalLink size={14} />
+                Raw Comfy
+              </button>
+            )}
+
           </div>
         </section>
 
