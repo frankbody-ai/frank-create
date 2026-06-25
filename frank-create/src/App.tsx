@@ -2087,6 +2087,28 @@ export default function App() {
     }
   }
 
+  async function removeTurnFromSession(turn: StudioTurn) {
+    const turnAssetIds = new Set(assets.filter((a) => a.turn_id === turn.id).map((a) => a.id));
+    try {
+      if (connection === "online") {
+        await deleteTurn(turn.id);
+      }
+      setTurns((current) => current.filter((t) => t.id !== turn.id));
+      setAssets((current) => current.filter((a) => !turnAssetIds.has(a.id)));
+      setExports((current) => current.filter((r) => !turnAssetIds.has(r.asset_id)));
+      setSelectedReferenceIds((current) => current.filter((id) => !turnAssetIds.has(id)));
+      setSelectedAsset((current) => (current && turnAssetIds.has(current.id) ? null : current));
+      if (lightboxAsset && turnAssetIds.has(lightboxAsset.id)) setLightboxAsset(null);
+      if (editSourceAsset && turnAssetIds.has(editSourceAsset.id)) {
+        // best-effort clear
+        try { clearEditSource(); } catch (_) { /* ignore */ }
+      }
+      setStatusText("Round deleted.");
+    } catch (error) {
+      setStatusText(error instanceof Error ? error.message : "Could not delete this round.");
+    }
+  }
+
   async function removeAssetFromSession(asset: Asset) {
     try {
       if (connection === "online") {
