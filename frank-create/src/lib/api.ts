@@ -35,6 +35,11 @@ const frankBase =
   (import.meta.env?.VITE_FRANK_API_BASE as string | undefined) ||
   "https://amwfmlqvaranonhyvqbj.supabase.co/functions/v1/frank-api";
 
+// True when the app is running against the Lovable Cloud backend (not the local
+// Python ComfyUI server). Used to hide UI affordances that only work on desktop.
+export const isLovablePreview = !frankBase.startsWith("/");
+
+
 export async function fetchHealth() {
   return fetchJson<{ ok: boolean; product: string; store: string }>("/health");
 }

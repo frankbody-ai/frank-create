@@ -81,8 +81,10 @@ import {
   updateBrief,
   updateBrandKit,
   updateSession,
-  uploadImage
+  uploadImage,
+  isLovablePreview
 } from "./lib/api";
+
 import { fallbackBrandKit, fallbackConfig } from "./lib/presets";
 import { supabase } from "./lib/supabaseClient";
 import { assetStatusCopy, createBriefPayload, makeStoredImagePath, makeViewUrl } from "./lib/frankWorkflow";
@@ -2531,15 +2533,18 @@ export default function App() {
             <Sparkles size={16} />
             Brand Kit
           </button>
-          <button
-            className="sidebar-nav-button"
-            type="button"
-            aria-label="Open Raw Comfy"
-            onClick={() => openStudioLink(config.advancedGraphUrl, "Raw Comfy canvas")}
-          >
-            <GitBranch size={16} />
-            Raw Comfy
-          </button>
+          {isLovablePreview ? null : (
+            <button
+              className="sidebar-nav-button"
+              type="button"
+              aria-label="Open Raw Comfy"
+              onClick={() => openStudioLink(config.advancedGraphUrl, "Raw Comfy canvas")}
+            >
+              <GitBranch size={16} />
+              Raw Comfy
+            </button>
+          )}
+
           <button className="sidebar-nav-button" type="button" onClick={startWalkthrough}>
             <MessageSquareText size={16} />
             Demo Walkthrough
@@ -3432,14 +3437,17 @@ export default function App() {
               <GitBranch size={14} />
               Workflow Map
             </button>
-            <button
-              className="mini-button provider-check-button"
-              type="button"
-              onClick={() => openStudioLink(config.advancedGraphUrl, "Raw Comfy canvas")}
-            >
-              <ExternalLink size={14} />
-              Raw Comfy
-            </button>
+            {isLovablePreview ? null : (
+              <button
+                className="mini-button provider-check-button"
+                type="button"
+                onClick={() => openStudioLink(config.advancedGraphUrl, "Raw Comfy canvas")}
+              >
+                <ExternalLink size={14} />
+                Raw Comfy
+              </button>
+            )}
+
           </div>
         </section>
 
