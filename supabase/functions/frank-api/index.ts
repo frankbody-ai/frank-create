@@ -190,7 +190,14 @@ async function lovableChat(messages: any[]) {
   return j.choices?.[0]?.message?.content || "";
 }
 
-async function lovableImage(prompt: string): Promise<{ b64: string; mime: string }> {
+async function lovableImage(
+  prompt: string,
+  referenceImageDataUrls: string[] = [],
+): Promise<{ b64: string; mime: string }> {
+  const content: any[] = [{ type: "text", text: prompt }];
+  for (const url of referenceImageDataUrls) {
+    content.push({ type: "image_url", image_url: { url } });
+  }
   const r = await fetch(`${LOVABLE_BASE}/chat/completions`, {
     method: "POST",
     headers: {
@@ -199,7 +206,7 @@ async function lovableImage(prompt: string): Promise<{ b64: string; mime: string
     },
     body: JSON.stringify({
       model: "google/gemini-2.5-flash-image-preview",
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content }],
       modalities: ["image", "text"],
     }),
   });
@@ -216,6 +223,28 @@ async function lovableImage(prompt: string): Promise<{ b64: string; mime: string
   }
   throw new Error(`Lovable AI returned no image data. ${JSON.stringify(j).slice(0, 300)}`);
 }
+
+async function loadReferenceDataUrls(assetIds: string[], userId: string): Promise<string[]> {
+  if (!assetIds.length) return [];
+  const sb = supabase();
+  const { data } = await sb.from("assets").select("id,storage_path,metadata_json")
+    .eq("user_id", userId).in("id", assetIds);
+  const out: string[] = [];
+  for (const row of data || []) {
+    try {
+      const dl = await sb.storage.from(BUCKET).download(row.storage_path);
+      if (dl.error || !dl.data) continue;
+      const buf = new Uint8Array(await dl.data.arrayBuffer());
+      let bin = "";
+      for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+      const b64 = btoa(bin);
+      const mime = (row.metadata_json as any)?.mime || "image/png";
+      out.push(`data:${mime};base64,${b64}`);
+    } catch (_) { /* skip */ }
+  }
+  return out;
+}
+
 
 async function getOrCreateDefaultSession(userId: string) {
   const sb = supabase();
@@ -278,7 +307,12 @@ async function handleInference(body: any, userId: string) {
 
   let img;
   try {
-    img = await lovableImage(prompt);
+    const refIds: string[] = [
+      ...(body.edit_source_asset_id ? [body.edit_source_asset_id] : []),
+      ...((body.reference_asset_ids as string[]) || []),
+    ];
+    const refUrls = await loadReferenceDataUrls(refIds, userId);
+    img = await lovableImage(prompt, refUrls);
   } catch (err) {
     await sb.from("messages").update({
       settings_snapshot_json: { ...settingsSnapshot, status: "failed", error: String(err) },
