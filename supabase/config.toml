@@ -2,3 +2,6 @@ project_id = "amwfmlqvaranonhyvqbj"
 
 [functions.frank-generate]
 verify_jwt = false
+
+[functions.frank-api]
+verify_jwt = false
