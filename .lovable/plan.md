@@ -1,84 +1,54 @@
-# Port Frank Create Backend to Lovable Cloud
+# Wrap-up: finish Phase 3 + Phase 4 stubs
 
-## Goal
+Close out the remaining items from `.lovable/plan.md` plus the fresh 404 in the runtime logs.
 
-Make the Lovable preview a fully working standalone app by reimplementing the `/api/frank/*` surface on top of Lovable Cloud (Supabase + Lovable AI Gateway), so the user no longer needs the local Python ComfyUI server to demo it.
+## 1. Fix the `/local-engine/workflow-blueprints` 404
 
-The existing Python backend (`custom_nodes/frank_create/*`, `scripts/Start-FrankCreate.ps1`) stays untouched — local power users can still run it. The Lovable preview gets its own backend that mimics the same JSON contracts the frontend already calls.
+The edge function currently 404s on `GET /local-engine/workflow-blueprints`. The handler exists but the path matching is off (likely method/order). Patch the route so it returns the empty-blueprints payload as designed.
 
-## Architecture
+## 2. Dedicated Review Board route
 
-Frontend keeps calling `/api/frank/*` (no frontend refactor required). Those routes are reimplemented as TanStack server routes / `createServerFn` calls in this Lovable project, backed by:
+Replace the "open raw JSON in a new tab" behavior with a real in-app page:
 
-- **Supabase tables** for sessions, turns (rounds), assets, brand kit, projects, briefs, exports
-- **Supabase Storage** (`studio-images` bucket already exists) for generated images and uploads
-- **Lovable AI Gateway** for actual image generation (`google/gemini-3.1-flash-image` ≈ "Nano Banana", `google/gemini-3-pro-image`, `openai/gpt-image-2`)
-- **Auth**: Supabase user session (already wired). RLS scopes all rows to `auth.uid()`.
+- New route `src/routes/review.$sessionId.tsx` (under `_authenticated` so it's auth-gated).
+- Fetches `/sessions/:id/review-board` and `/sessions/:id/sync-manifest` via existing `frank-api` endpoints.
+- Renders: session header, approved/pending asset grid with thumbnails, brief snapshot, export list, and a "Download handoff" button calling `createSessionHandoff`.
+- Update the "Open Review Board" button in `frank-create/src/App.tsx` to navigate to `/review/:sessionId` instead of opening JSON.
 
-Existing Supabase tables (`sessions`, `messages`, `assets`, `presets`, `model_capabilities`) get extended; missing ones (`turns`, `brand_kits`, `projects`, `briefs`, `exports`) get added.
+## 3. Live session-dropdown counters
 
-## Phasing
+The session picker shows stale counts from the cached header. Recompute on session-switch:
 
-### Phase 1 — Critical path (fixes issues 1, 3, 4, 10)
+- In `App.tsx`, derive turn/asset counts per session from the already-loaded `turns` / `assets` arrays (or fetch counts lazily when the dropdown opens).
+- Drop the cached count field from the session row rendering.
 
-Get a brand-new session to actually generate an image end-to-end.
+## 4. Phase 4 stubs — graceful "not available in cloud"
 
-Endpoints implemented:
-- `GET /api/frank/health` → `{ ok: true }`
-- `GET /api/frank/config` + `/models` → static config from a server module
-- `GET/POST/PATCH /api/frank/sessions` → CRUD on `sessions` table
-- `GET/POST/PATCH /api/frank/turns` → new `turns` table (one row per generation round)
-- `POST /api/frank/inference/turn` → calls Lovable AI Gateway image model, uploads result to `studio-images` storage, inserts an `assets` row, updates turn status `queued → running → complete/failed`
-- `GET/POST/PATCH/DELETE /api/frank/assets` + `GET /api/frank/assets/:id/download` → signed URL from storage
-- `POST /api/frank/prompt-remix` → Lovable AI chat (`google/gemini-3-flash-preview`) returning 3 variant prompts
+- `POST /videos` in `frank-api`: return `501` with `{ error: { code: "unsupported", message: "Video generation requires the desktop ComfyUI install." } }`.
+- Frontend: catch that code in `createVideoStoryboard` callers and surface a non-blocking toast/banner ("Available in desktop install") instead of an error.
+- Same treatment for any remaining `/local-engine/*` UI affordances — hide behind `isLovablePreview` where they're dead, show a tooltip elsewhere.
 
-Result after phase 1: persistent reconnecting banner gone, Generate works on a fresh session, Brief Remix works, images persist across reloads (already-implemented localAssets stays as a fallback cache).
+## 5. Dead-code cleanup in `frank-create/src/lib/api.ts`
 
-### Phase 2 — Brand kit, briefs, projects, exports (fixes issues 5, 7, 8)
+`uploadImage` and `queuePrompt` still call `/api/upload/image` and `/api/prompt` (the old Python server). In Lovable preview they're unreachable. Either:
+- Remove them if nothing imports them, or
+- Stub them to throw a clear "Desktop install only" error.
 
-- `GET/PATCH /api/frank/brand-kit` → new `brand_kits` table (one per user), removes the "Start ComfyUI to save" message
-- `GET/POST/PATCH /api/frank/projects` + `/briefs` + `/runs` → new tables
-- `POST /api/frank/exports` + `GET /api/frank/exports/:id/download` + `POST /api/frank/assets/:id/export-set` → renders channel-ready variants (server-side resize via Web `OffscreenCanvas` / `sharp`-free path; for v1, just record the export and return the original asset URL with metadata)
-- `GET /api/frank/sessions/:id/review-board` + `/sync-manifest` → JSON manifest endpoints
-- `POST /api/frank/sessions/:id/handoff` → JSON bundle download
+Quick grep first to confirm call sites, then act accordingly.
 
-### Phase 3 — Provider/diagnostics + UX polish (fixes issues 2, 6, 9)
+## Files touched
 
-- `GET /api/frank/provider-env` + `/provider-status` + `/provider-audit` + `/activation-checklist` + `/demo-doctor` → return a Lovable-Cloud-flavored status (all green, Lovable AI as the provider, no env-key prompts)
-- `POST /api/frank/demo/*` (evidence, call-brief, readiness-pack, brand-context, provider-readiness) → generate JSON receipts and store them as exports
-- **Raw Comfy / Advanced Graph / `/comfy/`** → remove those sidebar links in Lovable preview (gated by a `VITE_IS_LOVABLE_PREVIEW` flag or by feature-detecting the absence of `/comfy/`) so users don't hit a dead "Not Found" page
-- **Session dropdown stale counters** → recompute counts from `turns`/`assets` rows on session-switch instead of reading the cached header value
-- **Open Review Board button** → either open a dedicated `/review/:sessionId` route rendering the review-board JSON, or remove the button. Picking the route option.
-
-### Phase 4 — Video + local engine (deferred / explicit "Lovable preview doesn't support this")
-
-- `POST /api/frank/videos` and `/local-engine/*` return `501` with a clear "video + local ComfyUI engine require the desktop install" message that the UI surfaces as a non-blocking notice. Most demo flows don't use these.
-
-## Database migrations (Phase 1 + 2)
-
-New tables (all RLS-scoped to `auth.uid()`, all with the required GRANTs):
-
-- `turns` — `id`, `session_id`, `user_id`, `model`, `prompt`, `negative_prompt`, `status`, `provider_payload jsonb`, `error jsonb`, `created_at`, `updated_at`
-- `brand_kits` — one row per user: `user_id` (PK), `name`, `palette jsonb`, `typography jsonb`, `voice jsonb`, `style_guidance text`, `assets jsonb`
-- `projects`, `briefs`, `runs`, `exports` — standard CRUD shapes mirroring the existing TypeScript types in `frank-create/src/lib/types.ts`
-
-Extend `sessions` (add `project_id`, `brief_id` optional FKs) and `assets` (add `turn_id`, `approval_status`, `is_favorite`, `export_metadata jsonb`).
-
-## Files
-
-New server routes under `src/routes/api/frank/`:
-- `health.ts`, `config.ts`, `models.ts`, `sessions.ts`, `sessions.$id.ts`, `turns.ts`, `turns.$id.ts`, `assets.ts`, `assets.$id.ts`, `assets.$id.download.ts`, `inference.turn.ts`, `prompt-remix.ts`, `brand-kit.ts`, `projects.ts`, `briefs.ts`, `runs.ts`, `exports.ts`, `exports.$id.download.ts`, `provider-env.ts`, `provider-status.ts`, `activation-checklist.ts`, `demo-doctor.ts`, plus the `/demo/*` and `/sessions/:id/*` helpers
-
-All use `requireSupabaseAuth` middleware so RLS does the heavy lifting; the existing `frank-create/src/lib/api.ts` already sends the bearer token, so no frontend changes are needed for auth.
-
-Lovable AI Gateway helper: `src/lib/ai-gateway.server.ts` (the canonical `createLovableAiGatewayProvider`).
+- `supabase/functions/frank-api/index.ts` — fix blueprint 404, add video 501
+- `src/routes/_authenticated/review.$sessionId.tsx` — new review board page
+- `frank-create/src/App.tsx` — link to new route, live session counts, video error handling
+- `frank-create/src/lib/api.ts` — clean up `uploadImage`/`queuePrompt`
 
 ## Out of scope
 
-- Rebuilding the local ComfyUI workflow execution. The "local engine" status simply reports unavailable in the cloud preview.
-- The Python backend itself — untouched.
-- Video generation (Phase 4 stub only).
+- Real video generation
+- Real local ComfyUI execution in cloud
+- Any DB migrations (none needed)
 
-## Recommended execution order
+## Order of execution
 
-Phase 1 first as one batch (migration → server routes → quick browser test). Once you confirm a fresh session generates an image in the preview, we move on to Phase 2, then 3. Phase 4 is optional polish. Want me to start with Phase 1 only, or push straight through 1–3?
+1, 2, 3 in one batch (most user-visible). Then 4 and 5 as a smaller follow-up batch. Test in the preview after batch 1.
