@@ -416,7 +416,6 @@ Deno.serve(async (req) => {
   const method = req.method.toUpperCase();
 
   try {
-    console.log(`[frank-api] ${method} ${path}`);
     // ---- Public endpoints ----
     if (path === "/health" || path === "/") {
       return json({ ok: true, product: "frank-create", store: "lovable-cloud" });
