@@ -628,8 +628,8 @@ Deno.serve(async (req) => {
     if (path === "/videos" && method === "POST") {
       return json({
         turn: null, status: "blocked",
-        error: { code: "video_not_supported", message: "Video is not wired to Lovable AI yet." },
-      });
+        error: { code: "video_not_supported", message: "Video generation requires the desktop ComfyUI install." },
+      }, 501);
     }
 
     // ---- Exports / handoff / review board ----
