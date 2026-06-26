@@ -410,7 +410,10 @@ async function authHeader(): Promise<Record<string, string>> {
   }
 }
 
-export async function uploadImage(file: File) {
+export async function uploadImage(file: File): Promise<UploadedImage> {
+  if (isLovablePreview) {
+    throw new Error("Uploading images requires the desktop ComfyUI install.");
+  }
   const body = new FormData();
   body.append("image", file);
   body.append("type", "input");
@@ -431,6 +434,9 @@ export async function uploadImage(file: File) {
 }
 
 export async function queuePrompt(prompt: Record<string, unknown>, clientId = makeClientId()) {
+  if (isLovablePreview) {
+    throw new Error("Direct ComfyUI prompt queueing requires the desktop install.");
+  }
   const response = await fetch("/api/prompt", {
     method: "POST",
     headers: { "Content-Type": "application/json", ...(await authHeader()) },
