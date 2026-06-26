@@ -747,9 +747,8 @@ Deno.serve(async (req) => {
         markdown_url: "", json_url: "",
       });
     }
-
     return json({ error: { code: "not_found", message: `No handler for ${method} ${path}` } }, 404);
-
+  } catch (err) {
     if (err instanceof AuthError) {
       return json({ error: { code: "auth_error", message: err.message } }, err.status);
     }
@@ -757,3 +756,4 @@ Deno.serve(async (req) => {
     return json({ error: { code: "internal_error", message: String(err) } }, 500);
   }
 });
+
