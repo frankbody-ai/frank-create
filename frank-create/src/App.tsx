@@ -2287,9 +2287,9 @@ export default function App() {
       setStatusText("Approve at least one image before opening a review board.");
       return;
     }
-    const url = sessionReviewBoardUrl(activeSession.id);
+    const url = `/review/${encodeURIComponent(activeSession.id)}`;
     const opened = window.open(url, "_blank");
-    setStatusText(opened ? "Opening the visual review board." : `Review board link ready: ${url}`);
+    setStatusText(opened ? "Opening the visual review board." : `Review board: ${url}`);
   }
 
   function openSessionSyncManifest() {
