@@ -703,16 +703,63 @@ Deno.serve(async (req) => {
     if (handoffMatch && method === "POST") {
       const sid = handoffMatch[1];
       const body = await readJson(req).catch(() => ({}));
-      const { data } = await supabase().from("assets").select("*")
-        .eq("user_id", userId).eq("session_id", sid);
-      const assets = await Promise.all((data || []).map(async (r: any) => rowToAsset(r, await signed(r.storage_path))));
+
+      const [{ data: sessionRow }, { data: turnRows }, { data: assetRows }] = await Promise.all([
+        supabase().from("sessions").select("*").eq("id", sid).eq("user_id", userId).maybeSingle(),
+        supabase().from("messages").select("*").eq("user_id", userId).eq("session_id", sid).order("seq", { ascending: true }),
+        supabase().from("assets").select("*").eq("user_id", userId).eq("session_id", sid).order("created_at", { ascending: true }),
+      ]);
+      const assets = await Promise.all((assetRows || []).map(async (r: any) => rowToAsset(r, await signed(r.storage_path))));
+      const approved = assets.filter((a: any) => a.approval_status === "approved");
+
+      const generated_at = nowIso();
+      const structured = {
+        session: sessionRow || { id: sid },
+        generated_at,
+        summary: body.summary || "",
+        counts: {
+          turns: (turnRows || []).length,
+          assets: assets.length,
+          approved: approved.length,
+        },
+        turns: turnRows || [],
+        assets,
+        approved,
+        blueprints: [],
+      };
+
+      const csvEscape = (v: any) => {
+        if (v === null || v === undefined) return "";
+        const s = typeof v === "string" ? v : JSON.stringify(v);
+        return `"${s.replace(/"/g, '""').replace(/\r?\n/g, " ")}"`;
+      };
+      const csvRows = [
+        ["asset_id", "title", "media_type", "approval_status", "model", "prompt", "message_id", "created_at", "download_url"].join(","),
+        ...assets.map((a: any) => [
+          a.id, a.title, a.media_type, a.approval_status, a.model_key, a.prompt_snapshot,
+          a.message_id, a.created_at, a.preview_url,
+        ].map(csvEscape).join(",")),
+      ].join("\n");
+
       const record = {
         id: `handoff-${sid}-${Date.now()}`, asset_id: sid, preset: "handoff",
         file_path: `cloud:handoff/${sid}`,
         metadata_json: JSON.stringify({ summary: body.summary || "", asset_count: assets.length }),
-        sync_status: "cloud", created_at: nowIso(),
+        sync_status: "cloud", created_at: generated_at,
       };
-      return json({ handoff: record, download_url: null, metadata: { summary: body.summary || "", asset_count: assets.length, assets } });
+      return json({
+        handoff: record,
+        download_url: null,
+        metadata: {
+          summary: body.summary || "",
+          asset_count: assets.length,
+          approved_count: approved.length,
+          turn_count: (turnRows || []).length,
+          handoff_json: structured,
+          handoff_csv: csvRows,
+          assets,
+        },
+      });
     }
 
     // ---- Demo receipts (minimal stubs) ----
