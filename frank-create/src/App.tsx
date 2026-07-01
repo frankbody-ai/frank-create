@@ -377,6 +377,14 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [statusText, setStatusText] = useState("Waiting for the brief...");
   const [desktopNotice, setDesktopNotice] = useState<string | null>(null);
+  const [videoStartedAt, setVideoStartedAt] = useState<number | null>(null);
+  const [videoNowTick, setVideoNowTick] = useState(Date.now());
+  const videoAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    if (videoStartedAt == null) return;
+    const iv = setInterval(() => setVideoNowTick(Date.now()), 1000);
+    return () => clearInterval(iv);
+  }, [videoStartedAt]);
 
   useEffect(() => {
     function handleDrawerKeyDown(event: KeyboardEvent) {
