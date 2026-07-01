@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      asset_approval_events: {
+        Row: {
+          asset_id: string
+          created_at: string
+          id: string
+          new_status: string
+          note: string | null
+          prev_status: string | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          id?: string
+          new_status: string
+          note?: string | null
+          prev_status?: string | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          id?: string
+          new_status?: string
+          note?: string | null
+          prev_status?: string | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_approval_events_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assets: {
         Row: {
           asset_type: string
