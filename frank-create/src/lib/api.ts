@@ -294,7 +294,7 @@ export async function createInferenceTurn(payload: TurnRequest) {
   });
 }
 
-export async function createVideoStoryboard(payload: VideoRequest) {
+export async function createVideoStoryboard(payload: VideoRequest, opts: { signal?: AbortSignal } = {}) {
   return fetchJson<{
     turn: StudioTurn;
     status: "complete" | "failed" | "blocked";
@@ -304,7 +304,8 @@ export async function createVideoStoryboard(payload: VideoRequest) {
     error?: { code: string; env_vars?: string[]; message?: string };
   }>("/videos", {
     method: "POST",
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: opts.signal,
   });
 }
 
