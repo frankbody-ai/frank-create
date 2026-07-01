@@ -243,13 +243,20 @@ export async function updateSession(sessionId: string, payload: Partial<StudioSe
   });
 }
 
-export async function createSessionHandoff(sessionId: string) {
+export async function createSessionHandoff(sessionId: string, opts: { signal?: AbortSignal } = {}) {
   return fetchJson<{ handoff: ExportRecord; download_url: string; metadata: Record<string, unknown> }>(
     `/sessions/${encodeURIComponent(sessionId)}/handoff`,
     {
       method: "POST",
-      body: JSON.stringify({ summary: "Approved Frank Create handoff for review." })
+      body: JSON.stringify({ summary: "Approved Frank Create handoff for review." }),
+      signal: opts.signal,
     }
+  );
+}
+
+export async function fetchSessionApprovalHistory(sessionId: string) {
+  return fetchJson<{ events: Array<{ id: string; asset_id: string; prev_status: string | null; new_status: string; created_at: string; note?: string | null }> }>(
+    `/sessions/${encodeURIComponent(sessionId)}/approval-history`
   );
 }
 
