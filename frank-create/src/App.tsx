@@ -1961,7 +1961,13 @@ export default function App() {
       }
       setStatusText("Video Lab returned no motion asset.");
     } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Video Lab needs another look.");
+      const msg = error instanceof Error ? error.message : "Video Lab needs another look.";
+      if (/desktop|video_not_supported|ComfyUI/i.test(msg)) {
+        setDesktopNotice("Video generation requires the desktop ComfyUI install. This action isn't available in the cloud preview.");
+        setStatusText("Video generation is desktop-only. See the notice at the top for details.");
+      } else {
+        setStatusText(msg);
+      }
     } finally {
       setBusy(false);
     }
