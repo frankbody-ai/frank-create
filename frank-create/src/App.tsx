@@ -376,6 +376,7 @@ export default function App() {
   const [remixBusy, setRemixBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [statusText, setStatusText] = useState("Waiting for the brief...");
+  const [desktopNotice, setDesktopNotice] = useState<string | null>(null);
 
   useEffect(() => {
     function handleDrawerKeyDown(event: KeyboardEvent) {
