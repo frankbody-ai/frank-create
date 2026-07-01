@@ -376,6 +376,7 @@ export default function App() {
   const [remixBusy, setRemixBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [statusText, setStatusText] = useState("Waiting for the brief...");
+  const [desktopNotice, setDesktopNotice] = useState<string | null>(null);
 
   useEffect(() => {
     function handleDrawerKeyDown(event: KeyboardEvent) {
@@ -1960,7 +1961,13 @@ export default function App() {
       }
       setStatusText("Video Lab returned no motion asset.");
     } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Video Lab needs another look.");
+      const msg = error instanceof Error ? error.message : "Video Lab needs another look.";
+      if (/desktop|video_not_supported|ComfyUI/i.test(msg)) {
+        setDesktopNotice("Video generation requires the desktop ComfyUI install. This action isn't available in the cloud preview.");
+        setStatusText("Video generation is desktop-only. See the notice at the top for details.");
+      } else {
+        setStatusText(msg);
+      }
     } finally {
       setBusy(false);
     }
@@ -2485,6 +2492,26 @@ export default function App() {
       className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${advancedOpen ? "advanced-open" : ""}`}
       data-provider-audit={providerAuditMode ? "open" : undefined}
     >
+      {desktopNotice ? (
+        <div
+          role="status"
+          style={{
+            position: "sticky", top: 0, zIndex: 40,
+            background: "#fff7e6", borderBottom: "1px solid #f0c36d",
+            color: "#7a4a00", padding: "8px 14px",
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+            fontSize: 13,
+          }}
+        >
+          <span>{desktopNotice}</span>
+          <button
+            type="button"
+            onClick={() => setDesktopNotice(null)}
+            style={{ background: "transparent", border: "none", cursor: "pointer", color: "#7a4a00", fontSize: 18, lineHeight: 1 }}
+            aria-label="Dismiss notice"
+          >×</button>
+        </div>
+      ) : null}
       <aside className="guided-header app-sidebar" data-tour-id="app-header" data-tour-active={tourActive("app-header")}>
         <div className="sidebar-brand-block">
           <div className="brand-mark sidebar-brand-mark" aria-label="Frank Create">
