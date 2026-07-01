@@ -1,53 +1,58 @@
 ## Scope
 
-Three small enhancements to Frank Create's Lovable preview UI, all frontend + edge-function changes. No schema changes.
+Three related enhancements to the Review Board (`frank-create/src/components/ReviewBoardPage.tsx`) and the handoff endpoint (`supabase/functions/frank-api/index.ts` + `handoff.ts`).
 
----
+### 1. Stepped progress indicator for handoff packaging
 
-### 1. Non-blocking video toast
+Show the user which stage of packaging is running: `Building manifest → Generating JSON → Generating CSV → Validating schema → Ready`.
 
-**Problem:** clicking a video/storyboard action currently throws or shows a raw error.
+- **Backend (`frank-api`):** Change `POST /sessions/:id/handoff` into a Server-Sent Events (SSE) stream when the client sends `Accept: text/event-stream`. Emit one JSON event per stage: `{ step: "build_manifest" | "generate_json" | "generate_csv" | "validate" | "done", progress: 0..1, message }`. Final event carries the full `metadata` payload (same shape as today). Non-SSE callers keep the existing JSON response for backwards compatibility.
+- **API client (`frank-create/src/lib/api.ts`):** Add `createSessionHandoffStream(sessionId, { signal, onStep })` that uses `fetch` + `ReadableStream` to parse SSE lines and forwards each step to `onStep`. Keeps the existing `AbortSignal` wiring so cancel already works end-to-end.
+- **UI (`ReviewBoardPage.tsx`):** Replace the current single "Packaging handoff…" toast with a stepped progress toast:
+  - Ordered list of the 4 steps with a check / spinner / pending dot per row.
+  - A thin progress bar reflecting `progress`.
+  - Existing elapsed-time counter and **Cancel** button stay in the same toast (Cancel already calls `ctrl.abort()`).
+  - On failure, keep the existing Retry action.
 
-**Change:** in `frank-create/src/App.tsx`, wrap the video call site in a try/catch that detects the `501` / "desktop install" response from `POST /videos` and surfaces a `sonner`-style toast + persistent inline banner ("Video generation requires the desktop ComfyUI install"). Same treatment for `uploadImage` / `queuePrompt` errors thrown from `api.ts`.
+### 2. Cancel for handoff packaging and file downloads
 
-- Add a tiny `useDesktopOnlyNotice()` helper (local to `App.tsx`) that shows a toast and sets an inline `<StatusBanner>` message.
-- No blocking modal, no page reload.
+Cancel during packaging already works via `AbortController`. Extend it so the user can also cancel the **client-side file save** once packaging finishes:
 
-### 2. Structured Download Handoff (JSON + CSV)
+- When the "Download JSON" / "Download CSV" buttons are clicked, wrap the blob creation + `a.click()` in a short-lived task that shows a "Downloading `handoff-<id>.json`…" progress toast with a Cancel button. For blobs assembled in-memory the "cancel" simply aborts before `a.click()` runs and revokes the object URL; this covers the case where a user clicks download and immediately changes their mind while a large CSV is being serialized (we'll `JSON.stringify` / assemble in a `queueMicrotask` chain that checks an `aborted` flag between steps).
+- The packaging-phase Cancel button already exists — keep it, and make sure aborting mid-stream also closes the SSE reader cleanly (call `reader.cancel()` on abort in the new stream helper).
 
-**Problem:** current `createSessionHandoff` returns an opaque `ExportRecord`; users want a real file they can open.
+### 3. Audit trail filters and sorting
 
-**Change:**
-- **Edge function** (`supabase/functions/frank-api/index.ts`): extend the `POST /sessions/:id/handoff` handler to build a structured payload:
-  ```
-  { session, turns[], assets[], blueprints[], approved[], generated_at }
-  ```
-  Persist it as an `ExportRecord` with both `handoff.json` and `handoff.csv` (CSV = one row per asset with turn id, prompt, model, approval_status, download_url). The existing `GET /exports/:id/download` route serves the JSON; add `?format=csv` to serve the CSV variant from the same record's metadata.
-- **Frontend** (`ReviewBoardPage.tsx`): after `createSessionHandoff` resolves, offer two download links (JSON / CSV) using `exportDownloadUrl(id)` + `?format=csv`. Show asset count and a "Copy manifest" button.
+The audit trail today is a per-asset `<details>` list. Add a dedicated **Audit trail** section at the bottom of the review board with:
 
-### 3. Approve / Reject on review board
+- **Filters:**
+  - Status transition: All / Approved / Rejected / Reverted-to-pending (multi-select chips).
+  - Actor (user_id): dropdown populated from distinct `user_id`s present in `events`; shows short user id (and email if available from `auth.users` via the existing `/sessions/:id/approval-history` endpoint — extend the endpoint to join `auth.users` for `email` when the caller is the session owner).
+  - Asset: dropdown of assets in the session.
+  - Date range: two `<input type="date">` fields (from / to).
+  - Free-text search over asset title and note.
+- **Sorting:** column headers for `Time`, `Asset`, `Actor`, `Transition`; click to toggle asc/desc. Default: newest first.
+- **Rendering:** simple table (Time · Asset · Actor · Prev → New · Note). Row count + "Clear filters" link.
+- All filtering/sorting is client-side over the already-fetched `events` array — no extra requests, no schema changes.
 
-**Problem:** review board is read-only.
+## Files touched
 
-**Change** (`frank-create/src/components/ReviewBoardPage.tsx`):
-- Add `Approve` and `Reject` buttons on each `AssetGrid` card (pending section shows both; approved section shows only `Reject` → revert to pending).
-- On click, call existing `updateAsset(assetId, { approval_status: 'approved' | 'rejected' })` from `api.ts`, then re-run `load()` to refresh both grids.
-- Optimistic UI: disable the buttons while the request is in flight; toast on failure.
-- Add a "Rejected" section below "Pending" so rejected assets are still visible but clearly separated.
+- `supabase/functions/frank-api/index.ts` — SSE branch on the handoff route; optional `email` join on approval-history.
+- `supabase/functions/frank-api/handoff.ts` — expose the build/JSON/CSV/validate steps as discrete functions the route can await between SSE emits.
+- `supabase/functions/frank-api/handoff_test.ts` — add a test for the stepped builder (each step returns expected shape).
+- `frank-create/src/lib/api.ts` — new `createSessionHandoffStream` helper; keep `createSessionHandoff` as fallback.
+- `frank-create/src/components/ReviewBoardPage.tsx` — stepped progress toast, download-phase cancel, new Audit Trail section with filters + sorting.
 
----
+## Out of scope
 
-### Files touched
+- No DB schema changes (audit events table already has everything needed).
+- No changes to approve/reject flow, video export toast, or manifest schema version.
+- No new dependencies.
 
-- `frank-create/src/App.tsx` — toast + inline banner for desktop-only actions
-- `frank-create/src/components/ReviewBoardPage.tsx` — approve/reject buttons, rejected section, JSON+CSV download buttons
-- `frank-create/src/lib/api.ts` — small helper `handoffDownloadUrl(id, format)` if needed
-- `supabase/functions/frank-api/index.ts` — structured JSON+CSV handoff payload, `?format=csv` on download route
+## Acceptance checks
 
-### Out of scope
-
-- DB migrations, real video generation, changes to asset schema, bulk approve/reject.
-
-### Order
-
-Do all three in one batch; verify in preview by (a) clicking a video action, (b) generating a handoff and downloading both formats, (c) approving then rejecting an asset and confirming the grid refreshes.
+- Clicking "Generate handoff" shows a toast that walks through all 4 named steps, with a live progress bar and elapsed timer.
+- Cancel during any packaging step aborts the request within ~1s and shows "Handoff canceled."
+- Cancel during a download dismisses the file save and shows "Download canceled."
+- Audit Trail section renders all events, and every filter + sort control narrows/reorders the visible rows without a network call.
+- Existing JSON/CSV download, schema validation, retry, and per-asset audit `<details>` still work unchanged.

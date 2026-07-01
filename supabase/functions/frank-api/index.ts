@@ -752,41 +752,87 @@ Deno.serve(async (req) => {
     if (handoffMatch && method === "POST") {
       const sid = handoffMatch[1];
       const body = await readJson(req).catch(() => ({}));
+      const wantsStream = (req.headers.get("accept") || "").includes("text/event-stream");
 
-      const [{ data: sessionRow }, { data: turnRows }, { data: assetRows }] = await Promise.all([
-        supabase().from("sessions").select("*").eq("id", sid).eq("user_id", userId).maybeSingle(),
-        supabase().from("messages").select("*").eq("user_id", userId).eq("session_id", sid).order("seq", { ascending: true }),
-        supabase().from("assets").select("*").eq("user_id", userId).eq("session_id", sid).order("created_at", { ascending: true }),
-      ]);
-      const assets = await Promise.all((assetRows || []).map(async (r: any) => rowToAsset(r, await signed(r.storage_path))));
-      const structured = buildManifest(sid, sessionRow || null, (turnRows || []) as any, assets as any, body.summary || "", nowIso());
-      const schemaIssues = validateManifest(structured);
-      const csvRows = manifestToCsv(structured);
+      const runPipeline = async (emit?: (step: string, progress: number, message: string, payload?: any) => Promise<void>) => {
+        await emit?.("fetch", 0.05, "Loading session data…");
+        const [{ data: sessionRow }, { data: turnRows }, { data: assetRows }] = await Promise.all([
+          supabase().from("sessions").select("*").eq("id", sid).eq("user_id", userId).maybeSingle(),
+          supabase().from("messages").select("*").eq("user_id", userId).eq("session_id", sid).order("seq", { ascending: true }),
+          supabase().from("assets").select("*").eq("user_id", userId).eq("session_id", sid).order("created_at", { ascending: true }),
+        ]);
+        const assets = await Promise.all((assetRows || []).map(async (r: any) => rowToAsset(r, await signed(r.storage_path))));
 
-      const record = {
-        id: `handoff-${sid}-${Date.now()}`, asset_id: sid, preset: "handoff",
-        file_path: `cloud:handoff/${sid}`,
-        metadata_json: JSON.stringify({ summary: body.summary || "", asset_count: structured.assets.length, schema_version: 1 }),
-        sync_status: "cloud", created_at: structured.generated_at,
+        await emit?.("build_manifest", 0.3, `Building manifest for ${assets.length} assets…`);
+        const structured = buildManifest(sid, sessionRow || null, (turnRows || []) as any, assets as any, body.summary || "", nowIso());
+
+        await emit?.("generate_json", 0.55, "Serializing JSON payload…");
+
+        await emit?.("generate_csv", 0.75, "Generating CSV export…");
+        const csvRows = manifestToCsv(structured);
+
+        await emit?.("validate", 0.9, "Validating handoff schema…");
+        const schemaIssues = validateManifest(structured);
+
+        const record = {
+          id: `handoff-${sid}-${Date.now()}`, asset_id: sid, preset: "handoff",
+          file_path: `cloud:handoff/${sid}`,
+          metadata_json: JSON.stringify({ summary: body.summary || "", asset_count: structured.assets.length, schema_version: 1 }),
+          sync_status: "cloud", created_at: structured.generated_at,
+        };
+        const payload = {
+          handoff: record,
+          download_url: null,
+          metadata: {
+            summary: body.summary || "",
+            schema: "frank-create.handoff",
+            schema_version: 1,
+            asset_count: structured.counts.assets,
+            approved_count: structured.counts.approved,
+            turn_count: structured.counts.turns,
+            blueprint_count: structured.counts.blueprints,
+            schema_valid: schemaIssues.length === 0,
+            schema_issues: schemaIssues,
+            handoff_json: structured,
+            handoff_csv: csvRows,
+            assets: structured.assets,
+          },
+        };
+        await emit?.("done", 1, "Handoff ready.", payload);
+        return payload;
       };
-      return json({
-        handoff: record,
-        download_url: null,
-        metadata: {
-          summary: body.summary || "",
-          schema: "frank-create.handoff",
-          schema_version: 1,
-          asset_count: structured.counts.assets,
-          approved_count: structured.counts.approved,
-          turn_count: structured.counts.turns,
-          blueprint_count: structured.counts.blueprints,
-          schema_valid: schemaIssues.length === 0,
-          schema_issues: schemaIssues,
-          handoff_json: structured,
-          handoff_csv: csvRows,
-          assets: structured.assets,
-        },
-      });
+
+      if (wantsStream) {
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          async start(controller) {
+            const emit = async (step: string, progress: number, message: string, payload?: any) => {
+              const evt = { step, progress, message, ...(payload ? { payload } : {}) };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(evt)}\n\n`));
+              await new Promise((r) => setTimeout(r, 0));
+            };
+            try {
+              await runPipeline(emit);
+            } catch (e: any) {
+              const err = { step: "error", progress: 1, message: e?.message || "Handoff failed" };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(err)}\n\n`));
+            } finally {
+              controller.close();
+            }
+          },
+        });
+        return new Response(stream, {
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+          },
+        });
+      }
+
+      const payload = await runPipeline();
+      return json(payload);
     }
 
 

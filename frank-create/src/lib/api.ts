@@ -254,6 +254,65 @@ export async function createSessionHandoff(sessionId: string, opts: { signal?: A
   );
 }
 
+export type HandoffStreamStep = {
+  step: "fetch" | "build_manifest" | "generate_json" | "generate_csv" | "validate" | "done" | "error";
+  progress: number;
+  message: string;
+  payload?: { handoff: ExportRecord; download_url: string | null; metadata: Record<string, unknown> };
+};
+
+export async function createSessionHandoffStream(
+  sessionId: string,
+  opts: { signal?: AbortSignal; onStep?: (s: HandoffStreamStep) => void } = {}
+) {
+  const res = await fetch(`${frankBase}/sessions/${encodeURIComponent(sessionId)}/handoff`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "text/event-stream",
+      ...(await authHeader()),
+    },
+    body: JSON.stringify({ summary: "Approved Frank Create handoff for review." }),
+    signal: opts.signal,
+  });
+  if (!res.ok || !res.body) {
+    const text = await res.text().catch(() => "");
+    throw new Error(apiErrorMessage(text, res.status));
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let finalPayload: HandoffStreamStep["payload"] | undefined;
+  const onAbort = () => { try { reader.cancel(); } catch { /* noop */ } };
+  opts.signal?.addEventListener("abort", onAbort);
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop() || "";
+      for (const chunk of parts) {
+        const line = chunk.split("\n").find((l) => l.startsWith("data:"));
+        if (!line) continue;
+        try {
+          const evt = JSON.parse(line.slice(5).trim()) as HandoffStreamStep;
+          opts.onStep?.(evt);
+          if (evt.step === "done" && evt.payload) finalPayload = evt.payload;
+          if (evt.step === "error") throw new Error(evt.message || "Handoff failed");
+        } catch (parseErr) {
+          if (parseErr instanceof Error && parseErr.message !== "Handoff failed") throw parseErr;
+          throw parseErr;
+        }
+      }
+    }
+  } finally {
+    opts.signal?.removeEventListener("abort", onAbort);
+  }
+  if (!finalPayload) throw new Error("Handoff stream ended without final payload");
+  return finalPayload;
+}
+
 export async function fetchSessionApprovalHistory(sessionId: string) {
   return fetchJson<{ events: Array<{ id: string; asset_id: string; prev_status: string | null; new_status: string; created_at: string; note?: string | null }> }>(
     `/sessions/${encodeURIComponent(sessionId)}/approval-history`
