@@ -2536,6 +2536,34 @@ export default function App() {
           <style>{`@keyframes frank-video-progress { 0% { transform: translateX(-40%); } 100% { transform: translateX(140%); } }`}</style>
         </div>
       ) : null}
+      {videoStartedAt != null ? (
+        <div
+          role="status"
+          style={{
+            position: "fixed", bottom: 20, right: 20, zIndex: 60,
+            display: "flex", flexDirection: "column", gap: 6,
+            padding: "10px 14px", borderRadius: 8, fontSize: 13,
+            background: "#f4f4f5", color: "#222", border: "1px solid #d4d4d8",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.08)", maxWidth: 340,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#111", animation: "frank-video-progress 1.2s ease-in-out infinite" }} />
+            <span>Generating video…</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11, opacity: 0.8, gap: 8 }}>
+            <span>⏱ {Math.max(0, Math.floor((videoNowTick - videoStartedAt) / 1000))}s elapsed</span>
+            <button
+              type="button"
+              onClick={() => videoAbortRef.current?.abort()}
+              style={{ padding: "3px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,0.2)", background: "#fff", cursor: "pointer", fontSize: 11 }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <aside className="guided-header app-sidebar" data-tour-id="app-header" data-tour-active={tourActive("app-header")}>
         <div className="sidebar-brand-block">
           <div className="brand-mark sidebar-brand-mark" aria-label="Frank Create">
