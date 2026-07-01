@@ -1940,7 +1940,10 @@ export default function App() {
       return;
     }
 
+    const ctrl = new AbortController();
+    videoAbortRef.current = ctrl;
     setBusy(true);
+    setVideoStartedAt(Date.now());
     setStatusText("Video Lab is making the motion board...");
 
     try {
@@ -1951,7 +1954,7 @@ export default function App() {
         settings,
         source_asset_id: sourceAsset?.id,
         reference_asset_ids: selectedReferenceAssets.map((asset) => asset.id)
-      });
+      }, { signal: ctrl.signal });
       setTurns((current) => [...current, result.turn]);
       if (result.status === "blocked") {
         setStatusText(`Server key needed: ${(result.error?.env_vars ?? []).join(" or ")}`);
@@ -1969,17 +1972,24 @@ export default function App() {
       }
       setStatusText("Video Lab returned no motion asset.");
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Video Lab needs another look.";
-      if (/desktop|video_not_supported|ComfyUI/i.test(msg)) {
-        setDesktopNotice("Video generation requires the desktop ComfyUI install. This action isn't available in the cloud preview.");
-        setStatusText("Video generation is desktop-only. See the notice at the top for details.");
+      if (ctrl.signal.aborted) {
+        setStatusText("Video generation canceled.");
       } else {
-        setStatusText(msg);
+        const msg = error instanceof Error ? error.message : "Video Lab needs another look.";
+        if (/desktop|video_not_supported|ComfyUI/i.test(msg)) {
+          setDesktopNotice("Video generation requires the desktop ComfyUI install. This action isn't available in the cloud preview.");
+          setStatusText("Video generation is desktop-only. See the notice at the top for details.");
+        } else {
+          setStatusText(msg);
+        }
       }
     } finally {
+      videoAbortRef.current = null;
+      setVideoStartedAt(null);
       setBusy(false);
     }
   }
+
 
   async function changeAssetStatus(asset: Asset, approval_status: Asset["approval_status"]) {
     const optimistic = { ...asset, approval_status };
