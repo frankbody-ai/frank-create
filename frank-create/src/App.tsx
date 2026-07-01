@@ -377,6 +377,14 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [statusText, setStatusText] = useState("Waiting for the brief...");
   const [desktopNotice, setDesktopNotice] = useState<string | null>(null);
+  const [videoStartedAt, setVideoStartedAt] = useState<number | null>(null);
+  const [videoNowTick, setVideoNowTick] = useState(Date.now());
+  const videoAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    if (videoStartedAt == null) return;
+    const iv = setInterval(() => setVideoNowTick(Date.now()), 1000);
+    return () => clearInterval(iv);
+  }, [videoStartedAt]);
 
   useEffect(() => {
     function handleDrawerKeyDown(event: KeyboardEvent) {
@@ -1932,7 +1940,10 @@ export default function App() {
       return;
     }
 
+    const ctrl = new AbortController();
+    videoAbortRef.current = ctrl;
     setBusy(true);
+    setVideoStartedAt(Date.now());
     setStatusText("Video Lab is making the motion board...");
 
     try {
@@ -1943,7 +1954,7 @@ export default function App() {
         settings,
         source_asset_id: sourceAsset?.id,
         reference_asset_ids: selectedReferenceAssets.map((asset) => asset.id)
-      });
+      }, { signal: ctrl.signal });
       setTurns((current) => [...current, result.turn]);
       if (result.status === "blocked") {
         setStatusText(`Server key needed: ${(result.error?.env_vars ?? []).join(" or ")}`);
@@ -1961,17 +1972,24 @@ export default function App() {
       }
       setStatusText("Video Lab returned no motion asset.");
     } catch (error) {
-      const msg = error instanceof Error ? error.message : "Video Lab needs another look.";
-      if (/desktop|video_not_supported|ComfyUI/i.test(msg)) {
-        setDesktopNotice("Video generation requires the desktop ComfyUI install. This action isn't available in the cloud preview.");
-        setStatusText("Video generation is desktop-only. See the notice at the top for details.");
+      if (ctrl.signal.aborted) {
+        setStatusText("Video generation canceled.");
       } else {
-        setStatusText(msg);
+        const msg = error instanceof Error ? error.message : "Video Lab needs another look.";
+        if (/desktop|video_not_supported|ComfyUI/i.test(msg)) {
+          setDesktopNotice("Video generation requires the desktop ComfyUI install. This action isn't available in the cloud preview.");
+          setStatusText("Video generation is desktop-only. See the notice at the top for details.");
+        } else {
+          setStatusText(msg);
+        }
       }
     } finally {
+      videoAbortRef.current = null;
+      setVideoStartedAt(null);
       setBusy(false);
     }
   }
+
 
   async function changeAssetStatus(asset: Asset, approval_status: Asset["approval_status"]) {
     const optimistic = { ...asset, approval_status };
@@ -2518,6 +2536,34 @@ export default function App() {
           <style>{`@keyframes frank-video-progress { 0% { transform: translateX(-40%); } 100% { transform: translateX(140%); } }`}</style>
         </div>
       ) : null}
+      {videoStartedAt != null ? (
+        <div
+          role="status"
+          style={{
+            position: "fixed", bottom: 20, right: 20, zIndex: 60,
+            display: "flex", flexDirection: "column", gap: 6,
+            padding: "10px 14px", borderRadius: 8, fontSize: 13,
+            background: "#f4f4f5", color: "#222", border: "1px solid #d4d4d8",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.08)", maxWidth: 340,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#111", animation: "frank-video-progress 1.2s ease-in-out infinite" }} />
+            <span>Generating video…</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11, opacity: 0.8, gap: 8 }}>
+            <span>⏱ {Math.max(0, Math.floor((videoNowTick - videoStartedAt) / 1000))}s elapsed</span>
+            <button
+              type="button"
+              onClick={() => videoAbortRef.current?.abort()}
+              style={{ padding: "3px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,0.2)", background: "#fff", cursor: "pointer", fontSize: 11 }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <aside className="guided-header app-sidebar" data-tour-id="app-header" data-tour-active={tourActive("app-header")}>
         <div className="sidebar-brand-block">
           <div className="brand-mark sidebar-brand-mark" aria-label="Frank Create">

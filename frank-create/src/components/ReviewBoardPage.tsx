@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { ArrowLeft, Check, Download, Loader2, RefreshCw, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, Check, Clock, Download, Loader2, RefreshCw, RotateCw, X } from "lucide-react";
 import {
   assetDownloadUrl,
   createSessionHandoff,
+  fetchSessionApprovalHistory,
   sessionReviewBoardUrl,
   sessionSyncManifestUrl,
   updateAsset,
@@ -17,13 +18,31 @@ type Board = {
   approved: Asset[];
 };
 
-type Toast = { id: number; kind: "info" | "error" | "success"; text: string };
+type Toast = {
+  id: number;
+  kind: "info" | "error" | "success" | "progress";
+  text: string;
+  startedAt?: number;
+  onCancel?: () => void;
+  onRetry?: () => void;
+  sticky?: boolean;
+};
 
-async function authedFetch(url: string) {
+type AuditEvent = {
+  id: string;
+  asset_id: string;
+  prev_status: string | null;
+  new_status: string;
+  created_at: string;
+  note?: string | null;
+};
+
+async function authedFetch(url: string, signal?: AbortSignal) {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   const res = await fetch(url, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
+    signal,
   });
   if (!res.ok) throw new Error(`Request failed (${res.status})`);
   return res.json();
@@ -41,8 +60,7 @@ function downloadBlob(filename: string, mime: string, content: string) {
   URL.revokeObjectURL(url);
 }
 
-// Client-side schema check — matches the server's manifest v1 shape.
-function validateManifest(m: any): string[] {
+function validateManifestClient(m: any): string[] {
   const issues: string[] = [];
   if (!m || typeof m !== "object") { issues.push("manifest missing"); return issues; }
   if (m.schema !== "frank-create.handoff") issues.push("schema mismatch");
@@ -53,7 +71,6 @@ function validateManifest(m: any): string[] {
   const req = ["id", "title", "media_type", "approval_status", "blueprint"];
   (m.assets || []).forEach((a: any, i: number) => {
     for (const f of req) if (!(f in a)) issues.push(`assets[${i}].${f} missing`);
-    if (a.blueprint && typeof a.blueprint !== "object") issues.push(`assets[${i}].blueprint wrong type`);
   });
   return issues;
 }
@@ -64,15 +81,40 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [handoffBusy, setHandoffBusy] = useState(false);
-  const [handoffMsg, setHandoffMsg] = useState<string | null>(null);
   const [handoffData, setHandoffData] = useState<{ json: any; csv: string; issues: string[] } | null>(null);
   const [pendingAssetId, setPendingAssetId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [events, setEvents] = useState<AuditEvent[]>([]);
+  const [nowTick, setNowTick] = useState(Date.now());
+  const handoffAbortRef = useRef<AbortController | null>(null);
 
-  function pushToast(kind: Toast["kind"], text: string) {
+  // Tick every second while any progress toast is up, for elapsed-time display.
+  useEffect(() => {
+    if (!toasts.some((t) => t.kind === "progress")) return;
+    const iv = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(iv);
+  }, [toasts]);
+
+  function pushToast(t: Omit<Toast, "id">): number {
     const id = Date.now() + Math.random();
-    setToasts((t) => [...t, { id, kind, text }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4500);
+    setToasts((cur) => [...cur, { id, ...t }]);
+    if (!t.sticky && t.kind !== "progress") {
+      setTimeout(() => setToasts((cur) => cur.filter((x) => x.id !== id)), 4500);
+    }
+    return id;
+  }
+  function dismissToast(id: number) {
+    setToasts((cur) => cur.filter((x) => x.id !== id));
+  }
+  function updateToast(id: number, patch: Partial<Toast>) {
+    setToasts((cur) => cur.map((x) => x.id === id ? { ...x, ...patch } : x));
+  }
+
+  async function loadEvents() {
+    try {
+      const res = await fetchSessionApprovalHistory(sessionId);
+      setEvents(res.events || []);
+    } catch { /* non-fatal */ }
   }
 
   async function load() {
@@ -85,6 +127,7 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
       ]);
       setBoard(b.board ?? b);
       setManifest(m?.manifest ?? m);
+      void loadEvents();
     } catch (e: any) {
       setError(e?.message || "Failed to load review board.");
     } finally {
@@ -97,30 +140,48 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
-  async function handleHandoff() {
+  async function runHandoff() {
+    const ctrl = new AbortController();
+    handoffAbortRef.current = ctrl;
     setHandoffBusy(true);
-    setHandoffMsg("Packaging handoff…");
+    const startedAt = Date.now();
+    const toastId = pushToast({
+      kind: "progress",
+      text: "Packaging handoff…",
+      startedAt,
+      onCancel: () => ctrl.abort(),
+    });
     try {
-      const res = await createSessionHandoff(sessionId);
+      const res = await createSessionHandoff(sessionId, { signal: ctrl.signal });
       const meta: any = res.metadata || {};
       const serverIssues: string[] = meta.schema_issues || [];
-      const clientIssues = validateManifest(meta.handoff_json);
+      const clientIssues = validateManifestClient(meta.handoff_json);
       const allIssues = [...serverIssues, ...clientIssues];
-      setHandoffMsg(
-        `Handoff ready · ${meta.asset_count ?? 0} assets · ${meta.approved_count ?? 0} approved · ${meta.blueprint_count ?? 0} blueprints`
-      );
       if (meta.handoff_json && meta.handoff_csv) {
         setHandoffData({ json: meta.handoff_json, csv: meta.handoff_csv, issues: allIssues });
       }
+      dismissToast(toastId);
       if (allIssues.length) {
-        pushToast("error", `Manifest schema issues: ${allIssues.slice(0, 2).join("; ")}${allIssues.length > 2 ? "…" : ""}`);
+        pushToast({ kind: "error", text: `Manifest schema issues: ${allIssues.slice(0, 2).join("; ")}${allIssues.length > 2 ? "…" : ""}` });
       } else {
-        pushToast("success", "Handoff manifest validated.");
+        pushToast({ kind: "success", text: `Handoff ready · ${meta.asset_count ?? 0} assets · ${meta.approved_count ?? 0} approved` });
       }
     } catch (e: any) {
-      setHandoffMsg(null);
-      pushToast("error", e?.message || "Handoff failed.");
+      const canceled = ctrl.signal.aborted;
+      dismissToast(toastId);
+      if (canceled) {
+        pushToast({ kind: "info", text: "Handoff canceled." });
+      } else {
+        const msg = e?.message || "Handoff failed.";
+        pushToast({
+          kind: "error",
+          text: `Handoff failed: ${msg}`,
+          sticky: true,
+          onRetry: () => { void runHandoff(); },
+        });
+      }
     } finally {
+      handoffAbortRef.current = null;
       setHandoffBusy(false);
     }
   }
@@ -128,26 +189,33 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
   async function setStatus(asset: Asset, status: "approved" | "rejected" | "pending") {
     const prevStatus = asset.approval_status;
     setPendingAssetId(asset.id);
-    // Optimistic: patch local board immediately.
     setBoard((b) => b ? {
       ...b,
       assets: b.assets.map((a) => a.id === asset.id ? { ...a, approval_status: status } as Asset : a),
     } : b);
     try {
       await updateAsset(asset.id, { approval_status: status } as any);
-      pushToast("success", `Marked "${asset.title || "asset"}" as ${status}.`);
+      pushToast({ kind: "success", text: `Marked "${asset.title || "asset"}" as ${status}.` });
+      void loadEvents();
     } catch (e: any) {
-      // Rollback local state and refresh from server for truth.
       setBoard((b) => b ? {
         ...b,
         assets: b.assets.map((a) => a.id === asset.id ? { ...a, approval_status: prevStatus } as Asset : a),
       } : b);
-      pushToast("error", `Update failed: ${e?.message || "unknown error"}. Reverted.`);
+      pushToast({ kind: "error", text: `Update failed: ${e?.message || "unknown error"}. Reverted.` });
       void load();
     } finally {
       setPendingAssetId(null);
     }
   }
+
+  const eventsByAsset = useMemo(() => {
+    const map: Record<string, AuditEvent[]> = {};
+    for (const e of events) {
+      (map[e.asset_id] = map[e.asset_id] || []).push(e);
+    }
+    return map;
+  }, [events]);
 
   const all = board?.assets ?? [];
   const approved = all.filter((a) => a.approval_status === "approved");
@@ -171,21 +239,15 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
             {loading ? <Loader2 size={14} className="frank-spin" /> : <RefreshCw size={14} />}
             {loading ? "Loading…" : "Refresh"}
           </button>
-          <button type="button" onClick={() => void handleHandoff()} disabled={handoffBusy} style={btnPrimary}>
+          <button type="button" onClick={() => void runHandoff()} disabled={handoffBusy} style={btnPrimary}>
             {handoffBusy ? <Loader2 size={14} className="frank-spin" /> : <Download size={14} />}
             {handoffBusy ? "Packaging…" : "Generate handoff"}
           </button>
         </div>
       </header>
 
-      {handoffBusy ? (
-        <div style={{ height: 3, background: "rgba(0,0,0,0.06)", borderRadius: 2, overflow: "hidden", marginBottom: 12 }}>
-          <div className="frank-progress-bar" />
-        </div>
-      ) : null}
-
       {error ? <p style={{ color: "#c0392b" }}>Error: {error}</p> : null}
-      {handoffMsg ? <p style={{ opacity: 0.8 }}>{handoffMsg}</p> : null}
+
       {handoffData ? (
         <div style={{ marginBottom: 8 }}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -215,34 +277,24 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
       <section style={{ marginTop: 12 }}>
         <h2 style={sectionH}>Approved ({approved.length})</h2>
         <AssetGrid
-          assets={approved}
-          emptyText="No approved assets yet."
-          pendingId={pendingAssetId}
-          onApprove={null}
-          onReject={(a) => void setStatus(a, "pending")}
-          rejectLabel="Revert"
+          assets={approved} events={eventsByAsset} emptyText="No approved assets yet."
+          pendingId={pendingAssetId} onApprove={null} onReject={(a) => void setStatus(a, "pending")} rejectLabel="Revert"
         />
       </section>
 
       <section style={{ marginTop: 32 }}>
         <h2 style={sectionH}>Pending ({pending.length})</h2>
         <AssetGrid
-          assets={pending}
-          emptyText="No pending assets."
-          pendingId={pendingAssetId}
-          onApprove={(a) => void setStatus(a, "approved")}
-          onReject={(a) => void setStatus(a, "rejected")}
+          assets={pending} events={eventsByAsset} emptyText="No pending assets."
+          pendingId={pendingAssetId} onApprove={(a) => void setStatus(a, "approved")} onReject={(a) => void setStatus(a, "rejected")}
         />
       </section>
 
       <section style={{ marginTop: 32 }}>
         <h2 style={sectionH}>Rejected ({rejected.length})</h2>
         <AssetGrid
-          assets={rejected}
-          emptyText="No rejected assets."
-          pendingId={pendingAssetId}
-          onApprove={(a) => void setStatus(a, "approved")}
-          onReject={null}
+          assets={rejected} events={eventsByAsset} emptyText="No rejected assets."
+          pendingId={pendingAssetId} onApprove={(a) => void setStatus(a, "approved")} onReject={null}
         />
       </section>
 
@@ -256,30 +308,56 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
       ) : null}
 
       {/* Toasts */}
-      <div style={{ position: "fixed", bottom: 20, right: 20, display: "flex", flexDirection: "column", gap: 8, zIndex: 60 }}>
-        {toasts.map((t) => (
-          <div key={t.id} style={{
-            padding: "10px 14px", borderRadius: 8, fontSize: 13, minWidth: 240, maxWidth: 380,
-            background: t.kind === "error" ? "#fdecec" : t.kind === "success" ? "#e6f7ec" : "#eef2ff",
-            color: t.kind === "error" ? "#8a1e1e" : t.kind === "success" ? "#1e6b34" : "#1e3a8a",
-            border: `1px solid ${t.kind === "error" ? "#e29a9a" : t.kind === "success" ? "#8fce9d" : "#a5b4fc"}`,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-          }}>{t.text}</div>
-        ))}
+      <div style={{ position: "fixed", bottom: 20, right: 20, display: "flex", flexDirection: "column", gap: 8, zIndex: 60, minWidth: 260 }}>
+        {toasts.map((t) => {
+          const bg = t.kind === "error" ? "#fdecec" : t.kind === "success" ? "#e6f7ec" : t.kind === "progress" ? "#f4f4f5" : "#eef2ff";
+          const fg = t.kind === "error" ? "#8a1e1e" : t.kind === "success" ? "#1e6b34" : t.kind === "progress" ? "#333" : "#1e3a8a";
+          const bd = t.kind === "error" ? "#e29a9a" : t.kind === "success" ? "#8fce9d" : t.kind === "progress" ? "#d4d4d8" : "#a5b4fc";
+          const elapsed = t.startedAt ? Math.max(0, Math.floor((nowTick - t.startedAt) / 1000)) : 0;
+          return (
+            <div key={t.id} style={{
+              padding: "10px 12px", borderRadius: 8, fontSize: 13, maxWidth: 380,
+              background: bg, color: fg, border: `1px solid ${bd}`,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+              display: "flex", flexDirection: "column", gap: 6,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {t.kind === "progress" ? <Loader2 size={13} className="frank-spin" /> : null}
+                  <span>{t.text}</span>
+                </div>
+                <button type="button" onClick={() => dismissToast(t.id)} aria-label="Dismiss" style={dismissBtn}>×</button>
+              </div>
+              {t.kind === "progress" ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 11, opacity: 0.75 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Clock size={11} /> {elapsed}s elapsed</span>
+                  {t.onCancel ? (
+                    <button type="button" onClick={() => t.onCancel?.()} style={miniBtn}>Cancel</button>
+                  ) : null}
+                </div>
+              ) : null}
+              {t.onRetry ? (
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button type="button" onClick={() => { dismissToast(t.id); t.onRetry?.(); }} style={miniBtn}>
+                    <RotateCw size={11} /> Retry
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
 
       <style>{`
         @keyframes frank-spin { to { transform: rotate(360deg); } }
         .frank-spin { animation: frank-spin 0.9s linear infinite; }
-        @keyframes frank-progress { 0% { transform: translateX(-40%); } 100% { transform: translateX(140%); } }
-        .frank-progress-bar { width: 40%; height: 100%; background: #111; animation: frank-progress 1.2s ease-in-out infinite; }
       `}</style>
     </div>
   );
 }
 
 function AssetGrid({
-  assets, emptyText, pendingId, onApprove, onReject, rejectLabel,
+  assets, emptyText, pendingId, onApprove, onReject, rejectLabel, events,
 }: {
   assets: Asset[];
   emptyText: string;
@@ -287,14 +365,14 @@ function AssetGrid({
   onApprove: ((a: Asset) => void) | null;
   onReject: ((a: Asset) => void) | null;
   rejectLabel?: string;
+  events: Record<string, AuditEvent[]>;
 }) {
-  if (!assets.length) {
-    return <p style={{ opacity: 0.6, fontSize: 13 }}>{emptyText}</p>;
-  }
+  if (!assets.length) return <p style={{ opacity: 0.6, fontSize: 13 }}>{emptyText}</p>;
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
       {assets.map((a) => {
         const busy = pendingId === a.id;
+        const audit = events[a.id] || [];
         return (
           <div key={a.id} style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10, overflow: "hidden", background: "#fff", opacity: busy ? 0.6 : 1, transition: "opacity 0.15s" }}>
             <a href={assetDownloadUrl(a.id)} target="_blank" rel="noreferrer" style={{ display: "block", color: "inherit", textDecoration: "none" }}>
@@ -311,7 +389,7 @@ function AssetGrid({
               </div>
             </a>
             {(onApprove || onReject) ? (
-              <div style={{ display: "flex", gap: 6, padding: "0 10px 10px" }}>
+              <div style={{ display: "flex", gap: 6, padding: "0 10px 6px" }}>
                 {onApprove ? (
                   <button type="button" disabled={busy} onClick={() => onApprove(a)} style={{ ...btnSmall, background: "#e6f7ec", borderColor: "#8fce9d", color: "#1e6b34" }}>
                     {busy ? <Loader2 size={12} className="frank-spin" /> : <Check size={12} />} Approve
@@ -323,6 +401,21 @@ function AssetGrid({
                   </button>
                 ) : null}
               </div>
+            ) : null}
+            {audit.length ? (
+              <details style={{ borderTop: "1px solid rgba(0,0,0,0.06)", padding: "6px 10px 8px" }}>
+                <summary style={{ fontSize: 11, opacity: 0.7, cursor: "pointer" }}>
+                  Audit trail ({audit.length})
+                </summary>
+                <ul style={{ margin: "6px 0 0", padding: 0, listStyle: "none", fontSize: 11, opacity: 0.8 }}>
+                  {audit.slice(0, 6).map((e) => (
+                    <li key={e.id} style={{ display: "flex", justifyContent: "space-between", gap: 6, padding: "2px 0" }}>
+                      <span>{e.prev_status ?? "—"} → <strong>{e.new_status}</strong></span>
+                      <span style={{ opacity: 0.6 }}>{new Date(e.created_at).toLocaleString()}</span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
             ) : null}
           </div>
         );
@@ -336,12 +429,19 @@ const btn: React.CSSProperties = {
   padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.15)",
   background: "#fff", cursor: "pointer", fontSize: 13,
 };
-const btnPrimary: React.CSSProperties = {
-  ...btn, background: "#111", color: "#fff", borderColor: "#111",
-};
+const btnPrimary: React.CSSProperties = { ...btn, background: "#111", color: "#fff", borderColor: "#111" };
 const btnSmall: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
   flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(0,0,0,0.15)",
   background: "#fff", cursor: "pointer", fontSize: 12,
+};
+const miniBtn: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: 4,
+  padding: "3px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,0.2)",
+  background: "#fff", cursor: "pointer", fontSize: 11, color: "inherit",
+};
+const dismissBtn: React.CSSProperties = {
+  background: "transparent", border: "none", cursor: "pointer",
+  color: "inherit", fontSize: 16, lineHeight: 1, opacity: 0.6,
 };
 const sectionH: React.CSSProperties = { fontSize: 14, textTransform: "uppercase", letterSpacing: 0.5, opacity: 0.7, margin: "0 0 12px" };
