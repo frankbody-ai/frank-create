@@ -2512,6 +2512,12 @@ export default function App() {
           >×</button>
         </div>
       ) : null}
+      {busy && studioMode === "video-lab" ? (
+        <div style={{ position: "sticky", top: desktopNotice ? 40 : 0, zIndex: 39, height: 3, background: "rgba(0,0,0,0.06)", overflow: "hidden" }}>
+          <div style={{ width: "40%", height: "100%", background: "#111", animation: "frank-video-progress 1.2s ease-in-out infinite" }} />
+          <style>{`@keyframes frank-video-progress { 0% { transform: translateX(-40%); } 100% { transform: translateX(140%); } }`}</style>
+        </div>
+      ) : null}
       <aside className="guided-header app-sidebar" data-tour-id="app-header" data-tour-active={tourActive("app-header")}>
         <div className="sidebar-brand-block">
           <div className="brand-mark sidebar-brand-mark" aria-label="Frank Create">
