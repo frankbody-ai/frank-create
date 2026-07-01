@@ -712,39 +712,110 @@ Deno.serve(async (req) => {
       const assets = await Promise.all((assetRows || []).map(async (r: any) => rowToAsset(r, await signed(r.storage_path))));
       const approved = assets.filter((a: any) => a.approval_status === "approved");
 
+      // Normalise every asset to the manifest v1 shape so downstream imports
+      // don't have to guess which fields might be missing.
+      const manifestAssets = assets.map((a: any) => {
+        const meta = (a.metadata_json && typeof a.metadata_json === "object") ? a.metadata_json : {};
+        const blueprint = meta.blueprint || meta.workflow || {};
+        return {
+          id: a.id ?? null,
+          title: a.title ?? "",
+          media_type: a.media_type ?? "image",
+          approval_status: a.approval_status ?? "pending",
+          model_key: a.model_key ?? null,
+          prompt: a.prompt_snapshot ?? "",
+          message_id: a.message_id ?? null,
+          session_id: a.session_id ?? sid,
+          created_at: a.created_at ?? null,
+          download_url: a.preview_url ?? null,
+          storage_path: a.storage_path ?? null,
+          blueprint: {
+            id: blueprint.id ?? blueprint.blueprint_id ?? null,
+            name: blueprint.name ?? blueprint.label ?? null,
+            version: blueprint.version ?? null,
+            workflow_id: blueprint.workflow_id ?? null,
+            preset_key: blueprint.preset_key ?? meta.preset_key ?? null,
+            provider: blueprint.provider ?? meta.provider ?? null,
+            settings: blueprint.settings ?? meta.settings ?? {},
+          },
+          metadata: meta,
+        };
+      });
+
+      const manifestTurns = (turnRows || []).map((t: any) => ({
+        id: t.id,
+        seq: t.seq ?? null,
+        role: t.role ?? null,
+        message_type: t.message_type ?? null,
+        prompt: t.prompt_text ?? "",
+        settings: t.settings_snapshot_json ?? {},
+        created_at: t.created_at ?? null,
+      }));
+
+      const blueprintIndex: Record<string, any> = {};
+      for (const a of manifestAssets) {
+        const bp = a.blueprint;
+        const key = bp.id || bp.workflow_id || bp.preset_key || bp.name;
+        if (key && !blueprintIndex[key]) blueprintIndex[key] = bp;
+      }
+
       const generated_at = nowIso();
       const structured = {
-        session: sessionRow || { id: sid },
+        schema: "frank-create.handoff",
+        schema_version: 1,
         generated_at,
+        session: sessionRow || { id: sid },
         summary: body.summary || "",
         counts: {
-          turns: (turnRows || []).length,
-          assets: assets.length,
+          turns: manifestTurns.length,
+          assets: manifestAssets.length,
           approved: approved.length,
+          blueprints: Object.keys(blueprintIndex).length,
         },
-        turns: turnRows || [],
-        assets,
-        approved,
-        blueprints: [],
+        turns: manifestTurns,
+        assets: manifestAssets,
+        approved: manifestAssets.filter((a) => a.approval_status === "approved"),
+        blueprints: Object.values(blueprintIndex),
       };
+
+      // Minimal schema validator — catches missing/typed fields before the
+      // client tries to import them.
+      const schemaIssues: string[] = [];
+      if (structured.schema !== "frank-create.handoff") schemaIssues.push("schema mismatch");
+      if (structured.schema_version !== 1) schemaIssues.push("schema_version mismatch");
+      const requiredAssetFields = ["id", "title", "media_type", "approval_status", "blueprint"];
+      for (const [i, a] of structured.assets.entries()) {
+        for (const f of requiredAssetFields) {
+          if (!(f in a)) schemaIssues.push(`assets[${i}].${f} missing`);
+        }
+      }
+      for (const [i, t] of structured.turns.entries()) {
+        if (!("id" in t) || !("prompt" in t)) schemaIssues.push(`turns[${i}] missing id/prompt`);
+      }
 
       const csvEscape = (v: any) => {
         if (v === null || v === undefined) return "";
         const s = typeof v === "string" ? v : JSON.stringify(v);
         return `"${s.replace(/"/g, '""').replace(/\r?\n/g, " ")}"`;
       };
+      const csvHeader = [
+        "asset_id", "title", "media_type", "approval_status", "model", "prompt",
+        "message_id", "session_id", "created_at", "download_url",
+        "blueprint_id", "blueprint_name", "blueprint_version", "blueprint_preset", "blueprint_provider",
+      ];
       const csvRows = [
-        ["asset_id", "title", "media_type", "approval_status", "model", "prompt", "message_id", "created_at", "download_url"].join(","),
-        ...assets.map((a: any) => [
-          a.id, a.title, a.media_type, a.approval_status, a.model_key, a.prompt_snapshot,
-          a.message_id, a.created_at, a.preview_url,
+        csvHeader.join(","),
+        ...structured.assets.map((a) => [
+          a.id, a.title, a.media_type, a.approval_status, a.model_key, a.prompt,
+          a.message_id, a.session_id, a.created_at, a.download_url,
+          a.blueprint.id, a.blueprint.name, a.blueprint.version, a.blueprint.preset_key, a.blueprint.provider,
         ].map(csvEscape).join(",")),
       ].join("\n");
 
       const record = {
         id: `handoff-${sid}-${Date.now()}`, asset_id: sid, preset: "handoff",
         file_path: `cloud:handoff/${sid}`,
-        metadata_json: JSON.stringify({ summary: body.summary || "", asset_count: assets.length }),
+        metadata_json: JSON.stringify({ summary: body.summary || "", asset_count: assets.length, schema_version: 1 }),
         sync_status: "cloud", created_at: generated_at,
       };
       return json({
@@ -752,15 +823,21 @@ Deno.serve(async (req) => {
         download_url: null,
         metadata: {
           summary: body.summary || "",
-          asset_count: assets.length,
+          schema: "frank-create.handoff",
+          schema_version: 1,
+          asset_count: manifestAssets.length,
           approved_count: approved.length,
-          turn_count: (turnRows || []).length,
+          turn_count: manifestTurns.length,
+          blueprint_count: Object.keys(blueprintIndex).length,
+          schema_valid: schemaIssues.length === 0,
+          schema_issues: schemaIssues,
           handoff_json: structured,
           handoff_csv: csvRows,
-          assets,
+          assets: manifestAssets,
         },
       });
     }
+
 
     // ---- Demo receipts (minimal stubs) ----
     if (path === "/demo/reset" && method === "POST") {
