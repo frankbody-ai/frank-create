@@ -2492,6 +2492,26 @@ export default function App() {
       className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${advancedOpen ? "advanced-open" : ""}`}
       data-provider-audit={providerAuditMode ? "open" : undefined}
     >
+      {desktopNotice ? (
+        <div
+          role="status"
+          style={{
+            position: "sticky", top: 0, zIndex: 40,
+            background: "#fff7e6", borderBottom: "1px solid #f0c36d",
+            color: "#7a4a00", padding: "8px 14px",
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+            fontSize: 13,
+          }}
+        >
+          <span>{desktopNotice}</span>
+          <button
+            type="button"
+            onClick={() => setDesktopNotice(null)}
+            style={{ background: "transparent", border: "none", cursor: "pointer", color: "#7a4a00", fontSize: 18, lineHeight: 1 }}
+            aria-label="Dismiss notice"
+          >×</button>
+        </div>
+      ) : null}
       <aside className="guided-header app-sidebar" data-tour-id="app-header" data-tour-active={tourActive("app-header")}>
         <div className="sidebar-brand-block">
           <div className="brand-mark sidebar-brand-mark" aria-label="Frank Create">
