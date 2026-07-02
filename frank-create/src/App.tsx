@@ -2709,6 +2709,25 @@ export default function App() {
             New session
           </button>
         </div>
+
+        <div className="sidebar-account">
+          <div className="sidebar-account-info">
+            <span className="sidebar-account-label">Signed in as</span>
+            <span className="sidebar-account-email" title={userEmail ?? ""}>
+              {userEmail ?? "—"}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="sidebar-signout"
+            onClick={handleSignOut}
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut size={14} />
+            Sign out
+          </button>
+        </div>
       </aside>
 
       <main className="conversation-column">
