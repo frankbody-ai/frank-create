@@ -20,7 +20,8 @@ import {
   Upload,
   Wand2,
   X,
-  XCircle
+  XCircle,
+  LogOut
 } from "lucide-react";
 import {
   CSSProperties,
@@ -308,6 +309,16 @@ export default function App() {
     try { window.localStorage.setItem("frank.customPromptPresets", JSON.stringify(customPresets)); } catch { /* ignore */ }
   }, [customPresets]);
   const [frankBodyMode, setFrankBodyMode] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setUserEmail(s?.user?.email ?? null));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
   const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot">(() =>
     initialStudioMode()
   );
@@ -2696,6 +2707,25 @@ export default function App() {
           <button className="secondary-button compact-action sidebar-new-session" type="button" onClick={handleNewSession}>
             <Plus size={16} />
             New session
+          </button>
+        </div>
+
+        <div className="sidebar-account">
+          <div className="sidebar-account-info">
+            <span className="sidebar-account-label">Signed in as</span>
+            <span className="sidebar-account-email" title={userEmail ?? ""}>
+              {userEmail ?? "—"}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="sidebar-signout"
+            onClick={handleSignOut}
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut size={14} />
+            Sign out
           </button>
         </div>
       </aside>
