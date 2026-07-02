@@ -3010,20 +3010,25 @@ export default function App() {
                 </button>
               </div>
               <div className="model-list compact">
-                {config.models.map((model) => (
-                  <button
-                    className={`model-card ${selectedModelId === model.id ? "selected" : ""}`}
-                    key={model.id}
-                    type="button"
-                    onClick={() => setSelectedModelId(model.id)}
-                  >
-                    <span>
-                      <strong>{model.short_label ?? model.label}</strong>
-                      <small>{model.provider} / {model.cost_label}</small>
-                    </span>
-                    <em>{model.badge}</em>
-                  </button>
-                ))}
+                {config.models.map((model) => {
+                  const isDisabled = model.status === "disabled";
+                  return (
+                    <button
+                      className={`model-card ${selectedModelId === model.id ? "selected" : ""} ${isDisabled ? "disabled" : ""}`}
+                      key={model.id}
+                      type="button"
+                      disabled={isDisabled}
+                      title={isDisabled ? "Coming soon — waiting on Replicate router" : undefined}
+                      onClick={() => { if (!isDisabled) setSelectedModelId(model.id); }}
+                    >
+                      <span>
+                        <strong>{model.short_label ?? model.label}</strong>
+                        <small>{model.provider} / {model.cost_label}</small>
+                      </span>
+                      <em>{isDisabled ? "Soon" : model.badge}</em>
+                    </button>
+                  );
+                })}
               </div>
               <div className="setting-row" data-tour-id="model-output-controls" data-tour-active={tourActive("model-output-controls")}>
                 <label>
