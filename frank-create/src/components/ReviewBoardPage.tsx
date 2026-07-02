@@ -423,29 +423,59 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
 
       {handoffData ? (
         <div style={{ marginBottom: 8 }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" style={btn} onClick={() => void runDownload(`handoff-${sessionId}.json`, "application/json", () => JSON.stringify(handoffData.json, null, 2))}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <button
+              type="button"
+              style={{ ...btn, opacity: handoffData.valid ? 1 : 0.45, cursor: handoffData.valid ? "pointer" : "not-allowed" }}
+              disabled={!handoffData.valid}
+              title={handoffData.valid ? "Download JSON manifest" : "Blocked — fix schema issues first"}
+              onClick={() => handoffData.valid && void runDownload(`handoff-${sessionId}.json`, "application/json", () => JSON.stringify(handoffData.json, null, 2))}
+            >
               <Download size={14} /> Download JSON
             </button>
-            <button type="button" style={btn} onClick={() => void runDownload(`handoff-${sessionId}.csv`, "text/csv", () => handoffData.csv)}>
+            <button
+              type="button"
+              style={{ ...btn, opacity: handoffData.valid ? 1 : 0.45, cursor: handoffData.valid ? "pointer" : "not-allowed" }}
+              disabled={!handoffData.valid}
+              title={handoffData.valid ? "Download CSV summary" : "Blocked — fix schema issues first"}
+              onClick={() => handoffData.valid && void runDownload(`handoff-${sessionId}.csv`, "text/csv", () => handoffData.csv)}
+            >
               <Download size={14} /> Download CSV
             </button>
-            <button type="button" style={btn} onClick={() => void navigator.clipboard.writeText(JSON.stringify(handoffData.json, null, 2))}>
+            <button type="button" style={btn} onClick={() => handoffData.json && void navigator.clipboard.writeText(JSON.stringify(handoffData.json, null, 2))}>
               Copy JSON
             </button>
+            {resumeState ? (
+              <button
+                type="button"
+                style={btn}
+                disabled={handoffBusy}
+                onClick={() => void runHandoff({ fromStage: resumeState.fromStage, snapshot: resumeState.snapshot })}
+                title={`Retry from stage: ${resumeState.fromStage}`}
+              >
+                <RotateCw size={14} /> Retry from {resumeState.fromStage}
+              </button>
+            ) : null}
           </div>
           {handoffData.issues.length ? (
-            <details style={{ marginTop: 8, fontSize: 12, color: "#8a1e1e" }}>
-              <summary>Schema issues ({handoffData.issues.length})</summary>
-              <ul style={{ margin: "6px 0 0 18px" }}>
-                {handoffData.issues.slice(0, 20).map((i, k) => <li key={k}>{i}</li>)}
+            <div style={{
+              marginTop: 10, padding: 10, borderRadius: 8,
+              background: "#fdecec", border: "1px solid #e29a9a", color: "#8a1e1e", fontSize: 12,
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                Downloads blocked — {handoffData.issues.length} manifest schema issue{handoffData.issues.length > 1 ? "s" : ""}:
+              </div>
+              <ul style={{ margin: "0 0 0 18px", padding: 0 }}>
+                {handoffData.issues.slice(0, 25).map((i, k) => <li key={k}><code>{i}</code></li>)}
+                {handoffData.issues.length > 25 ? <li>… and {handoffData.issues.length - 25} more</li> : null}
               </ul>
-            </details>
+            </div>
           ) : (
             <div style={{ marginTop: 6, fontSize: 12, color: "#1e6b34" }}>Schema v1 · validated</div>
           )}
         </div>
       ) : null}
+
 
       <section style={{ marginTop: 12 }}>
         <h2 style={sectionH}>Approved ({approved.length})</h2>
