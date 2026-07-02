@@ -749,57 +749,128 @@ Deno.serve(async (req) => {
       return json({ manifest: { session_id: sid, generated_at: nowIso(), assets: data || [] } });
     }
     const handoffMatch = path.match(/^\/sessions\/([^/]+)\/handoff$/);
-    if (handoffMatch && method === "POST") {
-      const sid = handoffMatch[1];
-      const body = await readJson(req).catch(() => ({}));
+    const handoffResumeMatch = path.match(/^\/sessions\/([^/]+)\/handoff\/resume$/);
+    if ((handoffMatch || handoffResumeMatch) && method === "POST") {
+      const sid = (handoffMatch || handoffResumeMatch)![1];
+      const body = await readJson(req).catch(() => ({} as any));
       const wantsStream = (req.headers.get("accept") || "").includes("text/event-stream");
+      const fromStage: string | undefined = handoffResumeMatch ? body.from_stage : undefined;
+      const snapshotIn: any = handoffResumeMatch ? (body.snapshot || {}) : {};
 
-      const runPipeline = async (emit?: (step: string, progress: number, message: string, payload?: any) => Promise<void>) => {
-        await emit?.("fetch", 0.05, "Loading session data…");
-        const [{ data: sessionRow }, { data: turnRows }, { data: assetRows }] = await Promise.all([
-          supabase().from("sessions").select("*").eq("id", sid).eq("user_id", userId).maybeSingle(),
-          supabase().from("messages").select("*").eq("user_id", userId).eq("session_id", sid).order("seq", { ascending: true }),
-          supabase().from("assets").select("*").eq("user_id", userId).eq("session_id", sid).order("created_at", { ascending: true }),
-        ]);
-        const assets = await Promise.all((assetRows || []).map(async (r: any) => rowToAsset(r, await signed(r.storage_path))));
+      const STAGES = ["fetch", "build_manifest", "generate_json", "generate_csv", "validate"];
+      const shouldRun = (stage: string) => !fromStage || STAGES.indexOf(stage) >= STAGES.indexOf(fromStage);
 
-        await emit?.("build_manifest", 0.3, `Building manifest for ${assets.length} assets…`);
-        const structured = buildManifest(sid, sessionRow || null, (turnRows || []) as any, assets as any, body.summary || "", nowIso());
+      const runPipeline = async (
+        emit?: (step: string, progress: number, message: string, payload?: any) => Promise<void>,
+      ) => {
+        let assets: any[] = snapshotIn.assets || [];
+        let sessionRow: any = snapshotIn.sessionRow || null;
+        let turnRows: any[] = snapshotIn.turnRows || [];
+        let structured: any = snapshotIn.structured || null;
+        let csvRows: string = snapshotIn.csv || "";
+        let lastOk = "fetch";
+        const snap = () => ({ assets, sessionRow, turnRows, structured, csv: csvRows });
 
-        await emit?.("generate_json", 0.55, "Serializing JSON payload…");
+        try {
+          if (shouldRun("fetch")) {
+            await emit?.("fetch", 0.05, "Loading session data…");
+            const [sRes, tRes, aRes] = await Promise.all([
+              supabase().from("sessions").select("*").eq("id", sid).eq("user_id", userId).maybeSingle(),
+              supabase().from("messages").select("*").eq("user_id", userId).eq("session_id", sid).order("seq", { ascending: true }),
+              supabase().from("assets").select("*").eq("user_id", userId).eq("session_id", sid).order("created_at", { ascending: true }),
+            ]);
+            sessionRow = sRes.data || null;
+            turnRows = (tRes.data || []) as any[];
+            const rows = (aRes.data || []) as any[];
+            assets = await Promise.all(rows.map(async (r: any) => rowToAsset(r, await signed(r.storage_path))));
+            lastOk = "fetch";
+          }
 
-        await emit?.("generate_csv", 0.75, "Generating CSV export…");
-        const csvRows = manifestToCsv(structured);
+          if (shouldRun("build_manifest")) {
+            await emit?.("build_manifest", 0.3, `Building manifest for ${assets.length} assets…`);
+            structured = buildManifest(sid, sessionRow, turnRows as any, assets as any, body.summary || "", nowIso());
+            lastOk = "build_manifest";
+          }
 
-        await emit?.("validate", 0.9, "Validating handoff schema…");
-        const schemaIssues = validateManifest(structured);
+          if (shouldRun("generate_json")) {
+            await emit?.("generate_json", 0.55, "Serializing JSON payload…");
+            lastOk = "generate_json";
+          }
 
-        const record = {
-          id: `handoff-${sid}-${Date.now()}`, asset_id: sid, preset: "handoff",
-          file_path: `cloud:handoff/${sid}`,
-          metadata_json: JSON.stringify({ summary: body.summary || "", asset_count: structured.assets.length, schema_version: 1 }),
-          sync_status: "cloud", created_at: structured.generated_at,
-        };
-        const payload = {
-          handoff: record,
-          download_url: null,
-          metadata: {
-            summary: body.summary || "",
-            schema: "frank-create.handoff",
-            schema_version: 1,
-            asset_count: structured.counts.assets,
-            approved_count: structured.counts.approved,
-            turn_count: structured.counts.turns,
-            blueprint_count: structured.counts.blueprints,
-            schema_valid: schemaIssues.length === 0,
-            schema_issues: schemaIssues,
-            handoff_json: structured,
-            handoff_csv: csvRows,
-            assets: structured.assets,
-          },
-        };
-        await emit?.("done", 1, "Handoff ready.", payload);
-        return payload;
+          if (shouldRun("generate_csv")) {
+            await emit?.("generate_csv", 0.75, "Generating CSV export…");
+            csvRows = manifestToCsv(structured);
+            lastOk = "generate_csv";
+          }
+
+          const schemaIssues = validateManifest(structured);
+          if (schemaIssues.length) {
+            await emit?.("validate", 0.9, `Schema validation failed (${schemaIssues.length} issue${schemaIssues.length > 1 ? "s" : ""})`, {
+              issues: schemaIssues, resumable_from: "build_manifest", snapshot: snap(),
+            });
+            const errPayload = {
+              stage: "validate",
+              issues: schemaIssues,
+              resumable_from: "build_manifest",
+              snapshot: snap(),
+              schema_issues: schemaIssues,
+              handoff_json: structured,
+              handoff_csv: csvRows,
+            };
+            await emit?.("error", 1, `Manifest schema invalid: ${schemaIssues.slice(0, 3).join("; ")}`, errPayload);
+            const record = {
+              id: `handoff-${sid}-${Date.now()}`, asset_id: sid, preset: "handoff",
+              file_path: `cloud:handoff/${sid}`,
+              metadata_json: JSON.stringify({ schema_valid: false, schema_issues: schemaIssues }),
+              sync_status: "cloud", created_at: nowIso(),
+            };
+            return {
+              handoff: record, download_url: null,
+              metadata: {
+                schema: "frank-create.handoff", schema_version: 1,
+                schema_valid: false, schema_issues: schemaIssues,
+                resumable_from: "build_manifest",
+                snapshot: snap(),
+                handoff_json: structured, handoff_csv: csvRows,
+              },
+            };
+          }
+
+          await emit?.("validate", 0.95, "Validated handoff schema.");
+          lastOk = "validate";
+
+          const record = {
+            id: `handoff-${sid}-${Date.now()}`, asset_id: sid, preset: "handoff",
+            file_path: `cloud:handoff/${sid}`,
+            metadata_json: JSON.stringify({ summary: body.summary || "", asset_count: structured.assets.length, schema_version: 1 }),
+            sync_status: "cloud", created_at: structured.generated_at,
+          };
+          const payload = {
+            handoff: record, download_url: null,
+            metadata: {
+              summary: body.summary || "",
+              schema: "frank-create.handoff",
+              schema_version: 1,
+              asset_count: structured.counts.assets,
+              approved_count: structured.counts.approved,
+              turn_count: structured.counts.turns,
+              blueprint_count: structured.counts.blueprints,
+              schema_valid: true,
+              schema_issues: [],
+              handoff_json: structured,
+              handoff_csv: csvRows,
+              assets: structured.assets,
+            },
+          };
+          await emit?.("done", 1, "Handoff ready.", payload);
+          return payload;
+        } catch (e: any) {
+          const message = e?.message || "Handoff failed";
+          await emit?.("error", 1, message, {
+            stage: lastOk, resumable_from: lastOk, snapshot: snap(),
+          });
+          throw e;
+        }
       };
 
       if (wantsStream) {
@@ -813,12 +884,8 @@ Deno.serve(async (req) => {
             };
             try {
               await runPipeline(emit);
-            } catch (e: any) {
-              const err = { step: "error", progress: 1, message: e?.message || "Handoff failed" };
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(err)}\n\n`));
-            } finally {
-              controller.close();
-            }
+            } catch { /* already emitted */ }
+            finally { controller.close(); }
           },
         });
         return new Response(stream, {
@@ -834,6 +901,7 @@ Deno.serve(async (req) => {
       const payload = await runPipeline();
       return json(payload);
     }
+
 
 
 
