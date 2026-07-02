@@ -3065,6 +3065,21 @@ export default function App() {
                   />
                 </label>
               </div>
+              {selectedModel?.id === "google-nb-pro" ? (
+                <div className="setting-row thinking-mode-row" aria-label="Thinking mode (Nano Banana Pro only)">
+                  <label>
+                    Thinking mode
+                    <select
+                      value={settings.thinking_budget ?? 0}
+                      onChange={(event) => setSettings((current) => ({ ...current, thinking_budget: Number(event.target.value) }))}
+                    >
+                      <option value={0}>Off</option>
+                      <option value={1000}>Low (1K tokens)</option>
+                      <option value={5000}>High (5K tokens)</option>
+                    </select>
+                  </label>
+                </div>
+              ) : null}
               <div className="capability-strip">
                 <span>{modelOptions.resolutionBadge}</span>
                 <span>{modelOptions.canEdit ? "Edits" : "Generate only"}</span>
