@@ -179,41 +179,50 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
-  async function runHandoff() {
+  async function runHandoff(resume?: { fromStage: HandoffStage; snapshot: Record<string, unknown> }) {
     const ctrl = new AbortController();
     handoffAbortRef.current = ctrl;
     setHandoffBusy(true);
     const startedAt = Date.now();
     const toastId = pushToast({
       kind: "progress",
-      text: "Packaging handoff…",
+      text: resume ? `Resuming handoff from ${resume.fromStage}…` : "Packaging handoff…",
       startedAt,
       steps: HANDOFF_STEPS.map((s) => ({ ...s })),
       progress: 0,
       onCancel: () => ctrl.abort(),
     });
-    try {
-      const result = await createSessionHandoffStream(sessionId, {
-        signal: ctrl.signal,
-        onStep: (evt: HandoffStreamStep) => {
-          updateToast(toastId, {
-            text: evt.message || "Packaging handoff…",
-            progress: evt.progress,
-            steps: advanceSteps(HANDOFF_STEPS.map((s) => ({ ...s })), evt.step),
-          });
-        },
+    const onStep = (evt: HandoffStreamStep) => {
+      updateToast(toastId, {
+        text: evt.message || "Packaging handoff…",
+        progress: evt.progress,
+        steps: advanceSteps(HANDOFF_STEPS.map((s) => ({ ...s })), evt.step),
       });
+    };
+    try {
+      const result = resume
+        ? await resumeSessionHandoffStream(sessionId, resume.fromStage, resume.snapshot, { signal: ctrl.signal, onStep })
+        : await createSessionHandoffStream(sessionId, { signal: ctrl.signal, onStep });
       const meta: any = result?.metadata || {};
       const serverIssues: string[] = meta.schema_issues || [];
       const clientIssues = validateManifestClient(meta.handoff_json);
       const allIssues = [...serverIssues, ...clientIssues];
+      const valid = allIssues.length === 0;
       if (meta.handoff_json && meta.handoff_csv) {
-        setHandoffData({ json: meta.handoff_json, csv: meta.handoff_csv, issues: allIssues });
+        setHandoffData({ json: meta.handoff_json, csv: meta.handoff_csv, issues: allIssues, valid });
       }
       dismissToast(toastId);
-      if (allIssues.length) {
-        pushToast({ kind: "error", text: `Manifest schema issues: ${allIssues.slice(0, 2).join("; ")}${allIssues.length > 2 ? "…" : ""}` });
+      if (!valid) {
+        // Downloads are gated; give user the option to resume from build_manifest.
+        setResumeState({ fromStage: "build_manifest", snapshot: { structured: meta.handoff_json, csv: meta.handoff_csv }, issues: allIssues });
+        pushToast({
+          kind: "error",
+          text: `Handoff blocked · ${allIssues.length} schema issue${allIssues.length > 1 ? "s" : ""}. Downloads disabled.`,
+          sticky: true,
+          onRetry: () => { void runHandoff({ fromStage: "build_manifest", snapshot: { structured: meta.handoff_json, csv: meta.handoff_csv } }); },
+        });
       } else {
+        setResumeState(null);
         pushToast({ kind: "success", text: `Handoff ready · ${meta.asset_count ?? 0} assets · ${meta.approved_count ?? 0} approved` });
       }
     } catch (e: any) {
@@ -221,13 +230,33 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
       dismissToast(toastId);
       if (canceled) {
         pushToast({ kind: "info", text: "Handoff canceled." });
+      } else if (e instanceof HandoffError) {
+        const issues = e.issues || [];
+        const from = e.resumableFrom || "build_manifest";
+        const snap = (e.snapshot as any) || {};
+        if (e.snapshot?.structured || snap.structured) {
+          setHandoffData({
+            json: snap.structured || null,
+            csv: snap.csv || "",
+            issues,
+            valid: false,
+          });
+        }
+        setResumeState({ fromStage: from, snapshot: snap, issues });
+        const detail = issues.length ? `: ${issues.slice(0, 2).join("; ")}${issues.length > 2 ? "…" : ""}` : `: ${e.message}`;
+        pushToast({
+          kind: "error",
+          text: `Handoff failed at ${e.stage || "?"}${detail}`,
+          sticky: true,
+          onRetry: () => { void runHandoff({ fromStage: from, snapshot: snap }); },
+        });
       } else {
         const msg = e?.message || "Handoff failed.";
         pushToast({
           kind: "error",
           text: `Handoff failed: ${msg}`,
           sticky: true,
-          onRetry: () => { void runHandoff(); },
+          onRetry: () => { void runHandoff(resume); },
         });
       }
     } finally {
@@ -235,6 +264,7 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
       setHandoffBusy(false);
     }
   }
+
 
   async function runDownload(filename: string, mime: string, produce: () => string) {
     let canceled = false;
