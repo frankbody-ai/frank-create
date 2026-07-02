@@ -33,6 +33,7 @@ Deno.serve(async (req) => {
     size?: string;
     aspect_ratio?: string;
     quality?: string;
+    thinking_budget?: number;
   } = {};
   try {
     body = await req.json();
