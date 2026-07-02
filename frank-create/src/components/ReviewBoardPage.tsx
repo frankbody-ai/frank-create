@@ -109,12 +109,14 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [handoffBusy, setHandoffBusy] = useState(false);
-  const [handoffData, setHandoffData] = useState<{ json: any; csv: string; issues: string[] } | null>(null);
+  const [handoffData, setHandoffData] = useState<{ json: any; csv: string; issues: string[]; valid: boolean } | null>(null);
+  const [resumeState, setResumeState] = useState<{ fromStage: HandoffStage; snapshot: Record<string, unknown>; issues: string[] } | null>(null);
   const [pendingAssetId, setPendingAssetId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [nowTick, setNowTick] = useState(Date.now());
   const handoffAbortRef = useRef<AbortController | null>(null);
+
 
   // Audit-trail filter state
   const [fltTransitions, setFltTransitions] = useState<Set<string>>(new Set());
