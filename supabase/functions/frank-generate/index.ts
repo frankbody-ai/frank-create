@@ -33,6 +33,7 @@ Deno.serve(async (req) => {
     size?: string;
     aspect_ratio?: string;
     quality?: string;
+    thinking_budget?: number;
   } = {};
   try {
     body = await req.json();
@@ -89,17 +90,23 @@ Deno.serve(async (req) => {
         if (ar) hints.push(`Aspect ratio: ${ar}.`);
         if (sz && ["1K", "2K", "4K"].includes(sz)) hints.push(`Output resolution: ${sz}.`);
         const fullPrompt = hints.length ? `${prompt}\n\n${hints.join(" ")}` : prompt;
+        const payload: Record<string, unknown> = {
+          model: gatewayModel,
+          messages: [{ role: "user", content: fullPrompt }],
+          modalities: ["image", "text"],
+        };
+        // Nano Banana Pro thinking budget → OpenRouter-style reasoning effort.
+        const budget = Number(body.thinking_budget ?? 0);
+        if (budget > 0 && gatewayModel.includes("gemini-3-pro")) {
+          payload.reasoning = { effort: budget >= 5000 ? "high" : "low" };
+        }
         res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${apiKey}`,
           },
-          body: JSON.stringify({
-            model: gatewayModel,
-            messages: [{ role: "user", content: fullPrompt }],
-            modalities: ["image", "text"],
-          }),
+          body: JSON.stringify(payload),
         });
       }
 

@@ -162,51 +162,116 @@ export const fallbackConfig: FrankConfig = {
       configured: false,
       missing_env_vars: ["REPLICATE_API_TOKEN"],
       lora_candidate: true
+    },
+    {
+      id: "reve-2",
+      label: "Reve 2.0",
+      short_label: "Reve 2.0",
+      provider: "replicate",
+      provider_model: "reve/reve-2",
+      status: "disabled",
+      badge: "Soon",
+      max_resolution_label: "Soon",
+      description: "Coming soon — waiting on Replicate router.",
+      capabilities: { generation: true, edit: false, masked_edit: false, video: false },
+      allowed_aspect_ratios: ["1:1"],
+      allowed_image_sizes: ["1K"],
+      reference_image_limit: 0,
+      cost_label: "soon",
+      configured: false,
+      missing_env_vars: ["REPLICATE_API_TOKEN"]
+    },
+    {
+      id: "mai-image-2-5",
+      label: "MAI-Image-2.5 (Microsoft)",
+      short_label: "MAI 2.5",
+      provider: "replicate",
+      provider_model: "microsoft/mai-image-2.5",
+      status: "disabled",
+      badge: "Soon",
+      max_resolution_label: "Soon",
+      description: "Coming soon — waiting on Replicate router.",
+      capabilities: { generation: true, edit: false, masked_edit: false, video: false },
+      allowed_aspect_ratios: ["1:1"],
+      allowed_image_sizes: ["1K"],
+      reference_image_limit: 0,
+      cost_label: "soon",
+      configured: false,
+      missing_env_vars: ["REPLICATE_API_TOKEN"]
+    },
+    {
+      id: "grok-imagine",
+      label: "Grok Imagine (xAI)",
+      short_label: "Grok Imagine",
+      provider: "replicate",
+      provider_model: "xai/grok-imagine",
+      status: "disabled",
+      badge: "Soon",
+      max_resolution_label: "Soon",
+      description: "Coming soon — waiting on Replicate router.",
+      capabilities: { generation: true, edit: false, masked_edit: false, video: false },
+      allowed_aspect_ratios: ["1:1"],
+      allowed_image_sizes: ["1K"],
+      reference_image_limit: 0,
+      cost_label: "soon",
+      configured: false,
+      missing_env_vars: ["REPLICATE_API_TOKEN"]
+    },
+    {
+      id: "ideogram-4",
+      label: "Ideogram 4.0",
+      short_label: "Ideogram 4",
+      provider: "replicate",
+      provider_model: "ideogram-ai/ideogram-v4",
+      status: "disabled",
+      badge: "Soon",
+      max_resolution_label: "Soon",
+      description: "Coming soon — waiting on Replicate router.",
+      capabilities: { generation: true, edit: false, masked_edit: false, video: false },
+      allowed_aspect_ratios: ["1:1"],
+      allowed_image_sizes: ["1K"],
+      reference_image_limit: 0,
+      cost_label: "soon",
+      configured: false,
+      missing_env_vars: ["REPLICATE_API_TOKEN"]
     }
   ],
   backlogModels: [],
   promptPresets: [
     {
-      key: "product-shot-lab",
-      label: "Product Shot Lab",
-      description: "Product-first image for PDP, retouching, and crops.",
-      prompt: "Product-first composition, clean label, honest skin-care texture, Frank pink accent."
-    },
-    {
       key: "clean-ecom",
-      label: "Clean Ecom",
+      label: "🛒 Clean Ecom",
       description: "Crisp commerce frame with readable packaging.",
-      prompt: "Clean Ecom structure: centered product, readable label, soft realistic shadow, no visual clutter."
+      prompt:
+        "Frank Body [PRODUCT NAME] product hero image for e-commerce PDP. High-gloss plastic packaging, centred in frame, clean white or soft off-white background, soft box lighting, no harsh shadows, full product visible, label legible. Studio photography style. 4K, photorealistic. Professional beauty brand e-commerce standard. No props, no model, no hands."
     },
     {
       key: "fb-lifestyle",
-      label: "FB Lifestyle",
-      description: "Warm bathroom, beach, or bedroom body-care moment.",
-      prompt: "Frank lifestyle scene, tactile surfaces, cheeky confidence, natural skin-care mess kept polished."
+      label: "📸 FB Lifestyle",
+      description: "Warm editorial lifestyle moment.",
+      prompt:
+        "Frank Body [PRODUCT NAME] warm editorial lifestyle image. Human skin or product-only flat lay — specify which. Warm natural light, bathroom or bedroom setting or marble surface. Product as supporting element or hero. Dried botanicals, minimal props. Vogue Beauty editorial feel, warm cream and terracotta tones. 4K, photorealistic."
     },
     {
       key: "fb-model-image",
-      label: "FB Model Image",
-      description: "Inclusive beauty/editorial body-care concept.",
-      prompt: "Confident body-care model moment, warm direct flash, tactile product use, inclusive casting."
-    },
-    {
-      key: "campaign-variants",
-      label: "Campaign Variants",
-      description: "Creative rounds from one approved product direction.",
-      prompt: "Keep product recognizable, push set styling, leave channel-ready headline space, sharpen the Frank Body attitude."
+      label: "👤 FB Model Image",
+      description: "Campaign hero with a real body-care model moment.",
+      prompt:
+        "Frank Body campaign hero. Young woman, radiant glowing skin, applying or holding [PRODUCT NAME], warm natural light, beauty editorial mood. Authentic skin texture — not AI-smooth. 4K, photorealistic."
     },
     {
       key: "product-texture",
-      label: "Product Texture",
+      label: "🧴 Product Texture",
       description: "Macro scrub, cream, and tactile swipes.",
-      prompt: "Macro coffee scrub grains, creamy body-care texture, tactile swipes, high detail."
+      prompt:
+        "Extreme close-up macro photography of [INGREDIENT/TEXTURE] — e.g. coffee grounds, shea butter, vitamin C crystals. Warm studio light, soft shadows, editorial beauty feel."
     },
     {
       key: "retail-mock",
-      label: "Retail Mock",
+      label: "🏪 Retail Mock",
       description: "Packaging, shelf, display, and type exploration.",
-      prompt: "Retail mockup, packaging readable, shelf/display context, campaign headline space, sharp typography."
+      prompt:
+        "Realistic retail shelf or branded display mock for Frank Body [PRODUCT NAME]. Pharmacy or beauty retailer environment — e.g. Chemist Warehouse, MECCA, Target. Correct shelf height, accurate product facings."
     }
   ],
   exportPresets: [

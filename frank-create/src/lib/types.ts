@@ -663,6 +663,8 @@ export interface StudioSettings {
   aspect_ratio: string;
   image_size: string;
   count: number;
+  /** Gemini "Nano Banana Pro" thinking budget (tokens). 0 = off, 1000 = low, 5000 = high. */
+  thinking_budget?: number;
 }
 
 export interface TurnRequest {

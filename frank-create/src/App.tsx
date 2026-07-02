@@ -1794,6 +1794,15 @@ export default function App() {
     });
 
     if (connection !== "online") {
+      // Auto-name the session from the first prompt if it still has the default name.
+      if (activeSession && (!activeSession.name || /^(new session|launch image studio|untitled)/i.test(activeSession.name)) && turns.length === 0) {
+        const autoName = prompt.trim().replace(/\s+/g, " ").slice(0, 40) || activeSession.name;
+        if (autoName && autoName !== activeSession.name) {
+          const renamed = { ...activeSession, name: autoName };
+          setActiveSession(renamed);
+          setSessions((current) => current.map((s) => (s.id === renamed.id ? renamed : s)));
+        }
+      }
       try {
         const { data, error } = await supabase.functions.invoke("frank-generate", {
           body: {
@@ -1802,11 +1811,13 @@ export default function App() {
             modelId: selectedModel.id,
             aspect_ratio: settings.aspect_ratio,
             size: settings.image_size,
+            thinking_budget: settings.thinking_budget ?? 0,
           },
         });
         if (error) throw error;
         const images: string[] = (data as { images?: string[] })?.images ?? [];
         if (!images.length) throw new Error("No image returned");
+
 
         const nowIso = new Date().toISOString();
         const turnId = makeLocalId("turn");
@@ -2862,8 +2873,15 @@ export default function App() {
             onPaste={handlePromptPaste}
             onDragOver={handlePromptDragOver}
             onDrop={handlePromptDrop}
-            placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Paste or drop an image to attach as reference."
+            onKeyDown={(event) => {
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                event.preventDefault();
+                if (!busy) void handleGenerate();
+              }
+            }}
+            placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Cmd/Ctrl+Enter to generate. Paste or drop an image to attach as reference."
           />
+
 
 
           {promptRemixes.length ? (
@@ -2884,7 +2902,7 @@ export default function App() {
               <input type="file" accept="image/*" multiple onChange={handleReferenceUpload} />
             </label>
             <div className="reference-dock" aria-label="Reference images">
-              {referenceAssets.slice(0, 5).map((asset) => (
+              {referenceAssets.slice(0, 14).map((asset) => (
                 <button
                   type="button"
                   key={asset.id}
@@ -2899,8 +2917,8 @@ export default function App() {
               {referenceAssets.length ? (
                 <span className="reference-selection-count">
                   {selectedReferenceAssets.length
-                    ? `${selectedReferenceAssets.length} ref${selectedReferenceAssets.length === 1 ? "" : "s"} selected`
-                    : "Prompt-only"}
+                    ? `${selectedReferenceAssets.length}/${Math.min(referenceAssets.length, 14)} ref${selectedReferenceAssets.length === 1 ? "" : "s"} selected`
+                    : `Prompt-only (${referenceAssets.length}/14)`}
                 </span>
               ) : null}
             </div>
@@ -3003,20 +3021,25 @@ export default function App() {
                 </button>
               </div>
               <div className="model-list compact">
-                {config.models.map((model) => (
-                  <button
-                    className={`model-card ${selectedModelId === model.id ? "selected" : ""}`}
-                    key={model.id}
-                    type="button"
-                    onClick={() => setSelectedModelId(model.id)}
-                  >
-                    <span>
-                      <strong>{model.short_label ?? model.label}</strong>
-                      <small>{model.provider} / {model.cost_label}</small>
-                    </span>
-                    <em>{model.badge}</em>
-                  </button>
-                ))}
+                {config.models.map((model) => {
+                  const isDisabled = model.status === "disabled";
+                  return (
+                    <button
+                      className={`model-card ${selectedModelId === model.id ? "selected" : ""} ${isDisabled ? "disabled" : ""}`}
+                      key={model.id}
+                      type="button"
+                      disabled={isDisabled}
+                      title={isDisabled ? "Coming soon — waiting on Replicate router" : undefined}
+                      onClick={() => { if (!isDisabled) setSelectedModelId(model.id); }}
+                    >
+                      <span>
+                        <strong>{model.short_label ?? model.label}</strong>
+                        <small>{model.provider} / {model.cost_label}</small>
+                      </span>
+                      <em>{isDisabled ? "Soon" : model.badge}</em>
+                    </button>
+                  );
+                })}
               </div>
               <div className="setting-row" data-tour-id="model-output-controls" data-tour-active={tourActive("model-output-controls")}>
                 <label>
@@ -3053,6 +3076,21 @@ export default function App() {
                   />
                 </label>
               </div>
+              {selectedModel?.id === "google-nb-pro" ? (
+                <div className="setting-row thinking-mode-row" aria-label="Thinking mode (Nano Banana Pro only)">
+                  <label>
+                    Thinking mode
+                    <select
+                      value={settings.thinking_budget ?? 0}
+                      onChange={(event) => setSettings((current) => ({ ...current, thinking_budget: Number(event.target.value) }))}
+                    >
+                      <option value={0}>Off</option>
+                      <option value={1000}>Low (1K tokens)</option>
+                      <option value={5000}>High (5K tokens)</option>
+                    </select>
+                  </label>
+                </div>
+              ) : null}
               <div className="capability-strip">
                 <span>{modelOptions.resolutionBadge}</span>
                 <span>{modelOptions.canEdit ? "Edits" : "Generate only"}</span>
