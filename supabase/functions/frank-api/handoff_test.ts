@@ -84,3 +84,18 @@ Deno.test("manifestToCsv escapes quotes and newlines", () => {
   // The escaped title should collapse newline to space and double the quotes.
   assertStringIncludes(csv, '"Weird ""quoted"" line"');
 });
+
+Deno.test("validateManifest lists every corrupted asset with its index", () => {
+  const m = buildManifest(SID, null, rawTurns as any, rawAssets as any);
+  delete (m.assets[0] as any).blueprint;
+  delete (m.assets[1] as any).approval_status;
+  const issues = validateManifest(m);
+  assert(issues.some((i) => i.includes("assets[0].blueprint")));
+  assert(issues.some((i) => i.includes("assets[1].approval_status")));
+});
+
+Deno.test("buildManifest is idempotent (safe to rerun during resume)", () => {
+  const m1 = buildManifest(SID, null, rawTurns as any, rawAssets as any, "s", "2026-01-01T00:00:00Z");
+  const m2 = buildManifest(SID, null, rawTurns as any, rawAssets as any, "s", "2026-01-01T00:00:00Z");
+  assertEquals(JSON.stringify(m1), JSON.stringify(m2));
+});
