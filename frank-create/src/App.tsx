@@ -2862,8 +2862,15 @@ export default function App() {
             onPaste={handlePromptPaste}
             onDragOver={handlePromptDragOver}
             onDrop={handlePromptDrop}
-            placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Paste or drop an image to attach as reference."
+            onKeyDown={(event) => {
+              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                event.preventDefault();
+                if (!busy) void handleGenerate();
+              }
+            }}
+            placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Cmd/Ctrl+Enter to generate. Paste or drop an image to attach as reference."
           />
+
 
 
           {promptRemixes.length ? (
