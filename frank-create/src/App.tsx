@@ -1794,6 +1794,15 @@ export default function App() {
     });
 
     if (connection !== "online") {
+      // Auto-name the session from the first prompt if it still has the default name.
+      if (activeSession && (!activeSession.name || /^(new session|launch image studio|untitled)/i.test(activeSession.name)) && turns.length === 0) {
+        const autoName = prompt.trim().replace(/\s+/g, " ").slice(0, 40) || activeSession.name;
+        if (autoName && autoName !== activeSession.name) {
+          const renamed = { ...activeSession, name: autoName };
+          setActiveSession(renamed);
+          setSessions((current) => current.map((s) => (s.id === renamed.id ? renamed : s)));
+        }
+      }
       try {
         const { data, error } = await supabase.functions.invoke("frank-generate", {
           body: {
@@ -1802,11 +1811,13 @@ export default function App() {
             modelId: selectedModel.id,
             aspect_ratio: settings.aspect_ratio,
             size: settings.image_size,
+            thinking_budget: settings.thinking_budget ?? 0,
           },
         });
         if (error) throw error;
         const images: string[] = (data as { images?: string[] })?.images ?? [];
         if (!images.length) throw new Error("No image returned");
+
 
         const nowIso = new Date().toISOString();
         const turnId = makeLocalId("turn");
