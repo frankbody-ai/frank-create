@@ -2891,7 +2891,7 @@ export default function App() {
               <input type="file" accept="image/*" multiple onChange={handleReferenceUpload} />
             </label>
             <div className="reference-dock" aria-label="Reference images">
-              {referenceAssets.slice(0, 5).map((asset) => (
+              {referenceAssets.slice(0, 14).map((asset) => (
                 <button
                   type="button"
                   key={asset.id}
@@ -2906,8 +2906,8 @@ export default function App() {
               {referenceAssets.length ? (
                 <span className="reference-selection-count">
                   {selectedReferenceAssets.length
-                    ? `${selectedReferenceAssets.length} ref${selectedReferenceAssets.length === 1 ? "" : "s"} selected`
-                    : "Prompt-only"}
+                    ? `${selectedReferenceAssets.length}/${Math.min(referenceAssets.length, 14)} ref${selectedReferenceAssets.length === 1 ? "" : "s"} selected`
+                    : `Prompt-only (${referenceAssets.length}/14)`}
                 </span>
               ) : null}
             </div>
