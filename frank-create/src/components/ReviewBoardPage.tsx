@@ -4,13 +4,17 @@ import {
   assetDownloadUrl,
   createSessionHandoffStream,
   fetchSessionApprovalHistory,
+  resumeSessionHandoffStream,
   sessionReviewBoardUrl,
   sessionSyncManifestUrl,
   updateAsset,
+  HandoffError,
+  type HandoffStage,
   type HandoffStreamStep,
 } from "../lib/api";
 import type { Asset } from "../lib/types";
 import { supabase } from "../lib/supabaseClient";
+
 
 type Board = {
   session_id: string;
@@ -105,12 +109,14 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [handoffBusy, setHandoffBusy] = useState(false);
-  const [handoffData, setHandoffData] = useState<{ json: any; csv: string; issues: string[] } | null>(null);
+  const [handoffData, setHandoffData] = useState<{ json: any; csv: string; issues: string[]; valid: boolean } | null>(null);
+  const [resumeState, setResumeState] = useState<{ fromStage: HandoffStage; snapshot: Record<string, unknown>; issues: string[] } | null>(null);
   const [pendingAssetId, setPendingAssetId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [nowTick, setNowTick] = useState(Date.now());
   const handoffAbortRef = useRef<AbortController | null>(null);
+
 
   // Audit-trail filter state
   const [fltTransitions, setFltTransitions] = useState<Set<string>>(new Set());
@@ -173,41 +179,50 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
-  async function runHandoff() {
+  async function runHandoff(resume?: { fromStage: HandoffStage; snapshot: Record<string, unknown> }) {
     const ctrl = new AbortController();
     handoffAbortRef.current = ctrl;
     setHandoffBusy(true);
     const startedAt = Date.now();
     const toastId = pushToast({
       kind: "progress",
-      text: "Packaging handoff…",
+      text: resume ? `Resuming handoff from ${resume.fromStage}…` : "Packaging handoff…",
       startedAt,
       steps: HANDOFF_STEPS.map((s) => ({ ...s })),
       progress: 0,
       onCancel: () => ctrl.abort(),
     });
-    try {
-      const result = await createSessionHandoffStream(sessionId, {
-        signal: ctrl.signal,
-        onStep: (evt: HandoffStreamStep) => {
-          updateToast(toastId, {
-            text: evt.message || "Packaging handoff…",
-            progress: evt.progress,
-            steps: advanceSteps(HANDOFF_STEPS.map((s) => ({ ...s })), evt.step),
-          });
-        },
+    const onStep = (evt: HandoffStreamStep) => {
+      updateToast(toastId, {
+        text: evt.message || "Packaging handoff…",
+        progress: evt.progress,
+        steps: advanceSteps(HANDOFF_STEPS.map((s) => ({ ...s })), evt.step),
       });
+    };
+    try {
+      const result = resume
+        ? await resumeSessionHandoffStream(sessionId, resume.fromStage, resume.snapshot, { signal: ctrl.signal, onStep })
+        : await createSessionHandoffStream(sessionId, { signal: ctrl.signal, onStep });
       const meta: any = result?.metadata || {};
       const serverIssues: string[] = meta.schema_issues || [];
       const clientIssues = validateManifestClient(meta.handoff_json);
       const allIssues = [...serverIssues, ...clientIssues];
+      const valid = allIssues.length === 0;
       if (meta.handoff_json && meta.handoff_csv) {
-        setHandoffData({ json: meta.handoff_json, csv: meta.handoff_csv, issues: allIssues });
+        setHandoffData({ json: meta.handoff_json, csv: meta.handoff_csv, issues: allIssues, valid });
       }
       dismissToast(toastId);
-      if (allIssues.length) {
-        pushToast({ kind: "error", text: `Manifest schema issues: ${allIssues.slice(0, 2).join("; ")}${allIssues.length > 2 ? "…" : ""}` });
+      if (!valid) {
+        // Downloads are gated; give user the option to resume from build_manifest.
+        setResumeState({ fromStage: "build_manifest", snapshot: { structured: meta.handoff_json, csv: meta.handoff_csv }, issues: allIssues });
+        pushToast({
+          kind: "error",
+          text: `Handoff blocked · ${allIssues.length} schema issue${allIssues.length > 1 ? "s" : ""}. Downloads disabled.`,
+          sticky: true,
+          onRetry: () => { void runHandoff({ fromStage: "build_manifest", snapshot: { structured: meta.handoff_json, csv: meta.handoff_csv } }); },
+        });
       } else {
+        setResumeState(null);
         pushToast({ kind: "success", text: `Handoff ready · ${meta.asset_count ?? 0} assets · ${meta.approved_count ?? 0} approved` });
       }
     } catch (e: any) {
@@ -215,13 +230,33 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
       dismissToast(toastId);
       if (canceled) {
         pushToast({ kind: "info", text: "Handoff canceled." });
+      } else if (e instanceof HandoffError) {
+        const issues = e.issues || [];
+        const from = e.resumableFrom || "build_manifest";
+        const snap = (e.snapshot as any) || {};
+        if (e.snapshot?.structured || snap.structured) {
+          setHandoffData({
+            json: snap.structured || null,
+            csv: snap.csv || "",
+            issues,
+            valid: false,
+          });
+        }
+        setResumeState({ fromStage: from, snapshot: snap, issues });
+        const detail = issues.length ? `: ${issues.slice(0, 2).join("; ")}${issues.length > 2 ? "…" : ""}` : `: ${e.message}`;
+        pushToast({
+          kind: "error",
+          text: `Handoff failed at ${e.stage || "?"}${detail}`,
+          sticky: true,
+          onRetry: () => { void runHandoff({ fromStage: from, snapshot: snap }); },
+        });
       } else {
         const msg = e?.message || "Handoff failed.";
         pushToast({
           kind: "error",
           text: `Handoff failed: ${msg}`,
           sticky: true,
-          onRetry: () => { void runHandoff(); },
+          onRetry: () => { void runHandoff(resume); },
         });
       }
     } finally {
@@ -229,6 +264,7 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
       setHandoffBusy(false);
     }
   }
+
 
   async function runDownload(filename: string, mime: string, produce: () => string) {
     let canceled = false;
@@ -387,29 +423,59 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
 
       {handoffData ? (
         <div style={{ marginBottom: 8 }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" style={btn} onClick={() => void runDownload(`handoff-${sessionId}.json`, "application/json", () => JSON.stringify(handoffData.json, null, 2))}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <button
+              type="button"
+              style={{ ...btn, opacity: handoffData.valid ? 1 : 0.45, cursor: handoffData.valid ? "pointer" : "not-allowed" }}
+              disabled={!handoffData.valid}
+              title={handoffData.valid ? "Download JSON manifest" : "Blocked — fix schema issues first"}
+              onClick={() => handoffData.valid && void runDownload(`handoff-${sessionId}.json`, "application/json", () => JSON.stringify(handoffData.json, null, 2))}
+            >
               <Download size={14} /> Download JSON
             </button>
-            <button type="button" style={btn} onClick={() => void runDownload(`handoff-${sessionId}.csv`, "text/csv", () => handoffData.csv)}>
+            <button
+              type="button"
+              style={{ ...btn, opacity: handoffData.valid ? 1 : 0.45, cursor: handoffData.valid ? "pointer" : "not-allowed" }}
+              disabled={!handoffData.valid}
+              title={handoffData.valid ? "Download CSV summary" : "Blocked — fix schema issues first"}
+              onClick={() => handoffData.valid && void runDownload(`handoff-${sessionId}.csv`, "text/csv", () => handoffData.csv)}
+            >
               <Download size={14} /> Download CSV
             </button>
-            <button type="button" style={btn} onClick={() => void navigator.clipboard.writeText(JSON.stringify(handoffData.json, null, 2))}>
+            <button type="button" style={btn} onClick={() => handoffData.json && void navigator.clipboard.writeText(JSON.stringify(handoffData.json, null, 2))}>
               Copy JSON
             </button>
+            {resumeState ? (
+              <button
+                type="button"
+                style={btn}
+                disabled={handoffBusy}
+                onClick={() => void runHandoff({ fromStage: resumeState.fromStage, snapshot: resumeState.snapshot })}
+                title={`Retry from stage: ${resumeState.fromStage}`}
+              >
+                <RotateCw size={14} /> Retry from {resumeState.fromStage}
+              </button>
+            ) : null}
           </div>
           {handoffData.issues.length ? (
-            <details style={{ marginTop: 8, fontSize: 12, color: "#8a1e1e" }}>
-              <summary>Schema issues ({handoffData.issues.length})</summary>
-              <ul style={{ margin: "6px 0 0 18px" }}>
-                {handoffData.issues.slice(0, 20).map((i, k) => <li key={k}>{i}</li>)}
+            <div style={{
+              marginTop: 10, padding: 10, borderRadius: 8,
+              background: "#fdecec", border: "1px solid #e29a9a", color: "#8a1e1e", fontSize: 12,
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                Downloads blocked — {handoffData.issues.length} manifest schema issue{handoffData.issues.length > 1 ? "s" : ""}:
+              </div>
+              <ul style={{ margin: "0 0 0 18px", padding: 0 }}>
+                {handoffData.issues.slice(0, 25).map((i, k) => <li key={k}><code>{i}</code></li>)}
+                {handoffData.issues.length > 25 ? <li>… and {handoffData.issues.length - 25} more</li> : null}
               </ul>
-            </details>
+            </div>
           ) : (
             <div style={{ marginTop: 6, fontSize: 12, color: "#1e6b34" }}>Schema v1 · validated</div>
           )}
         </div>
       ) : null}
+
 
       <section style={{ marginTop: 12 }}>
         <h2 style={sectionH}>Approved ({approved.length})</h2>
