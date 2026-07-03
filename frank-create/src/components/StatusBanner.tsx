@@ -72,7 +72,7 @@ export function StatusBanner() {
     <div className={`frank-status-banner frank-status-${status}`} role="status">
       <span>{label}</span>
       <div className="frank-status-actions">
-        <a href="/health" className="frank-status-link">
+        <a href="#/health" className="frank-status-link">
           Diagnostics
         </a>
         <button
