@@ -2876,7 +2876,8 @@ export default function App() {
             onKeyDown={(event) => {
               if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
                 event.preventDefault();
-                if (!busy) void handleGenerate();
+                if (!busy && prompt.trim()) void handleGenerate();
+                else if (!prompt.trim()) setStatusText("Enter a prompt to generate.");
               }
             }}
             placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Cmd/Ctrl+Enter to generate. Paste or drop an image to attach as reference."
