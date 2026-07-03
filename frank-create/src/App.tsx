@@ -3352,6 +3352,7 @@ export default function App() {
               type="button"
               onClick={exportSessionHandoff}
               disabled={!activeSession || approvedCount === 0 || handoffBusy}
+              title={approvedCount === 0 ? "Approve at least one asset to export" : undefined}
             >
               {handoffBusy ? <RefreshCw className="spin" size={16} /> : <Download size={16} />}
               Export Cliff Pack
