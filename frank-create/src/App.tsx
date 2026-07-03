@@ -2947,7 +2947,12 @@ export default function App() {
               {remixBusy ? <RefreshCw className="spin" size={16} /> : <Sparkles size={16} />}
               Brief remix
             </button>
-            <button className="primary-button" type="submit" disabled={busy}>
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={busy || !prompt.trim()}
+              title={!prompt.trim() ? "Enter a prompt to generate" : undefined}
+            >
               {busy ? <RefreshCw className="spin" size={18} /> : <Wand2 size={18} />}
               {primaryActionLabel}
             </button>
