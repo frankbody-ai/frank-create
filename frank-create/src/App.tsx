@@ -2029,10 +2029,12 @@ export default function App() {
 
       setStatusText(assetStatusCopy(approval_status));
     } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("[approval] updateAsset failed", { assetId: asset.id, approval_status, error });
       setAssets((current) => current.map((item) => (item.id === asset.id ? asset : item)));
       setSelectedAsset(asset);
       syncCompareAsset(asset);
-      setStatusText(error instanceof Error ? error.message : "Could not update review status.");
+      setStatusText(error instanceof Error ? `Approval failed: ${error.message}` : "Could not update review status.");
     }
   }
 
