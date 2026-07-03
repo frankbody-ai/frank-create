@@ -12,9 +12,13 @@ import "./styles.css";
 
 installErrorReporter();
 
+// Route matching: prefer hash routes (work on any static host without SPA fallback),
+// but keep pathname matching for backward compatibility where the host does fall back.
 const pathname = window.location.pathname.replace(/\/$/, "");
-const isHealthRoute = pathname === "/health";
-const reviewMatch = pathname.match(/^\/review\/([^/]+)$/);
+const hashPath = window.location.hash.replace(/^#/, "").replace(/\/$/, "");
+const isHealthRoute = hashPath === "/health" || pathname === "/health";
+const reviewMatch =
+  hashPath.match(/^\/review\/([^/]+)$/) ?? pathname.match(/^\/review\/([^/]+)$/);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
