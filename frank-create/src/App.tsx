@@ -89,7 +89,7 @@ import {
 } from "./lib/api";
 
 import { fallbackBrandKit, fallbackConfig } from "./lib/presets";
-import { supabase } from "./lib/supabaseClient";
+import { supabase, hardSignOut } from "./lib/supabaseClient";
 import { assetStatusCopy, createBriefPayload, makeStoredImagePath, makeViewUrl } from "./lib/frankWorkflow";
 import {
   buildTurnRequest,
@@ -316,8 +316,8 @@ export default function App() {
     return () => sub.subscription.unsubscribe();
   }, []);
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.reload();
+    await hardSignOut();
+    window.location.replace("/");
   };
   const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot">(() =>
     initialStudioMode()
@@ -2029,10 +2029,12 @@ export default function App() {
 
       setStatusText(assetStatusCopy(approval_status));
     } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error("[approval] updateAsset failed", { assetId: asset.id, approval_status, error });
       setAssets((current) => current.map((item) => (item.id === asset.id ? asset : item)));
       setSelectedAsset(asset);
       syncCompareAsset(asset);
-      setStatusText(error instanceof Error ? error.message : "Could not update review status.");
+      setStatusText(error instanceof Error ? `Approval failed: ${error.message}` : "Could not update review status.");
     }
   }
 
@@ -2876,7 +2878,8 @@ export default function App() {
             onKeyDown={(event) => {
               if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
                 event.preventDefault();
-                if (!busy) void handleGenerate();
+                if (!busy && prompt.trim()) void handleGenerate();
+                else if (!prompt.trim()) setStatusText("Enter a prompt to generate.");
               }
             }}
             placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Cmd/Ctrl+Enter to generate. Paste or drop an image to attach as reference."
@@ -2946,7 +2949,12 @@ export default function App() {
               {remixBusy ? <RefreshCw className="spin" size={16} /> : <Sparkles size={16} />}
               Brief remix
             </button>
-            <button className="primary-button" type="submit" disabled={busy}>
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={busy || !prompt.trim()}
+              title={!prompt.trim() ? "Enter a prompt to generate" : undefined}
+            >
               {busy ? <RefreshCw className="spin" size={18} /> : <Wand2 size={18} />}
               {primaryActionLabel}
             </button>
@@ -3344,6 +3352,7 @@ export default function App() {
               type="button"
               onClick={exportSessionHandoff}
               disabled={!activeSession || approvedCount === 0 || handoffBusy}
+              title={approvedCount === 0 ? "Approve at least one asset to export" : undefined}
             >
               {handoffBusy ? <RefreshCw className="spin" size={16} /> : <Download size={16} />}
               Export Cliff Pack
@@ -4220,6 +4229,7 @@ export default function App() {
             type="button"
             onClick={exportSessionHandoff}
             disabled={!activeSession || approvedCount === 0 || handoffBusy}
+            title={approvedCount === 0 ? "Approve at least one asset to export" : undefined}
           >
             {handoffBusy ? <RefreshCw className="spin" size={16} /> : <Download size={16} />}
             Export Cliff Pack

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS } from "./lib/supabaseClient";
+import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS, hardSignOut } from "./lib/supabaseClient";
 
 
 
@@ -20,7 +20,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       if (!s) return setStatus("signed-out");
       const email = s.user?.email;
       if (!isAllowedEmail(email)) {
-        await supabase.auth.signOut();
+        await hardSignOut();
         setError(`Access is restricted to ${ALLOWED_EMAIL_DOMAINS.map((d) => "@" + d).join(" and ")} accounts. (${email ?? "no email"})`);
         return setStatus("denied");
       }
@@ -49,7 +49,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await hardSignOut();
+    window.location.replace("/");
   };
 
   if (status === "ready" && session) return <>{children}</>;
