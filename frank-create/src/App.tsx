@@ -316,8 +316,8 @@ export default function App() {
     return () => sub.subscription.unsubscribe();
   }, []);
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.reload();
+    await hardSignOut();
+    window.location.replace("/");
   };
   const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot">(() =>
     initialStudioMode()
