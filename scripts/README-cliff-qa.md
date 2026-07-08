@@ -29,8 +29,16 @@ set CLIFF_QA_URL=https://frank-create.lovable.app
 set CLIFF_QA_EMAIL=didac@frankbody.com
 set CLIFF_QA_STORAGE_STATE=user\frank_create\qa\state.json
 set CLIFF_QA_DENY_STORAGE_STATE=user\frank_create\qa\state-deny.json
+set CLIFF_QA_SAMPLE_SESSION=<seeded session id with >=1 unapproved asset>
 python scripts\cliff_access_playwright.py
 ```
+
+`CLIFF_QA_SAMPLE_SESSION` is optional. If unset, the runbook falls back to
+the `cliff.qa.sampleSessionId` value persisted from the in-app
+`/#/cliff-access` checklist. When present, Phase 4 opens
+`/#/review/<id>`, clicks the first enabled **Approve**, and asserts a 2xx
+`POST` to the PostgREST `asset_approval_events` endpoint (network-level, not
+just UI state).
 
 Exit code `0` = READY, `1` = BLOCKED.
 

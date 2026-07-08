@@ -288,7 +288,7 @@ async def phase_model(browser: Browser, r: Runner, phase: str, model_label_regex
     await ctx.close()
 
 
-# ---------- Phase 4 — Approve / Export / Handoff (mostly manual assertions) ----------
+# ---------- Phase 4 — Approve / Export / Handoff ----------
 async def phase_4(browser: Browser, r: Runner):
     print("\n== Phase 4 — Approve / Export / Handoff ==", flush=True)
     if not (STORAGE_STATE and Path(STORAGE_STATE).exists()):
@@ -299,6 +299,21 @@ async def phase_4(browser: Browser, r: Runner):
 
     ctx = await new_context(browser, STORAGE_STATE)
     page = await ctx.new_page()
+
+    # Capture PostgREST writes to asset_approval_events across the whole phase.
+    approval_events: list[dict[str, Any]] = []
+
+    def on_response(resp):
+        try:
+            url = resp.url
+            method = resp.request.method
+        except Exception:
+            return
+        if "asset_approval_events" in url and method in ("POST", "PATCH"):
+            approval_events.append({"url": url, "status": resp.status, "method": method})
+
+    page.on("response", on_response)
+
     await page.goto(URL, wait_until="domcontentloaded")
     await asyncio.sleep(4)
 
@@ -316,10 +331,60 @@ async def phase_4(browser: Browser, r: Runner):
     except Exception as e:
         r.record("Phase 4", "Export Cliff Pack disabled when 0 approved", "fail", notes=str(e))
 
-    # Remaining steps require live generation/approval — flag manual.
-    for step in ["Approve inserts audit event 2xx",
-                 "Open review board populated",
-                 "Sync manifest matches frank-create.sync.v1",
+    # Active approve probe: navigate to sample review session, click first Approve, assert insert.
+    sample_session = os.environ.get("CLIFF_QA_SAMPLE_SESSION")
+    if not sample_session:
+        try:
+            sample_session = await page.evaluate(
+                "localStorage.getItem('cliff.qa.sampleSessionId')"
+            )
+        except Exception:
+            sample_session = None
+
+    if sample_session:
+        try:
+            await page.goto(f"{URL}/#/review/{sample_session}", wait_until="domcontentloaded")
+            await asyncio.sleep(4)
+            shot_before = await r.shot(page, "p4_review_board")
+            approve = page.get_by_role("button", name=re.compile(r"^approve", re.I)).first
+            if await approve.count() > 0 and not await approve.is_disabled():
+                approval_events.clear()
+                await approve.click(timeout=5000)
+                for _ in range(20):
+                    if approval_events:
+                        break
+                    await asyncio.sleep(0.5)
+                shot_after = await r.shot(page, "p4_approve_clicked")
+                if not approval_events:
+                    r.record("Phase 4", "Approve inserts audit event 2xx", "fail",
+                             notes="No POST /asset_approval_events observed within 10s",
+                             evidence=shot_after)
+                else:
+                    last = approval_events[-1]
+                    ok = 200 <= last["status"] < 300
+                    r.record("Phase 4", "Approve inserts audit event 2xx",
+                             "pass" if ok else "fail",
+                             notes=f"{last['method']} {last['status']}",
+                             evidence=shot_after)
+                r.record("Phase 4", "Open review board populated", "pass",
+                         notes=f"session={sample_session}", evidence=shot_before)
+            else:
+                r.record("Phase 4", "Approve inserts audit event 2xx", "skip",
+                         notes="No enabled Approve button on sample board",
+                         evidence=shot_before)
+                r.record("Phase 4", "Open review board populated", "fail",
+                         notes="No approvable assets in sample session",
+                         evidence=shot_before)
+        except Exception as e:
+            r.record("Phase 4", "Approve inserts audit event 2xx", "fail", notes=str(e))
+            r.record("Phase 4", "Open review board populated", "fail", notes=str(e))
+    else:
+        r.record("Phase 4", "Approve inserts audit event 2xx", "skip",
+                 notes="Set CLIFF_QA_SAMPLE_SESSION or seed sample id via /#/cliff-access")
+        r.record("Phase 4", "Open review board populated", "skip",
+                 notes="No sample session id available")
+
+    for step in ["Sync manifest matches frank-create.sync.v1",
                  "Cliff Pack ZIP downloads and opens",
                  "Run brief clipboard is secret-free",
                  "Workflow JSON download is secret-free"]:
