@@ -28,6 +28,10 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <ErrorToast />
     {isHealthRoute ? (
       <HealthPage />
+    ) : isCliffRoute ? (
+      <AuthGate>
+        <CliffAccessPage />
+      </AuthGate>
     ) : reviewMatch ? (
       <AuthGate>
         <ReviewBoardPage sessionId={decodeURIComponent(reviewMatch[1])} />
