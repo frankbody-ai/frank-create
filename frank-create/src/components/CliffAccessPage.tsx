@@ -126,6 +126,25 @@ async function runProbes(): Promise<Probe[]> {
     probes.push({ name: "Auth session", ok: false, error: e?.message ?? String(e) });
   }
 
+  // Verify RLS lets the signed-in user read their own approval events.
+  try {
+    const { error, count } = await supabase
+      .from("asset_approval_events")
+      .select("id", { count: "exact", head: true });
+    if (error) throw error;
+    probes.push({
+      name: "asset_approval_events RLS (select)",
+      ok: true,
+      detail: `own rows visible: ${count ?? 0}`,
+    });
+  } catch (e: any) {
+    probes.push({
+      name: "asset_approval_events RLS (select)",
+      ok: false,
+      error: e?.message ?? String(e),
+    });
+  }
+
   probes.push({
     name: "Browser online",
     ok: navigator.onLine,
@@ -134,6 +153,9 @@ async function runProbes(): Promise<Probe[]> {
 
   return probes;
 }
+
+const SAMPLE_SESSION_KEY = "frank-create.cliff-sample-session-id";
+
 
 export function CliffAccessPage() {
   const [state, setState] = useState<StateMap>(() => loadState());
