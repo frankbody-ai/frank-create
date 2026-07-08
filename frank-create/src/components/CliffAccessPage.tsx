@@ -161,6 +161,21 @@ export function CliffAccessPage() {
   const [state, setState] = useState<StateMap>(() => loadState());
   const [probes, setProbes] = useState<Probe[] | null>(null);
   const [running, setRunning] = useState(false);
+  const [sampleSessionId, setSampleSessionId] = useState<string>(() => {
+    try {
+      return localStorage.getItem(SAMPLE_SESSION_KEY) ?? "sample-session";
+    } catch {
+      return "sample-session";
+    }
+  });
+
+  const persistSampleSessionId = (val: string) => {
+    setSampleSessionId(val);
+    try { localStorage.setItem(SAMPLE_SESSION_KEY, val); } catch { /* ignore */ }
+  };
+
+  const [probes, setProbes] = useState<Probe[] | null>(null);
+  const [running, setRunning] = useState(false);
 
   const runAllProbes = useCallback(async () => {
     setRunning(true);
