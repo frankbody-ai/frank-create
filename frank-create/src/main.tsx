@@ -7,6 +7,7 @@ import { StatusBanner } from "./components/StatusBanner";
 import { ErrorToast } from "./components/ErrorToast";
 import { HealthPage } from "./components/HealthPage";
 import { ReviewBoardPage } from "./components/ReviewBoardPage";
+import { CliffAccessPage } from "./components/CliffAccessPage";
 import { installErrorReporter } from "./lib/errorReporter";
 import "./styles.css";
 
@@ -17,6 +18,7 @@ installErrorReporter();
 const pathname = window.location.pathname.replace(/\/$/, "");
 const hashPath = window.location.hash.replace(/^#/, "").replace(/\/$/, "");
 const isHealthRoute = hashPath === "/health" || pathname === "/health";
+const isCliffRoute = hashPath === "/cliff-access" || pathname === "/cliff-access";
 const reviewMatch =
   hashPath.match(/^\/review\/([^/]+)$/) ?? pathname.match(/^\/review\/([^/]+)$/);
 
