@@ -99,11 +99,12 @@ Grouped by what actually blocks handover vs. what Cliff will notice but accept.
 
 ### 3a. Must-close before granting Cliff access
 
-1. **Provider Setup parity note in-app.** Cliff's spec assumes a Provider Setup screen. Cloud build uses Lovable AI Gateway so no key fields exist. Add a small "Provider Setup" panel in Studio settings that shows: "Cloud build — keys managed via Lovable AI Gateway. Local Studio (`CLIFF_START_HERE.cmd`) exposes Gemini/OpenAI/Replicate key fields." Prevents "missing feature" flag.
-2. **`asset_approval_events` audit verification.** Confirm the RLS policy allows the signed-in user to insert their approve/reject events; if the Phase 4 network assert fails, add the missing policy in a migration and re-run.
-3. **Cliff Pack cloud path smoke.** Verify `supabase/functions/frank-api/handoff.ts` actually returns a ZIP when called from the cloud build (not just locally). Fix if the edge fn is missing dependencies or storage grants.
-4. **Sample review board seed.** Provide one shareable session ID with pre-approved assets so Cliff's very first click on "Open sample review board" from the checklist shows a populated board, not an empty state.
-5. **README-for-Cliff card** on `/#/cliff-access` linking to `FRANK_CREATE_DEMO.md` highlights: NB Pro is default, NB 2 is the fast path, masked edit is the retouch path, Cliff Pack is the handoff.
+1. **[DONE] Provider Setup parity note in-app.** Rendered in the README-for-Cliff card on `/#/cliff-access` so testers and Cliff see the cloud-vs-local key story before flagging it as a missing feature.
+2. **[AUTO-PROBED] `asset_approval_events` audit verification.** `/#/cliff-access` now runs a live `select id` against `asset_approval_events` on load; if RLS blocks the signed-in user the row goes red and Phase 4 can't reach READY. Existing migration `20260701113526` already grants insert/select — this probe catches regressions.
+3. **[MANUAL] Cliff Pack cloud path smoke.** Still needs a live click-through: sign in, approve 2 assets in a real session, hit Export Cliff Pack, confirm the ZIP downloads and opens. The Phase 4 checklist row (`p4-zip`) tracks it.
+4. **[UI-READY] Sample review board seed.** `/#/cliff-access` now has a persisted "Sample review session id" input; paste a session id that already has approved assets and the "Open sample review board" link routes there. Still need to actually create + note one pre-seeded session.
+5. **[DONE] README-for-Cliff card** rendered at the top of `/#/cliff-access`: NB Pro default, NB 2 fast path, masked edit for retouch, Cliff Pack for handoff, plus the Provider Setup parity note and deep links.
+
 
 ### 3b. Nice-to-have, ship if time allows
 
