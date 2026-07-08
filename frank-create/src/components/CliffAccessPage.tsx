@@ -174,8 +174,8 @@ export function CliffAccessPage() {
     try { localStorage.setItem(SAMPLE_SESSION_KEY, val); } catch { /* ignore */ }
   };
 
-  const [probes, setProbes] = useState<Probe[] | null>(null);
-  const [running, setRunning] = useState(false);
+
+
 
   const runAllProbes = useCallback(async () => {
     setRunning(true);
