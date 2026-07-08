@@ -269,7 +269,10 @@ export function CliffAccessPage() {
         </p>
         <div className="frank-health-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <a href="#/health" target="_blank" rel="noreferrer">Open /health ↗</a>
-          <a href="#/review/sample-session" target="_blank" rel="noreferrer">Open sample review board ↗</a>
+          <a href={`#/review/${encodeURIComponent(sampleSessionId)}`} target="_blank" rel="noreferrer">
+            Open sample review board ↗
+          </a>
+
           <button type="button" onClick={copyPublished}>Copy published URL</button>
           <button type="button" onClick={runAllProbes} disabled={running}>
             {running ? "Probing…" : "Re-run probes"}
