@@ -126,6 +126,25 @@ async function runProbes(): Promise<Probe[]> {
     probes.push({ name: "Auth session", ok: false, error: e?.message ?? String(e) });
   }
 
+  // Verify RLS lets the signed-in user read their own approval events.
+  try {
+    const { error, count } = await supabase
+      .from("asset_approval_events")
+      .select("id", { count: "exact", head: true });
+    if (error) throw error;
+    probes.push({
+      name: "asset_approval_events RLS (select)",
+      ok: true,
+      detail: `own rows visible: ${count ?? 0}`,
+    });
+  } catch (e: any) {
+    probes.push({
+      name: "asset_approval_events RLS (select)",
+      ok: false,
+      error: e?.message ?? String(e),
+    });
+  }
+
   probes.push({
     name: "Browser online",
     ok: navigator.onLine,
@@ -135,8 +154,26 @@ async function runProbes(): Promise<Probe[]> {
   return probes;
 }
 
+const SAMPLE_SESSION_KEY = "frank-create.cliff-sample-session-id";
+
+
 export function CliffAccessPage() {
   const [state, setState] = useState<StateMap>(() => loadState());
+  const [probes, setProbes] = useState<Probe[] | null>(null);
+  const [running, setRunning] = useState(false);
+  const [sampleSessionId, setSampleSessionId] = useState<string>(() => {
+    try {
+      return localStorage.getItem(SAMPLE_SESSION_KEY) ?? "sample-session";
+    } catch {
+      return "sample-session";
+    }
+  });
+
+  const persistSampleSessionId = (val: string) => {
+    setSampleSessionId(val);
+    try { localStorage.setItem(SAMPLE_SESSION_KEY, val); } catch { /* ignore */ }
+  };
+
   const [probes, setProbes] = useState<Probe[] | null>(null);
   const [running, setRunning] = useState(false);
 
@@ -232,7 +269,10 @@ export function CliffAccessPage() {
         </p>
         <div className="frank-health-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <a href="#/health" target="_blank" rel="noreferrer">Open /health ↗</a>
-          <a href="#/review/sample-session" target="_blank" rel="noreferrer">Open sample review board ↗</a>
+          <a href={`#/review/${encodeURIComponent(sampleSessionId)}`} target="_blank" rel="noreferrer">
+            Open sample review board ↗
+          </a>
+
           <button type="button" onClick={copyPublished}>Copy published URL</button>
           <button type="button" onClick={runAllProbes} disabled={running}>
             {running ? "Probing…" : "Re-run probes"}
@@ -242,6 +282,59 @@ export function CliffAccessPage() {
           <a href="/">← Back to app</a>
         </div>
       </header>
+
+      <section style={{ marginTop: 24, padding: 16, border: "1px solid #333", borderRadius: 8 }}>
+        <h2 style={{ fontSize: 16, marginTop: 0 }}>README for Cliff (read first)</h2>
+        <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.6 }}>
+          <li>
+            <strong>Default model:</strong> Nano Banana Pro (<code>gemini-3-pro-image</code>) — best quality
+            + 4K + optional Frank Body Mode.
+          </li>
+          <li>
+            <strong>Fast iteration:</strong> switch to Nano Banana 2 (<code>gemini-3.1-flash-image</code>)
+            for quick prompt/reference rounds.
+          </li>
+          <li>
+            <strong>Retouch path:</strong> Mask painter → Save mask → Generate runs a masked edit on the
+            active output.
+          </li>
+          <li>
+            <strong>Handoff:</strong> Approve at least one output, then <em>Export Cliff Pack</em> for the
+            ZIP; <em>Copy run brief</em> and <em>Download workflow JSON</em> are safe to share (no secrets).
+          </li>
+          <li>
+            <strong>Cloud build parity note:</strong> This deployment uses the Lovable AI Gateway, so the
+            Provider Setup screen does not show key input fields. Gemini / OpenAI / Replicate keys are only
+            required when running the local Studio via <code>CLIFF_START_HERE.cmd</code>.
+          </li>
+          <li>
+            <strong>Deep links:</strong>{" "}
+            <a href="#/health" target="_blank" rel="noreferrer">/#/health</a> for backend status,{" "}
+            <a href={`#/review/${encodeURIComponent(sampleSessionId)}`} target="_blank" rel="noreferrer">
+              /#/review/{sampleSessionId}
+            </a>{" "}
+            for the shared review board.
+          </li>
+        </ul>
+      </section>
+
+      <section style={{ marginTop: 16, padding: 12, border: "1px solid #333", borderRadius: 8 }}>
+        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13 }}>
+          <span style={{ minWidth: 160 }}>Sample review session id:</span>
+          <input
+            type="text"
+            value={sampleSessionId}
+            onChange={(e) => persistSampleSessionId(e.target.value)}
+            style={{ flex: 1, padding: "4px 8px" }}
+            placeholder="paste a pre-approved session id"
+          />
+        </label>
+        <p style={{ fontSize: 12, opacity: 0.7, margin: "6px 0 0" }}>
+          Persisted locally. Use the id of a session that already has approved assets so Cliff&apos;s first
+          click on “Open sample review board” lands on a populated contact sheet, not an empty state.
+        </p>
+      </section>
+
 
       <section style={{ marginTop: 24 }}>
         <h2 style={{ fontSize: 16, marginBottom: 8 }}>Live probes</h2>
