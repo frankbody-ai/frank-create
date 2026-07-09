@@ -339,20 +339,18 @@ async function handleInference(body: any, userId: string) {
   if (!prompt.trim()) throw new Error("Prompt is required");
 
   const turnId = crypto.randomUUID();
+  const modelId: string = body.model || "nano-banana-pro";
+  const gatewayModel = MODEL_MAP[modelId] || "google/gemini-2.5-flash-image-preview";
+  const reqSettings: any = body.settings || {};
   const settingsSnapshot: any = {
     kind: body.kind || "generate",
-    model: body.model || "nano-banana-pro",
-    settings: body.settings || {},
+    model: modelId,
+    settings: reqSettings,
     frank_body_mode: !!body.frank_body_mode,
     preset_key: body.preset_key ?? null,
     reference_asset_ids: body.reference_asset_ids || [],
     status: "running",
   };
-
-  const { data: maxSeq } = await sb.from("messages")
-    .select("seq").eq("session_id", sessionId)
-    .order("seq", { ascending: false }).limit(1).maybeSingle();
-  const nextSeq = ((maxSeq?.seq as number) || 0) + 1;
 
   const msgIns = await sb.from("messages").insert({
     id: turnId,
@@ -362,9 +360,9 @@ async function handleInference(body: any, userId: string) {
     message_type: settingsSnapshot.kind,
     prompt_text: prompt,
     settings_snapshot_json: settingsSnapshot,
-    seq: nextSeq,
-  });
+  }).select("seq").single();
   if (msgIns.error) throw msgIns.error;
+  const nextSeq = (msgIns.data as any)?.seq ?? 0;
 
   let img;
   try {
@@ -373,10 +371,16 @@ async function handleInference(body: any, userId: string) {
       ...((body.reference_asset_ids as string[]) || []),
     ];
     const refUrls = await loadReferenceDataUrls(refIds, userId);
-    img = await lovableImage(prompt, refUrls);
+    img = await lovableImage(prompt, refUrls, {
+      gatewayModel,
+      aspectRatio: reqSettings.aspect_ratio,
+      size: reqSettings.image_size || reqSettings.size,
+      thinkingBudget: Number(reqSettings.thinking_budget ?? body.thinking_budget ?? 0),
+    });
   } catch (err) {
+    const msg = errMessage(err);
     await sb.from("messages").update({
-      settings_snapshot_json: { ...settingsSnapshot, status: "failed", error: String(err) },
+      settings_snapshot_json: { ...settingsSnapshot, status: "failed", error: msg },
     }).eq("id", turnId);
     return {
       turn: rowToTurn({
@@ -386,7 +390,7 @@ async function handleInference(body: any, userId: string) {
         seq: nextSeq, created_at: nowIso(),
       }),
       status: "failed" as const,
-      error: { code: "lovable_ai_error", message: String(err) },
+      error: { code: "lovable_ai_error", message: msg },
     };
   }
 
@@ -407,7 +411,7 @@ async function handleInference(body: any, userId: string) {
     storage_path: storagePath,
     asset_type: "generated",
     prompt_snapshot: prompt,
-    model_key: "nano-banana-pro",
+    model_key: modelId,
     metadata_json: {
       media_type: "image",
       mime: img.mime,
@@ -435,8 +439,8 @@ async function handleInference(body: any, userId: string) {
     }),
     status: "complete" as const,
     assets: [rowToAsset(assetIns.data, url)],
-    providerPayload: { provider: "lovable", model: "google/gemini-2.5-flash-image" },
-    localEngine: "fallback" as const,
+    providerPayload: { provider: "lovable", model: gatewayModel },
+    localEngine: "cloud" as const,
   };
 }
 
