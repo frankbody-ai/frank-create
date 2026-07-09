@@ -1,62 +1,59 @@
+## Verification Plan: Cliff Pack + NB Pro Inference + Phase 2–4 QA
 
-# Unblock Cliff handoff — fix image generation backend
+Three verification tasks against the published `https://frank-create.lovable.app` build (post-`frank-api` fix for `messages.seq` / model routing).
 
-Tester's blocker root-caused. Edge function logs show the exact DB error every call:
+### 1. Cliff Pack ZIP export smoke
 
-```
-[frank-api] { code: "428C9", message: 'cannot insert a non-DEFAULT value into column "seq"',
-  details: 'Column "seq" is an identity column defined as GENERATED ALWAYS.' }
-```
+- Sign in, open the Studio, pick a session that has at least one approved asset (seed one if empty by generating + approving).
+- Click "Export Cliff Pack" in the Studio and on `/#/review/:sessionId`.
+- Confirm:
+  - Button leaves the disabled/0-approved state.
+  - Browser download completes (`cliff-pack-*.zip`).
+  - Unzip locally: verify `manifest.json` matches `handoff.ts` schema, images open, and `run_brief.md` / workflow JSON contain no `LOVABLE_API_KEY`, `sb_secret_`, or bearer tokens.
+- Capture screenshots of: export button state, download toast, unzipped contents.
 
-The catch handler then does `String(err)` on a Supabase error object → `"[object Object]"` → the frontend sees the generic 500. Every `/inference/turn` POST is failing before it ever reaches the AI gateway. Independently, `handleInference` ignores `body.model` and settings, so even after the DB fix Nano Banana Pro / NB 2 would still all resolve to Gemini 2.5 Flash Image 1024×1024 — matching what the tester saw at `/models`.
+### 2. `/functions/v1/frank-api/inference/turn` NB Pro smoke
 
-Two files change: `supabase/functions/frank-api/index.ts` and `frank-create/src/lib/presets.ts`. No schema migration. No frontend logic change beyond aligning what the model picker advertises.
-
-## Fixes in `supabase/functions/frank-api/index.ts`
-
-1. **Stop writing `seq`.** `messages.seq` is `GENERATED ALWAYS AS IDENTITY`. Remove the max-seq lookup (lines 292–295) and the `seq: nextSeq` field on the insert (line 305). Read the DB-assigned value back with `.select("seq").single()` and use it in the returned `rowToTurn` payloads (lines 326 and 374).
-
-2. **Serialize errors properly.** Replace `String(err)` in the outer catch (line 945) and the inference failure branch (line 329) with a helper that returns `err.message ?? err.error_description ?? JSON.stringify(err)`. No more `"[object Object]"`.
-
-3. **Honor `body.model` and `body.settings` in `handleInference`.** Add a model map matching what `frank-generate` already uses:
-
-    ```text
-    nano-banana-pro / google-nb-pro   → google/gemini-3-pro-image-preview
-    nano-banana-2   / google-nb-2     → google/gemini-3.1-flash-image-preview
-    frank-local-comfy                 → google/gemini-2.5-flash-image-preview (cloud fallback)
-    openai-gpt-image-2                → openai/gpt-image-2 (via /images/generations)
+- Use `supabase--curl_edge_functions` (auto-injects the preview session bearer) with:
+  - `path`: `/frank-api/inference/turn`
+  - `method`: `POST`
+  - body:
+    ```json
+    {
+      "session_id": "<sample-session-uuid>",
+      "prompt": "frank body coffee scrub hero shot, soft studio light",
+      "model": "nano-banana-pro",
+      "settings": { "aspect_ratio": "1:1", "image_size": "2K", "count": 1 }
+    }
     ```
+- Assert HTTP 200, response contains a `turn` with `status: "complete"` and at least one `asset` with a signed `preview_url`.
+- Repeat once with `"model": "nano-banana-2"` to confirm the new `MODEL_MAP` routing.
+- If a 5xx returns, capture the JSON `error` string (now a real message, not `[object Object]`) and stop.
 
-    Extend `lovableImage(prompt, refs, opts)` with `{ gatewayModel, aspectRatio, size, thinkingBudget }`. For Gemini models append aspect/size hints to the prompt (same pattern as `frank-generate`) and map `thinking_budget` → OpenRouter `reasoning.effort` for `gemini-3-pro`. For `openai/gpt-image-2` route to `/v1/images/generations` with the sanitized size list (`1024x1024`, `1536x1024`, `1024x1536`).
+### 3. Rerun Phase 2–4 of the Cliff access QA checklist
 
-4. **Stop hardcoding `nano-banana-pro`.** Use the resolved model id on the asset row (`model_key`), on `providerPayload.model`, and let `rowToTurn` read the model from `settings_snapshot_json.model` rather than defaulting.
+Run against `https://frank-create.lovable.app` using the existing Playwright runbook so results are reproducible:
 
-5. **Surface upstream failures without hiding them.** Keep the existing `throw new Error(\`Lovable image ${r.status}: ${await r.text()}\`)` — that already gives a real message once fix #2 lands.
+```text
+scripts/cliff_access_playwright.py
+  env:
+    CLIFF_QA_STORAGE_STATE=/tmp/browser/cliff-storage.json
+    CLIFF_QA_SAMPLE_SESSION=<sample-session-uuid>
+    CLIFF_QA_BASE_URL=https://frank-create.lovable.app
+```
 
-## Model catalog alignment in `frank-create/src/lib/presets.ts`
+Phases executed:
+- **Phase 2 — NB Pro live gen**: prompt + reference dock (1 image), assert asset renders in center Round card and right rail, screenshot.
+- **Phase 3 — NB 2 live gen**: same flow, model swapped, assert asset appears, screenshot.
+- **Phase 4 — Approve + audit + Cliff Pack**: approve on `/#/review/:sessionId`, assert `POST asset_approval_events` returns 2xx (existing network listener), then trigger Cliff Pack export and assert ZIP download event.
 
-The UI advertises "Nano Banana Pro" and "Nano Banana 2" as 4K. Lovable AI Gateway's Gemini image models don't expose a 4K knob; the earlier `frank-generate` just hinted "4K" inside the prompt string, which the model does not honor as a real output resolution. Two options:
+Deliverable:
+- Pass/fail table per phase.
+- Screenshots saved under `/tmp/browser/cliff-qa/` and referenced in a short report.
+- If any phase fails, include the captured console + network error verbatim (no summarization) so the fix target is unambiguous.
 
-- **A — recommended:** drop `4K` from the size list for both Nano Banana models. Keep `1K` and `2K` as prompt hints only, or reduce to a single "Auto" option. Update the tile subtitle to remove the "4K" claim so the README and picker match reality.
-- B — leave the labels, add a footnote in the model card that size is a hint not a guarantee. Weaker; tester will flag it again.
+### Technical notes
 
-Take A. `openai-gpt-image-2` keeps its real size list.
-
-## Verification (after switch to build mode)
-
-1. Deploy the edge function change.
-2. `supabase--curl_edge_functions` POST `/frank-api/inference/turn` with `{ prompt: "test", model: "nano-banana-pro", settings: { aspect_ratio: "1:1" } }` — expect 200 with an asset URL, not 500.
-3. Repeat for `nano-banana-2` and `openai-gpt-image-2`.
-4. Confirm `messages.seq` auto-increments (read one row back).
-5. Confirm a forced upstream failure now returns a readable `error.message` (e.g. temporarily send a bogus model id → response should say `Lovable image 400: ...` not `[object Object]`).
-6. Re-run the tester agent's Phase 2/3 loop against the published URL.
-
-## Out of scope for this fix
-
-- Real 4K output (would require a different model family; not on the Cliff MVP contract).
-- Schema change to make `seq` non-identity — the identity column is fine; only our code was wrong.
-- FC-008 / FC-010 / FC-011 (already flagged deferred).
-
-## Cliff handoff gate stays the same
-
-Do not grant access until Phase 1–4 Playwright run comes back green **and** the manual Cliff Pack ZIP secret scan passes. This plan only unblocks Phase 2 onward; it doesn't change the gate.
+- Requires the `frank-api` deploy that includes the `messages.seq` fix and `MODEL_MAP`; if published build is older, republish before running.
+- Storage state file must be captured once per Cliff-approved Google account (see `scripts/README-cliff-qa.md`).
+- No app code changes are expected from this plan — it is verification only. Any bug found will be a follow-up plan.
