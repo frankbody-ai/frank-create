@@ -191,25 +191,85 @@ async function lovableChat(messages: any[]) {
   return j.choices?.[0]?.message?.content || "";
 }
 
+const MODEL_MAP: Record<string, string> = {
+  "nano-banana-pro": "google/gemini-3-pro-image-preview",
+  "google-nb-pro": "google/gemini-3-pro-image-preview",
+  "nano-banana-2": "google/gemini-3.1-flash-image-preview",
+  "google-nb-2": "google/gemini-3.1-flash-image-preview",
+  "frank-local-comfy": "google/gemini-2.5-flash-image-preview",
+  "openai-gpt-image-2": "openai/gpt-image-2",
+};
+
+const OPENAI_SIZES = new Set(["1024x1024", "1536x1024", "1024x1536", "auto"]);
+function openaiSizeFromAspect(ar?: string): string {
+  switch (ar) {
+    case "3:2":
+    case "16:9":
+    case "4:3": return "1536x1024";
+    case "2:3":
+    case "9:16":
+    case "3:4": return "1024x1536";
+    default: return "1024x1024";
+  }
+}
+
+function errMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  if (err && typeof err === "object") {
+    const anyErr = err as any;
+    return anyErr.message || anyErr.error_description || anyErr.details || JSON.stringify(err);
+  }
+  return String(err);
+}
+
 async function lovableImage(
   prompt: string,
   referenceImageDataUrls: string[] = [],
+  opts: { gatewayModel?: string; aspectRatio?: string; size?: string; thinkingBudget?: number } = {},
 ): Promise<{ b64: string; mime: string }> {
-  const content: any[] = [{ type: "text", text: prompt }];
+  const gatewayModel = opts.gatewayModel || "google/gemini-2.5-flash-image-preview";
+
+  if (gatewayModel.startsWith("openai/gpt-image")) {
+    const size = opts.size && OPENAI_SIZES.has(opts.size) ? opts.size : openaiSizeFromAspect(opts.aspectRatio);
+    const r = await fetch(`${LOVABLE_BASE}/images/generations`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: gatewayModel, prompt, size, n: 1, quality: "low" }),
+    });
+    if (!r.ok) throw new Error(`Lovable image ${r.status}: ${await r.text()}`);
+    const j: any = await r.json();
+    const item = j?.data?.[0];
+    if (item?.b64_json) return { b64: item.b64_json, mime: "image/png" };
+    if (item?.url) {
+      const m = String(item.url).match(/^data:(image\/[a-z]+);base64,(.+)$/);
+      if (m) return { b64: m[2], mime: m[1] };
+    }
+    throw new Error(`Lovable AI returned no image data. ${JSON.stringify(j).slice(0, 300)}`);
+  }
+
+  const hints: string[] = [];
+  if (opts.aspectRatio) hints.push(`Aspect ratio: ${opts.aspectRatio}.`);
+  if (opts.size && ["1K", "2K", "4K"].includes(opts.size)) hints.push(`Output resolution: ${opts.size}.`);
+  const fullText = hints.length ? `${prompt}\n\n${hints.join(" ")}` : prompt;
+
+  const content: any[] = [{ type: "text", text: fullText }];
   for (const url of referenceImageDataUrls) {
     content.push({ type: "image_url", image_url: { url } });
   }
+  const payload: Record<string, unknown> = {
+    model: gatewayModel,
+    messages: [{ role: "user", content }],
+    modalities: ["image", "text"],
+  };
+  const budget = Number(opts.thinkingBudget ?? 0);
+  if (budget > 0 && gatewayModel.includes("gemini-3-pro")) {
+    payload.reasoning = { effort: budget >= 5000 ? "high" : "low" };
+  }
   const r = await fetch(`${LOVABLE_BASE}/chat/completions`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "google/gemini-2.5-flash-image-preview",
-      messages: [{ role: "user", content }],
-      modalities: ["image", "text"],
-    }),
+    headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
   if (!r.ok) throw new Error(`Lovable image ${r.status}: ${await r.text()}`);
   const j: any = await r.json();
@@ -279,20 +339,18 @@ async function handleInference(body: any, userId: string) {
   if (!prompt.trim()) throw new Error("Prompt is required");
 
   const turnId = crypto.randomUUID();
+  const modelId: string = body.model || "nano-banana-pro";
+  const gatewayModel = MODEL_MAP[modelId] || "google/gemini-2.5-flash-image-preview";
+  const reqSettings: any = body.settings || {};
   const settingsSnapshot: any = {
     kind: body.kind || "generate",
-    model: body.model || "nano-banana-pro",
-    settings: body.settings || {},
+    model: modelId,
+    settings: reqSettings,
     frank_body_mode: !!body.frank_body_mode,
     preset_key: body.preset_key ?? null,
     reference_asset_ids: body.reference_asset_ids || [],
     status: "running",
   };
-
-  const { data: maxSeq } = await sb.from("messages")
-    .select("seq").eq("session_id", sessionId)
-    .order("seq", { ascending: false }).limit(1).maybeSingle();
-  const nextSeq = ((maxSeq?.seq as number) || 0) + 1;
 
   const msgIns = await sb.from("messages").insert({
     id: turnId,
@@ -302,9 +360,9 @@ async function handleInference(body: any, userId: string) {
     message_type: settingsSnapshot.kind,
     prompt_text: prompt,
     settings_snapshot_json: settingsSnapshot,
-    seq: nextSeq,
-  });
+  }).select("seq").single();
   if (msgIns.error) throw msgIns.error;
+  const nextSeq = (msgIns.data as any)?.seq ?? 0;
 
   let img;
   try {
@@ -313,10 +371,16 @@ async function handleInference(body: any, userId: string) {
       ...((body.reference_asset_ids as string[]) || []),
     ];
     const refUrls = await loadReferenceDataUrls(refIds, userId);
-    img = await lovableImage(prompt, refUrls);
+    img = await lovableImage(prompt, refUrls, {
+      gatewayModel,
+      aspectRatio: reqSettings.aspect_ratio,
+      size: reqSettings.image_size || reqSettings.size,
+      thinkingBudget: Number(reqSettings.thinking_budget ?? body.thinking_budget ?? 0),
+    });
   } catch (err) {
+    const msg = errMessage(err);
     await sb.from("messages").update({
-      settings_snapshot_json: { ...settingsSnapshot, status: "failed", error: String(err) },
+      settings_snapshot_json: { ...settingsSnapshot, status: "failed", error: msg },
     }).eq("id", turnId);
     return {
       turn: rowToTurn({
@@ -326,7 +390,7 @@ async function handleInference(body: any, userId: string) {
         seq: nextSeq, created_at: nowIso(),
       }),
       status: "failed" as const,
-      error: { code: "lovable_ai_error", message: String(err) },
+      error: { code: "lovable_ai_error", message: msg },
     };
   }
 
@@ -347,7 +411,7 @@ async function handleInference(body: any, userId: string) {
     storage_path: storagePath,
     asset_type: "generated",
     prompt_snapshot: prompt,
-    model_key: "nano-banana-pro",
+    model_key: modelId,
     metadata_json: {
       media_type: "image",
       mime: img.mime,
@@ -375,8 +439,8 @@ async function handleInference(body: any, userId: string) {
     }),
     status: "complete" as const,
     assets: [rowToAsset(assetIns.data, url)],
-    providerPayload: { provider: "lovable", model: "google/gemini-2.5-flash-image" },
-    localEngine: "fallback" as const,
+    providerPayload: { provider: "lovable", model: gatewayModel },
+    localEngine: "cloud" as const,
   };
 }
 
@@ -942,7 +1006,7 @@ Deno.serve(async (req) => {
       return json({ error: { code: "auth_error", message: err.message } }, err.status);
     }
     console.error("[frank-api]", err);
-    return json({ error: { code: "internal_error", message: String(err) } }, 500);
+    return json({ error: { code: "internal_error", message: errMessage(err) } }, 500);
   }
 });
 
