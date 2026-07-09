@@ -1006,7 +1006,7 @@ Deno.serve(async (req) => {
       return json({ error: { code: "auth_error", message: err.message } }, err.status);
     }
     console.error("[frank-api]", err);
-    return json({ error: { code: "internal_error", message: String(err) } }, 500);
+    return json({ error: { code: "internal_error", message: errMessage(err) } }, 500);
   }
 });
 
