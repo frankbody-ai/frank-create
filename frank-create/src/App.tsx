@@ -3063,15 +3063,15 @@ export default function App() {
                     type="button"
                     aria-label="Retry this generation"
                     title="Retry with the same settings"
-                    disabled={busy}
                     onClick={() => retryTurn(turn)}
                     style={{
                       width: 22, height: 22, padding: 0,
                       display: "inline-flex", alignItems: "center", justifyContent: "center",
                       borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
-                      background: "rgba(255,255,255,0.85)", cursor: busy ? "not-allowed" : "pointer",
-                      color: "rgba(0,0,0,0.55)", opacity: busy ? 0.5 : 1,
+                      background: "rgba(255,255,255,0.85)", cursor: "pointer",
+                      color: "rgba(0,0,0,0.55)",
                     }}
+
                   >
                     <RefreshCw size={12} />
                   </button>
