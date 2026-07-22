@@ -1805,6 +1805,9 @@ export default function App() {
     }
 
     setBusy(true);
+    setGenPhase("queued");
+    setGenError(null);
+    setGenErrorOpen(false);
     setStatusText(promptMode === "generate" ? "Preparing the next round..." : "Preparing the edit brief...");
 
     const request = buildTurnRequest({
