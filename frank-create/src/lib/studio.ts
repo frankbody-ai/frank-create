@@ -98,9 +98,18 @@ export function normalizeStudioSettingsForModel(settings: StudioSettings, model:
   const aspect = model.allowed_aspect_ratios.includes(settings.aspect_ratio)
     ? settings.aspect_ratio
     : model.allowed_aspect_ratios[0] ?? "1:1";
+  if (!model.allowed_image_sizes.length) {
+    return {
+      ...settings,
+      aspect_ratio: aspect,
+      image_size: "",
+      count: Math.min(Math.max(count, 1), 4)
+    };
+  }
   const sizesForAspect = filterSizesForAspect(model.allowed_image_sizes, aspect);
 
   return {
+    ...settings,
     aspect_ratio: aspect,
     image_size: sizesForAspect.includes(settings.image_size)
       ? settings.image_size
@@ -173,7 +182,7 @@ export function parseJsonList(value?: string) {
 export function defaultStudioSettings(model: StudioModel): StudioSettings {
   return {
     aspect_ratio: model.allowed_aspect_ratios[0] ?? "1:1",
-    image_size: model.allowed_image_sizes[model.allowed_image_sizes.length - 1] ?? "1K",
+    image_size: model.allowed_image_sizes[model.allowed_image_sizes.length - 1] ?? "",
     count: 4
   };
 }
