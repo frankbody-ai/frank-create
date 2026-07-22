@@ -414,8 +414,9 @@ async function handleInference(body: any, userId: string) {
       if (!replicateKey) throw new Error("Replicate is not connected for this model yet.");
       // Cap in-flight parallelism at 2 so 3–4 image runs don't all cold-start
       // Replicate at once and blow the edge function's 150s wall-clock budget.
-      const PARALLEL = 2;
-      const PER_PREDICTION_MS = 120_000;
+      const PARALLEL = replicateSlug.includes("seedream") ? 1 : 2;
+      // Seedream + Nano Banana Pro 4K are slow; give them more headroom.
+      const PER_PREDICTION_MS = replicateSlug.includes("seedream") || replicateSlug.includes("nano-banana") ? 140_000 : 120_000;
       const replicateErrors: unknown[] = [];
       const runOne = () => Promise.race<string | undefined>([
         runReplicate(replicateSlug, prompt, {
