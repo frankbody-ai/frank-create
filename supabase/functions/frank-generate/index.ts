@@ -490,6 +490,56 @@ function buildReplicateInput(
     return input;
   }
 
+  if (slug === "google/nano-banana-pro" || slug === "google/nano-banana-2") {
+    // Schema: prompt, aspect_ratio, resolution (1K/2K/4K), image_input (<=14), output_format.
+    const NB_PRO_AR = new Set([
+      "match_input_image", "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9",
+    ]);
+    const NB2_AR = new Set([
+      "match_input_image", "1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9",
+    ]);
+    const allowed = slug === "google/nano-banana-pro" ? NB_PRO_AR : NB2_AR;
+    const ar = body.aspect_ratio && allowed.has(body.aspect_ratio)
+      ? body.aspect_ratio
+      : (refs.length ? "match_input_image" : "1:1");
+    const resolution = body.size === "4K" ? "4K" : body.size === "2K" ? "2K" : "1K";
+    const input: Record<string, unknown> = {
+      prompt,
+      aspect_ratio: ar,
+      resolution,
+      output_format: "png",
+    };
+    if (refs.length) input.image_input = refs.slice(0, 14);
+    return input;
+  }
+
+  if (slug === "openai/gpt-image-2") {
+    // Schema: prompt, aspect_ratio (ratios OR pixel presets), quality, number_of_images,
+    // input_images (nullable), output_format, background, moderation, output_compression.
+    const RATIO_AR = new Set(["auto", "1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16"]);
+    const PIXEL_AR = new Set([
+      "1024x1024", "1536x1024", "1024x1536",
+      "1536x1152", "1152x1536",
+      "2048x2048", "2048x1152", "1152x2048",
+      "3840x2160", "2160x3840",
+    ]);
+    // Prefer explicit pixel size when supplied, else fall back to the aspect ratio.
+    let aspect: string = "1:1";
+    if (body.size && PIXEL_AR.has(body.size)) aspect = body.size;
+    else if (body.size && RATIO_AR.has(body.size)) aspect = body.size;
+    else if (body.aspect_ratio && RATIO_AR.has(body.aspect_ratio)) aspect = body.aspect_ratio;
+    else if (body.aspect_ratio && PIXEL_AR.has(body.aspect_ratio)) aspect = body.aspect_ratio;
+    const input: Record<string, unknown> = {
+      prompt,
+      aspect_ratio: aspect,
+      quality: "auto",
+      number_of_images: 1,
+      output_format: "png",
+    };
+    if (refs.length) input.input_images = refs.slice(0, 10);
+    return input;
+  }
+
   // Fallback (should not hit — REPLICATE_MAP is closed).
   return { prompt };
 }
