@@ -1855,7 +1855,7 @@ export default function App() {
           // fires and cancels the in-flight Replicate prediction.
           // signal option is supported at runtime by supabase-js v2.
           signal: ctrl.signal,
-        });
+        } as Parameters<typeof supabase.functions.invoke>[1]);
         if (error) throw error;
         const images: string[] = (data as { images?: string[] })?.images ?? [];
         if (!images.length) throw new Error("No image returned");
