@@ -65,17 +65,19 @@ Deno.serve(async (req) => {
     const slug = REPLICATE_MAP[modelId];
     const images: string[] = [];
     const errors: MappedError[] = [];
-    for (let i = 0; i < count; i++) {
-      if (req.signal.aborted) {
-        errors.push({ code: "canceled", message: "Canceled by user.", retryable: true });
-        break;
-      }
-      try {
-        const url = await runReplicate(slug, prompt, body, replicateKey, req.signal);
-        if (url) images.push(url);
+    // Parallelize per-image work so a slow/cold model doesn't multiply latency.
+    const results = await Promise.allSettled(
+      Array.from({ length: count }, async () => {
+        if (req.signal.aborted) throw new ReplicateError("Canceled by user.", { code: "canceled", retryable: true });
+        return runReplicate(slug, prompt, body, replicateKey, req.signal);
+      }),
+    );
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        if (r.value) images.push(r.value);
         else errors.push({ code: "empty_output", message: "Replicate returned no image URL.", retryable: true });
-      } catch (err) {
-        errors.push(mapReplicateError(err));
+      } else {
+        errors.push(mapReplicateError(r.reason));
       }
     }
     if (!images.length) {
@@ -232,20 +234,38 @@ async function runReplicate(
     has_connector_key: !!key,
   });
 
-  const createRes = await fetch(
-    `${gatewayBase}/models/${slug}/predictions`,
-    {
-      method: "POST",
-      headers: {
-        ...replicateHeaders,
-        "Content-Type": "application/json",
-        "Prefer": "wait=60",
-      },
-      body: JSON.stringify({ input }),
-      signal,
-    },
-  );
-  console.info("[frank-generate] replicate:create:status", { slug, status: createRes.status });
+  // Create with retry on transient 5xx / network errors. No `Prefer: wait` —
+  // holding the HTTP connection open during a cold start is what makes the
+  // upstream proxy return 502. Just create + poll.
+  const createOnce = () => fetch(`${gatewayBase}/models/${slug}/predictions`, {
+    method: "POST",
+    headers: { ...replicateHeaders, "Content-Type": "application/json" },
+    body: JSON.stringify({ input }),
+    signal,
+  });
+  let createRes: Response | undefined;
+  let lastTransientBody = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (signal?.aborted) throw new ReplicateError("Canceled by user.", { code: "canceled", retryable: true });
+    try {
+      createRes = await createOnce();
+    } catch (netErr) {
+      if (attempt === 2) throw new ReplicateError(`Replicate network error: ${netErr instanceof Error ? netErr.message : String(netErr)}`, { code: "provider_unavailable", retryable: true });
+      await new Promise((r) => setTimeout(r, 1500 + attempt * 1500 + Math.floor(Math.random() * 500)));
+      continue;
+    }
+    console.info("[frank-generate] replicate:create:status", { slug, attempt, status: createRes.status });
+    if (createRes.status === 502 || createRes.status === 503 || createRes.status === 504) {
+      lastTransientBody = await createRes.text().catch(() => "");
+      if (attempt === 2) break;
+      await new Promise((r) => setTimeout(r, 1500 + attempt * 1500 + Math.floor(Math.random() * 500)));
+      continue;
+    }
+    break;
+  }
+  if (!createRes) {
+    throw new ReplicateError("Replicate upstream unreachable.", { code: "provider_unavailable", retryable: true });
+  }
 
   if (createRes.status === 402) {
     throw new ReplicateError("Replicate account has no credit. Enable billing at replicate.com/account/billing.", { code: "quota_exhausted", status: 402, retryable: false });
@@ -264,8 +284,11 @@ async function runReplicate(
     throw new ReplicateError("Replicate rate limit hit. Wait a moment and try again.", { code: "rate_limited", status: 429, retryable: true });
   }
   if (createRes.status >= 500) {
-    const t = await createRes.text();
-    throw new ReplicateError(`Replicate is having trouble (${createRes.status}). Retry shortly.`, { code: "provider_unavailable", status: createRes.status, retryable: true, raw: t });
+    const t = lastTransientBody || (await createRes.text().catch(() => ""));
+    throw new ReplicateError(
+      `Replicate upstream is overloaded (${createRes.status}). We retried automatically — try again in a moment, or switch model (Seedream / Nano Banana 2 usually recover fastest).`,
+      { code: "provider_unavailable", status: createRes.status, retryable: true, raw: t },
+    );
   }
   if (!createRes.ok) {
     const t = await createRes.text();
@@ -291,6 +314,7 @@ async function runReplicate(
 
   try {
     const started = Date.now();
+    let transientPollFails = 0;
     while (pred.status !== "succeeded" && pred.status !== "failed" && pred.status !== "canceled") {
       if (signal?.aborted) {
         throw new ReplicateError("Canceled by user.", { code: "canceled", retryable: true, requestId: predictionId });
@@ -301,12 +325,33 @@ async function runReplicate(
       await new Promise((r) => setTimeout(r, 2000));
       const id = pred?.id;
       if (!id) throw new ReplicateError("Replicate did not return a prediction ID.", { code: "provider_error", retryable: true });
-      const r = await fetch(`${gatewayBase}/predictions/${id}`, { headers: replicateHeaders, signal });
+      let r: Response;
+      try {
+        r = await fetch(`${gatewayBase}/predictions/${id}`, { headers: replicateHeaders, signal });
+      } catch (netErr) {
+        transientPollFails++;
+        console.warn("[frank-generate] replicate:poll_network", { slug, id, transientPollFails, err: String(netErr) });
+        if (transientPollFails >= 4) {
+          throw new ReplicateError(`Replicate poll network failure: ${netErr instanceof Error ? netErr.message : String(netErr)}`, { code: "provider_unavailable", retryable: true, requestId: id });
+        }
+        continue;
+      }
       if (!r.ok) {
         const t = await r.text();
+        // Tolerate transient upstream 5xx during poll — Replicate's proxy
+        // occasionally 502s while the prediction is fine.
+        if (r.status >= 500 && r.status <= 599) {
+          transientPollFails++;
+          console.warn("[frank-generate] replicate:poll_transient", { slug, id, status: r.status, transientPollFails });
+          if (transientPollFails >= 4) {
+            throw new ReplicateError(`Replicate poll failed (${r.status}) after retries: ${extractProviderMessage(t)}`, { code: "provider_unavailable", status: r.status, retryable: true, raw: t, requestId: id });
+          }
+          continue;
+        }
         console.error("[frank-generate] replicate:poll_failed", { slug, id, status: r.status, body: t.slice(0, 1000) });
         throw new ReplicateError(`Replicate poll failed (${r.status}): ${extractProviderMessage(t)}`, { code: "provider_error", status: r.status, retryable: true, raw: t, requestId: id });
       }
+      transientPollFails = 0;
       pred = await r.json();
       console.info("[frank-generate] replicate:poll:status", { slug, id, status: pred?.status });
     }
