@@ -403,7 +403,7 @@ export async function createInferenceTurn(payload: TurnRequest) {
     providerPayload?: Record<string, unknown>;
     localEngine?: "comfy" | "fallback" | "frank_renderer";
     fallbackReason?: string;
-    error?: { code: string; env_vars?: string[]; message?: string };
+    error?: { code: string; env_vars?: string[]; message?: string; retryable?: boolean; status?: number; raw?: string };
   }>("/inference/turn", {
     method: "POST",
     body: JSON.stringify(payload)
