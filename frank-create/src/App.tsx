@@ -6323,12 +6323,15 @@ function providerUnlockPriority(model: StudioModel) {
   const priorities: Record<string, number> = {
     "google-nb-pro": 1,
     "google-nb-2": 1,
-    "flux-1-1-pro-ultra": 2,
-    "openai-gpt-image-2": 3
+    "openai-gpt-image-2": 2,
+    "reve-2-1": 3,
+    "mai-image-2-5": 3,
+    "seedream-5-pro": 3
   };
 
   return priorities[model.id] ?? 99;
 }
+
 
 function capabilitySummary(models: StudioModel[]) {
   const capabilities = models.reduce(

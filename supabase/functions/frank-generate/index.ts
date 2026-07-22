@@ -1,4 +1,4 @@
-// Frank Create – Image generation via Lovable AI Gateway.
+// Frank Create – Image generation via Lovable AI Gateway + Replicate.
 // Public function: accepts { prompt, count, modelId? } and returns { images: dataUrl[] }.
 
 const corsHeaders = {
@@ -7,12 +7,19 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Map studio model id -> Lovable AI Gateway model string
+// Map studio model id -> Lovable AI Gateway model string (Gemini/OpenAI models)
 const MODEL_MAP: Record<string, string> = {
   "frank-local-comfy": "google/gemini-2.5-flash-image",
   "google-nb-pro": "google/gemini-3-pro-image-preview",
   "google-nb-2": "google/gemini-3.1-flash-image-preview",
   "openai-gpt-image-2": "openai/gpt-image-2",
+};
+
+// Replicate model routing: studio model id -> Replicate owner/name
+const REPLICATE_MAP: Record<string, string> = {
+  "reve-2-1": "reve/reve-2.1",
+  "mai-image-2-5": "microsoft/mai-image-2.5",
+  "seedream-5-pro": "bytedance/seedream-5-pro",
 };
 
 Deno.serve(async (req) => {
@@ -46,10 +53,33 @@ Deno.serve(async (req) => {
 
   const count = Math.min(Math.max(Number(body.count) || 1, 1), 4);
   const modelId = body.modelId ?? "";
+
+  // ---- Replicate branch ----
+  if (REPLICATE_MAP[modelId]) {
+    const replicateKey = Deno.env.get("REPLICATE_API_KEY");
+    if (!replicateKey) {
+      return json({ error: "REPLICATE_API_KEY not configured" }, 500);
+    }
+    const slug = REPLICATE_MAP[modelId];
+    const images: string[] = [];
+    const errors: string[] = [];
+    for (let i = 0; i < count; i++) {
+      try {
+        const url = await runReplicate(slug, prompt, body, replicateKey);
+        if (url) images.push(url);
+        else errors.push("no image from replicate");
+      } catch (err) {
+        errors.push(err instanceof Error ? err.message : String(err));
+      }
+    }
+    if (!images.length) return json({ error: "Generation failed", details: errors }, 502);
+    return json({ images, errors: errors.length ? errors : undefined });
+  }
+
+  // ---- Lovable AI Gateway branch (Gemini / OpenAI) ----
   const gatewayModel = body.model || MODEL_MAP[modelId] || "google/gemini-2.5-flash-image";
   const useImagesEndpoint = gatewayModel.startsWith("openai/gpt-image");
 
-  // Per-model valid sizes (OpenAI gpt-image-2 only accepts these)
   const OPENAI_SIZES = new Set(["1024x1024", "1536x1024", "1024x1536", "auto"]);
   const sizeFromAspect = (ar?: string): string => {
     switch (ar) {
@@ -67,7 +97,7 @@ Deno.serve(async (req) => {
     try {
       let res: Response;
       if (useImagesEndpoint) {
-        let size = body.size && OPENAI_SIZES.has(body.size) ? body.size : sizeFromAspect(body.aspect_ratio);
+        const size = body.size && OPENAI_SIZES.has(body.size) ? body.size : sizeFromAspect(body.aspect_ratio);
         res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
           method: "POST",
           headers: {
@@ -83,7 +113,6 @@ Deno.serve(async (req) => {
           }),
         });
       } else {
-        // Gemini image models: aspect ratio + size hinted in prompt
         const ar = body.aspect_ratio;
         const sz = body.size;
         const hints: string[] = [];
@@ -95,7 +124,6 @@ Deno.serve(async (req) => {
           messages: [{ role: "user", content: fullPrompt }],
           modalities: ["image", "text"],
         };
-        // Nano Banana Pro thinking budget → OpenRouter-style reasoning effort.
         const budget = Number(body.thinking_budget ?? 0);
         if (budget > 0 && gatewayModel.includes("gemini-3-pro")) {
           payload.reasoning = { effort: budget >= 5000 ? "high" : "low" };
@@ -141,6 +169,59 @@ Deno.serve(async (req) => {
 
   return json({ images, errors: errors.length ? errors : undefined });
 });
+
+// Call a Replicate official model, poll until finished, return first output URL.
+async function runReplicate(
+  slug: string,
+  prompt: string,
+  body: { aspect_ratio?: string; size?: string },
+  key: string,
+): Promise<string | undefined> {
+  const aspect = body.aspect_ratio || "1:1";
+  const input: Record<string, unknown> = { prompt, aspect_ratio: aspect };
+  // Common optional fields — Replicate ignores unknown fields per-model.
+  if (body.size === "2K" || body.size === "4K") input.size = body.size.toLowerCase();
+
+  const createRes = await fetch(
+    `https://api.replicate.com/v1/models/${slug}/predictions`,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${key}`,
+        "Content-Type": "application/json",
+        "Prefer": "wait=60",
+      },
+      body: JSON.stringify({ input }),
+    },
+  );
+
+  if (createRes.status === 402) throw new Error("Replicate account has no credit");
+  if (!createRes.ok) {
+    const t = await createRes.text();
+    throw new Error(`replicate ${createRes.status}: ${t.slice(0, 200)}`);
+  }
+
+  let pred = await createRes.json();
+  const started = Date.now();
+  // Poll up to 3 minutes if not already done (Prefer: wait usually returns terminal).
+  while (pred.status !== "succeeded" && pred.status !== "failed" && pred.status !== "canceled") {
+    if (Date.now() - started > 180_000) throw new Error("replicate timeout");
+    await new Promise((r) => setTimeout(r, 2000));
+    const pollUrl = pred?.urls?.get;
+    if (!pollUrl) throw new Error("replicate: missing poll url");
+    const r = await fetch(pollUrl, { headers: { "Authorization": `Bearer ${key}` } });
+    if (!r.ok) throw new Error(`replicate poll ${r.status}`);
+    pred = await r.json();
+  }
+
+  if (pred.status !== "succeeded") {
+    throw new Error(`replicate ${pred.status}: ${pred.error ?? "unknown"}`);
+  }
+
+  const out = pred.output;
+  const url: string | undefined = Array.isArray(out) ? out[0] : typeof out === "string" ? out : undefined;
+  return url;
+}
 
 function json(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
