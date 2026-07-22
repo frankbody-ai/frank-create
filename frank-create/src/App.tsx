@@ -3460,7 +3460,13 @@ export default function App() {
                   </button>
                 ) : null}
                 {selectedAsset.kind !== "reference" ? (
-                  <button className="secondary-button" type="button" onClick={() => openAssetInComfyCanvas(selectedAsset)}>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    disabled
+                    title="ComfyUI integration is disabled"
+                    style={{ opacity: 0.4, cursor: "not-allowed" }}
+                  >
                     <GitBranch size={16} />
                     Open in Comfy Canvas
                   </button>
