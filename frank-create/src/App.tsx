@@ -2879,6 +2879,19 @@ export default function App() {
             {advancedOpen ? <XCircle size={16} /> : <GitBranch size={16} />}
             {advancedOpen ? "Close Advanced" : "Advanced"}
           </button>
+          {isAdmin && (
+            <>
+              <p className="sidebar-section-label">Admin</p>
+              <a
+                className="sidebar-nav-button admin-sidebar-link"
+                href="#/admin"
+                aria-label="Open Admin portal"
+              >
+                <Sparkles size={16} />
+                Admin portal
+              </a>
+            </>
+          )}
         </nav>
 
         <div className="sidebar-session-card">
