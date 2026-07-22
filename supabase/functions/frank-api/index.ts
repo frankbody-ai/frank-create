@@ -200,6 +200,11 @@ const MODEL_MAP: Record<string, string> = {
   "openai-gpt-image-2": "openai/gpt-image-2",
 };
 
+const REPLICATE_MAP: Record<string, string> = {
+  "reve-2-1": "reve/reve-2.1",
+  "seedream-5-pro": "bytedance/seedream-5-pro",
+};
+
 const OPENAI_SIZES = new Set(["1024x1024", "1536x1024", "1024x1536", "auto"]);
 function openaiSizeFromAspect(ar?: string): string {
   switch (ar) {
@@ -228,7 +233,7 @@ async function lovableImage(
   referenceImageDataUrls: string[] = [],
   opts: { gatewayModel?: string; aspectRatio?: string; size?: string; thinkingBudget?: number } = {},
 ): Promise<{ b64: string; mime: string }> {
-  const gatewayModel = opts.gatewayModel || "google/gemini-2.5-flash-image-preview";
+  const gatewayModel = opts.gatewayModel || "google/gemini-2.5-flash-image";
 
   if (gatewayModel.startsWith("openai/gpt-image")) {
     const size = opts.size && OPENAI_SIZES.has(opts.size) ? opts.size : openaiSizeFromAspect(opts.aspectRatio);
@@ -358,7 +363,7 @@ async function handleInference(body: any, userId: string) {
 
   const turnId = crypto.randomUUID();
   const modelId: string = body.model || "nano-banana-pro";
-  const gatewayModel = MODEL_MAP[modelId] || "google/gemini-2.5-flash-image-preview";
+  const gatewayModel = MODEL_MAP[modelId] || "google/gemini-2.5-flash-image";
   const reqSettings: any = body.settings || {};
   const settingsSnapshot: any = {
     kind: body.kind || "generate",
@@ -383,20 +388,35 @@ async function handleInference(body: any, userId: string) {
   const nextSeq = (msgIns.data as any)?.seq ?? 0;
 
   const count = Math.min(Math.max(Number(reqSettings.count ?? body.count ?? 1) || 1, 1), 4);
-  const generatedImages: Array<{ b64: string; mime: string }> = [];
+  const generatedImages: Array<{ b64?: string; url?: string; mime: string }> = [];
   try {
     const refIds: string[] = [
       ...(body.edit_source_asset_id ? [body.edit_source_asset_id] : []),
       ...((body.reference_asset_ids as string[]) || []),
     ];
     const refUrls = await loadReferenceDataUrls(refIds, userId);
-    for (let i = 0; i < count; i++) {
-      generatedImages.push(await lovableImage(prompt, refUrls, {
-        gatewayModel,
-        aspectRatio: reqSettings.aspect_ratio,
-        size: reqSettings.image_size || reqSettings.size,
-        thinkingBudget: Number(reqSettings.thinking_budget ?? body.thinking_budget ?? 0),
-      }));
+    const replicateSlug = REPLICATE_MAP[modelId];
+    if (replicateSlug) {
+      const replicateKey = Deno.env.get("REPLICATE_API_KEY");
+      if (!replicateKey) throw new Error("Replicate is not connected for this model yet.");
+      for (let i = 0; i < count; i++) {
+        const url = await runReplicate(replicateSlug, prompt, {
+          aspect_ratio: reqSettings.aspect_ratio,
+          size: reqSettings.image_size || reqSettings.size,
+          reference_images: refUrls,
+        }, replicateKey);
+        if (!url) throw new Error("Replicate returned no image URL.");
+        generatedImages.push({ url, mime: "image/png" });
+      }
+    } else {
+      for (let i = 0; i < count; i++) {
+        generatedImages.push(await lovableImage(prompt, refUrls, {
+          gatewayModel,
+          aspectRatio: reqSettings.aspect_ratio,
+          size: reqSettings.image_size || reqSettings.size,
+          thinkingBudget: Number(reqSettings.thinking_budget ?? body.thinking_budget ?? 0),
+        }));
+      }
     }
   } catch (err) {
     const msg = errMessage(err);
@@ -421,9 +441,11 @@ async function handleInference(body: any, userId: string) {
     const assetId = crypto.randomUUID();
     const ext = img.mime.split("/")[1] || "png";
     const storagePath = `${sessionId}/${assetId}.${ext}`;
-    const bytes = base64Decode(img.b64);
+    const imageBytes = await imageBytesForUpload(img);
+    const bytes = imageBytes.bytes;
+    const mime = imageBytes.mime;
     const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, {
-      contentType: img.mime, upsert: false,
+      contentType: mime, upsert: false,
     });
     if (up.error) throw up.error;
 
@@ -438,7 +460,7 @@ async function handleInference(body: any, userId: string) {
       model_key: modelId,
       metadata_json: {
         media_type: "image",
-        mime: img.mime,
+        mime,
         title: prompt.slice(0, 80) || "Generated image",
         aspect_ratio: reqSettings.aspect_ratio,
         requested_size: reqSettings.image_size || reqSettings.size || null,
