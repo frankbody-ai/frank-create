@@ -390,6 +390,7 @@ export default function App() {
   const [remixBusy, setRemixBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [statusText, setStatusText] = useState("Waiting for the brief...");
+  const [retrySafePayload, setRetrySafePayload] = useState<Record<string, unknown> | null>(null);
   const [desktopNotice, setDesktopNotice] = useState<string | null>(null);
   const [videoStartedAt, setVideoStartedAt] = useState<number | null>(null);
   const [videoNowTick, setVideoNowTick] = useState(Date.now());
@@ -1826,15 +1827,16 @@ export default function App() {
         }
       }
       try {
+        const invokeBody = {
+          prompt: request.prompt,
+          count: settings.count,
+          modelId: selectedModel.id,
+          aspect_ratio: settings.aspect_ratio,
+          size: settings.image_size,
+          thinking_budget: settings.thinking_budget ?? 0,
+        };
         const { data, error } = await supabase.functions.invoke("frank-generate", {
-          body: {
-            prompt: request.prompt,
-            count: settings.count,
-            modelId: selectedModel.id,
-            aspect_ratio: settings.aspect_ratio,
-            size: settings.image_size,
-            thinking_budget: settings.thinking_budget ?? 0,
-          },
+          body: invokeBody,
         });
         if (error) throw error;
         const images: string[] = (data as { images?: string[] })?.images ?? [];
@@ -1884,6 +1886,7 @@ export default function App() {
         setAssets((current) => [...newAssets, ...current]);
         setSelectedAsset(newAssets[0]);
         setStatusText(`Generated ${newAssets.length} pick${newAssets.length === 1 ? "" : "s"} via Lovable AI.`);
+        setRetrySafePayload(null);
       } catch (err) {
         // Surface structured error info from frank-generate when available.
         // supabase.functions.invoke returns a FunctionsHttpError whose `context`
@@ -1902,6 +1905,7 @@ export default function App() {
         } catch { /* body already consumed or non-JSON */ }
         const suffix = code ? ` [${code}${retryable === false ? " — not retryable" : retryable ? " — safe to retry" : ""}]` : "";
         setStatusText(`Lovable AI: ${message}${suffix}`);
+        setRetrySafePayload(retryable === true ? invokeBody : null);
         const localTurn = makeLocalTurn(activeSession.id, request);
         setTurns((current) => [...current, localTurn]);
       } finally {
@@ -3640,6 +3644,17 @@ export default function App() {
 
         <div className="status-strip">
           <span>{statusText}</span>
+          {retrySafePayload ? (
+            <button
+              type="button"
+              onClick={() => { void handleGenerate(); }}
+              disabled={busy}
+              title="Re-run the last generation with the same inputs"
+            >
+              <RefreshCw size={13} />
+              Retry safely
+            </button>
+          ) : null}
 
           {statusReadyLink ? (
             <button type="button" onClick={() => openStudioLink(statusReadyLink.url, statusReadyLink.label)}>
