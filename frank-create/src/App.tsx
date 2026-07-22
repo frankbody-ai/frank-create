@@ -1845,8 +1845,15 @@ export default function App() {
       try {
         setGenPhase("running");
         setStatusText("Model is running...");
+        const ctrl = new AbortController();
+        generateAbortRef.current = ctrl;
         const { data, error } = await supabase.functions.invoke("frank-generate", {
           body: invokeBody,
+          // supabase-js v2 forwards this AbortSignal to the underlying fetch.
+          // Aborting closes the connection so the edge function's req.signal
+          // fires and cancels the in-flight Replicate prediction.
+          // @ts-expect-error signal option is supported at runtime.
+          signal: ctrl.signal,
         });
         if (error) throw error;
         const images: string[] = (data as { images?: string[] })?.images ?? [];
