@@ -65,8 +65,12 @@ Deno.serve(async (req) => {
     const images: string[] = [];
     const errors: MappedError[] = [];
     for (let i = 0; i < count; i++) {
+      if (req.signal.aborted) {
+        errors.push({ code: "canceled", message: "Canceled by user.", retryable: true });
+        break;
+      }
       try {
-        const url = await runReplicate(slug, prompt, body, replicateKey);
+        const url = await runReplicate(slug, prompt, body, replicateKey, req.signal);
         if (url) images.push(url);
         else errors.push({ code: "empty_output", message: "Replicate returned no image URL.", retryable: true });
       } catch (err) {
