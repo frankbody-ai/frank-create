@@ -2788,10 +2788,11 @@ export default function App() {
             Image Studio
           </button>
           <button
-            className={`sidebar-nav-button ${studioMode === "product-shot-lab" ? "active" : ""}`}
+            className="sidebar-nav-button disabled"
             type="button"
-            aria-label="Open Product Shot Lab"
-            onClick={showProductShotLab}
+            aria-label="Product Shot Lab (coming soon)"
+            title="Product Shot Lab is temporarily paused — feedback from Cliff will refine it into a sharper feature."
+            disabled
           >
             <Layers3 size={16} />
             Product Shot Lab
