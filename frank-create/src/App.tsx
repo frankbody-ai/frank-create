@@ -3386,13 +3386,14 @@ export default function App() {
             </div>
           ) : null}
 
-          <div className="composer-actions">
+          <div className="composer-actions" data-tour-id="reference-dock" data-tour-active={tourActive("reference-dock")}>
             <label className="upload-button">
               <Upload size={16} />
               Add references
               <input type="file" accept="image/*" multiple onChange={handleReferenceUpload} />
             </label>
-            <div className="reference-dock" aria-label="Reference images" data-tour-id="reference-dock" data-tour-active={tourActive("reference-dock")}>
+            <div className="reference-dock" aria-label="Reference images">
+
               {referenceAssets.slice(0, 14).map((asset) => (
                 <button
                   type="button"
