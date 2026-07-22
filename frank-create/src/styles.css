@@ -5236,6 +5236,13 @@ body {
   box-shadow: 0 2px 10px rgba(42, 42, 42, 0.18);
 }
 
+.sidebar-nav-button:disabled,
+.sidebar-nav-button.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .sidebar-badge {
   margin-left: auto;
   min-width: 22px;
