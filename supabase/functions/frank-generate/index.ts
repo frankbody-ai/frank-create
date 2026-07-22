@@ -59,21 +59,24 @@ Deno.serve(async (req) => {
   if (REPLICATE_MAP[modelId]) {
     const replicateKey = Deno.env.get("REPLICATE_API_KEY");
     if (!replicateKey) {
-      return json({ error: "REPLICATE_API_KEY not configured" }, 500);
+      return json({ error: "REPLICATE_API_KEY not configured", code: "config_missing", retryable: false }, 500);
     }
     const slug = REPLICATE_MAP[modelId];
     const images: string[] = [];
-    const errors: string[] = [];
+    const errors: MappedError[] = [];
     for (let i = 0; i < count; i++) {
       try {
         const url = await runReplicate(slug, prompt, body, replicateKey);
         if (url) images.push(url);
-        else errors.push("no image from replicate");
+        else errors.push({ code: "empty_output", message: "Replicate returned no image URL.", retryable: true });
       } catch (err) {
-        errors.push(err instanceof Error ? err.message : String(err));
+        errors.push(mapReplicateError(err));
       }
     }
-    if (!images.length) return json({ error: "Generation failed", details: errors }, 502);
+    if (!images.length) {
+      const primary = errors[0] ?? { code: "unknown", message: "Generation failed", retryable: true };
+      return json({ error: primary.message, code: primary.code, retryable: primary.retryable, details: errors }, primary.status ?? 502);
+    }
     return json({ images, errors: errors.length ? errors : undefined });
   }
 
