@@ -1968,13 +1968,15 @@ export default function App() {
               if (parsed?.error) message = String(parsed.error);
               if (parsed?.code) code = String(parsed.code);
               if (typeof parsed?.retryable === "boolean") retryable = parsed.retryable;
+              if (parsed?.request_id) requestId = String(parsed.request_id);
             }
           } catch { /* body already consumed or non-JSON */ }
-          const suffix = code ? ` [${code}${retryable === false ? " — not retryable" : retryable ? " — safe to retry" : ""}]` : "";
+          const idSuffix = requestId ? ` · req ${requestId.slice(0, 8)}` : "";
+          const suffix = code ? ` [${code}${retryable === false ? " — not retryable" : retryable ? " — safe to retry" : ""}${idSuffix}]` : idSuffix;
           setStatusText(`Lovable AI: ${message}${suffix}`);
           setRetrySafePayload(retryable === true ? invokeBody : null);
           setGenPhase("failed");
-          setGenError({ message, code, retryable, httpStatus, raw });
+          setGenError({ message, code, retryable, httpStatus, raw, requestId });
           const localTurn = makeLocalTurn(activeSession.id, request);
           setTurns((current) => [...current, localTurn]);
         }
