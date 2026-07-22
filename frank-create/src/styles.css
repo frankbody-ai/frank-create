@@ -3060,6 +3060,27 @@ input {
   font-weight: 800;
 }
 
+.lightbox-actions .lightbox-approve.is-approved {
+  background: #16a34a;
+  color: #fff;
+  border-color: #16a34a;
+}
+.lightbox-actions .lightbox-approve:not(.is-approved):hover {
+  background: #dcfce7;
+  border-color: #16a34a;
+  color: #14532d;
+}
+.lightbox-actions .lightbox-reject.is-rejected {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+}
+.lightbox-actions .lightbox-reject:not(.is-rejected):hover {
+  background: #fee2e2;
+  border-color: #dc2626;
+  color: #7f1d1d;
+}
+
 .mask-painter-backdrop {
   position: fixed;
   inset: 0;
