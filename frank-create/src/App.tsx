@@ -2799,13 +2799,15 @@ export default function App() {
             <span className="sidebar-soon-tag">Soon</span>
           </button>
           <button
-            className={`sidebar-nav-button ${studioMode === "video-lab" ? "active" : ""}`}
+            className="sidebar-nav-button is-muted"
             type="button"
-            aria-label="Open Video Lab"
-            onClick={showVideoLab}
+            aria-label="Video Lab (coming soon)"
+            title="Video Lab is paused — waiting on Cliff's feedback to refine it."
+            disabled
           >
             <Film size={16} />
-            Video Lab
+            <span style={{ flex: 1 }}>Video Lab</span>
+            <span className="sidebar-soon-tag">Soon</span>
           </button>
 
           <p className="sidebar-section-label">Review</p>
