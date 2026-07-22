@@ -9,6 +9,7 @@ import { HealthPage } from "./components/HealthPage";
 import { ReviewBoardPage } from "./components/ReviewBoardPage";
 import { CliffAccessPage } from "./components/CliffAccessPage";
 import { AdminFeedbackPage } from "./components/AdminFeedbackPage";
+import { AdminPortal } from "./components/AdminPortal";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { installErrorReporter } from "./lib/errorReporter";
 import "./styles.css";
