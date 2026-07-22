@@ -3211,8 +3211,14 @@ export default function App() {
             <button
               className="primary-button"
               type="submit"
-              disabled={busy || !prompt.trim()}
-              title={!prompt.trim() ? "Enter a prompt to generate" : undefined}
+              disabled={busy || !prompt.trim() || hasStudioFieldErrors(fieldErrors)}
+              title={
+                !prompt.trim()
+                  ? "Enter a prompt to generate"
+                  : hasStudioFieldErrors(fieldErrors)
+                    ? "Fix the highlighted settings before generating"
+                    : undefined
+              }
             >
               {busy ? <RefreshCw className="spin" size={18} /> : <Wand2 size={18} />}
               {primaryActionLabel}
