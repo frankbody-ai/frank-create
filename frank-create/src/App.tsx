@@ -1999,9 +1999,25 @@ export default function App() {
         setStatusText(`Server key needed: ${(result.error?.env_vars ?? []).join(" or ")}`);
       } else if (result.status === "failed") {
         const turnError = turnErrorCopy(result.turn);
+        const message = result.error?.message || turnError || "Generation failed.";
+        setGenPhase("failed");
+        setGenError({
+          message,
+          code: result.error?.code,
+          retryable: result.error?.retryable,
+          httpStatus: result.error?.status,
+          raw: result.error?.raw,
+        });
+        setRetrySafePayload(result.error?.retryable === true ? {
+          prompt: request.prompt,
+          count: settings.count,
+          modelId: selectedModel.id,
+          aspect_ratio: settings.aspect_ratio,
+          size: settings.image_size,
+          thinking_budget: settings.thinking_budget ?? 0,
+        } : null);
         setStatusText(
-          result.error?.message ||
-            turnError ||
+          message ||
             inferenceStatusCopy({
               status: result.status,
               assetCount: result.assets?.length ?? 0,
