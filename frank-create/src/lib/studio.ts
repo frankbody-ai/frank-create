@@ -109,6 +109,54 @@ export function normalizeStudioSettingsForModel(settings: StudioSettings, model:
   };
 }
 
+export interface StudioFieldErrors {
+  aspect?: string;
+  size?: string;
+  count?: string;
+  references?: string;
+}
+
+export function validateStudioSettings(
+  model: StudioModel | undefined | null,
+  settings: StudioSettings,
+  opts: { referenceCount?: number } = {}
+): StudioFieldErrors {
+  const errors: StudioFieldErrors = {};
+  if (!model) return errors;
+
+  const aspect = settings.aspect_ratio;
+  if (!aspect || !model.allowed_aspect_ratios.includes(aspect)) {
+    errors.aspect = `Pick one of: ${model.allowed_aspect_ratios.join(", ") || "—"}`;
+  }
+
+  const size = settings.image_size;
+  if (!model.allowed_image_sizes || model.allowed_image_sizes.length === 0) {
+    if (size && String(size).trim() !== "") {
+      errors.size = `${model.short_label ?? model.label} picks resolution from the aspect ratio — leave size empty.`;
+    }
+  } else if (!model.allowed_image_sizes.includes(size)) {
+    errors.size = `Unsupported for ${model.short_label ?? model.label}. Allowed: ${model.allowed_image_sizes.join(", ")}.`;
+  } else if (!errors.aspect && !sizeMatchesAspect(size, aspect)) {
+    errors.size = `${size} doesn't match aspect ${aspect}.`;
+  }
+
+  const count = Number(settings.count);
+  if (!Number.isFinite(count) || count < 1 || count > 4 || Math.trunc(count) !== count) {
+    errors.count = "Pick 1–4 images.";
+  }
+
+  const refCount = opts.referenceCount ?? 0;
+  if (refCount > (model.reference_image_limit ?? 0)) {
+    errors.references = `${model.short_label ?? model.label} accepts at most ${model.reference_image_limit} reference image${model.reference_image_limit === 1 ? "" : "s"}.`;
+  }
+
+  return errors;
+}
+
+export function hasStudioFieldErrors(errors: StudioFieldErrors): boolean {
+  return Boolean(errors.aspect || errors.size || errors.count || errors.references);
+}
+
 
 export function parseJsonList(value?: string) {
   if (!value) {
