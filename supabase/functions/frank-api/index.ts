@@ -404,7 +404,7 @@ async function handleInference(body: any, userId: string) {
     const refUrls = await loadReferenceDataUrls(refIds, userId);
     const replicateSlug = REPLICATE_MAP[modelId];
     if (replicateSlug) {
-      const replicateKey = Deno.env.get("REPLICATE_API_KEY");
+      const replicateKey = getReplicateGatewayKey();
       if (!replicateKey) throw new Error("Replicate is not connected for this model yet.");
       for (let i = 0; i < count; i++) {
         const url = await runReplicate(replicateSlug, prompt, {
@@ -426,19 +426,36 @@ async function handleInference(body: any, userId: string) {
       }
     }
   } catch (err) {
-    const msg = errMessage(err);
+    const mapped = mapReplicateError(err);
+    const msg = mapped.message;
     await sb.from("messages").update({
-      settings_snapshot_json: { ...settingsSnapshot, status: "failed", error: msg },
+      settings_snapshot_json: {
+        ...settingsSnapshot,
+        status: "failed",
+        error: msg,
+        error_code: mapped.code,
+        error_retryable: mapped.retryable,
+        error_status: mapped.status ?? null,
+        error_raw: mapped.raw ?? null,
+      },
     }).eq("id", turnId);
     return {
       turn: rowToTurn({
         id: turnId, session_id: sessionId, role: "user",
         message_type: settingsSnapshot.kind, prompt_text: prompt,
-        settings_snapshot_json: { ...settingsSnapshot, status: "failed" },
+        settings_snapshot_json: {
+          ...settingsSnapshot,
+          status: "failed",
+          error: msg,
+          error_code: mapped.code,
+          error_retryable: mapped.retryable,
+          error_status: mapped.status ?? null,
+          error_raw: mapped.raw ?? null,
+        },
         seq: nextSeq, created_at: nowIso(),
       }),
       status: "failed" as const,
-      error: { code: "lovable_ai_error", message: msg },
+      error: { code: mapped.code, message: msg, retryable: mapped.retryable, status: mapped.status, raw: mapped.raw } as any,
     };
   }
 
@@ -533,6 +550,12 @@ async function runReplicate(
     "Authorization": `Bearer ${LOVABLE_API_KEY}`,
     "X-Connection-Api-Key": key,
   };
+  console.info("[frank-api] replicate:create", {
+    slug,
+    input: sanitizeReplicateInput(input),
+    has_lovable_key: !!LOVABLE_API_KEY,
+    has_connector_key: !!key,
+  });
   const createRes = await fetch(`${replicateGateway}/models/${slug}/predictions`, {
     method: "POST",
     headers: {
@@ -542,9 +565,11 @@ async function runReplicate(
     },
     body: JSON.stringify({ input }),
   });
+  console.info("[frank-api] replicate:create:status", { slug, status: createRes.status });
   if (!createRes.ok) {
     const text = await createRes.text();
-    throw new Error(`Replicate ${createRes.status}: ${text.slice(0, 300)}`);
+    console.error("[frank-api] replicate:create_failed", { slug, status: createRes.status, body: text.slice(0, 1000) });
+    throw mapReplicateCreateFailure(slug, createRes.status, text);
   }
   let prediction: any = await createRes.json();
   const started = Date.now();
@@ -554,8 +579,13 @@ async function runReplicate(
     const predictionId = prediction?.id;
     if (!predictionId) throw new Error("Replicate did not return a prediction ID.");
     const poll = await fetch(`${replicateGateway}/predictions/${predictionId}`, { headers: replicateHeaders });
-    if (!poll.ok) throw new Error(`Replicate poll failed (${poll.status}).`);
+    if (!poll.ok) {
+      const text = await poll.text();
+      console.error("[frank-api] replicate:poll_failed", { slug, id: predictionId, status: poll.status, body: text.slice(0, 1000) });
+      throw new ProviderRunError(`Replicate poll failed (${poll.status}): ${extractProviderMessage(text)}`, "provider_error", true, poll.status, text);
+    }
     prediction = await poll.json();
+    console.info("[frank-api] replicate:poll:status", { slug, id: predictionId, status: prediction?.status });
   }
   if (prediction.status !== "succeeded") {
     console.error("Replicate prediction non-success", {
@@ -563,9 +593,9 @@ async function runReplicate(
     });
     const raw = typeof prediction.error === "string" ? prediction.error : JSON.stringify(prediction.error ?? prediction.status);
     if (typeof prediction.error === "string" && /content|policy|safety|nsfw/i.test(prediction.error)) {
-      throw new Error(`Replicate blocked by content policy: ${raw.slice(0, 200)}`);
+      throw new ProviderRunError(`Replicate blocked by content policy: ${raw.slice(0, 200)}`, "content_filtered", false, undefined, raw);
     }
-    throw new Error(`Replicate ${prediction.status}: ${raw.slice(0, 240)}`);
+    throw classifyReplicateModelError(raw, prediction.status);
   }
   const output = prediction.output;
   const extracted = extractReplicateUrl(output);
@@ -574,9 +604,84 @@ async function runReplicate(
       slug, id: prediction?.id, status: prediction?.status,
       output_type: typeof output, output_sample: JSON.stringify(output ?? null).slice(0, 300),
     });
-    throw new Error(`Replicate returned no image URL (output=${JSON.stringify(output ?? null).slice(0, 160)})`);
+    throw new ProviderRunError(`Replicate returned no image URL (output=${JSON.stringify(output ?? null).slice(0, 160)})`, "empty_output", true, undefined, JSON.stringify(output ?? null).slice(0, 1000));
   }
   return extracted;
+}
+
+function getReplicateGatewayKey(): string | undefined {
+  return Deno.env.get("REPLICATE_API_KEY") || Deno.env.get("LOVABLE_CONNECTOR_REPLICATE_API_KEY");
+}
+
+function sanitizeReplicateInput(input: Record<string, unknown>): Record<string, unknown> {
+  const copy: Record<string, unknown> = { ...input };
+  if (typeof copy.prompt === "string") copy.prompt = String(copy.prompt).slice(0, 240);
+  for (const key of ["reference_images", "image_input"]) {
+    const value = copy[key];
+    if (Array.isArray(value)) copy[key] = value.map((item) => typeof item === "string" ? `[uri:${item.length}]` : "[non-string]");
+  }
+  return copy;
+}
+
+class ProviderRunError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public retryable: boolean,
+    public status?: number,
+    public raw?: string,
+  ) {
+    super(message);
+  }
+}
+
+function mapReplicateCreateFailure(slug: string, status: number, raw: string): ProviderRunError {
+  const providerMessage = extractProviderMessage(raw);
+  if (status === 402) return new ProviderRunError("Replicate account has no credit. Enable billing at replicate.com/account/billing.", "quota_exhausted", false, status, raw);
+  if (status === 401 || status === 403) return new ProviderRunError(`Replicate auth failed: ${providerMessage}. Reconnect the Replicate integration if this continues.`, "auth_failed", false, status, raw);
+  if (status === 422) return new ProviderRunError(`Invalid parameters for ${slug}: ${providerMessage}`, "invalid_params", false, status, raw);
+  if (status === 429) return new ProviderRunError("Replicate rate limit hit. Wait a moment and try again.", "rate_limited", true, status, raw);
+  if (status >= 500) return new ProviderRunError(`Replicate is having trouble (${status}). Retry shortly.`, "provider_unavailable", true, status, raw);
+  return new ProviderRunError(`Replicate error ${status}: ${providerMessage}`, "provider_error", false, status, raw);
+}
+
+function mapReplicateError(err: unknown): ProviderRunError {
+  if (err instanceof ProviderRunError) return err;
+  const message = errMessage(err);
+  if (/fetch failed|ECONN|ENOTFOUND|network|timeout/i.test(message)) {
+    return new ProviderRunError("Network error reaching Replicate. Retry in a moment.", "network_error", true, undefined, message);
+  }
+  return new ProviderRunError(message, "provider_error", true, undefined, message);
+}
+
+function extractProviderMessage(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.detail === "string") return parsed.detail;
+    if (typeof parsed?.title === "string") return parsed.title;
+    if (typeof parsed?.error === "string") return parsed.error;
+    if (Array.isArray(parsed?.detail)) return parsed.detail.map((d: { msg?: string }) => d.msg ?? "").filter(Boolean).join("; ");
+    return raw.slice(0, 240);
+  } catch {
+    return raw.slice(0, 240);
+  }
+}
+
+function classifyReplicateModelError(raw: string, status: string): ProviderRunError {
+  const text = raw.toLowerCase();
+  if (text.includes("nsfw") || text.includes("safety") || text.includes("content policy") || text.includes("flagged")) {
+    return new ProviderRunError("The provider blocked this prompt for safety/policy reasons. Rewrite and try again.", "content_filtered", false, undefined, raw);
+  }
+  if (text.includes("invalid") || text.includes("must be") || text.includes("expected") || text.includes("required")) {
+    return new ProviderRunError(`Model rejected input parameters: ${raw.slice(0, 200)}`, "invalid_params", false, undefined, raw);
+  }
+  if (text.includes("timeout") || text.includes("timed out")) {
+    return new ProviderRunError("Model timed out. Retry shortly.", "timeout", true, undefined, raw);
+  }
+  if (text.includes("rate") && text.includes("limit")) {
+    return new ProviderRunError("Rate limit hit. Wait and retry.", "rate_limited", true, undefined, raw);
+  }
+  return new ProviderRunError(`Replicate ${status}: ${raw.slice(0, 240)}`, "model_error", true, undefined, raw);
 }
 
 function extractReplicateUrl(output: unknown): string | undefined {
@@ -591,11 +696,16 @@ function extractReplicateUrl(output: unknown): string | undefined {
   }
   if (typeof output === "object") {
     const rec = output as Record<string, unknown>;
-    for (const key of ["image", "url", "output", "image_url"]) {
+    for (const key of ["image", "url", "output", "image_url", "file", "content", "result"]) {
       const v = rec[key];
       if (typeof v === "string" && v) return v;
+      const nested = extractReplicateUrl(v);
+      if (nested) return nested;
     }
     if (Array.isArray(rec.images)) return extractReplicateUrl(rec.images);
+    if (Array.isArray(rec.urls)) return extractReplicateUrl(rec.urls);
+    if (Array.isArray(rec.files)) return extractReplicateUrl(rec.files);
+    if (Array.isArray(rec.data)) return extractReplicateUrl(rec.data);
   }
   return undefined;
 }
