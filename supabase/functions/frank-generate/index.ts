@@ -65,17 +65,19 @@ Deno.serve(async (req) => {
     const slug = REPLICATE_MAP[modelId];
     const images: string[] = [];
     const errors: MappedError[] = [];
-    for (let i = 0; i < count; i++) {
-      if (req.signal.aborted) {
-        errors.push({ code: "canceled", message: "Canceled by user.", retryable: true });
-        break;
-      }
-      try {
-        const url = await runReplicate(slug, prompt, body, replicateKey, req.signal);
-        if (url) images.push(url);
+    // Parallelize per-image work so a slow/cold model doesn't multiply latency.
+    const results = await Promise.allSettled(
+      Array.from({ length: count }, async () => {
+        if (req.signal.aborted) throw new ReplicateError("Canceled by user.", { code: "canceled", retryable: true });
+        return runReplicate(slug, prompt, body, replicateKey, req.signal);
+      }),
+    );
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        if (r.value) images.push(r.value);
         else errors.push({ code: "empty_output", message: "Replicate returned no image URL.", retryable: true });
-      } catch (err) {
-        errors.push(mapReplicateError(err));
+      } else {
+        errors.push(mapReplicateError(r.reason));
       }
     }
     if (!images.length) {
