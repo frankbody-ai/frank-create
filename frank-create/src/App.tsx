@@ -2776,8 +2776,10 @@ export default function App() {
             <button
               className="sidebar-nav-button"
               type="button"
-              aria-label="Open Raw Comfy"
-              onClick={() => openStudioLink(config.advancedGraphUrl, "Raw Comfy canvas")}
+              aria-label="Open Raw Comfy (disabled)"
+              disabled
+              title="ComfyUI integration is disabled"
+              style={{ opacity: 0.4, cursor: "not-allowed" }}
             >
               <GitBranch size={16} />
               Raw Comfy
