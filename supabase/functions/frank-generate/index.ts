@@ -215,13 +215,22 @@ async function runReplicate(
   signal?: AbortSignal,
 ): Promise<string | undefined> {
   const input = buildReplicateInput(slug, prompt, body);
+  const gatewayBase = "https://connector-gateway.lovable.dev/replicate/v1";
+  const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!lovableApiKey) {
+    throw new ReplicateError("Lovable gateway key is not configured.", { code: "config_missing", status: 500, retryable: false });
+  }
+  const replicateHeaders = {
+    "Authorization": `Bearer ${lovableApiKey}`,
+    "X-Connection-Api-Key": key,
+  };
 
   const createRes = await fetch(
-    `https://api.replicate.com/v1/models/${slug}/predictions`,
+    `${gatewayBase}/models/${slug}/predictions`,
     {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${key}`,
+        ...replicateHeaders,
         "Content-Type": "application/json",
         "Prefer": "wait=60",
       },
@@ -259,11 +268,11 @@ async function runReplicate(
   // If the client disconnects mid-poll, best-effort cancel the Replicate prediction.
   const onAbort = () => {
     if (cancelUrl) {
-      fetch(cancelUrl, { method: "POST", headers: { "Authorization": `Bearer ${key}` } }).catch(() => {});
+      fetch(`${gatewayBase}/predictions/${predictionId}/cancel`, { method: "POST", headers: replicateHeaders }).catch(() => {});
     } else if (predictionId) {
-      fetch(`https://api.replicate.com/v1/predictions/${predictionId}/cancel`, {
+      fetch(`${gatewayBase}/predictions/${predictionId}/cancel`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${key}` },
+        headers: replicateHeaders,
       }).catch(() => {});
     }
   };
@@ -279,9 +288,9 @@ async function runReplicate(
         throw new ReplicateError("Replicate timed out after 3 minutes.", { code: "timeout", retryable: true });
       }
       await new Promise((r) => setTimeout(r, 2000));
-      const pollUrl = pred?.urls?.get;
-      if (!pollUrl) throw new ReplicateError("Replicate did not return a poll URL.", { code: "provider_error", retryable: true });
-      const r = await fetch(pollUrl, { headers: { "Authorization": `Bearer ${key}` }, signal });
+      const id = pred?.id;
+      if (!id) throw new ReplicateError("Replicate did not return a prediction ID.", { code: "provider_error", retryable: true });
+      const r = await fetch(`${gatewayBase}/predictions/${id}`, { headers: replicateHeaders, signal });
       if (!r.ok) throw new ReplicateError(`Replicate poll failed (${r.status}).`, { code: "provider_error", status: r.status, retryable: true });
       pred = await r.json();
     }
@@ -299,8 +308,41 @@ async function runReplicate(
   }
 
   const out = pred.output;
-  const url: string | undefined = Array.isArray(out) ? out[0] : typeof out === "string" ? out : undefined;
+  const url = extractReplicateUrl(out);
+  if (!url) {
+    throw new ReplicateError(`Replicate returned no image URL (output=${JSON.stringify(out ?? null).slice(0, 200)})`, {
+      code: "empty_output",
+      retryable: true,
+      raw: JSON.stringify(out ?? null).slice(0, 500),
+    });
+  }
   return url;
+}
+
+function extractReplicateUrl(output: unknown): string | undefined {
+  if (!output) return undefined;
+  if (typeof output === "string") return output;
+  if (Array.isArray(output)) {
+    for (const item of output) {
+      const url = extractReplicateUrl(item);
+      if (url) return url;
+    }
+    return undefined;
+  }
+  if (typeof output === "object") {
+    const record = output as Record<string, unknown>;
+    for (const key of ["image", "url", "image_url", "output", "file"]) {
+      const value = record[key];
+      if (typeof value === "string" && value) return value;
+      const nested = extractReplicateUrl(value);
+      if (nested) return nested;
+    }
+    for (const key of ["images", "urls", "files", "data"]) {
+      const nested = extractReplicateUrl(record[key]);
+      if (nested) return nested;
+    }
+  }
+  return undefined;
 }
 
 type MappedError = { code: string; message: string; retryable: boolean; status?: number; raw?: string };
