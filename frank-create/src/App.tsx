@@ -132,6 +132,7 @@ import type {
   WorkflowBlueprintsResponse
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
+import { AspectPreview } from "./components/AspectPreview";
 
 type WalkthroughTarget =
   | "app-header"
@@ -3120,6 +3121,7 @@ export default function App() {
                   {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
                 </label>
               </div>
+              <AspectPreview aspect={settings.aspect_ratio} size={modelHasSizes ? settings.image_size : undefined} label={selectedModel?.short_label ?? selectedModel?.label} />
               {fieldErrors.references ? (
                 <p className="field-error" role="alert">{fieldErrors.references}</p>
               ) : null}
@@ -4366,6 +4368,7 @@ export default function App() {
               {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
             </label>
           </div>
+          <AspectPreview aspect={settings.aspect_ratio} size={modelHasSizes ? settings.image_size : undefined} label={selectedModel?.short_label ?? selectedModel?.label} />
           {fieldErrors.references ? (
             <p className="field-error" role="alert">{fieldErrors.references}</p>
           ) : null}
