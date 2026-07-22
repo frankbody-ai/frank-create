@@ -2778,6 +2778,7 @@ export default function App() {
 
         <nav className="sidebar-nav" aria-label="Frank Create navigation">
           <p className="sidebar-section-label">Create</p>
+          <FeedbackWidget variant="inline" />
           <button
             className={`sidebar-nav-button ${studioMode === "image-studio" && reviewFilter === "all" ? "active" : ""}`}
             type="button"
