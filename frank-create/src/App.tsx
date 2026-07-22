@@ -5410,7 +5410,13 @@ function FrankGraphView({
                 <ArrowLeft size={16} />
                 Use in Studio
               </button>
-              <button className="secondary-button" type="button" onClick={() => onOpenLink(rawGraphUrl, "Raw Comfy canvas")}>
+              <button
+                className="secondary-button"
+                type="button"
+                disabled
+                title="ComfyUI integration is disabled"
+                style={{ opacity: 0.4, cursor: "not-allowed" }}
+              >
                 <ExternalLink size={16} />
                 Open Comfy Canvas
               </button>
