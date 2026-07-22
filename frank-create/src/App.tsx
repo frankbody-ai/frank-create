@@ -14,6 +14,7 @@ import {
   MessageSquareText,
   Paperclip,
   Paintbrush,
+  Pencil,
   Plus,
   RefreshCw,
   Sparkles,
@@ -2787,6 +2788,34 @@ export default function App() {
               ))}
             </select>
           </label>
+          {activeSession ? (
+            <button
+              className="secondary-button compact-action"
+              type="button"
+              onClick={() => {
+                const next = window.prompt("Rename session", activeSession.name);
+                if (!next) return;
+                const trimmed = next.trim().slice(0, 80);
+                if (!trimmed || trimmed === activeSession.name) return;
+                const optimistic = { ...activeSession, name: trimmed };
+                setActiveSession(optimistic);
+                setSessions((current) => current.map((s) => (s.id === optimistic.id ? optimistic : s)));
+                void updateSession(activeSession.id, { name: trimmed })
+                  .then((result) => {
+                    if (result?.session) {
+                      setActiveSession(result.session);
+                      setSessions((current) => current.map((s) => (s.id === result.session.id ? result.session : s)));
+                    }
+                  })
+                  .catch((error) => {
+                    console.error("Failed to rename session", error);
+                  });
+              }}
+            >
+              <Pencil size={16} />
+              Rename
+            </button>
+          ) : null}
           <p>
             {turns.length} rounds / {approvedCount} approved / {favoriteCount} fave{favoriteCount === 1 ? "" : "s"}
           </p>
