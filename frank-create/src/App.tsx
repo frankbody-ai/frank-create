@@ -5748,17 +5748,21 @@ function OutputStrip({
 
   return (
     <div className="output-grid">
-      {assets.map((asset) => (
-        <button
-          className={selectedAssetId === asset.id ? "selected" : ""}
-          key={asset.id}
-          type="button"
-          onClick={() => onSelect(asset)}
-        >
-          <AssetPreviewMedia asset={asset} fallbackIconSize={24} />
-          <span>{assetStatusCopy(asset.approval_status)}</span>
-        </button>
-      ))}
+      {assets.map((asset) => {
+        const ratio = asset.width && asset.height ? `${asset.width} / ${asset.height}` : undefined;
+        return (
+          <button
+            className={selectedAssetId === asset.id ? "selected" : ""}
+            key={asset.id}
+            type="button"
+            onClick={() => onSelect(asset)}
+            style={ratio ? ({ ["--asset-aspect" as string]: ratio } as React.CSSProperties) : undefined}
+          >
+            <AssetPreviewMedia asset={asset} fallbackIconSize={24} />
+            <span>{assetStatusCopy(asset.approval_status)}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
