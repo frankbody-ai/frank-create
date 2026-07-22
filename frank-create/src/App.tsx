@@ -1885,8 +1885,23 @@ export default function App() {
         setSelectedAsset(newAssets[0]);
         setStatusText(`Generated ${newAssets.length} pick${newAssets.length === 1 ? "" : "s"} via Lovable AI.`);
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Lovable AI generation failed.";
-        setStatusText(`Lovable AI: ${message}`);
+        // Surface structured error info from frank-generate when available.
+        // supabase.functions.invoke returns a FunctionsHttpError whose `context`
+        // holds the Response; parse its JSON body for { error, code, retryable }.
+        let message = err instanceof Error ? err.message : "Lovable AI generation failed.";
+        let code: string | undefined;
+        let retryable: boolean | undefined;
+        try {
+          const ctx = (err as { context?: Response }).context;
+          if (ctx && typeof ctx.json === "function") {
+            const parsed = await ctx.clone().json();
+            if (parsed?.error) message = String(parsed.error);
+            if (parsed?.code) code = String(parsed.code);
+            if (typeof parsed?.retryable === "boolean") retryable = parsed.retryable;
+          }
+        } catch { /* body already consumed or non-JSON */ }
+        const suffix = code ? ` [${code}${retryable === false ? " — not retryable" : retryable ? " — safe to retry" : ""}]` : "";
+        setStatusText(`Lovable AI: ${message}${suffix}`);
         const localTurn = makeLocalTurn(activeSession.id, request);
         setTurns((current) => [...current, localTurn]);
       } finally {
