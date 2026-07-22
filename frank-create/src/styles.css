@@ -6485,3 +6485,7 @@ input[aria-invalid="true"] {
 .admin-board-card-shot { width: 100%; border-radius: 6px; border: 1px solid #262626; margin-bottom: 8px; display: block; }
 .admin-board-card-actions select { width: 100%; background: #0f0f0f; border: 1px solid #262626; color: #e5e5e5; padding: 5px 8px; border-radius: 6px; font-size: 12px; }
 .admin-sidebar-link { color: #fca5a5 !important; }
+
+.studio-topbar-right { display: flex; align-items: flex-start; gap: 12px; flex-direction: column; }
+.studio-topbar-right .feedback-inline { align-self: flex-end; }
+
