@@ -2002,8 +2002,10 @@ export default function App() {
         }
       } finally {
         generateAbortRef.current = null;
+        finishInflight();
         setBusy(false);
       }
+
       return;
     }
 
