@@ -17,6 +17,7 @@ import {
   Plus,
   RefreshCw,
   Sparkles,
+  Square,
   Upload,
   Wand2,
   X,
