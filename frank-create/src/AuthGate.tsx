@@ -85,7 +85,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 const styles: Record<string, React.CSSProperties> = {
   wrap: { minHeight: "100vh", display: "grid", placeItems: "center", background: "#0b0b0b", color: "#f5f5f5", fontFamily: "system-ui, sans-serif", padding: 24 },
   card: { maxWidth: 420, width: "100%", background: "#161616", border: "1px solid #262626", borderRadius: 16, padding: 32, textAlign: "center" },
-  title: { margin: 0, fontSize: 28, letterSpacing: -0.5 },
+  title: { margin: 0, fontSize: 28, letterSpacing: -0.5, color: "#ff6b81" },
   sub: { color: "#a3a3a3", marginTop: 8, marginBottom: 24, lineHeight: 1.5 },
   btn: { width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid #fff", background: "#fff", color: "#000", fontWeight: 600, cursor: "pointer" },
   linkBtn: { marginTop: 12, background: "transparent", color: "#a3a3a3", border: "none", cursor: "pointer", textDecoration: "underline" },
