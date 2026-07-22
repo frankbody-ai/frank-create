@@ -4,6 +4,7 @@ interface AspectPreviewProps {
   aspect: string;
   size?: string;
   label?: string;
+  count?: number;
 }
 
 function parseAspect(aspect: string): { w: number; h: number } | null {
