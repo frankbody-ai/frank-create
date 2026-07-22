@@ -626,6 +626,11 @@ export default function App() {
   const referenceAssets = assets.filter((asset) => asset.kind === "reference");
   const selectedReferenceIdSet = useMemo(() => new Set(selectedReferenceIds), [selectedReferenceIds]);
   const selectedReferenceAssets = referenceAssets.filter((asset) => selectedReferenceIdSet.has(asset.id));
+
+  const fieldErrors = useMemo(
+    () => validateStudioSettings(modelOptions.model, settings, { referenceCount: selectedReferenceAssets.length }),
+    [modelOptions.model, settings, selectedReferenceAssets.length]
+  );
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
   const firstOutputAsset = outputAssets[0] ?? null;
   const displayOutputAssets =
