@@ -2313,7 +2313,7 @@ export default function App() {
     }
   }
 
-  function retryTurn(turn: StudioTurn) {
+  function retryTurn(turn: StudioTurn, overrideCount?: number) {
     try {
       const parsed = JSON.parse(turn.settings_json || "{}") as Partial<StudioSettings>;
       setPrompt(turn.prompt || "");
@@ -2321,9 +2321,12 @@ export default function App() {
       if (turn.model) setSelectedModelId(turn.model);
       if (turn.preset_key) setSelectedPresetKey(turn.preset_key);
       setFrankBodyMode(!!turn.frank_body_mode);
-      setSettings((current) => ({ ...current, ...parsed }));
-      setStatusText("Retrying with previous settings…");
-      // Let React flush the state updates before submitting.
+      setSettings((current) => ({
+        ...current,
+        ...parsed,
+        ...(typeof overrideCount === "number" ? { count: Math.max(1, Math.min(4, overrideCount)) } : {}),
+      }));
+      setStatusText(typeof overrideCount === "number" ? `Retrying ${overrideCount} missing…` : "Retrying with previous settings…");
       window.setTimeout(() => { void handleGenerate(); }, 60);
     } catch (err) {
       setStatusText(err instanceof Error ? err.message : "Could not retry this round.");
