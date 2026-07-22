@@ -24,7 +24,7 @@ function parseSize(size?: string): { w: number; h: number } | null {
   return { w: Number(match[1]), h: Number(match[2]) };
 }
 
-export function AspectPreview({ aspect, size, label }: AspectPreviewProps) {
+export function AspectPreview({ aspect, size, label, count }: AspectPreviewProps) {
   const ratio = useMemo(() => parseAspect(aspect), [aspect]);
   const sizePx = useMemo(() => parseSize(size), [size]);
 
