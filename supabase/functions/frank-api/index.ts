@@ -437,6 +437,7 @@ async function handleInference(body: any, userId: string) {
         error_retryable: mapped.retryable,
         error_status: mapped.status ?? null,
         error_raw: mapped.raw ?? null,
+        error_request_id: mapped.requestId ?? null,
       },
     }).eq("id", turnId);
     return {
@@ -451,11 +452,12 @@ async function handleInference(body: any, userId: string) {
           error_retryable: mapped.retryable,
           error_status: mapped.status ?? null,
           error_raw: mapped.raw ?? null,
+          error_request_id: mapped.requestId ?? null,
         },
         seq: nextSeq, created_at: nowIso(),
       }),
       status: "failed" as const,
-      error: { code: mapped.code, message: msg, retryable: mapped.retryable, status: mapped.status, raw: mapped.raw } as any,
+      error: { code: mapped.code, message: msg, retryable: mapped.retryable, status: mapped.status, raw: mapped.raw, request_id: mapped.requestId } as any,
     };
   }
 
