@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { fallbackConfig } from "./presets";
-import { buildTurnRequest, inferenceStatusCopy, normalizeStudioSettingsForModel, selectModelOptions } from "./studio";
+import { buildTurnRequest, inferenceStatusCopy, normalizeStudioSettingsForModel, selectModelOptions, validateStudioSettings, hasStudioFieldErrors } from "./studio";
 import type { StudioModel } from "./types";
 
 const models: StudioModel[] = [
@@ -77,7 +77,9 @@ describe("studio helpers", () => {
       "google-nb-pro",
       "google-nb-2",
       "openai-gpt-image-2",
-      "flux-1-1-pro-ultra"
+      "reve-2-1",
+      "mai-image-2-5",
+      "seedream-5-pro"
     ]);
     expect(fallbackConfig.backlogModels).toEqual([]);
     expect(fallbackConfig.models.find((model) => model.id === "openai-gpt-image-2")?.provider_model).toBe(
@@ -85,12 +87,9 @@ describe("studio helpers", () => {
     );
     expect(fallbackConfig.models.find((model) => model.id === "google-nb-pro")?.provider_api_version).toBe("v1beta");
     expect(fallbackConfig.models.find((model) => model.id === "google-nb-2")?.provider_api_version).toBe("v1beta");
-    expect(fallbackConfig.models.find((model) => model.id === "flux-1-1-pro-ultra")?.provider_model).toBe(
-      "black-forest-labs/flux-1.1-pro-ultra"
-    );
-    expect(fallbackConfig.models.find((model) => model.id === "flux-1-1-pro-ultra")?.missing_env_vars).toEqual([
-      "REPLICATE_API_TOKEN"
-    ]);
+    expect(fallbackConfig.models.find((model) => model.id === "reve-2-1")?.provider_model).toBe("reve/reve-2.1");
+    expect(fallbackConfig.models.find((model) => model.id === "seedream-5-pro")?.allowed_image_sizes).toEqual(["1K", "2K"]);
+    expect(fallbackConfig.models.find((model) => model.id === "mai-image-2-5")?.status).toBe("coming_soon");
     expect(fallbackConfig.tasks.find((task) => task.key === "prompt-remix")?.providers).toContain("google");
   });
 
@@ -130,5 +129,36 @@ describe("studio helpers", () => {
         fallbackReason: "No Comfy queue"
       })
     ).toBe("Comfy was unavailable, so the fallback renderer made this round.");
+  });
+
+  it("flags size for models that pick resolution from aspect (Reve)", () => {
+    const reve = fallbackConfig.models.find((m) => m.id === "reve-2-1")!;
+    const errors = validateStudioSettings(reve, { aspect_ratio: "1:1", image_size: "1K", count: 1 });
+    expect(errors.size).toMatch(/leave size empty/i);
+    expect(hasStudioFieldErrors(errors)).toBe(true);
+  });
+
+  it("flags unsupported size for Seedream (no 4K)", () => {
+    const seedream = fallbackConfig.models.find((m) => m.id === "seedream-5-pro")!;
+    const errors = validateStudioSettings(seedream, { aspect_ratio: "1:1", image_size: "4K", count: 1 });
+    expect(errors.size).toMatch(/Unsupported/);
+  });
+
+  it("flags unsupported aspect for Nano Banana 2", () => {
+    const nb2 = fallbackConfig.models.find((m) => m.id === "google-nb-2")!;
+    const errors = validateStudioSettings(nb2, { aspect_ratio: "21:9", image_size: "2K", count: 2 });
+    expect(errors.aspect).toBeTruthy();
+  });
+
+  it("passes validation on a valid Seedream combo", () => {
+    const seedream = fallbackConfig.models.find((m) => m.id === "seedream-5-pro")!;
+    const errors = validateStudioSettings(seedream, { aspect_ratio: "16:9", image_size: "2K", count: 2 });
+    expect(hasStudioFieldErrors(errors)).toBe(false);
+  });
+
+  it("flags too many reference images", () => {
+    const reve = fallbackConfig.models.find((m) => m.id === "reve-2-1")!;
+    const errors = validateStudioSettings(reve, { aspect_ratio: "1:1", image_size: "", count: 1 }, { referenceCount: 20 });
+    expect(errors.references).toMatch(/at most 8/);
   });
 });

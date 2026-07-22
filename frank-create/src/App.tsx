@@ -99,7 +99,9 @@ import {
   makeLocalId,
   normalizeStudioSettingsForModel,
   parseJsonList,
-  selectModelOptions
+  selectModelOptions,
+  validateStudioSettings,
+  hasStudioFieldErrors
 } from "./lib/studio";
 
 import type {
@@ -539,6 +541,7 @@ export default function App() {
     () => filterSizesForAspect(modelOptions.allowedImageSizes, settings.aspect_ratio),
     [modelOptions.allowedImageSizes, settings.aspect_ratio]
   );
+  const modelHasSizes = (modelOptions.allowedImageSizes?.length ?? 0) > 0;
   const handleAspectChange = (nextAspect: string) => {
     setSettings((current) => {
       const sizes = filterSizesForAspect(modelOptions.allowedImageSizes, nextAspect);
@@ -623,6 +626,11 @@ export default function App() {
   const referenceAssets = assets.filter((asset) => asset.kind === "reference");
   const selectedReferenceIdSet = useMemo(() => new Set(selectedReferenceIds), [selectedReferenceIds]);
   const selectedReferenceAssets = referenceAssets.filter((asset) => selectedReferenceIdSet.has(asset.id));
+
+  const fieldErrors = useMemo(
+    () => validateStudioSettings(modelOptions.model, settings, { referenceCount: selectedReferenceAssets.length }),
+    [modelOptions.model, settings, selectedReferenceAssets.length]
+  );
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
   const firstOutputAsset = outputAssets[0] ?? null;
   const displayOutputAssets =
@@ -1774,6 +1782,19 @@ export default function App() {
     const referenceLimitMessage = modelReferenceLimitAction(selectedModel, selectedReferenceAssets.length);
     if (referenceLimitMessage) {
       setStatusText(referenceLimitMessage);
+      return;
+    }
+
+    const preflightErrors = validateStudioSettings(selectedModel, settings, {
+      referenceCount: selectedReferenceAssets.length
+    });
+    if (hasStudioFieldErrors(preflightErrors)) {
+      const firstMsg = preflightErrors.aspect ?? preflightErrors.size ?? preflightErrors.count ?? preflightErrors.references;
+      setStatusText(firstMsg ?? "Fix the highlighted fields.");
+      if (typeof document !== "undefined") {
+        const el = document.querySelector<HTMLElement>('[data-studio-invalid="true"]');
+        el?.focus?.();
+      }
       return;
     }
 
@@ -3055,24 +3076,36 @@ export default function App() {
                   <select
                     value={settings.aspect_ratio}
                     onChange={(event) => handleAspectChange(event.target.value)}
+                    aria-invalid={fieldErrors.aspect ? true : undefined}
+                    data-studio-invalid={fieldErrors.aspect ? "true" : undefined}
                   >
                     {modelOptions.allowedAspectRatios.map((ratio) => (
                       <option key={ratio}>{ratio}</option>
                     ))}
                   </select>
+                  {fieldErrors.aspect ? <p className="field-error" role="alert">{fieldErrors.aspect}</p> : null}
                 </label>
-                <label>
-                  Size
-                  <select
-                    value={settings.image_size}
-                    onChange={(event) => setSettings((current) => ({ ...current, image_size: event.target.value }))}
-                  >
-                    {allowedSizesForAspect.map((size) => (
-                      <option key={size}>{size}</option>
-                    ))}
-                  </select>
-
-                </label>
+                {modelHasSizes ? (
+                  <label>
+                    Size
+                    <select
+                      value={settings.image_size}
+                      onChange={(event) => setSettings((current) => ({ ...current, image_size: event.target.value }))}
+                      aria-invalid={fieldErrors.size ? true : undefined}
+                      data-studio-invalid={fieldErrors.size ? "true" : undefined}
+                    >
+                      {allowedSizesForAspect.map((size) => (
+                        <option key={size}>{size}</option>
+                      ))}
+                    </select>
+                    {fieldErrors.size ? <p className="field-error" role="alert">{fieldErrors.size}</p> : null}
+                  </label>
+                ) : (
+                  <label>
+                    Size
+                    <span className="field-hint">Auto from aspect</span>
+                  </label>
+                )}
                 <label>
                   Count
                   <input
@@ -3081,9 +3114,15 @@ export default function App() {
                     type="number"
                     value={settings.count}
                     onChange={(event) => setSettings((current) => ({ ...current, count: Number(event.target.value) }))}
+                    aria-invalid={fieldErrors.count ? true : undefined}
+                    data-studio-invalid={fieldErrors.count ? "true" : undefined}
                   />
+                  {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
                 </label>
               </div>
+              {fieldErrors.references ? (
+                <p className="field-error" role="alert">{fieldErrors.references}</p>
+              ) : null}
               {selectedModel?.id === "google-nb-pro" ? (
                 <div className="setting-row thinking-mode-row" aria-label="Thinking mode (Nano Banana Pro only)">
                   <label>
@@ -4283,24 +4322,36 @@ export default function App() {
               <select
                 value={settings.aspect_ratio}
                 onChange={(event) => handleAspectChange(event.target.value)}
+                aria-invalid={fieldErrors.aspect ? true : undefined}
+                data-studio-invalid={fieldErrors.aspect ? "true" : undefined}
               >
                 {modelOptions.allowedAspectRatios.map((ratio) => (
                   <option key={ratio}>{ratio}</option>
                 ))}
               </select>
+              {fieldErrors.aspect ? <p className="field-error" role="alert">{fieldErrors.aspect}</p> : null}
             </label>
-            <label>
-              Size
-              <select
-                value={settings.image_size}
-                onChange={(event) => setSettings((current) => ({ ...current, image_size: event.target.value }))}
-              >
-                {allowedSizesForAspect.map((size) => (
-                  <option key={size}>{size}</option>
-                ))}
-              </select>
-
-            </label>
+            {modelHasSizes ? (
+              <label>
+                Size
+                <select
+                  value={settings.image_size}
+                  onChange={(event) => setSettings((current) => ({ ...current, image_size: event.target.value }))}
+                  aria-invalid={fieldErrors.size ? true : undefined}
+                  data-studio-invalid={fieldErrors.size ? "true" : undefined}
+                >
+                  {allowedSizesForAspect.map((size) => (
+                    <option key={size}>{size}</option>
+                  ))}
+                </select>
+                {fieldErrors.size ? <p className="field-error" role="alert">{fieldErrors.size}</p> : null}
+              </label>
+            ) : (
+              <label>
+                Size
+                <span className="field-hint">Auto from aspect</span>
+              </label>
+            )}
             <label>
               Count
               <input
@@ -4309,9 +4360,15 @@ export default function App() {
                 type="number"
                 value={settings.count}
                 onChange={(event) => setSettings((current) => ({ ...current, count: Number(event.target.value) }))}
+                aria-invalid={fieldErrors.count ? true : undefined}
+                data-studio-invalid={fieldErrors.count ? "true" : undefined}
               />
+              {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
             </label>
           </div>
+          {fieldErrors.references ? (
+            <p className="field-error" role="alert">{fieldErrors.references}</p>
+          ) : null}
           <div className="capability-strip">
             <span>{modelOptions.resolutionBadge}</span>
             <span>{modelOptions.canEdit ? "Edits" : "Generate only"}</span>
