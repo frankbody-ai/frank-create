@@ -192,11 +192,11 @@ async function lovableChat(messages: any[]) {
 }
 
 const MODEL_MAP: Record<string, string> = {
-  "nano-banana-pro": "google/gemini-3-pro-image-preview",
-  "google-nb-pro": "google/gemini-3-pro-image-preview",
-  "nano-banana-2": "google/gemini-3.1-flash-image-preview",
-  "google-nb-2": "google/gemini-3.1-flash-image-preview",
-  "frank-local-comfy": "google/gemini-2.5-flash-image-preview",
+  "nano-banana-pro": "google/gemini-3-pro-image",
+  "google-nb-pro": "google/gemini-3-pro-image",
+  "nano-banana-2": "google/gemini-3.1-flash-image",
+  "google-nb-2": "google/gemini-3.1-flash-image",
+  "frank-local-comfy": "google/gemini-2.5-flash-image",
   "openai-gpt-image-2": "openai/gpt-image-2",
 };
 
@@ -249,9 +249,11 @@ async function lovableImage(
   }
 
   const hints: string[] = [];
-  if (opts.aspectRatio) hints.push(`Aspect ratio: ${opts.aspectRatio}.`);
+  if (opts.aspectRatio && opts.aspectRatio !== "auto") {
+    hints.push(`The final image canvas must be exactly ${opts.aspectRatio} aspect ratio. Do not use a square canvas unless ${opts.aspectRatio} is 1:1.`);
+  }
   if (opts.size && ["1K", "2K", "4K"].includes(opts.size)) hints.push(`Output resolution: ${opts.size}.`);
-  const fullText = hints.length ? `${prompt}\n\n${hints.join(" ")}` : prompt;
+  const fullText = hints.length ? `${prompt}\n\nOutput constraints: ${hints.join(" ")}` : prompt;
 
   const content: any[] = [{ type: "text", text: fullText }];
   for (const url of referenceImageDataUrls) {
@@ -259,20 +261,27 @@ async function lovableImage(
   }
   const payload: Record<string, unknown> = {
     model: gatewayModel,
-    messages: [{ role: "user", content }],
+    messages: [{ role: "user", content: content.length === 1 ? fullText : content }],
     modalities: ["image", "text"],
   };
   const budget = Number(opts.thinkingBudget ?? 0);
   if (budget > 0 && gatewayModel.includes("gemini-3-pro")) {
     payload.reasoning = { effort: budget >= 5000 ? "high" : "low" };
   }
-  const r = await fetch(`${LOVABLE_BASE}/chat/completions`, {
+  const r = await fetch(`${LOVABLE_BASE}/images/generations`, {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
   if (!r.ok) throw new Error(`Lovable image ${r.status}: ${await r.text()}`);
   const j: any = await r.json();
+  const item = j?.data?.[0];
+  if (item?.b64_json) return { b64: item.b64_json, mime: "image/png" };
+  const directUrl = item?.url;
+  if (directUrl) {
+    const m = String(directUrl).match(/^data:(image\/[a-z]+);base64,(.+)$/);
+    if (m) return { b64: m[2], mime: m[1] };
+  }
   const msg = j.choices?.[0]?.message;
   const images = msg?.images;
   if (Array.isArray(images) && images.length) {
@@ -280,7 +289,6 @@ async function lovableImage(
     const url: string = first.image_url?.url || first.url || "";
     const m = url.match(/^data:(image\/[a-z]+);base64,(.+)$/);
     if (m) return { b64: m[2], mime: m[1] };
-    if (url) return { b64: url, mime: "image/png" };
   }
   throw new Error(`Lovable AI returned no image data. ${JSON.stringify(j).slice(0, 300)}`);
 }
@@ -330,6 +338,16 @@ function base64Decode(b64: string): Uint8Array {
   return bytes;
 }
 
+function requestedDimensions(aspectRatio?: string, size?: string): { width: number; height: number } | null {
+  const sizeMatch = String(size || "").match(/^(\d+)\s*[x×]\s*(\d+)$/i);
+  if (sizeMatch) {
+    return { width: Number(sizeMatch[1]), height: Number(sizeMatch[2]) };
+  }
+  const ratioMatch = String(aspectRatio || "").match(/^(\d+(?:\.\d+)?)\s*[:x/]\s*(\d+(?:\.\d+)?)$/i);
+  if (!ratioMatch) return null;
+  return { width: Number(ratioMatch[1]), height: Number(ratioMatch[2]) };
+}
+
 async function handleInference(body: any, userId: string) {
   const sb = supabase();
   let sessionId: string = body.session_id;
@@ -364,19 +382,22 @@ async function handleInference(body: any, userId: string) {
   if (msgIns.error) throw msgIns.error;
   const nextSeq = (msgIns.data as any)?.seq ?? 0;
 
-  let img;
+  const count = Math.min(Math.max(Number(reqSettings.count ?? body.count ?? 1) || 1, 1), 4);
+  const generatedImages: Array<{ b64: string; mime: string }> = [];
   try {
     const refIds: string[] = [
       ...(body.edit_source_asset_id ? [body.edit_source_asset_id] : []),
       ...((body.reference_asset_ids as string[]) || []),
     ];
     const refUrls = await loadReferenceDataUrls(refIds, userId);
-    img = await lovableImage(prompt, refUrls, {
-      gatewayModel,
-      aspectRatio: reqSettings.aspect_ratio,
-      size: reqSettings.image_size || reqSettings.size,
-      thinkingBudget: Number(reqSettings.thinking_budget ?? body.thinking_budget ?? 0),
-    });
+    for (let i = 0; i < count; i++) {
+      generatedImages.push(await lovableImage(prompt, refUrls, {
+        gatewayModel,
+        aspectRatio: reqSettings.aspect_ratio,
+        size: reqSettings.image_size || reqSettings.size,
+        thinkingBudget: Number(reqSettings.thinking_budget ?? body.thinking_budget ?? 0),
+      }));
+    }
   } catch (err) {
     const msg = errMessage(err);
     await sb.from("messages").update({
@@ -394,42 +415,53 @@ async function handleInference(body: any, userId: string) {
     };
   }
 
-  const assetId = crypto.randomUUID();
-  const ext = img.mime.split("/")[1] || "png";
-  const storagePath = `${sessionId}/${assetId}.${ext}`;
-  const bytes = base64Decode(img.b64);
-  const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, {
-    contentType: img.mime, upsert: false,
-  });
-  if (up.error) throw up.error;
+  const requested = requestedDimensions(reqSettings.aspect_ratio, reqSettings.image_size || reqSettings.size);
+  const insertedAssets: any[] = [];
+  for (const img of generatedImages) {
+    const assetId = crypto.randomUUID();
+    const ext = img.mime.split("/")[1] || "png";
+    const storagePath = `${sessionId}/${assetId}.${ext}`;
+    const bytes = base64Decode(img.b64);
+    const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, {
+      contentType: img.mime, upsert: false,
+    });
+    if (up.error) throw up.error;
 
-  const assetIns = await sb.from("assets").insert({
-    id: assetId,
-    user_id: userId,
-    session_id: sessionId,
-    message_id: turnId,
-    storage_path: storagePath,
-    asset_type: "generated",
-    prompt_snapshot: prompt,
-    model_key: modelId,
-    metadata_json: {
-      media_type: "image",
-      mime: img.mime,
-      title: prompt.slice(0, 80) || "Generated image",
-    },
-  }).select().single();
-  if (assetIns.error) throw assetIns.error;
+    const assetIns = await sb.from("assets").insert({
+      id: assetId,
+      user_id: userId,
+      session_id: sessionId,
+      message_id: turnId,
+      storage_path: storagePath,
+      asset_type: "generated",
+      prompt_snapshot: prompt,
+      model_key: modelId,
+      metadata_json: {
+        media_type: "image",
+        mime: img.mime,
+        title: prompt.slice(0, 80) || "Generated image",
+        aspect_ratio: reqSettings.aspect_ratio,
+        requested_size: reqSettings.image_size || reqSettings.size || null,
+        width: requested?.width,
+        height: requested?.height,
+      },
+    }).select().single();
+    if (assetIns.error) throw assetIns.error;
+    insertedAssets.push(assetIns.data);
+  }
+
+  const assetIds = insertedAssets.map((asset) => asset.id);
 
   const completedSnapshot = {
     ...settingsSnapshot,
     status: "complete",
-    output_asset_ids: [assetId],
+    output_asset_ids: assetIds,
   };
   await sb.from("messages").update({
     settings_snapshot_json: completedSnapshot,
   }).eq("id", turnId);
 
-  const url = await signed(storagePath);
+  const assets = await Promise.all(insertedAssets.map(async (asset) => rowToAsset(asset, await signed(asset.storage_path))));
   return {
     turn: rowToTurn({
       id: turnId, session_id: sessionId, role: "user",
@@ -438,7 +470,7 @@ async function handleInference(body: any, userId: string) {
       seq: nextSeq, created_at: nowIso(),
     }),
     status: "complete" as const,
-    assets: [rowToAsset(assetIns.data, url)],
+    assets,
     providerPayload: { provider: "lovable", model: gatewayModel },
     localEngine: "cloud" as const,
   };

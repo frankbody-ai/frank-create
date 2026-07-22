@@ -10,8 +10,8 @@ const corsHeaders = {
 // Map studio model id -> Lovable AI Gateway model string (Gemini/OpenAI models)
 const MODEL_MAP: Record<string, string> = {
   "frank-local-comfy": "google/gemini-2.5-flash-image",
-  "google-nb-pro": "google/gemini-3-pro-image-preview",
-  "google-nb-2": "google/gemini-3.1-flash-image-preview",
+  "google-nb-pro": "google/gemini-3-pro-image",
+  "google-nb-2": "google/gemini-3.1-flash-image",
   "openai-gpt-image-2": "openai/gpt-image-2",
 };
 
@@ -134,9 +134,11 @@ Deno.serve(async (req) => {
         const ar = body.aspect_ratio;
         const sz = body.size;
         const hints: string[] = [];
-        if (ar) hints.push(`Aspect ratio: ${ar}.`);
+        if (ar && ar !== "auto") {
+          hints.push(`The final image canvas must be exactly ${ar} aspect ratio. Do not use a square canvas unless ${ar} is 1:1.`);
+        }
         if (sz && ["1K", "2K", "4K"].includes(sz)) hints.push(`Output resolution: ${sz}.`);
-        const fullPrompt = hints.length ? `${prompt}\n\n${hints.join(" ")}` : prompt;
+        const fullPrompt = hints.length ? `${prompt}\n\nOutput constraints: ${hints.join(" ")}` : prompt;
         const payload: Record<string, unknown> = {
           model: gatewayModel,
           messages: [{ role: "user", content: fullPrompt }],
@@ -146,7 +148,7 @@ Deno.serve(async (req) => {
         if (budget > 0 && gatewayModel.includes("gemini-3-pro")) {
           payload.reasoning = { effort: budget >= 5000 ? "high" : "low" };
         }
-        res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -173,7 +175,10 @@ Deno.serve(async (req) => {
         if (item?.b64_json) imageUrl = `data:image/png;base64,${item.b64_json}`;
         else if (item?.url) imageUrl = item.url;
       } else {
-        imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        const item = data?.data?.[0];
+        if (item?.b64_json) imageUrl = `data:image/png;base64,${item.b64_json}`;
+        else if (item?.url) imageUrl = item.url;
+        else imageUrl = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
       }
       if (imageUrl) images.push(imageUrl);
       else errors.push("no image in response");
