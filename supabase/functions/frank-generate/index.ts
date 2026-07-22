@@ -173,6 +173,12 @@ Deno.serve(async (req) => {
   }
 
   if (!images.length) {
+    const mapped: MappedError[] = errors.map((raw) => ({
+      code: "gateway_error",
+      message: typeof raw === "string" ? raw.slice(0, 300) : String(raw),
+      retryable: true,
+    }));
+    await logGenerationErrors(req, "lovable-ai", modelId, body, mapped);
     return json({ error: "Generation failed", details: errors }, 502);
   }
 
