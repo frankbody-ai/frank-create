@@ -32,7 +32,7 @@ async function fileToBase64(file: File): Promise<string> {
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_BYTES = 3 * 1024 * 1024;
 
-export function FeedbackWidget() {
+export function FeedbackWidget({ variant = "fixed" }: { variant?: "fixed" | "inline" }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
