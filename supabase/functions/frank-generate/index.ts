@@ -67,8 +67,8 @@ Deno.serve(async (req) => {
     const errors: MappedError[] = [];
     // Cap in-flight parallelism at 2 so 3–4 image runs don't cold-start Replicate
     // simultaneously and blow the edge function's 150s wall-clock budget.
-    const PARALLEL = 2;
-    const PER_PREDICTION_MS = 120_000;
+    const PARALLEL = slug.includes("seedream") ? 1 : 2;
+    const PER_PREDICTION_MS = slug.includes("seedream") || slug.includes("nano-banana") ? 140_000 : 120_000;
     const runOne = () => Promise.race<string | undefined>([
       (async () => {
         if (req.signal.aborted) throw new ReplicateError("Canceled by user.", { code: "canceled", retryable: true });

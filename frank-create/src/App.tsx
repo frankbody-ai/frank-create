@@ -2313,7 +2313,7 @@ export default function App() {
     }
   }
 
-  function retryTurn(turn: StudioTurn) {
+  function retryTurn(turn: StudioTurn, overrideCount?: number) {
     try {
       const parsed = JSON.parse(turn.settings_json || "{}") as Partial<StudioSettings>;
       setPrompt(turn.prompt || "");
@@ -2321,9 +2321,12 @@ export default function App() {
       if (turn.model) setSelectedModelId(turn.model);
       if (turn.preset_key) setSelectedPresetKey(turn.preset_key);
       setFrankBodyMode(!!turn.frank_body_mode);
-      setSettings((current) => ({ ...current, ...parsed }));
-      setStatusText("Retrying with previous settings…");
-      // Let React flush the state updates before submitting.
+      setSettings((current) => ({
+        ...current,
+        ...parsed,
+        ...(typeof overrideCount === "number" ? { count: Math.max(1, Math.min(4, overrideCount)) } : {}),
+      }));
+      setStatusText(typeof overrideCount === "number" ? `Retrying ${overrideCount} missing…` : "Retrying with previous settings…");
       window.setTimeout(() => { void handleGenerate(); }, 60);
     } catch (err) {
       setStatusText(err instanceof Error ? err.message : "Could not retry this round.");
@@ -3119,20 +3122,38 @@ export default function App() {
                         try { partial = JSON.parse(anyTurn.partial_errors_json || "[]"); } catch { partial = []; }
                         if (!partial.length && (!requested || produced >= requested)) return null;
                         const missing = Math.max(0, requested - produced);
+                        const anyRetryable = partial.some((p: any) => p?.retryable !== false);
                         return (
-                          <span
-                            className="turn-partial"
-                            title={partial.map((p, i) => `${i + 1}. [${p.code || "error"}] ${p.message || ""}${p.request_id ? ` (id: ${p.request_id})` : ""}`).join("\n")}
-                            style={{
-                              display: "inline-flex", alignItems: "center", gap: 4,
-                              fontSize: 11, padding: "2px 8px", borderRadius: 999,
-                              background: "rgba(245,158,11,0.15)", color: "rgb(146,64,14)",
-                              border: "1px solid rgba(245,158,11,0.4)", cursor: "help",
-                            }}
-                          >
-                            {produced} of {requested || (produced + partial.length)} succeeded
-                            {missing > 0 ? ` · ${missing} failed` : ""}
-                          </span>
+                          <>
+                            <span
+                              className="turn-partial"
+                              title={partial.map((p, i) => `${i + 1}. [${p.code || "error"}] ${p.message || ""}${p.request_id ? ` (id: ${p.request_id})` : ""}`).join("\n")}
+                              style={{
+                                display: "inline-flex", alignItems: "center", gap: 4,
+                                fontSize: 11, padding: "2px 8px", borderRadius: 999,
+                                background: "rgba(245,158,11,0.15)", color: "rgb(146,64,14)",
+                                border: "1px solid rgba(245,158,11,0.4)", cursor: "help",
+                              }}
+                            >
+                              {produced} of {requested || (produced + partial.length)} succeeded
+                              {missing > 0 ? ` · ${missing} failed` : ""}
+                            </span>
+                            {missing > 0 && anyRetryable ? (
+                              <button
+                                type="button"
+                                className="turn-retry-missing"
+                                onClick={() => retryTurn(turn, missing)}
+                                title={`Re-run the ${missing} missing image${missing === 1 ? "" : "s"} with the same settings`}
+                                style={{
+                                  fontSize: 11, padding: "2px 8px", borderRadius: 999,
+                                  background: "rgba(59,130,246,0.12)", color: "rgb(30,64,175)",
+                                  border: "1px solid rgba(59,130,246,0.4)", cursor: "pointer",
+                                }}
+                              >
+                                Retry missing ({missing})
+                              </button>
+                            ) : null}
+                          </>
                         );
                       })()}
                     </div>
