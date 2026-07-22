@@ -3768,14 +3768,22 @@ export default function App() {
             </button>
           ) : null}
           {genPhase === "failed" && genError ? (
-            <button
-              type="button"
-              className="gen-error-toggle"
-              onClick={() => setGenErrorOpen((v) => !v)}
-              aria-expanded={genErrorOpen}
-            >
-              {genErrorOpen ? "Hide details" : "Show details"}
-            </button>
+            <>
+              {genError.code ? (
+                <span className="gen-error-chip" title={genError.message}>
+                  <code>{genError.code}</code>
+                  {genError.requestId ? <em title={`Replicate request ID: ${genError.requestId}`}>req {genError.requestId.slice(0, 8)}</em> : null}
+                </span>
+              ) : null}
+              <button
+                type="button"
+                className="gen-error-toggle"
+                onClick={() => setGenErrorOpen((v) => !v)}
+                aria-expanded={genErrorOpen}
+              >
+                {genErrorOpen ? "Hide details" : "Show details"}
+              </button>
+            </>
           ) : null}
           {retrySafePayload ? (
             <button
