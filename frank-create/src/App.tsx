@@ -2788,14 +2788,15 @@ export default function App() {
             Image Studio
           </button>
           <button
-            className="sidebar-nav-button disabled"
+            className="sidebar-nav-button is-muted"
             type="button"
             aria-label="Product Shot Lab (coming soon)"
-            title="Product Shot Lab is temporarily paused — feedback from Cliff will refine it into a sharper feature."
+            title="Product Shot Lab is paused — waiting on Cliff's feedback to refine it."
             disabled
           >
             <Layers3 size={16} />
-            Product Shot Lab
+            <span style={{ flex: 1 }}>Product Shot Lab</span>
+            <span className="sidebar-soon-tag">Soon</span>
           </button>
           <button
             className={`sidebar-nav-button ${studioMode === "video-lab" ? "active" : ""}`}
