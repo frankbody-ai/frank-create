@@ -321,11 +321,19 @@ export default function App() {
   }, [customPresets]);
   const [frankBodyMode, setFrankBodyMode] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setUserEmail(s?.user?.email ?? null));
     return () => sub.subscription.unsubscribe();
   }, []);
+  useEffect(() => {
+    let cancelled = false;
+    import("./lib/admin").then(({ isCurrentUserAdmin }) => {
+      isCurrentUserAdmin().then((v) => { if (!cancelled) setIsAdmin(v); }).catch(() => {});
+    });
+    return () => { cancelled = true; };
+  }, [userEmail]);
   const handleSignOut = async () => {
     await hardSignOut();
     window.location.replace("/");
@@ -2871,6 +2879,19 @@ export default function App() {
             {advancedOpen ? <XCircle size={16} /> : <GitBranch size={16} />}
             {advancedOpen ? "Close Advanced" : "Advanced"}
           </button>
+          {isAdmin && (
+            <>
+              <p className="sidebar-section-label">Admin</p>
+              <a
+                className="sidebar-nav-button admin-sidebar-link"
+                href="#/admin"
+                aria-label="Open Admin portal"
+              >
+                <Sparkles size={16} />
+                Admin portal
+              </a>
+            </>
+          )}
         </nav>
 
         <div className="sidebar-session-card">

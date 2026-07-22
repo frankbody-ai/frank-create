@@ -9,6 +9,7 @@ import { HealthPage } from "./components/HealthPage";
 import { ReviewBoardPage } from "./components/ReviewBoardPage";
 import { CliffAccessPage } from "./components/CliffAccessPage";
 import { AdminFeedbackPage } from "./components/AdminFeedbackPage";
+import { AdminPortal } from "./components/AdminPortal";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { installErrorReporter } from "./lib/errorReporter";
 import "./styles.css";
@@ -17,15 +18,18 @@ installErrorReporter();
 
 function resolveRoute() {
   const pathname = window.location.pathname.replace(/\/$/, "");
-  const hashPath = window.location.hash.replace(/^#/, "").replace(/\/$/, "");
+  const rawHash = window.location.hash.replace(/^#/, "");
+  const hashPath = (rawHash.split("?")[0] || "").replace(/\/$/, "");
   const isHealth = hashPath === "/health" || pathname === "/health";
   const isCliff = hashPath === "/cliff-access" || pathname === "/cliff-access";
   const isAdminFeedback = hashPath === "/admin/feedback" || pathname === "/admin/feedback";
+  const isAdmin = hashPath === "/admin" || pathname === "/admin";
   const reviewMatch =
     hashPath.match(/^\/review\/([^/]+)$/) ?? pathname.match(/^\/review\/([^/]+)$/);
   return {
     isHealth,
     isCliff,
+    isAdmin,
     isAdminFeedback,
     reviewSessionId: reviewMatch ? decodeURIComponent(reviewMatch[1]) : null,
   };
@@ -45,6 +49,8 @@ function Router() {
 
   if (route.isHealth) return <HealthPage />;
   if (route.isCliff) return <AuthGate><CliffAccessPage /><FeedbackWidget /></AuthGate>;
+  if (route.isAdmin)
+    return <AuthGate><AdminPortal /><FeedbackWidget /></AuthGate>;
   if (route.isAdminFeedback)
     return <AuthGate><AdminFeedbackPage /><FeedbackWidget /></AuthGate>;
   if (route.reviewSessionId)
