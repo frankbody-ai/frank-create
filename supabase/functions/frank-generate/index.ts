@@ -383,25 +383,27 @@ function extractReplicateUrl(output: unknown): string | undefined {
   return undefined;
 }
 
-type MappedError = { code: string; message: string; retryable: boolean; status?: number; raw?: string };
+type MappedError = { code: string; message: string; retryable: boolean; status?: number; raw?: string; requestId?: string };
 
 class ReplicateError extends Error {
   code: string;
   status?: number;
   retryable: boolean;
   raw?: string;
-  constructor(message: string, opts: { code: string; status?: number; retryable: boolean; raw?: string }) {
+  requestId?: string;
+  constructor(message: string, opts: { code: string; status?: number; retryable: boolean; raw?: string; requestId?: string }) {
     super(message);
     this.code = opts.code;
     this.status = opts.status;
     this.retryable = opts.retryable;
     this.raw = opts.raw;
+    this.requestId = opts.requestId;
   }
 }
 
 function mapReplicateError(err: unknown): MappedError {
   if (err instanceof ReplicateError) {
-    return { code: err.code, message: err.message, retryable: err.retryable, status: err.status, raw: err.raw };
+    return { code: err.code, message: err.message, retryable: err.retryable, status: err.status, raw: err.raw, requestId: err.requestId };
   }
   const message = err instanceof Error ? err.message : String(err);
   // Network / fetch failures
