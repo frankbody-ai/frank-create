@@ -18,15 +18,18 @@ installErrorReporter();
 
 function resolveRoute() {
   const pathname = window.location.pathname.replace(/\/$/, "");
-  const hashPath = window.location.hash.replace(/^#/, "").replace(/\/$/, "");
+  const rawHash = window.location.hash.replace(/^#/, "");
+  const hashPath = (rawHash.split("?")[0] || "").replace(/\/$/, "");
   const isHealth = hashPath === "/health" || pathname === "/health";
   const isCliff = hashPath === "/cliff-access" || pathname === "/cliff-access";
   const isAdminFeedback = hashPath === "/admin/feedback" || pathname === "/admin/feedback";
+  const isAdmin = hashPath === "/admin" || pathname === "/admin";
   const reviewMatch =
     hashPath.match(/^\/review\/([^/]+)$/) ?? pathname.match(/^\/review\/([^/]+)$/);
   return {
     isHealth,
     isCliff,
+    isAdmin,
     isAdminFeedback,
     reviewSessionId: reviewMatch ? decodeURIComponent(reviewMatch[1]) : null,
   };
