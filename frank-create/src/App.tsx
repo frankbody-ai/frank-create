@@ -3658,7 +3658,37 @@ export default function App() {
         </section>
 
         <div className="status-strip">
+          <div className={`gen-progress phase-${genPhase}`} role="status" aria-live="polite">
+            {(["queued", "running", genPhase === "failed" ? "failed" : "completed"] as const).map((step, i) => {
+              const order: GenPhase[] = ["idle", "queued", "running", genPhase === "failed" ? "failed" : "completed"];
+              const currentIdx = order.indexOf(genPhase);
+              const stepIdx = i + 1;
+              const state =
+                genPhase === "idle" ? "pending" :
+                genPhase === "failed" && step === "failed" ? "failed" :
+                stepIdx < currentIdx ? "done" :
+                stepIdx === currentIdx ? (genPhase === "failed" ? "failed" : genPhase === "completed" ? "done" : "active") :
+                "pending";
+              const label = step === "queued" ? "Queued" : step === "running" ? "Running" : step === "failed" ? "Failed" : "Completed";
+              return (
+                <span key={step} className={`gen-step gen-step-${state}`}>
+                  <span className="gen-step-dot">{stepIdx}</span>
+                  <span className="gen-step-label">{label}</span>
+                </span>
+              );
+            })}
+          </div>
           <span>{statusText}</span>
+          {genPhase === "failed" && genError ? (
+            <button
+              type="button"
+              className="gen-error-toggle"
+              onClick={() => setGenErrorOpen((v) => !v)}
+              aria-expanded={genErrorOpen}
+            >
+              {genErrorOpen ? "Hide details" : "Show details"}
+            </button>
+          ) : null}
           {retrySafePayload ? (
             <button
               type="button"
@@ -3688,6 +3718,19 @@ export default function App() {
             {connection === "online" ? "Comfy connected" : connection === "checking" ? "Checking Comfy" : "Comfy offline"}
           </span>
         </div>
+        {genPhase === "failed" && genError && genErrorOpen ? (
+          <div className="gen-error-details" role="region" aria-label="Error details">
+            <dl>
+              {genError.code ? (<><dt>Code</dt><dd>{genError.code}</dd></>) : null}
+              {typeof genError.httpStatus === "number" ? (<><dt>HTTP</dt><dd>{genError.httpStatus}</dd></>) : null}
+              {typeof genError.retryable === "boolean" ? (<><dt>Retryable</dt><dd>{genError.retryable ? "yes" : "no"}</dd></>) : null}
+              <dt>Message</dt><dd>{genError.message}</dd>
+            </dl>
+            {genError.raw ? (
+              <pre className="gen-error-raw">{genError.raw}</pre>
+            ) : null}
+          </div>
+        ) : null}
       </aside>
 
       {advancedOpen ? (
