@@ -396,7 +396,7 @@ export default function App() {
   const [retrySafePayload, setRetrySafePayload] = useState<Record<string, unknown> | null>(null);
   type GenPhase = "idle" | "queued" | "running" | "completed" | "failed";
   const [genPhase, setGenPhase] = useState<GenPhase>("idle");
-  const [genError, setGenError] = useState<{ message: string; code?: string; retryable?: boolean; httpStatus?: number; raw?: string } | null>(null);
+  const [genError, setGenError] = useState<{ message: string; code?: string; retryable?: boolean; httpStatus?: number; raw?: string; requestId?: string } | null>(null);
   const [genErrorOpen, setGenErrorOpen] = useState(false);
   const [desktopNotice, setDesktopNotice] = useState<string | null>(null);
   const [videoStartedAt, setVideoStartedAt] = useState<number | null>(null);
