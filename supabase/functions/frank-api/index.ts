@@ -528,10 +528,15 @@ async function runReplicate(
   key: string,
 ): Promise<string | undefined> {
   const input = buildReplicateInput(slug, prompt, body);
-  const createRes = await fetch(`https://api.replicate.com/v1/models/${slug}/predictions`, {
+  const replicateGateway = "https://connector-gateway.lovable.dev/replicate/v1";
+  const replicateHeaders = {
+    "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+    "X-Connection-Api-Key": key,
+  };
+  const createRes = await fetch(`${replicateGateway}/models/${slug}/predictions`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${key}`,
+      ...replicateHeaders,
       "Content-Type": "application/json",
       "Prefer": "wait=60",
     },
@@ -546,9 +551,9 @@ async function runReplicate(
   while (!["succeeded", "failed", "canceled"].includes(prediction.status)) {
     if (Date.now() - started > 180_000) throw new Error("Replicate timed out after 3 minutes.");
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    const pollUrl = prediction?.urls?.get;
-    if (!pollUrl) throw new Error("Replicate did not return a poll URL.");
-    const poll = await fetch(pollUrl, { headers: { "Authorization": `Bearer ${key}` } });
+    const predictionId = prediction?.id;
+    if (!predictionId) throw new Error("Replicate did not return a prediction ID.");
+    const poll = await fetch(`${replicateGateway}/predictions/${predictionId}`, { headers: replicateHeaders });
     if (!poll.ok) throw new Error(`Replicate poll failed (${poll.status}).`);
     prediction = await poll.json();
   }
