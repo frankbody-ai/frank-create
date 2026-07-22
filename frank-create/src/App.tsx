@@ -2855,7 +2855,7 @@ export default function App() {
             </div>
           ) : null}
           {turns.length ? (
-            turns.map((turn) => (
+            [...turns].reverse().map((turn) => (
               <article className="turn-card" key={turn.id} style={{ position: "relative" }}>
                 <button
                   type="button"
