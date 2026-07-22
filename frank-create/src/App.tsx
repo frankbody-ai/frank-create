@@ -390,6 +390,7 @@ export default function App() {
   const [remixBusy, setRemixBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [statusText, setStatusText] = useState("Waiting for the brief...");
+  const [retrySafePayload, setRetrySafePayload] = useState<Record<string, unknown> | null>(null);
   const [desktopNotice, setDesktopNotice] = useState<string | null>(null);
   const [videoStartedAt, setVideoStartedAt] = useState<number | null>(null);
   const [videoNowTick, setVideoNowTick] = useState(Date.now());
