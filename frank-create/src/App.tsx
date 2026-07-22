@@ -2884,28 +2884,67 @@ export default function App() {
             </div>
           ) : null}
           {turns.length ? (
-            [...turns].reverse().map((turn) => (
-              <article className="turn-card" key={turn.id} style={{ position: "relative" }}>
-                <button
-                  type="button"
-                  aria-label="Delete this round"
-                  title="Delete this round"
-                  onClick={() => {
-                    if (window.confirm("Delete this round and its generated images?")) {
-                      removeTurnFromSession(turn);
-                    }
-                  }}
-                  style={{
-                    position: "absolute", top: 8, right: 8,
-                    width: 22, height: 22, padding: 0,
-                    display: "inline-flex", alignItems: "center", justifyContent: "center",
-                    borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
-                    background: "rgba(255,255,255,0.85)", cursor: "pointer",
-                    color: "rgba(0,0,0,0.55)",
-                  }}
-                >
-                  <X size={12} />
-                </button>
+            [...turns].reverse().map((turn, idx) => {
+              const createdMs = turn.created_at ? new Date(turn.created_at).getTime() : 0;
+              const isFresh = idx === 0 && createdMs && Date.now() - createdMs < 30_000;
+              const shortId = turn.id.slice(0, 8);
+              const timeLabel = turn.created_at ? new Date(turn.created_at).toLocaleString() : "";
+              return (
+              <article
+                className={`turn-card${isFresh ? " turn-card-fresh" : ""}`}
+                key={turn.id}
+                style={{ position: "relative" }}
+              >
+                <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 6, alignItems: "center" }}>
+                  {isFresh ? (
+                    <span
+                      style={{
+                        fontSize: 10, fontWeight: 600, letterSpacing: 0.4, textTransform: "uppercase",
+                        padding: "2px 6px", borderRadius: 999,
+                        background: "rgba(34,197,94,0.15)", color: "rgb(21,128,61)",
+                        border: "1px solid rgba(34,197,94,0.35)",
+                      }}
+                    >
+                      New
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    aria-label="Copy generation ID"
+                    title={`Copy ID (${turn.id})`}
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(turn.id).catch(() => {});
+                    }}
+                    style={{
+                      width: 22, height: 22, padding: 0,
+                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
+                      background: "rgba(255,255,255,0.85)", cursor: "pointer",
+                      color: "rgba(0,0,0,0.55)",
+                    }}
+                  >
+                    <Clipboard size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Delete this round"
+                    title="Delete this round"
+                    onClick={() => {
+                      if (window.confirm("Delete this round and its generated images?")) {
+                        removeTurnFromSession(turn);
+                      }
+                    }}
+                    style={{
+                      width: 22, height: 22, padding: 0,
+                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
+                      background: "rgba(255,255,255,0.85)", cursor: "pointer",
+                      color: "rgba(0,0,0,0.55)",
+                    }}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
                 <div className="turn-copy">
                   <span className={`status-dot ${turn.status}`} />
                   <div>
@@ -2913,6 +2952,8 @@ export default function App() {
                     <h3>{modelName(config, turn.model)}</h3>
                     <p>{turn.prompt}</p>
                     <div className="turn-meta">
+                      <span title={turn.id} style={{ fontFamily: "ui-monospace, monospace" }}>#{shortId}</span>
+                      {timeLabel ? <span title={timeLabel}>{timeLabel}</span> : null}
                       <span>{turn.status}</span>
                       {turn.frank_body_mode ? <span>Frank Body Mode</span> : <span>User prompt</span>}
                       {parseJsonList(turn.reference_asset_ids_json).length ? (
@@ -2929,8 +2970,8 @@ export default function App() {
                   selectedAssetId={selectedAsset?.id}
                 />
               </article>
-
-            ))
+              );
+            })
           ) : (
             <div className="empty-thread">
               <ImageIcon size={38} />
