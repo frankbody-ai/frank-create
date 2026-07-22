@@ -15,10 +15,11 @@ const MODEL_MAP: Record<string, string> = {
   "openai-gpt-image-2": "openai/gpt-image-2",
 };
 
-// Replicate model routing: studio model id -> Replicate owner/name
+// Replicate model routing: studio model id -> Replicate owner/name.
+// NOTE: microsoft/mai-image-2.5 is intentionally omitted — Microsoft has not
+// published MAI-Image on Replicate; the model tile is shown as "coming_soon".
 const REPLICATE_MAP: Record<string, string> = {
   "reve-2-1": "reve/reve-2.1",
-  "mai-image-2-5": "microsoft/mai-image-2.5",
   "seedream-5-pro": "bytedance/seedream-5-pro",
 };
 
@@ -171,16 +172,15 @@ Deno.serve(async (req) => {
 });
 
 // Call a Replicate official model, poll until finished, return first output URL.
+// Each model gets ONLY the fields its OpenAPI schema declares — extra fields
+// are rejected on some models, so we build the input per slug.
 async function runReplicate(
   slug: string,
   prompt: string,
-  body: { aspect_ratio?: string; size?: string },
+  body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
   key: string,
 ): Promise<string | undefined> {
-  const aspect = body.aspect_ratio || "1:1";
-  const input: Record<string, unknown> = { prompt, aspect_ratio: aspect };
-  // Common optional fields — Replicate ignores unknown fields per-model.
-  if (body.size === "2K" || body.size === "4K") input.size = body.size.toLowerCase();
+  const input = buildReplicateInput(slug, prompt, body);
 
   const createRes = await fetch(
     `https://api.replicate.com/v1/models/${slug}/predictions`,
@@ -198,12 +198,11 @@ async function runReplicate(
   if (createRes.status === 402) throw new Error("Replicate account has no credit");
   if (!createRes.ok) {
     const t = await createRes.text();
-    throw new Error(`replicate ${createRes.status}: ${t.slice(0, 200)}`);
+    throw new Error(`replicate ${createRes.status}: ${t.slice(0, 300)}`);
   }
 
   let pred = await createRes.json();
   const started = Date.now();
-  // Poll up to 3 minutes if not already done (Prefer: wait usually returns terminal).
   while (pred.status !== "succeeded" && pred.status !== "failed" && pred.status !== "canceled") {
     if (Date.now() - started > 180_000) throw new Error("replicate timeout");
     await new Promise((r) => setTimeout(r, 2000));
@@ -221,6 +220,50 @@ async function runReplicate(
   const out = pred.output;
   const url: string | undefined = Array.isArray(out) ? out[0] : typeof out === "string" ? out : undefined;
   return url;
+}
+
+// Per-slug input builders that match each model's published schema exactly.
+function buildReplicateInput(
+  slug: string,
+  prompt: string,
+  body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
+): Record<string, unknown> {
+  const refs = Array.isArray(body.reference_images) ? body.reference_images.filter(Boolean) : [];
+
+  if (slug === "reve/reve-2.1") {
+    // Schema: prompt, aspect_ratio (enum incl. "auto"), reference_images (<=8). No size.
+    const REVE_AR = new Set([
+      "auto","1:1","4:3","3:4","3:2","2:3","16:9","9:16",
+      "5:4","4:5","21:9","17:9","2:1","1:2","3:1","1:3","4:1","1:4",
+    ]);
+    const ar = body.aspect_ratio && REVE_AR.has(body.aspect_ratio) ? body.aspect_ratio : "auto";
+    const input: Record<string, unknown> = { prompt, aspect_ratio: ar };
+    if (refs.length) input.reference_images = refs.slice(0, 8);
+    return input;
+  }
+
+  if (slug === "bytedance/seedream-5-pro") {
+    // Schema: prompt, size ("1K"|"2K"), image_input (<=10),
+    // aspect_ratio (match_input_image|1:1|4:3|3:4|16:9|9:16|3:2|2:3|21:9), output_format.
+    const SEEDREAM_AR = new Set([
+      "match_input_image","1:1","4:3","3:4","16:9","9:16","3:2","2:3","21:9",
+    ]);
+    const size = body.size === "2K" ? "2K" : "1K";
+    const ar = body.aspect_ratio && SEEDREAM_AR.has(body.aspect_ratio)
+      ? body.aspect_ratio
+      : (refs.length ? "match_input_image" : "1:1");
+    const input: Record<string, unknown> = {
+      prompt,
+      size,
+      aspect_ratio: ar,
+      output_format: "png",
+    };
+    if (refs.length) input.image_input = refs.slice(0, 10);
+    return input;
+  }
+
+  // Fallback (should not hit — REPLICATE_MAP is closed).
+  return { prompt };
 }
 
 function json(payload: unknown, status = 200) {
