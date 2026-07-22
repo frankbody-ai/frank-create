@@ -6236,3 +6236,186 @@ input[aria-invalid="true"] {
 .output-grid .output-tile-quick button:hover { background: #fff; }
 .output-grid .output-tile-quick .quick-approve.active { background: rgb(34,197,94); color: #fff; border-color: rgb(21,128,61); }
 .output-grid .output-tile-quick .quick-reject.active { background: rgb(220,38,38); color: #fff; border-color: rgb(153,27,27); }
+
+/* ================ Feedback widget ================ */
+.feedback-fab {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 40;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 999px;
+  isolation: isolate;
+}
+.feedback-fab-ring {
+  position: absolute;
+  inset: -2px;
+  border-radius: 999px;
+  background: conic-gradient(from 0deg, #ff2d55, #ff8a3d, #ff2d55, #ffb199, #ff2d55);
+  animation: feedback-spin-ring 3.2s linear infinite;
+  z-index: 0;
+}
+@keyframes feedback-spin-ring { to { transform: rotate(360deg); } }
+.feedback-fab-inner {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  box-shadow: 0 6px 20px rgba(220,38,38,0.35);
+}
+.feedback-fab:hover .feedback-fab-inner { background: #b91c1c; }
+
+.feedback-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.feedback-modal {
+  width: 100%;
+  max-width: 28rem;
+  background: #fff;
+  color: #111;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+}
+.feedback-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #eee;
+}
+.feedback-modal-header h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.feedback-icon-btn {
+  background: transparent; border: none; cursor: pointer; padding: 4px; color: #666;
+}
+.feedback-modal-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.feedback-page-chip {
+  display: flex; gap: 8px; align-items: center; font-size: 12px; color: #555;
+}
+.feedback-page-chip code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #f4f4f5; padding: 2px 6px; border-radius: 4px; font-size: 11px;
+}
+.feedback-textarea {
+  width: 100%; resize: vertical; padding: 10px 12px;
+  border: 1px solid #d4d4d8; border-radius: 8px; font: inherit; font-size: 14px;
+  min-height: 110px;
+}
+.feedback-attach-row { display: flex; align-items: center; gap: 10px; }
+.feedback-attach-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px dashed #a1a1aa; background: #fafafa; color: #333;
+  padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+}
+.feedback-attach-size { font-size: 11px; color: #666; }
+.feedback-error {
+  background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca;
+  padding: 8px 10px; border-radius: 6px; font-size: 13px;
+}
+.feedback-success {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0;
+  padding: 8px 10px; border-radius: 6px; font-size: 13px;
+}
+.feedback-modal-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 12px 18px; border-top: 1px solid #eee; background: #fafafa;
+}
+.feedback-btn-ghost {
+  background: transparent; border: 1px solid #d4d4d8; color: #333;
+  padding: 8px 14px; border-radius: 8px; font-size: 13px; cursor: pointer;
+}
+.feedback-btn-primary {
+  background: #dc2626; color: #fff; border: none;
+  padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+}
+.feedback-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.feedback-spin { animation: feedback-spin-ring 1s linear infinite; }
+
+/* ================ Admin feedback page ================ */
+.admin-feedback-page {
+  min-height: 100vh; background: #0b0b0b; color: #f5f5f5;
+  font-family: system-ui, sans-serif; padding: 32px 24px 80px;
+}
+.admin-feedback-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  max-width: 900px; margin: 0 auto 24px;
+}
+.admin-feedback-header h1 { margin: 0; font-size: 22px; }
+.admin-feedback-back { color: #a3a3a3; font-size: 13px; text-decoration: none; }
+.admin-feedback-back:hover { color: #fff; }
+.admin-feedback-warn {
+  max-width: 900px; margin: 0 auto 16px;
+  background: #422006; border: 1px solid #92400e; color: #fed7aa;
+  padding: 10px 12px; border-radius: 8px; font-size: 13px;
+}
+.admin-feedback-error {
+  max-width: 900px; margin: 0 auto 16px;
+  background: #450a0a; border: 1px solid #b91c1c; color: #fecaca;
+  padding: 10px 12px; border-radius: 8px; font-size: 13px;
+}
+.admin-feedback-muted { max-width: 900px; margin: 0 auto; color: #737373; }
+.admin-feedback-list {
+  max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px;
+}
+.admin-feedback-card {
+  background: #161616; border: 1px solid #262626; border-radius: 10px;
+  padding: 14px 16px;
+}
+.admin-feedback-card-top {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.admin-feedback-badge {
+  text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em;
+  padding: 2px 8px; border-radius: 999px; font-weight: 600;
+}
+.admin-feedback-badge-open { background: #1e3a8a; color: #dbeafe; }
+.admin-feedback-badge-in_progress { background: #78350f; color: #fed7aa; }
+.admin-feedback-badge-done { background: #14532d; color: #bbf7d0; }
+.admin-feedback-badge-dismissed { background: #262626; color: #a3a3a3; }
+.admin-feedback-time { font-size: 12px; color: #a3a3a3; }
+.admin-feedback-chip {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px; background: #0b0b0b; border: 1px solid #262626;
+  padding: 2px 6px; border-radius: 4px; color: #d4d4d8;
+}
+.admin-feedback-message {
+  white-space: pre-wrap; margin: 6px 0 10px; line-height: 1.45; font-size: 14px;
+}
+.admin-feedback-meta { display: flex; gap: 14px; font-size: 12px; color: #a3a3a3; margin-bottom: 10px; }
+.admin-feedback-actions {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  font-size: 13px; color: #d4d4d8;
+}
+.admin-feedback-actions select {
+  background: #0b0b0b; color: #f5f5f5; border: 1px solid #404040;
+  border-radius: 6px; padding: 4px 6px; font: inherit; font-size: 12px;
+}
+.admin-feedback-actions button {
+  background: #262626; color: #f5f5f5; border: 1px solid #404040;
+  padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+}
+.admin-feedback-task-link {
+  color: #93c5fd; text-decoration: none; font-size: 12px;
+}
+.admin-feedback-shot {
+  margin-top: 12px; max-height: 24rem; border-radius: 8px; border: 1px solid #262626;
+}
