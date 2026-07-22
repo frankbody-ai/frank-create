@@ -3293,6 +3293,24 @@ export default function App() {
                   <AssetPreviewMedia asset={selectedAsset} fallbackIconSize={30} />
                 </button>
               </div>
+              {(() => {
+                const siblings = outputAssets.filter((a) => a.turn_id === selectedAsset.turn_id);
+                if (siblings.length <= 1) return null;
+                const idx = siblings.findIndex((a) => a.id === selectedAsset.id);
+                const prev = siblings[(idx - 1 + siblings.length) % siblings.length];
+                const next = siblings[(idx + 1) % siblings.length];
+                return (
+                  <div className="review-pager" aria-label="Navigate picks in this round">
+                    <button type="button" onClick={() => inspectAsset(prev)} aria-label="Previous pick">
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span>{idx + 1} / {siblings.length}</span>
+                    <button type="button" onClick={() => inspectAsset(next)} aria-label="Next pick">
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                );
+              })()}
               <div className="approval-actions" data-tour-id="review-actions" data-tour-active={tourActive("review-actions")}>
                 <button type="button" onClick={() => toggleFavorite(selectedAsset)}>
                   <Heart size={15} />
