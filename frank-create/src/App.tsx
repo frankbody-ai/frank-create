@@ -561,6 +561,31 @@ export default function App() {
     });
   };
 
+  // When the selected model changes, snap aspect/size to what that model actually supports.
+  // Without this, switching from Seedream (size "2K") to Reve (no size) leaves image_size="2K",
+  // which validateStudioSettings flags as unsupported and silently blocks Generate.
+  useEffect(() => {
+    const model = config.models.find((m) => m.id === selectedModelId);
+    if (!model) return;
+    setSettings((current) => {
+      const nextAspect = model.allowed_aspect_ratios.includes(current.aspect_ratio)
+        ? current.aspect_ratio
+        : model.allowed_aspect_ratios[0] ?? current.aspect_ratio;
+      const sizes = filterSizesForAspect(model.allowed_image_sizes, nextAspect);
+      let nextSize: string;
+      if (!model.allowed_image_sizes || model.allowed_image_sizes.length === 0) {
+        nextSize = "";
+      } else if (sizes.includes(current.image_size)) {
+        nextSize = current.image_size;
+      } else {
+        nextSize = sizes[sizes.length - 1] ?? "";
+      }
+      if (nextAspect === current.aspect_ratio && nextSize === current.image_size) return current;
+      return { ...current, aspect_ratio: nextAspect, image_size: nextSize };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedModelId, config.models]);
+
   const providerSetupState = useMemo(
     () => (connection === "online" ? providerSetup(config.models) : { waitingModels: [], envVars: [] }),
     [config.models, connection]
