@@ -104,7 +104,8 @@ import {
   parseJsonList,
   selectModelOptions,
   validateStudioSettings,
-  hasStudioFieldErrors
+  hasStudioFieldErrors,
+  preflightModel
 } from "./lib/studio";
 
 import type {
