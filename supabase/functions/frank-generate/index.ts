@@ -197,6 +197,7 @@ async function runReplicate(
   prompt: string,
   body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
   key: string,
+  signal?: AbortSignal,
 ): Promise<string | undefined> {
   const input = buildReplicateInput(slug, prompt, body);
 
@@ -210,6 +211,7 @@ async function runReplicate(
         "Prefer": "wait=60",
       },
       body: JSON.stringify({ input }),
+      signal,
     },
   );
 
@@ -236,17 +238,40 @@ async function runReplicate(
   }
 
   let pred = await createRes.json();
-  const started = Date.now();
-  while (pred.status !== "succeeded" && pred.status !== "failed" && pred.status !== "canceled") {
-    if (Date.now() - started > 180_000) {
-      throw new ReplicateError("Replicate timed out after 3 minutes.", { code: "timeout", retryable: true });
+  const predictionId: string | undefined = pred?.id;
+  const cancelUrl: string | undefined = pred?.urls?.cancel;
+
+  // If the client disconnects mid-poll, best-effort cancel the Replicate prediction.
+  const onAbort = () => {
+    if (cancelUrl) {
+      fetch(cancelUrl, { method: "POST", headers: { "Authorization": `Bearer ${key}` } }).catch(() => {});
+    } else if (predictionId) {
+      fetch(`https://api.replicate.com/v1/predictions/${predictionId}/cancel`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${key}` },
+      }).catch(() => {});
     }
-    await new Promise((r) => setTimeout(r, 2000));
-    const pollUrl = pred?.urls?.get;
-    if (!pollUrl) throw new ReplicateError("Replicate did not return a poll URL.", { code: "provider_error", retryable: true });
-    const r = await fetch(pollUrl, { headers: { "Authorization": `Bearer ${key}` } });
-    if (!r.ok) throw new ReplicateError(`Replicate poll failed (${r.status}).`, { code: "provider_error", status: r.status, retryable: true });
-    pred = await r.json();
+  };
+  signal?.addEventListener("abort", onAbort, { once: true });
+
+  try {
+    const started = Date.now();
+    while (pred.status !== "succeeded" && pred.status !== "failed" && pred.status !== "canceled") {
+      if (signal?.aborted) {
+        throw new ReplicateError("Canceled by user.", { code: "canceled", retryable: true });
+      }
+      if (Date.now() - started > 180_000) {
+        throw new ReplicateError("Replicate timed out after 3 minutes.", { code: "timeout", retryable: true });
+      }
+      await new Promise((r) => setTimeout(r, 2000));
+      const pollUrl = pred?.urls?.get;
+      if (!pollUrl) throw new ReplicateError("Replicate did not return a poll URL.", { code: "provider_error", retryable: true });
+      const r = await fetch(pollUrl, { headers: { "Authorization": `Bearer ${key}` }, signal });
+      if (!r.ok) throw new ReplicateError(`Replicate poll failed (${r.status}).`, { code: "provider_error", status: r.status, retryable: true });
+      pred = await r.json();
+    }
+  } finally {
+    signal?.removeEventListener("abort", onAbort);
   }
 
   if (pred.status === "canceled") {
