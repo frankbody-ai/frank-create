@@ -5332,7 +5332,13 @@ function FrankGraphView({
             <p className="graph-kicker">Real node graph lives in Comfy Canvas.</p>
           </div>
         </div>
-        <button className="secondary-button graph-raw" type="button" onClick={() => onOpenLink(rawGraphUrl, "Raw Comfy canvas")}>
+        <button
+          className="secondary-button graph-raw"
+          type="button"
+          disabled
+          title="ComfyUI integration is disabled"
+          style={{ opacity: 0.4, cursor: "not-allowed" }}
+        >
           <ExternalLink size={16} />
           Open Comfy Canvas
         </button>
