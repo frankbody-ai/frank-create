@@ -554,9 +554,12 @@ export default function App() {
   const handleAspectChange = (nextAspect: string) => {
     setSettings((current) => {
       const sizes = filterSizesForAspect(modelOptions.allowedImageSizes, nextAspect);
+      if (!modelOptions.allowedImageSizes.length) {
+        return { ...current, aspect_ratio: nextAspect, image_size: "" };
+      }
       const nextSize = sizes.includes(current.image_size)
         ? current.image_size
-        : sizes[sizes.length - 1] ?? current.image_size;
+        : sizes[sizes.length - 1] ?? "";
       return { ...current, aspect_ratio: nextAspect, image_size: nextSize };
     });
   };
@@ -3159,7 +3162,7 @@ export default function App() {
             <span>
               <strong>{selectedModel?.short_label ?? selectedModel?.label ?? "Model pending"}</strong>
               <small>
-                {settings.aspect_ratio} / {settings.image_size} / {settings.count} pick{settings.count === 1 ? "" : "s"}
+                {settings.aspect_ratio} / {modelHasSizes ? settings.image_size : "Auto"} / {settings.count} pick{settings.count === 1 ? "" : "s"}
               </small>
             </span>
             <em>{selectedModel?.badge ?? "Ready"}</em>
