@@ -407,14 +407,25 @@ async function handleInference(body: any, userId: string) {
     if (replicateSlug) {
       const replicateKey = getReplicateGatewayKey();
       if (!replicateKey) throw new Error("Replicate is not connected for this model yet.");
-      for (let i = 0; i < count; i++) {
-        const url = await runReplicate(replicateSlug, prompt, {
+      const results = await Promise.allSettled(
+        Array.from({ length: count }, () => runReplicate(replicateSlug, prompt, {
           aspect_ratio: reqSettings.aspect_ratio,
           size: reqSettings.image_size || reqSettings.size,
           reference_images: refUrls,
-        }, replicateKey);
-        if (!url) throw new Error("Replicate returned no image URL.");
-        generatedImages.push({ url, mime: "image/png" });
+        }, replicateKey)),
+      );
+      const replicateErrors: unknown[] = [];
+      for (const result of results) {
+        if (result.status === "fulfilled" && result.value) {
+          generatedImages.push({ url: result.value, mime: "image/png" });
+        } else if (result.status === "fulfilled") {
+          replicateErrors.push(new ProviderRunError("Replicate returned no image URL.", "empty_output", true));
+        } else {
+          replicateErrors.push(result.reason);
+        }
+      }
+      if (!generatedImages.length) {
+        throw replicateErrors[0] ?? new ProviderRunError("Replicate returned no image URL.", "empty_output", true);
       }
     } else {
       for (let i = 0; i < count; i++) {
@@ -559,34 +570,72 @@ async function runReplicate(
     has_lovable_key: !!LOVABLE_API_KEY,
     has_connector_key: !!key,
   });
-  const createRes = await fetch(`${replicateGateway}/models/${slug}/predictions`, {
+  const createOnce = () => fetch(`${replicateGateway}/models/${slug}/predictions`, {
     method: "POST",
-    headers: {
-      ...replicateHeaders,
-      "Content-Type": "application/json",
-      "Prefer": "wait=60",
-    },
+    headers: { ...replicateHeaders, "Content-Type": "application/json" },
     body: JSON.stringify({ input }),
   });
-  console.info("[frank-api] replicate:create:status", { slug, status: createRes.status });
+  let createRes: Response | undefined;
+  let lastTransientBody = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      createRes = await createOnce();
+    } catch (err) {
+      console.warn("[frank-api] replicate:create_network", { slug, attempt, err: errMessage(err) });
+      if (attempt === 2) throw new ProviderRunError(`Replicate network error: ${errMessage(err)}`, "provider_unavailable", true, undefined, errMessage(err));
+      await delay(1500 + attempt * 1500 + Math.floor(Math.random() * 500));
+      continue;
+    }
+    console.info("[frank-api] replicate:create:status", { slug, attempt, status: createRes.status });
+    if ([502, 503, 504].includes(createRes.status)) {
+      lastTransientBody = await createRes.text().catch(() => "");
+      if (attempt === 2) break;
+      await delay(1500 + attempt * 1500 + Math.floor(Math.random() * 500));
+      continue;
+    }
+    break;
+  }
+  if (!createRes) {
+    throw new ProviderRunError("Replicate upstream unreachable.", "provider_unavailable", true);
+  }
   if (!createRes.ok) {
-    const text = await createRes.text();
+    const text = lastTransientBody || await createRes.text();
     console.error("[frank-api] replicate:create_failed", { slug, status: createRes.status, body: text.slice(0, 1000) });
     throw mapReplicateCreateFailure(slug, createRes.status, text);
   }
   let prediction: any = await createRes.json();
   const started = Date.now();
+  let transientPollFails = 0;
   while (!["succeeded", "failed", "canceled"].includes(prediction.status)) {
     if (Date.now() - started > 180_000) throw new ProviderRunError("Replicate timed out after 3 minutes.", "timeout", true, undefined, undefined, prediction?.id);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await delay(2000);
     const predictionId = prediction?.id;
     if (!predictionId) throw new ProviderRunError("Replicate did not return a prediction ID.", "provider_error", true);
-    const poll = await fetch(`${replicateGateway}/predictions/${predictionId}`, { headers: replicateHeaders });
+    let poll: Response;
+    try {
+      poll = await fetch(`${replicateGateway}/predictions/${predictionId}`, { headers: replicateHeaders });
+    } catch (err) {
+      transientPollFails++;
+      console.warn("[frank-api] replicate:poll_network", { slug, id: predictionId, transientPollFails, err: errMessage(err) });
+      if (transientPollFails >= 4) {
+        throw new ProviderRunError(`Replicate poll network failure: ${errMessage(err)}`, "provider_unavailable", true, undefined, errMessage(err), predictionId);
+      }
+      continue;
+    }
     if (!poll.ok) {
       const text = await poll.text();
+      if (poll.status >= 500 && poll.status <= 599) {
+        transientPollFails++;
+        console.warn("[frank-api] replicate:poll_transient", { slug, id: predictionId, status: poll.status, transientPollFails });
+        if (transientPollFails >= 4) {
+          throw new ProviderRunError(`Replicate poll failed (${poll.status}) after retries: ${extractProviderMessage(text)}`, "provider_unavailable", true, poll.status, text, predictionId);
+        }
+        continue;
+      }
       console.error("[frank-api] replicate:poll_failed", { slug, id: predictionId, status: poll.status, body: text.slice(0, 1000) });
       throw new ProviderRunError(`Replicate poll failed (${poll.status}): ${extractProviderMessage(text)}`, "provider_error", true, poll.status, text, predictionId);
     }
+    transientPollFails = 0;
     prediction = await poll.json();
     console.info("[frank-api] replicate:poll:status", { slug, id: predictionId, status: prediction?.status });
   }
@@ -645,12 +694,26 @@ class ProviderRunError extends Error {
 
 function mapReplicateCreateFailure(slug: string, status: number, raw: string): ProviderRunError {
   const providerMessage = extractProviderMessage(raw);
-  if (status === 402) return new ProviderRunError("Replicate account has no credit. Enable billing at replicate.com/account/billing.", "quota_exhausted", false, status, raw);
-  if (status === 401 || status === 403) return new ProviderRunError(`Replicate auth failed: ${providerMessage}. Reconnect the Replicate integration if this continues.`, "auth_failed", false, status, raw);
-  if (status === 422) return new ProviderRunError(`Invalid parameters for ${slug}: ${providerMessage}`, "invalid_params", false, status, raw);
-  if (status === 429) return new ProviderRunError("Replicate rate limit hit. Wait a moment and try again.", "rate_limited", true, status, raw);
-  if (status >= 500) return new ProviderRunError(`Replicate is having trouble (${status}). Retry shortly.`, "provider_unavailable", true, status, raw);
-  return new ProviderRunError(`Replicate error ${status}: ${providerMessage}`, "provider_error", false, status, raw);
+  const requestId = extractGatewayRequestId(raw);
+  if (status === 402) return new ProviderRunError("Replicate account has no credit. Enable billing at replicate.com/account/billing.", "quota_exhausted", false, status, raw, requestId);
+  if (status === 401 || status === 403) return new ProviderRunError(`Replicate auth failed: ${providerMessage}. Reconnect the Replicate integration if this continues.`, "auth_failed", false, status, raw, requestId);
+  if (status === 422) return new ProviderRunError(`Invalid parameters for ${slug}: ${providerMessage}`, "invalid_params", false, status, raw, requestId);
+  if (status === 429) return new ProviderRunError("Replicate rate limit hit. Wait a moment and try again.", "rate_limited", true, status, raw, requestId);
+  if (status >= 500) return new ProviderRunError(`Replicate upstream is overloaded (${status}). We retried automatically — try again in a moment, or switch model.`, "provider_unavailable", true, status, raw, requestId);
+  return new ProviderRunError(`Replicate error ${status}: ${providerMessage}`, "provider_error", false, status, raw, requestId);
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function extractGatewayRequestId(raw: string): string | undefined {
+  try {
+    const parsed = JSON.parse(raw);
+    return typeof parsed?.request_id === "string" ? parsed.request_id : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function mapReplicateError(err: unknown): ProviderRunError {
