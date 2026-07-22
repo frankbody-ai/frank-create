@@ -1959,6 +1959,7 @@ export default function App() {
           let retryable: boolean | undefined;
           let httpStatus: number | undefined;
           let raw: string | undefined;
+          let requestId: string | undefined;
           try {
             const ctx = (err as { context?: Response }).context;
             if (ctx && typeof ctx.json === "function") {
