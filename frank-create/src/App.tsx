@@ -3111,6 +3111,30 @@ export default function App() {
                         <span>{referenceCountLabel(parseJsonList(turn.reference_asset_ids_json).length)}</span>
                       ) : null}
                       {turnErrorCopy(turn) ? <span className="turn-error">{turnErrorCopy(turn)}</span> : null}
+                      {(() => {
+                        const anyTurn = turn as any;
+                        const requested = typeof anyTurn.requested_count === "number" ? anyTurn.requested_count : 0;
+                        const produced = displayOutputAssets.filter((a) => a.turn_id === turn.id).length;
+                        let partial: Array<{ code?: string; message?: string; request_id?: string }> = [];
+                        try { partial = JSON.parse(anyTurn.partial_errors_json || "[]"); } catch { partial = []; }
+                        if (!partial.length && (!requested || produced >= requested)) return null;
+                        const missing = Math.max(0, requested - produced);
+                        return (
+                          <span
+                            className="turn-partial"
+                            title={partial.map((p, i) => `${i + 1}. [${p.code || "error"}] ${p.message || ""}${p.request_id ? ` (id: ${p.request_id})` : ""}`).join("\n")}
+                            style={{
+                              display: "inline-flex", alignItems: "center", gap: 4,
+                              fontSize: 11, padding: "2px 8px", borderRadius: 999,
+                              background: "rgba(245,158,11,0.15)", color: "rgb(146,64,14)",
+                              border: "1px solid rgba(245,158,11,0.4)", cursor: "help",
+                            }}
+                          >
+                            {produced} of {requested || (produced + partial.length)} succeeded
+                            {missing > 0 ? ` · ${missing} failed` : ""}
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

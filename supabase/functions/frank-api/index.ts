@@ -163,6 +163,10 @@ function rowToTurn(row: any): any {
     error_json: errorMsg
       ? JSON.stringify({ code: settings.error_code || "provider_error", message: String(errorMsg) })
       : null,
+    partial_errors_json: Array.isArray(settings.partial_errors) && settings.partial_errors.length
+      ? JSON.stringify(settings.partial_errors)
+      : null,
+    requested_count: typeof settings.requested_count === "number" ? settings.requested_count : null,
     created_at: row.created_at,
     updated_at: row.created_at,
   };
@@ -397,6 +401,7 @@ async function handleInference(body: any, userId: string) {
 
   const count = Math.min(Math.max(Number(reqSettings.count ?? body.count ?? 1) || 1, 1), 4);
   const generatedImages: Array<{ b64?: string; url?: string; mime: string }> = [];
+  const partialErrors: Array<{ code: string; message: string; retryable: boolean; status?: number; request_id?: string }> = [];
   try {
     const refIds: string[] = [
       ...(body.edit_source_asset_id ? [body.edit_source_asset_id] : []),
@@ -407,22 +412,38 @@ async function handleInference(body: any, userId: string) {
     if (replicateSlug) {
       const replicateKey = getReplicateGatewayKey();
       if (!replicateKey) throw new Error("Replicate is not connected for this model yet.");
-      const results = await Promise.allSettled(
-        Array.from({ length: count }, () => runReplicate(replicateSlug, prompt, {
+      // Cap in-flight parallelism at 2 so 3–4 image runs don't all cold-start
+      // Replicate at once and blow the edge function's 150s wall-clock budget.
+      const PARALLEL = 2;
+      const PER_PREDICTION_MS = 120_000;
+      const replicateErrors: unknown[] = [];
+      const runOne = () => Promise.race<string | undefined>([
+        runReplicate(replicateSlug, prompt, {
           aspect_ratio: reqSettings.aspect_ratio,
           size: reqSettings.image_size || reqSettings.size,
           reference_images: refUrls,
-        }, replicateKey)),
-      );
-      const replicateErrors: unknown[] = [];
-      for (const result of results) {
-        if (result.status === "fulfilled" && result.value) {
-          generatedImages.push({ url: result.value, mime: "image/png" });
-        } else if (result.status === "fulfilled") {
-          replicateErrors.push(new ProviderRunError("Replicate returned no image URL.", "empty_output", true));
-        } else {
-          replicateErrors.push(result.reason);
+        }, replicateKey),
+        new Promise<string | undefined>((_, reject) => setTimeout(
+          () => reject(new ProviderRunError("Prediction exceeded 120s soft cap.", "timeout", true)),
+          PER_PREDICTION_MS,
+        )),
+      ]);
+      for (let i = 0; i < count; i += PARALLEL) {
+        const batch = Array.from({ length: Math.min(PARALLEL, count - i) }, () => runOne());
+        const results = await Promise.allSettled(batch);
+        for (const result of results) {
+          if (result.status === "fulfilled" && result.value) {
+            generatedImages.push({ url: result.value, mime: "image/png" });
+          } else if (result.status === "fulfilled") {
+            replicateErrors.push(new ProviderRunError("Replicate returned no image URL.", "empty_output", true));
+          } else {
+            replicateErrors.push(result.reason);
+          }
         }
+      }
+      for (const err of replicateErrors) {
+        const m = mapReplicateError(err);
+        partialErrors.push({ code: m.code, message: m.message, retryable: m.retryable, status: m.status, request_id: m.requestId });
       }
       if (!generatedImages.length) {
         throw replicateErrors[0] ?? new ProviderRunError("Replicate returned no image URL.", "empty_output", true);
@@ -516,6 +537,8 @@ async function handleInference(body: any, userId: string) {
     ...settingsSnapshot,
     status: "complete",
     output_asset_ids: assetIds,
+    requested_count: count,
+    partial_errors: partialErrors.length ? partialErrors : undefined,
   };
   await sb.from("messages").update({
     settings_snapshot_json: completedSnapshot,
