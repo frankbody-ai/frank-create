@@ -151,13 +151,18 @@ export const fallbackConfig: FrankConfig = {
       provider: "replicate",
       provider_model: "reve/reve-2.1",
       status: "ready",
-      badge: "2K",
-      max_resolution_label: "2K",
-      description: "Reve 2.1 — text-to-image + reference-image editing via Replicate. Strong aesthetics and prompt following.",
+      badge: "HQ",
+      max_resolution_label: "auto",
+      description: "Reve 2.1 (Replicate) — text-to-image + reference remix (up to 8 refs). Model picks its own resolution from the aspect ratio.",
       capabilities: { generation: true, edit: true, masked_edit: false, video: false },
-      allowed_aspect_ratios: ["1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3"],
-      allowed_image_sizes: ["1K", "2K"],
-      reference_image_limit: 4,
+      // Full Reve 2.1 aspect enum from the model schema.
+      allowed_aspect_ratios: [
+        "auto", "1:1", "4:3", "3:4", "3:2", "2:3", "16:9", "9:16",
+        "5:4", "4:5", "21:9", "17:9", "2:1", "1:2", "3:1", "1:3", "4:1", "1:4"
+      ],
+      // Reve does not expose a size/resolution knob — output size is derived from the aspect.
+      allowed_image_sizes: [],
+      reference_image_limit: 8,
       cost_label: "premium",
       configured: true,
       missing_env_vars: []
@@ -168,16 +173,19 @@ export const fallbackConfig: FrankConfig = {
       short_label: "MAI 2.5",
       provider: "replicate",
       provider_model: "microsoft/mai-image-2.5",
-      status: "ready",
-      badge: "HQ",
-      max_resolution_label: "2K",
-      description: "Microsoft MAI-Image-2.5 via Replicate — photoreal generation with rich detail.",
-      capabilities: { generation: true, edit: false, masked_edit: false, video: false },
-      allowed_aspect_ratios: ["1:1", "4:3", "3:4", "16:9", "9:16"],
-      allowed_image_sizes: ["1K", "2K"],
+      // Microsoft has not published MAI-Image on Replicate (or any public API) —
+      // it is only available inside playground.microsoft.ai. Kept as a disabled
+      // tile so it reappears automatically once a public endpoint ships.
+      status: "coming_soon",
+      badge: "SOON",
+      max_resolution_label: "—",
+      description: "Not yet on Replicate — Microsoft only exposes MAI-Image via playground.microsoft.ai. Enabled the moment a public API ships.",
+      capabilities: { generation: false, edit: false, masked_edit: false, video: false },
+      allowed_aspect_ratios: [],
+      allowed_image_sizes: [],
       reference_image_limit: 0,
       cost_label: "premium",
-      configured: true,
+      configured: false,
       missing_env_vars: []
     },
     {
@@ -187,12 +195,14 @@ export const fallbackConfig: FrankConfig = {
       provider: "replicate",
       provider_model: "bytedance/seedream-5-pro",
       status: "ready",
-      badge: "4K",
-      max_resolution_label: "4K",
-      description: "ByteDance Seedream 5.0 Pro via Replicate — sharp 4K text-to-image and multi-reference editing (up to 10 refs).",
+      badge: "2K",
+      max_resolution_label: "2K",
+      description: "ByteDance Seedream 5.0 Pro (Replicate) — 1K or 2K text-to-image + up to 10 reference images.",
       capabilities: { generation: true, edit: true, masked_edit: false, video: false },
-      allowed_aspect_ratios: ["1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3"],
-      allowed_image_sizes: ["1K", "2K", "4K"],
+      // Exact aspect enum from the Seedream 5 Pro schema.
+      allowed_aspect_ratios: ["1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3", "21:9"],
+      // Seedream exposes only 1K / 2K (no 4K).
+      allowed_image_sizes: ["1K", "2K"],
       reference_image_limit: 10,
       cost_label: "premium",
       configured: true,
