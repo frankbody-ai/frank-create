@@ -1,38 +1,65 @@
-## Diagnosis (unconfirmed root cause — verify first)
+## Goal
 
-Your request bodies look correct per each model's published schema (Reve = `prompt` + `aspect_ratio` + optional `reference_images`; Seedream / Nano Banana Pro / Nano Banana 2 = `prompt` + `aspect_ratio` + `resolution`/`size` + `image_input`/`reference_images` + `output_format`; gpt-image-2 = `prompt` + `aspect_ratio` (ratio OR pixel preset) + `quality` + `number_of_images`). The 502 is almost certainly not a schema issue — Replicate's gateway itself returns 502 when it can't reach the upstream worker in time.
+Two things: (1) diagnose and fix the "sent count=3, got 1 image + 504" behavior for Reve (and any model), (2) run a full validation matrix across every model × supported aspect × supported quality × count so we know what actually works end-to-end.
 
-The most likely culprit in our current code is **`Prefer: wait=60`** on the create call. That header asks Replicate's edge to hold the HTTP connection open for up to 60s waiting for the prediction to complete. When the model is under load or cold-starting (Reve/Seedream frequently do), the upstream proxy times out on that held connection and returns **502 Bad Gateway** — even though the prediction itself would have succeeded had we just polled normally.
+## What I found so far
+
+In `supabase/functions/frank-api/index.ts` (lines ~398–429), the Replicate branch runs `count` predictions via `Promise.allSettled(...)` in parallel and:
+
+- Pushes only fulfilled results into `generatedImages`.
+- Throws **only** if `generatedImages.length === 0`.
+- Silently discards per-image errors when at least one succeeded — so a 3-request run where 2 fail returns 1 image with no warning to the UI.
+- The 504 in the console is the Supabase Edge gateway timeout (~150s wall clock). Reve at count=3 in parallel can exceed that when the model is cold, which also explains why the request appears to "finish partially" — the client sees 504 while the function was still polling siblings.
+
+`frank-generate/index.ts` has the same partial-swallow pattern. So this is a systemic issue affecting every Replicate model at count>1, most visibly on slower ones (Reve, 4K Nano Banana Pro, Seedream 2K).
 
 ## Plan
 
-### 1. Confirm cause via logs
-Read the last 30 min of `frank-generate` logs and look at `replicate:create:status` entries. If the 502s come from the **create** call (not poll), `Prefer: wait=60` is the cause. If they come from **poll**, it's a different path.
+### 1. Fix partial-failure reporting (backend)
 
-### 2. Remove the long "wait" prefer
-In `supabase/functions/frank-generate/index.ts` `runReplicate()`:
-- Drop `"Prefer": "wait=60"` from the create headers. POST returns immediately with `status: "starting"`; existing poll loop already handles that.
+In both `frank-api` and `frank-generate` Replicate branches:
 
-### 3. Add transient-5xx retry on create
-Wrap the create fetch in a small retry helper (max 2 retries, 1.5s → 3s backoff with jitter) that retries only on `502/503/504` or network errors. Do **not** retry on 4xx, 402, or 401.
+- Track `succeeded` and `failed` counts from `Promise.allSettled`.
+- Return the successful images **plus** a `partial_errors: MappedError[]` array on the response, and stamp `settings_snapshot_json.partial_errors` on the turn so it persists.
+- Keep current behavior of throwing only when zero images succeed.
 
-### 4. Poll: same retry treatment on transient failures
-Currently a single 5xx during poll throws immediately. Allow up to 3 consecutive transient poll failures before giving up — Replicate's proxy occasionally 502s a single poll while the prediction is fine.
+### 2. Reduce 504s on multi-image runs
 
-### 5. Parallelize per-image loop (small win)
-For `count > 1`, replace the sequential `for` loop with `Promise.allSettled` so a single slow model doesn't multiply latency. Keep abort-signal wiring.
+- Cap in-flight parallelism per request to 2 (chunked `allSettled`) so 3–4 image runs don't all cold-start Replicate at once and blow the 150s edge budget.
+- Add a 120s per-prediction soft cap: if a single prediction is still `starting/processing` at 120s, mark it as `code: "timeout", retryable: true` in `partial_errors` and let the successful siblings return.
+- Keep the existing 3-attempt create retry and transient-poll tolerance.
 
-### 6. Surface a clearer message
-When the mapped error is `provider_unavailable` from a 502, message becomes: *"Replicate upstream is overloaded (502). We retried automatically — try again in a moment, or switch model (Seedream / Nano Banana 2 usually recover fastest)."* This is what your "Retry safely" button already handles.
+### 3. Surface partial results in the UI
 
-### Files touched
-- `supabase/functions/frank-generate/index.ts` (only)
-- Deploy `frank-generate` after edits
+In `frank-create/src/App.tsx`:
 
-### Not changing
-- Per-model input builders (`buildReplicateInput`) — schemas are correct.
-- `frank-api` — same runReplicate isn't the code path for /generate.
-- Client UI.
+- When a turn returns `n < count` assets, show a small amber chip on the round header: "2 of 3 succeeded" with a details popover listing each `partial_errors[i].code` + `message` + `request_id`.
+- Keep the existing **Retry safely** button; when partial errors exist and any are `retryable`, offer **Retry missing (N)** that re-runs only the failed count with the same inputs.
 
-### Verification
-After deploy, run one Reve 2.1 16:9 and one Seedream 4:3 request via `curl_edge_functions`; confirm create returns 201 quickly, poll drives to `succeeded`, and no 502 bubbles up.
+### 4. Full validation matrix (automated smoke test)
+
+Add a Playwright-driven script under `/tmp/browser/` (not committed) that, against the live preview and signed-in session:
+
+For each `modelId` in `{google-nb-pro, google-nb-2, openai-gpt-image-2, reve-2-1, seedream-5-pro}`:
+
+- Pick the model's declared supported aspects and qualities from `presets.ts`.
+- For each `(aspect, quality)` pair, run count=1 and count=3.
+- Record: HTTP status, elapsed ms, images returned, `partial_errors`, `request_id`s.
+- Emit a Markdown table to `/mnt/documents/frank-model-matrix.md`.
+
+I'll run this once after the backend fix to confirm which combos are green, which are flaky (partial), and which are broken, and share the table back. No app code depends on it — it's a diagnostic.
+
+### 5. Deliverables
+
+- Patched `supabase/functions/frank-api/index.ts` and `supabase/functions/frank-generate/index.ts` (partial-error reporting, parallelism cap, per-prediction timeout).
+- Patched `frank-create/src/App.tsx` + `styles.css` (partial-success chip, "Retry missing" button).
+- Matrix results in `/mnt/documents/frank-model-matrix.md` posted back in chat.
+
+## Technical notes
+
+- `Promise.allSettled` chunking: process in batches of 2 with `for` over slices; preserves the "as fast as possible" behavior for count ≤ 2, avoids stampede for 3–4.
+- Per-prediction timeout uses `Promise.race([runReplicate(...), sleep(120_000).then(() => { throw new ReplicateError("Timed out waiting for prediction", { code: "timeout", retryable: true }); })])` inside the branch.
+- No schema/DB migration needed; `settings_snapshot_json` is already free-form JSON.
+- No changes to auth/CORS/routing.
+
+Not in scope: reworking the timeline layout, changing model schemas, or adding new models. Just partial-failure honesty + a matrix.

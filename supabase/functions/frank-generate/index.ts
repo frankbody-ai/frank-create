@@ -65,19 +65,30 @@ Deno.serve(async (req) => {
     const slug = REPLICATE_MAP[modelId];
     const images: string[] = [];
     const errors: MappedError[] = [];
-    // Parallelize per-image work so a slow/cold model doesn't multiply latency.
-    const results = await Promise.allSettled(
-      Array.from({ length: count }, async () => {
+    // Cap in-flight parallelism at 2 so 3–4 image runs don't cold-start Replicate
+    // simultaneously and blow the edge function's 150s wall-clock budget.
+    const PARALLEL = 2;
+    const PER_PREDICTION_MS = 120_000;
+    const runOne = () => Promise.race<string | undefined>([
+      (async () => {
         if (req.signal.aborted) throw new ReplicateError("Canceled by user.", { code: "canceled", retryable: true });
         return runReplicate(slug, prompt, body, replicateKey, req.signal);
-      }),
-    );
-    for (const r of results) {
-      if (r.status === "fulfilled") {
-        if (r.value) images.push(r.value);
-        else errors.push({ code: "empty_output", message: "Replicate returned no image URL.", retryable: true });
-      } else {
-        errors.push(mapReplicateError(r.reason));
+      })(),
+      new Promise<string | undefined>((_, reject) => setTimeout(
+        () => reject(new ReplicateError("Prediction exceeded 120s soft cap.", { code: "timeout", retryable: true })),
+        PER_PREDICTION_MS,
+      )),
+    ]);
+    for (let i = 0; i < count; i += PARALLEL) {
+      const batch = Array.from({ length: Math.min(PARALLEL, count - i) }, () => runOne());
+      const results = await Promise.allSettled(batch);
+      for (const r of results) {
+        if (r.status === "fulfilled") {
+          if (r.value) images.push(r.value);
+          else errors.push({ code: "empty_output", message: "Replicate returned no image URL.", retryable: true });
+        } else {
+          errors.push(mapReplicateError(r.reason));
+        }
       }
     }
     if (!images.length) {
