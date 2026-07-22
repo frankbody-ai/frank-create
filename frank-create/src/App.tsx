@@ -144,7 +144,6 @@ import { AspectPreview } from "./components/AspectPreview";
 
 type WalkthroughTarget =
   | "app-header"
-  | "session-controls"
   | "feedback-button"
   | "reference-dock"
   | "composer"
