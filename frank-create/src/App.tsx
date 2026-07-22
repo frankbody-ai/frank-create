@@ -541,6 +541,7 @@ export default function App() {
     () => filterSizesForAspect(modelOptions.allowedImageSizes, settings.aspect_ratio),
     [modelOptions.allowedImageSizes, settings.aspect_ratio]
   );
+  const modelHasSizes = (modelOptions.allowedImageSizes?.length ?? 0) > 0;
   const handleAspectChange = (nextAspect: string) => {
     setSettings((current) => {
       const sizes = filterSizesForAspect(modelOptions.allowedImageSizes, nextAspect);
