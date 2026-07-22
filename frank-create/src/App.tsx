@@ -3068,6 +3068,69 @@ export default function App() {
             placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Cmd/Ctrl+Enter to generate. Paste or drop an image to attach as reference."
           />
 
+          <div className="composer-settings" aria-label="Output settings">
+            <div className="setting-row">
+              <label>
+                Aspect
+                <select
+                  value={settings.aspect_ratio}
+                  onChange={(event) => handleAspectChange(event.target.value)}
+                  aria-invalid={fieldErrors.aspect ? true : undefined}
+                  data-studio-invalid={fieldErrors.aspect ? "true" : undefined}
+                >
+                  {modelOptions.allowedAspectRatios.map((ratio) => (
+                    <option key={ratio}>{ratio}</option>
+                  ))}
+                </select>
+                {fieldErrors.aspect ? <p className="field-error" role="alert">{fieldErrors.aspect}</p> : null}
+              </label>
+              {modelHasSizes ? (
+                <label>
+                  Size
+                  <select
+                    value={settings.image_size}
+                    onChange={(event) => setSettings((current) => ({ ...current, image_size: event.target.value }))}
+                    aria-invalid={fieldErrors.size ? true : undefined}
+                    data-studio-invalid={fieldErrors.size ? "true" : undefined}
+                  >
+                    {allowedSizesForAspect.map((size) => (
+                      <option key={size}>{size}</option>
+                    ))}
+                  </select>
+                  {fieldErrors.size ? <p className="field-error" role="alert">{fieldErrors.size}</p> : null}
+                </label>
+              ) : (
+                <label>
+                  Size
+                  <span className="field-hint">Auto from aspect</span>
+                </label>
+              )}
+              <label>
+                Count
+                <input
+                  min={1}
+                  max={4}
+                  type="number"
+                  value={settings.count}
+                  onChange={(event) => setSettings((current) => ({ ...current, count: Number(event.target.value) }))}
+                  aria-invalid={fieldErrors.count ? true : undefined}
+                  data-studio-invalid={fieldErrors.count ? "true" : undefined}
+                />
+                {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
+              </label>
+            </div>
+            <AspectPreview aspect={settings.aspect_ratio} size={modelHasSizes ? settings.image_size : undefined} label={selectedModel?.short_label ?? selectedModel?.label} />
+            {fieldErrors.references ? (
+              <p className="field-error" role="alert">{fieldErrors.references}</p>
+            ) : null}
+            <div className="capability-strip">
+              <span>{modelOptions.resolutionBadge}</span>
+              <span>{modelOptions.canEdit ? "Edits" : "Generate only"}</span>
+              <span>{modelOptions.referenceLimit} refs</span>
+            </div>
+          </div>
+
+
 
 
           {promptRemixes.length ? (
@@ -4555,65 +4618,6 @@ export default function App() {
         </section>
 
         <section className="control-section">
-          <div className="setting-row">
-            <label>
-              Aspect
-              <select
-                value={settings.aspect_ratio}
-                onChange={(event) => handleAspectChange(event.target.value)}
-                aria-invalid={fieldErrors.aspect ? true : undefined}
-                data-studio-invalid={fieldErrors.aspect ? "true" : undefined}
-              >
-                {modelOptions.allowedAspectRatios.map((ratio) => (
-                  <option key={ratio}>{ratio}</option>
-                ))}
-              </select>
-              {fieldErrors.aspect ? <p className="field-error" role="alert">{fieldErrors.aspect}</p> : null}
-            </label>
-            {modelHasSizes ? (
-              <label>
-                Size
-                <select
-                  value={settings.image_size}
-                  onChange={(event) => setSettings((current) => ({ ...current, image_size: event.target.value }))}
-                  aria-invalid={fieldErrors.size ? true : undefined}
-                  data-studio-invalid={fieldErrors.size ? "true" : undefined}
-                >
-                  {allowedSizesForAspect.map((size) => (
-                    <option key={size}>{size}</option>
-                  ))}
-                </select>
-                {fieldErrors.size ? <p className="field-error" role="alert">{fieldErrors.size}</p> : null}
-              </label>
-            ) : (
-              <label>
-                Size
-                <span className="field-hint">Auto from aspect</span>
-              </label>
-            )}
-            <label>
-              Count
-              <input
-                min={1}
-                max={4}
-                type="number"
-                value={settings.count}
-                onChange={(event) => setSettings((current) => ({ ...current, count: Number(event.target.value) }))}
-                aria-invalid={fieldErrors.count ? true : undefined}
-                data-studio-invalid={fieldErrors.count ? "true" : undefined}
-              />
-              {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
-            </label>
-          </div>
-          <AspectPreview aspect={settings.aspect_ratio} size={modelHasSizes ? settings.image_size : undefined} label={selectedModel?.short_label ?? selectedModel?.label} />
-          {fieldErrors.references ? (
-            <p className="field-error" role="alert">{fieldErrors.references}</p>
-          ) : null}
-          <div className="capability-strip">
-            <span>{modelOptions.resolutionBadge}</span>
-            <span>{modelOptions.canEdit ? "Edits" : "Generate only"}</span>
-            <span>{modelOptions.referenceLimit} refs</span>
-          </div>
           {selectedModel?.provider === "local" ? (
             <div className="local-engine-note">
               <strong>{config.localEngine.diffusion_ready ? "Checkpoint diffusion ready" : "Frank renderer ready"}</strong>
