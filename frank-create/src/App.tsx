@@ -1842,6 +1842,8 @@ export default function App() {
         thinking_budget: settings.thinking_budget ?? 0,
       };
       try {
+        setGenPhase("running");
+        setStatusText("Model is running...");
         const { data, error } = await supabase.functions.invoke("frank-generate", {
           body: invokeBody,
         });
