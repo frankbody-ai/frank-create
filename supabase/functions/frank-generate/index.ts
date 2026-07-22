@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
 
   // ---- Replicate branch ----
   if (REPLICATE_MAP[modelId]) {
-    const replicateKey = Deno.env.get("REPLICATE_API_KEY");
+    const replicateKey = getReplicateGatewayKey();
     if (!replicateKey) {
       return json({ error: "REPLICATE_API_KEY not configured", code: "config_missing", retryable: false }, 500);
     }
@@ -224,6 +224,12 @@ async function runReplicate(
     "Authorization": `Bearer ${lovableApiKey}`,
     "X-Connection-Api-Key": key,
   };
+  console.info("[frank-generate] replicate:create", {
+    slug,
+    input: sanitizeReplicateInput(input),
+    has_lovable_key: !!lovableApiKey,
+    has_connector_key: !!key,
+  });
 
   const createRes = await fetch(
     `${gatewayBase}/models/${slug}/predictions`,
@@ -238,12 +244,16 @@ async function runReplicate(
       signal,
     },
   );
+  console.info("[frank-generate] replicate:create:status", { slug, status: createRes.status });
 
   if (createRes.status === 402) {
     throw new ReplicateError("Replicate account has no credit. Enable billing at replicate.com/account/billing.", { code: "quota_exhausted", status: 402, retryable: false });
   }
   if (createRes.status === 401 || createRes.status === 403) {
-    throw new ReplicateError("Replicate rejected the API key. Reconnect the Replicate integration.", { code: "auth_failed", status: createRes.status, retryable: false });
+    const t = await createRes.text();
+    const providerMessage = extractProviderMessage(t);
+    console.error("[frank-generate] replicate:auth_failed", { slug, status: createRes.status, body: t.slice(0, 1000) });
+    throw new ReplicateError(`Replicate auth failed: ${providerMessage}. Reconnect the Replicate integration if this continues.`, { code: "auth_failed", status: createRes.status, retryable: false, raw: t });
   }
   if (createRes.status === 422) {
     const t = await createRes.text();
@@ -291,8 +301,13 @@ async function runReplicate(
       const id = pred?.id;
       if (!id) throw new ReplicateError("Replicate did not return a prediction ID.", { code: "provider_error", retryable: true });
       const r = await fetch(`${gatewayBase}/predictions/${id}`, { headers: replicateHeaders, signal });
-      if (!r.ok) throw new ReplicateError(`Replicate poll failed (${r.status}).`, { code: "provider_error", status: r.status, retryable: true });
+      if (!r.ok) {
+        const t = await r.text();
+        console.error("[frank-generate] replicate:poll_failed", { slug, id, status: r.status, body: t.slice(0, 1000) });
+        throw new ReplicateError(`Replicate poll failed (${r.status}): ${extractProviderMessage(t)}`, { code: "provider_error", status: r.status, retryable: true, raw: t });
+      }
       pred = await r.json();
+      console.info("[frank-generate] replicate:poll:status", { slug, id, status: pred?.status });
     }
   } finally {
     signal?.removeEventListener("abort", onAbort);
@@ -310,6 +325,13 @@ async function runReplicate(
   const out = pred.output;
   const url = extractReplicateUrl(out);
   if (!url) {
+    console.error("[frank-generate] replicate:empty_output", {
+      slug,
+      id: pred?.id,
+      status: pred?.status,
+      output_type: typeof out,
+      output_sample: JSON.stringify(out ?? null).slice(0, 1000),
+    });
     throw new ReplicateError(`Replicate returned no image URL (output=${JSON.stringify(out ?? null).slice(0, 200)})`, {
       code: "empty_output",
       retryable: true,
@@ -317,6 +339,22 @@ async function runReplicate(
     });
   }
   return url;
+}
+
+function getReplicateGatewayKey(): string | undefined {
+  // Gateway-backed Replicate connections expose REPLICATE_API_KEY in this project.
+  // Keep the fallback for older linked-secret names, but never use a browser key.
+  return Deno.env.get("REPLICATE_API_KEY") || Deno.env.get("LOVABLE_CONNECTOR_REPLICATE_API_KEY");
+}
+
+function sanitizeReplicateInput(input: Record<string, unknown>): Record<string, unknown> {
+  const copy: Record<string, unknown> = { ...input };
+  if (typeof copy.prompt === "string") copy.prompt = String(copy.prompt).slice(0, 240);
+  for (const key of ["reference_images", "image_input"]) {
+    const value = copy[key];
+    if (Array.isArray(value)) copy[key] = value.map((item) => typeof item === "string" ? `[uri:${item.length}]` : "[non-string]");
+  }
+  return copy;
 }
 
 function extractReplicateUrl(output: unknown): string | undefined {
@@ -331,13 +369,13 @@ function extractReplicateUrl(output: unknown): string | undefined {
   }
   if (typeof output === "object") {
     const record = output as Record<string, unknown>;
-    for (const key of ["image", "url", "image_url", "output", "file"]) {
+    for (const key of ["image", "url", "image_url", "output", "file", "content", "result"]) {
       const value = record[key];
       if (typeof value === "string" && value) return value;
       const nested = extractReplicateUrl(value);
       if (nested) return nested;
     }
-    for (const key of ["images", "urls", "files", "data"]) {
+    for (const key of ["images", "urls", "files", "data", "results"]) {
       const nested = extractReplicateUrl(record[key]);
       if (nested) return nested;
     }
