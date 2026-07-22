@@ -3132,9 +3132,14 @@ export default function App() {
                 {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
               </label>
             </div>
-            <AspectPreview aspect={settings.aspect_ratio} size={modelHasSizes ? settings.image_size : undefined} label={selectedModel?.short_label ?? selectedModel?.label} />
+            <AspectPreview aspect={settings.aspect_ratio} size={modelHasSizes ? settings.image_size : undefined} label={selectedModel?.short_label ?? selectedModel?.label} count={settings.count} />
             {fieldErrors.references ? (
               <p className="field-error" role="alert">{fieldErrors.references}</p>
+            ) : null}
+            {hasStudioFieldErrors(fieldErrors) ? (
+              <p className="field-error" role="alert">
+                Fix incompatible settings for {selectedModel?.short_label ?? selectedModel?.label ?? "this model"} before generating.
+              </p>
             ) : null}
             <div className="capability-strip">
               <span>{modelOptions.resolutionBadge}</span>
@@ -3211,8 +3216,14 @@ export default function App() {
             <button
               className="primary-button"
               type="submit"
-              disabled={busy || !prompt.trim()}
-              title={!prompt.trim() ? "Enter a prompt to generate" : undefined}
+              disabled={busy || !prompt.trim() || hasStudioFieldErrors(fieldErrors)}
+              title={
+                !prompt.trim()
+                  ? "Enter a prompt to generate"
+                  : hasStudioFieldErrors(fieldErrors)
+                    ? "Fix the highlighted settings before generating"
+                    : undefined
+              }
             >
               {busy ? <RefreshCw className="spin" size={18} /> : <Wand2 size={18} />}
               {primaryActionLabel}
