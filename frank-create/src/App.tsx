@@ -6190,7 +6190,8 @@ function turnEmptyLabel(turn: StudioTurn) {
     return "Provider setup needed";
   }
   if (turn.status === "failed") {
-    return "Provider returned no image";
+    const detail = turnErrorCopy(turn);
+    return detail || "Provider returned no image";
   }
   return "Waiting for provider output";
 }
