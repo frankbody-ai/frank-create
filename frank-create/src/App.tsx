@@ -1785,6 +1785,19 @@ export default function App() {
       return;
     }
 
+    const preflightErrors = validateStudioSettings(selectedModel, settings, {
+      referenceCount: selectedReferenceAssets.length
+    });
+    if (hasStudioFieldErrors(preflightErrors)) {
+      const firstMsg = preflightErrors.aspect ?? preflightErrors.size ?? preflightErrors.count ?? preflightErrors.references;
+      setStatusText(firstMsg ?? "Fix the highlighted fields.");
+      if (typeof document !== "undefined") {
+        const el = document.querySelector<HTMLElement>('[data-studio-invalid="true"]');
+        el?.focus?.();
+      }
+      return;
+    }
+
     setBusy(true);
     setStatusText(promptMode === "generate" ? "Preparing the next round..." : "Preparing the edit brief...");
 
