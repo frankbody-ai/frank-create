@@ -3915,8 +3915,8 @@ export default function App() {
             <button
               type="button"
               onClick={() => { void handleGenerate(); }}
-              disabled={busy}
               title="Re-run the last generation with the same inputs"
+
             >
               <RefreshCw size={13} />
               Retry safely
