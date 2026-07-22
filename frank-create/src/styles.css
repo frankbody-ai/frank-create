@@ -6441,3 +6441,47 @@ input[aria-invalid="true"] {
 .admin-feedback-shot {
   margin-top: 12px; max-height: 24rem; border-radius: 8px; border: 1px solid #262626;
 }
+
+/* ============ Admin portal ============ */
+.admin-portal { min-height: 100vh; background: #0a0a0a; color: #e5e5e5; padding: 32px 40px; }
+.admin-portal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+.admin-portal-header h1 { font-size: 24px; margin: 0 0 4px; color: #fafafa; }
+.admin-portal-header p { margin: 0; color: #a3a3a3; font-size: 13px; }
+.admin-portal-link { color: #93c5fd; text-decoration: none; font-size: 13px; }
+.admin-portal-loading, .admin-portal-empty { padding: 40px; color: #737373; text-align: center; }
+.admin-portal-denied { text-align: center; padding: 80px 20px; }
+.admin-portal-denied h1 { color: #fca5a5; }
+.admin-portal-error { background: #3f1d1d; border: 1px solid #7f1d1d; color: #fecaca; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; }
+.admin-portal-tabs { display: flex; gap: 4px; border-bottom: 1px solid #262626; margin-bottom: 20px; }
+.admin-portal-tab { background: transparent; border: none; color: #a3a3a3; padding: 10px 16px; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; }
+.admin-portal-tab.active { color: #fafafa; border-bottom-color: #ef4444; }
+.admin-portal-refresh { background: #171717; border: 1px solid #262626; color: #e5e5e5; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+
+.admin-users-toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
+.admin-users-search { flex: 1; background: #171717; border: 1px solid #262626; color: #e5e5e5; padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+.admin-users-table-wrap { overflow-x: auto; border: 1px solid #262626; border-radius: 8px; }
+.admin-users-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.admin-users-table thead th { background: #171717; text-align: left; padding: 10px 14px; color: #a3a3a3; font-weight: 500; border-bottom: 1px solid #262626; }
+.admin-users-table tbody td { padding: 12px 14px; border-bottom: 1px solid #1f1f1f; }
+.admin-users-table tbody tr:last-child td { border-bottom: none; }
+.admin-users-table tr.is-self { background: #171021; }
+.admin-users-email { color: #fafafa; }
+.admin-users-you { font-size: 10px; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+.admin-role-select { background: #0f0f0f; border: 1px solid #262626; color: #e5e5e5; padding: 5px 8px; border-radius: 6px; font-size: 12px; }
+.admin-role-select.role-admin { border-color: #ef4444; color: #fca5a5; }
+.admin-role-select.role-manager { border-color: #f59e0b; color: #fcd34d; }
+
+.admin-board-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.admin-board-toggle { color: #a3a3a3; font-size: 12px; display: flex; gap: 6px; align-items: center; cursor: pointer; }
+.admin-board-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.admin-board-column { background: #111; border: 1px solid #262626; border-radius: 10px; padding: 12px; min-height: 200px; }
+.admin-board-column-header { display: flex; justify-content: space-between; color: #fafafa; font-weight: 600; font-size: 13px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+.admin-board-count { background: #262626; color: #d4d4d4; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.admin-board-cards { display: flex; flex-direction: column; gap: 8px; }
+.admin-board-empty { color: #525252; font-size: 12px; text-align: center; padding: 20px 8px; }
+.admin-board-card { background: #171717; border: 1px solid #262626; border-radius: 8px; padding: 10px 12px; font-size: 12px; }
+.admin-board-card-meta { display: flex; gap: 6px; color: #737373; font-size: 10px; margin-bottom: 6px; }
+.admin-board-card-msg { color: #e5e5e5; margin: 0 0 8px; white-space: pre-wrap; word-break: break-word; }
+.admin-board-card-shot { width: 100%; border-radius: 6px; border: 1px solid #262626; margin-bottom: 8px; display: block; }
+.admin-board-card-actions select { width: 100%; background: #0f0f0f; border: 1px solid #262626; color: #e5e5e5; padding: 5px 8px; border-radius: 6px; font-size: 12px; }
+.admin-sidebar-link { color: #fca5a5 !important; }
