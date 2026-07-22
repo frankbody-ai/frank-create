@@ -1907,31 +1907,45 @@ export default function App() {
         setGenPhase("completed");
         setGenError(null);
       } catch (err) {
-        // Surface structured error info from frank-generate when available.
-        let message = err instanceof Error ? err.message : "Lovable AI generation failed.";
-        let code: string | undefined;
-        let retryable: boolean | undefined;
-        let httpStatus: number | undefined;
-        let raw: string | undefined;
-        try {
-          const ctx = (err as { context?: Response }).context;
-          if (ctx && typeof ctx.json === "function") {
-            httpStatus = ctx.status;
-            const parsed = await ctx.clone().json();
-            raw = JSON.stringify(parsed, null, 2);
-            if (parsed?.error) message = String(parsed.error);
-            if (parsed?.code) code = String(parsed.code);
-            if (typeof parsed?.retryable === "boolean") retryable = parsed.retryable;
-          }
-        } catch { /* body already consumed or non-JSON */ }
-        const suffix = code ? ` [${code}${retryable === false ? " — not retryable" : retryable ? " — safe to retry" : ""}]` : "";
-        setStatusText(`Lovable AI: ${message}${suffix}`);
-        setRetrySafePayload(retryable === true ? invokeBody : null);
-        setGenPhase("failed");
-        setGenError({ message, code, retryable, httpStatus, raw });
-        const localTurn = makeLocalTurn(activeSession.id, request);
-        setTurns((current) => [...current, localTurn]);
+        // Aborted by the user: don't render a red "failed" error card; show a canceled state.
+        const isAbort =
+          (err as { name?: string })?.name === "AbortError" ||
+          generateAbortRef.current?.signal.aborted;
+        if (isAbort) {
+          setStatusText("Canceled.");
+          setGenPhase("failed");
+          setGenError({ message: "Canceled by user.", code: "canceled", retryable: true });
+          setRetrySafePayload(invokeBody);
+          const localTurn = makeLocalTurn(activeSession.id, request);
+          setTurns((current) => [...current, localTurn]);
+        } else {
+          // Surface structured error info from frank-generate when available.
+          let message = err instanceof Error ? err.message : "Lovable AI generation failed.";
+          let code: string | undefined;
+          let retryable: boolean | undefined;
+          let httpStatus: number | undefined;
+          let raw: string | undefined;
+          try {
+            const ctx = (err as { context?: Response }).context;
+            if (ctx && typeof ctx.json === "function") {
+              httpStatus = ctx.status;
+              const parsed = await ctx.clone().json();
+              raw = JSON.stringify(parsed, null, 2);
+              if (parsed?.error) message = String(parsed.error);
+              if (parsed?.code) code = String(parsed.code);
+              if (typeof parsed?.retryable === "boolean") retryable = parsed.retryable;
+            }
+          } catch { /* body already consumed or non-JSON */ }
+          const suffix = code ? ` [${code}${retryable === false ? " — not retryable" : retryable ? " — safe to retry" : ""}]` : "";
+          setStatusText(`Lovable AI: ${message}${suffix}`);
+          setRetrySafePayload(retryable === true ? invokeBody : null);
+          setGenPhase("failed");
+          setGenError({ message, code, retryable, httpStatus, raw });
+          const localTurn = makeLocalTurn(activeSession.id, request);
+          setTurns((current) => [...current, localTurn]);
+        }
       } finally {
+        generateAbortRef.current = null;
         setBusy(false);
       }
       return;
