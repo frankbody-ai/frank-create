@@ -14,6 +14,7 @@ import {
   MessageSquareText,
   Paperclip,
   Paintbrush,
+  Pencil,
   Plus,
   RefreshCw,
   Sparkles,
