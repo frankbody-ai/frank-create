@@ -99,7 +99,9 @@ import {
   makeLocalId,
   normalizeStudioSettingsForModel,
   parseJsonList,
-  selectModelOptions
+  selectModelOptions,
+  validateStudioSettings,
+  hasStudioFieldErrors
 } from "./lib/studio";
 
 import type {
