@@ -5938,3 +5938,96 @@ input[aria-invalid="true"] {
   text-transform: none;
   letter-spacing: 0;
 }
+
+/* Three-step generation progress + expandable error details */
+.gen-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+}
+.gen-progress .gen-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  opacity: 0.55;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  background: transparent;
+  transition: all 0.2s ease;
+}
+.gen-progress .gen-step-dot {
+  display: inline-flex;
+  width: 14px; height: 14px;
+  align-items: center; justify-content: center;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.1);
+  font-size: 9px;
+  font-weight: 600;
+}
+.gen-step-active {
+  opacity: 1;
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+.gen-step-active .gen-step-dot {
+  background: #3b82f6;
+  color: #fff;
+  animation: gen-pulse 1.2s ease-in-out infinite;
+}
+.gen-step-done {
+  opacity: 1;
+  border-color: #16a34a;
+  color: #16a34a;
+}
+.gen-step-done .gen-step-dot { background: #16a34a; color: #fff; }
+.gen-step-failed {
+  opacity: 1;
+  border-color: #dc2626;
+  color: #dc2626;
+}
+.gen-step-failed .gen-step-dot { background: #dc2626; color: #fff; }
+@keyframes gen-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+.gen-error-toggle {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border, rgba(255,255,255,0.14));
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+}
+.gen-error-toggle:hover { background: rgba(220,38,38,0.08); }
+.gen-error-details {
+  margin: 6px 0 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(220,38,38,0.35);
+  border-radius: 8px;
+  background: rgba(220,38,38,0.06);
+  font-size: 12px;
+}
+.gen-error-details dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0 0 8px;
+}
+.gen-error-details dt { font-weight: 600; opacity: 0.7; }
+.gen-error-details dd { margin: 0; word-break: break-word; }
+.gen-error-raw {
+  margin: 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.35);
+  color: #f1f5f9;
+  font-size: 11px;
+  max-height: 200px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
