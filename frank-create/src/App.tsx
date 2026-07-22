@@ -3136,6 +3136,11 @@ export default function App() {
             {fieldErrors.references ? (
               <p className="field-error" role="alert">{fieldErrors.references}</p>
             ) : null}
+            {hasStudioFieldErrors(fieldErrors) ? (
+              <p className="field-error" role="alert">
+                Fix incompatible settings for {selectedModel?.short_label ?? selectedModel?.label ?? "this model"} before generating.
+              </p>
+            ) : null}
             <div className="capability-strip">
               <span>{modelOptions.resolutionBadge}</span>
               <span>{modelOptions.canEdit ? "Edits" : "Generate only"}</span>
