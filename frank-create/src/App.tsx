@@ -396,6 +396,9 @@ export default function App() {
   const [handoffProofText, setHandoffProofText] = useState("");
   const [remixBusy, setRemixBusy] = useState(false);
   const [busy, setBusy] = useState(false);
+  type InflightGen = { id: string; modelId: string; modelLabel: string; prompt: string; aspect: string; count: number };
+  const [inflightGens, setInflightGens] = useState<InflightGen[]>([]);
+
   const [statusText, setStatusText] = useState("Waiting for the brief...");
   const [retrySafePayload, setRetrySafePayload] = useState<Record<string, unknown> | null>(null);
   type GenPhase = "idle" | "queued" | "running" | "completed" | "failed";
@@ -1845,6 +1848,18 @@ export default function App() {
     setGenError(null);
     setGenErrorOpen(false);
     setStatusText(promptMode === "generate" ? "Preparing the next round..." : "Preparing the edit brief...");
+    const inflightId = makeLocalId("gen");
+    const inflightEntry: InflightGen = {
+      id: inflightId,
+      modelId: selectedModel.id,
+      modelLabel: modelName(config, selectedModel.id),
+      prompt: prompt,
+      aspect: settings.aspect_ratio,
+      count: Math.max(1, settings.count),
+    };
+    setInflightGens((current) => [...current, inflightEntry]);
+    const finishInflight = () => setInflightGens((current) => current.filter((g) => g.id !== inflightId));
+
 
     const request = buildTurnRequest({
       sessionId: activeSession.id,
@@ -1987,8 +2002,10 @@ export default function App() {
         }
       } finally {
         generateAbortRef.current = null;
+        finishInflight();
         setBusy(false);
       }
+
       return;
     }
 
@@ -2055,9 +2072,11 @@ export default function App() {
     } catch (error) {
       setStatusText(error instanceof Error ? error.message : "This round needs another look.");
     } finally {
+      finishInflight();
       setBusy(false);
     }
   }
+
 
   async function handleVideoGenerate() {
     if (!activeSession || !prompt.trim()) {
@@ -2960,26 +2979,26 @@ export default function App() {
               </button>
             </div>
           ) : null}
-          {busy && (genPhase === "queued" || genPhase === "running") ? (
-            <article className="turn-card turn-card-pending" aria-live="polite" aria-busy="true">
-              <div className="turn-copy">
-                <span className="status-dot pending" />
-                <div>
-                  <p className="eyebrow">Generating</p>
-                  <h3>{selectedModel ? modelName(config, selectedModel.id) : "Model"}</h3>
-                  <p>{prompt || "Preparing the next round..."}</p>
-                  <div className="turn-meta">
-                    <span>{genPhase === "queued" ? "Queued" : "Running"}</span>
-                    <span>{settings.aspect_ratio}</span>
-                    <span>{settings.count} pick{settings.count === 1 ? "" : "s"}</span>
+          {inflightGens.length ? inflightGens.slice().reverse().map((gen) => {
+            const p = aspectRatioParts(gen.aspect);
+            const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
+            return (
+              <article key={gen.id} className="turn-card turn-card-pending" aria-live="polite" aria-busy="true">
+                <div className="turn-copy">
+                  <span className="status-dot pending" />
+                  <div>
+                    <p className="eyebrow">Generating</p>
+                    <h3>{gen.modelLabel}</h3>
+                    <p>{gen.prompt || "Preparing the next round..."}</p>
+                    <div className="turn-meta">
+                      <span>Running</span>
+                      <span>{gen.aspect}</span>
+                      <span>{gen.count} pick{gen.count === 1 ? "" : "s"}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="pending-strip" style={{ display: "grid", gridTemplateColumns: `repeat(${Math.max(1, settings.count)}, minmax(0, 1fr))`, gap: 12, marginTop: 12 }}>
-                {Array.from({ length: Math.max(1, settings.count) }).map((_, i) => {
-                  const p = aspectRatioParts(settings.aspect_ratio);
-                  const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
-                  return (
+                <div className="pending-strip" style={{ display: "grid", gridTemplateColumns: `repeat(${gen.count}, minmax(0, 1fr))`, gap: 12, marginTop: 12 }}>
+                  {Array.from({ length: gen.count }).map((_, i) => (
                     <div
                       key={i}
                       className="pending-tile"
@@ -2992,11 +3011,12 @@ export default function App() {
                     >
                       <Loader2 size={22} className="spin" style={{ opacity: 0.6 }} />
                     </div>
-                  );
-                })}
-              </div>
-            </article>
-          ) : null}
+                  ))}
+                </div>
+              </article>
+            );
+          }) : null}
+
           {turns.length ? (
             [...turns].reverse().map((turn, idx) => {
               const createdMs = turn.created_at ? new Date(turn.created_at).getTime() : 0;
@@ -3043,15 +3063,15 @@ export default function App() {
                     type="button"
                     aria-label="Retry this generation"
                     title="Retry with the same settings"
-                    disabled={busy}
                     onClick={() => retryTurn(turn)}
                     style={{
                       width: 22, height: 22, padding: 0,
                       display: "inline-flex", alignItems: "center", justifyContent: "center",
                       borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
-                      background: "rgba(255,255,255,0.85)", cursor: busy ? "not-allowed" : "pointer",
-                      color: "rgba(0,0,0,0.55)", opacity: busy ? 0.5 : 1,
+                      background: "rgba(255,255,255,0.85)", cursor: "pointer",
+                      color: "rgba(0,0,0,0.55)",
                     }}
+
                   >
                     <RefreshCw size={12} />
                   </button>
@@ -3160,7 +3180,7 @@ export default function App() {
             onKeyDown={(event) => {
               if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
                 event.preventDefault();
-                if (!busy && prompt.trim()) void handleGenerate();
+                if (prompt.trim()) void handleGenerate();
                 else if (!prompt.trim()) setStatusText("Enter a prompt to generate.");
               }
             }}
@@ -3324,7 +3344,7 @@ export default function App() {
             <button
               className="primary-button"
               type="submit"
-              disabled={busy || !prompt.trim() || hasStudioFieldErrors(fieldErrors)}
+              disabled={!prompt.trim() || hasStudioFieldErrors(fieldErrors)}
               title={
                 !prompt.trim()
                   ? "Enter a prompt to generate"
@@ -3895,8 +3915,8 @@ export default function App() {
             <button
               type="button"
               onClick={() => { void handleGenerate(); }}
-              disabled={busy}
               title="Re-run the last generation with the same inputs"
+
             >
               <RefreshCw size={13} />
               Retry safely
