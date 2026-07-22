@@ -439,11 +439,11 @@ async function handleInference(body: any, userId: string) {
   const insertedAssets: any[] = [];
   for (const img of generatedImages) {
     const assetId = crypto.randomUUID();
-    const ext = img.mime.split("/")[1] || "png";
-    const storagePath = `${sessionId}/${assetId}.${ext}`;
     const imageBytes = await imageBytesForUpload(img);
     const bytes = imageBytes.bytes;
     const mime = imageBytes.mime;
+    const ext = mime.split("/")[1] || "png";
+    const storagePath = `${sessionId}/${assetId}.${ext}`;
     const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, {
       contentType: mime, upsert: false,
     });
@@ -496,6 +496,92 @@ async function handleInference(body: any, userId: string) {
     providerPayload: { provider: "lovable", model: gatewayModel },
     localEngine: "cloud" as const,
   };
+}
+
+async function imageBytesForUpload(img: { b64?: string; url?: string; mime: string }): Promise<{ bytes: Uint8Array; mime: string }> {
+  if (img.b64) {
+    return { bytes: base64Decode(img.b64), mime: img.mime || "image/png" };
+  }
+  const url = img.url || "";
+  const dataMatch = url.match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);
+  if (dataMatch) {
+    return { bytes: base64Decode(dataMatch[2]), mime: dataMatch[1] };
+  }
+  if (!url) throw new Error("Provider returned an empty image URL.");
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Could not download generated image (${res.status}).`);
+  const mime = (res.headers.get("content-type") || img.mime || "image/png").split(";")[0];
+  return { bytes: new Uint8Array(await res.arrayBuffer()), mime };
+}
+
+async function runReplicate(
+  slug: string,
+  prompt: string,
+  body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
+  key: string,
+): Promise<string | undefined> {
+  const input = buildReplicateInput(slug, prompt, body);
+  const createRes = await fetch(`https://api.replicate.com/v1/models/${slug}/predictions`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${key}`,
+      "Content-Type": "application/json",
+      "Prefer": "wait=60",
+    },
+    body: JSON.stringify({ input }),
+  });
+  if (!createRes.ok) {
+    const text = await createRes.text();
+    throw new Error(`Replicate ${createRes.status}: ${text.slice(0, 300)}`);
+  }
+  let prediction: any = await createRes.json();
+  const started = Date.now();
+  while (!["succeeded", "failed", "canceled"].includes(prediction.status)) {
+    if (Date.now() - started > 180_000) throw new Error("Replicate timed out after 3 minutes.");
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const pollUrl = prediction?.urls?.get;
+    if (!pollUrl) throw new Error("Replicate did not return a poll URL.");
+    const poll = await fetch(pollUrl, { headers: { "Authorization": `Bearer ${key}` } });
+    if (!poll.ok) throw new Error(`Replicate poll failed (${poll.status}).`);
+    prediction = await poll.json();
+  }
+  if (prediction.status !== "succeeded") {
+    const raw = typeof prediction.error === "string" ? prediction.error : JSON.stringify(prediction.error ?? prediction.status);
+    throw new Error(`Replicate failed: ${raw.slice(0, 240)}`);
+  }
+  const output = prediction.output;
+  return Array.isArray(output) ? output[0] : typeof output === "string" ? output : undefined;
+}
+
+function buildReplicateInput(
+  slug: string,
+  prompt: string,
+  body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
+): Record<string, unknown> {
+  const refs = Array.isArray(body.reference_images) ? body.reference_images.filter(Boolean) : [];
+  if (slug === "reve/reve-2.1") {
+    const allowed = new Set([
+      "auto", "1:1", "4:3", "3:4", "3:2", "2:3", "16:9", "9:16",
+      "5:4", "4:5", "21:9", "17:9", "2:1", "1:2", "3:1", "1:3", "4:1", "1:4",
+    ]);
+    const aspect = body.aspect_ratio && allowed.has(body.aspect_ratio) ? body.aspect_ratio : "auto";
+    const input: Record<string, unknown> = { prompt, aspect_ratio: aspect };
+    if (refs.length) input.reference_images = refs.slice(0, 8);
+    return input;
+  }
+  if (slug === "bytedance/seedream-5-pro") {
+    const allowed = new Set(["match_input_image", "1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3", "21:9"]);
+    const aspect = body.aspect_ratio && allowed.has(body.aspect_ratio) ? body.aspect_ratio : refs.length ? "match_input_image" : "1:1";
+    const input: Record<string, unknown> = {
+      prompt,
+      size: body.size === "2K" ? "2K" : "1K",
+      aspect_ratio: aspect,
+      output_format: "png",
+    };
+    if (refs.length) input.image_input = refs.slice(0, 10);
+    return input;
+  }
+  return { prompt };
 }
 
 async function handleRemix(body: any) {
