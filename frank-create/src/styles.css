@@ -5864,3 +5864,22 @@ body {
   background: rgba(0, 0, 0, 0.25); color: inherit;
   border: 1px solid rgba(255, 255, 255, 0.12); font-size: 13px;
 }
+
+.field-error {
+  color: #e04a3f;
+  font-size: 12px;
+  margin: 4px 0 0;
+  line-height: 1.3;
+}
+.field-hint {
+  display: inline-block;
+  font-size: 12px;
+  opacity: 0.65;
+  padding: 6px 0;
+}
+select[aria-invalid="true"],
+input[aria-invalid="true"] {
+  border-color: #e04a3f !important;
+  outline-color: #e04a3f;
+  box-shadow: 0 0 0 1px rgba(224, 74, 63, 0.35);
+}
