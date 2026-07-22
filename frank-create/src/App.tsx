@@ -2294,6 +2294,25 @@ export default function App() {
     }
   }
 
+  function retryTurn(turn: StudioTurn) {
+    try {
+      const parsed = JSON.parse(turn.settings_json || "{}") as Partial<StudioSettings>;
+      setPrompt(turn.prompt || "");
+      setPromptRemixes([]);
+      if (turn.model) setSelectedModelId(turn.model);
+      if (turn.preset_key) setSelectedPresetKey(turn.preset_key);
+      setFrankBodyMode(!!turn.frank_body_mode);
+      setSettings((current) => ({ ...current, ...parsed }));
+      setStatusText("Retrying with previous settings…");
+      // Let React flush the state updates before submitting.
+      window.setTimeout(() => { void handleGenerate(); }, 60);
+    } catch (err) {
+      setStatusText(err instanceof Error ? err.message : "Could not retry this round.");
+    }
+  }
+
+
+
   async function removeAssetFromSession(asset: Asset) {
     try {
       if (connection === "online") {
@@ -3022,6 +3041,22 @@ export default function App() {
                   </button>
                   <button
                     type="button"
+                    aria-label="Retry this generation"
+                    title="Retry with the same settings"
+                    disabled={busy}
+                    onClick={() => retryTurn(turn)}
+                    style={{
+                      width: 22, height: 22, padding: 0,
+                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
+                      background: "rgba(255,255,255,0.85)", cursor: busy ? "not-allowed" : "pointer",
+                      color: "rgba(0,0,0,0.55)", opacity: busy ? 0.5 : 1,
+                    }}
+                  >
+                    <RefreshCw size={12} />
+                  </button>
+                  <button
+                    type="button"
                     aria-label="Delete this round"
                     title="Delete this round"
                     onClick={() => {
@@ -3039,6 +3074,7 @@ export default function App() {
                   >
                     <X size={12} />
                   </button>
+
                 </div>
                 <div className="turn-copy">
                   <span className={`status-dot ${turn.status}`} />
