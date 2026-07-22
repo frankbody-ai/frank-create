@@ -234,20 +234,38 @@ async function runReplicate(
     has_connector_key: !!key,
   });
 
-  const createRes = await fetch(
-    `${gatewayBase}/models/${slug}/predictions`,
-    {
-      method: "POST",
-      headers: {
-        ...replicateHeaders,
-        "Content-Type": "application/json",
-        "Prefer": "wait=60",
-      },
-      body: JSON.stringify({ input }),
-      signal,
-    },
-  );
-  console.info("[frank-generate] replicate:create:status", { slug, status: createRes.status });
+  // Create with retry on transient 5xx / network errors. No `Prefer: wait` —
+  // holding the HTTP connection open during a cold start is what makes the
+  // upstream proxy return 502. Just create + poll.
+  const createOnce = () => fetch(`${gatewayBase}/models/${slug}/predictions`, {
+    method: "POST",
+    headers: { ...replicateHeaders, "Content-Type": "application/json" },
+    body: JSON.stringify({ input }),
+    signal,
+  });
+  let createRes: Response | undefined;
+  let lastTransientBody = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (signal?.aborted) throw new ReplicateError("Canceled by user.", { code: "canceled", retryable: true });
+    try {
+      createRes = await createOnce();
+    } catch (netErr) {
+      if (attempt === 2) throw new ReplicateError(`Replicate network error: ${netErr instanceof Error ? netErr.message : String(netErr)}`, { code: "provider_unavailable", retryable: true });
+      await new Promise((r) => setTimeout(r, 1500 + attempt * 1500 + Math.floor(Math.random() * 500)));
+      continue;
+    }
+    console.info("[frank-generate] replicate:create:status", { slug, attempt, status: createRes.status });
+    if (createRes.status === 502 || createRes.status === 503 || createRes.status === 504) {
+      lastTransientBody = await createRes.text().catch(() => "");
+      if (attempt === 2) break;
+      await new Promise((r) => setTimeout(r, 1500 + attempt * 1500 + Math.floor(Math.random() * 500)));
+      continue;
+    }
+    break;
+  }
+  if (!createRes) {
+    throw new ReplicateError("Replicate upstream unreachable.", { code: "provider_unavailable", retryable: true });
+  }
 
   if (createRes.status === 402) {
     throw new ReplicateError("Replicate account has no credit. Enable billing at replicate.com/account/billing.", { code: "quota_exhausted", status: 402, retryable: false });
@@ -266,8 +284,11 @@ async function runReplicate(
     throw new ReplicateError("Replicate rate limit hit. Wait a moment and try again.", { code: "rate_limited", status: 429, retryable: true });
   }
   if (createRes.status >= 500) {
-    const t = await createRes.text();
-    throw new ReplicateError(`Replicate is having trouble (${createRes.status}). Retry shortly.`, { code: "provider_unavailable", status: createRes.status, retryable: true, raw: t });
+    const t = lastTransientBody || (await createRes.text().catch(() => ""));
+    throw new ReplicateError(
+      `Replicate upstream is overloaded (${createRes.status}). We retried automatically — try again in a moment, or switch model (Seedream / Nano Banana 2 usually recover fastest).`,
+      { code: "provider_unavailable", status: createRes.status, retryable: true, raw: t },
+    );
   }
   if (!createRes.ok) {
     const t = await createRes.text();
