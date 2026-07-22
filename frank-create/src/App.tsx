@@ -2628,9 +2628,6 @@ export default function App() {
       setInspectorTab("review");
       setLightboxAsset(null);
     }
-    if (activeWalkthroughStep.target === "handoff-pack") {
-      setInspectorTab("export");
-    }
     if (activeWalkthroughStep.target === "review-panel" || activeWalkthroughStep.target === "export-controls") {
       setInspectorTab("review");
     }
