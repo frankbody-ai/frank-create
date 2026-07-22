@@ -2010,6 +2010,7 @@ export default function App() {
           retryable: result.error?.retryable,
           httpStatus: result.error?.status,
           raw: result.error?.raw,
+          requestId: result.error?.request_id,
         });
         setRetrySafePayload(result.error?.retryable === true ? {
           prompt: request.prompt,
