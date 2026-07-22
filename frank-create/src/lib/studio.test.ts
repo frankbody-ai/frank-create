@@ -77,7 +77,9 @@ describe("studio helpers", () => {
       "google-nb-pro",
       "google-nb-2",
       "openai-gpt-image-2",
-      "flux-1-1-pro-ultra"
+      "reve-2-1",
+      "mai-image-2-5",
+      "seedream-5-pro"
     ]);
     expect(fallbackConfig.backlogModels).toEqual([]);
     expect(fallbackConfig.models.find((model) => model.id === "openai-gpt-image-2")?.provider_model).toBe(
@@ -85,12 +87,9 @@ describe("studio helpers", () => {
     );
     expect(fallbackConfig.models.find((model) => model.id === "google-nb-pro")?.provider_api_version).toBe("v1beta");
     expect(fallbackConfig.models.find((model) => model.id === "google-nb-2")?.provider_api_version).toBe("v1beta");
-    expect(fallbackConfig.models.find((model) => model.id === "flux-1-1-pro-ultra")?.provider_model).toBe(
-      "black-forest-labs/flux-1.1-pro-ultra"
-    );
-    expect(fallbackConfig.models.find((model) => model.id === "flux-1-1-pro-ultra")?.missing_env_vars).toEqual([
-      "REPLICATE_API_TOKEN"
-    ]);
+    expect(fallbackConfig.models.find((model) => model.id === "reve-2-1")?.provider_model).toBe("reve/reve-2.1");
+    expect(fallbackConfig.models.find((model) => model.id === "seedream-5-pro")?.allowed_image_sizes).toEqual(["1K", "2K"]);
+    expect(fallbackConfig.models.find((model) => model.id === "mai-image-2-5")?.status).toBe("coming_soon");
     expect(fallbackConfig.tasks.find((task) => task.key === "prompt-remix")?.providers).toContain("google");
   });
 
