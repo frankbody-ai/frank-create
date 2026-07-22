@@ -7,18 +7,19 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Map studio model id -> Lovable AI Gateway model string (Gemini/OpenAI models)
+// Map studio model id -> Lovable AI Gateway model string.
+// Kept only for the local placeholder — every user-visible model now runs on Replicate.
 const MODEL_MAP: Record<string, string> = {
   "frank-local-comfy": "google/gemini-2.5-flash-image",
-  "google-nb-pro": "google/gemini-3-pro-image",
-  "google-nb-2": "google/gemini-3.1-flash-image",
-  "openai-gpt-image-2": "openai/gpt-image-2",
 };
 
 // Replicate model routing: studio model id -> Replicate owner/name.
-// NOTE: microsoft/mai-image-2.5 is intentionally omitted — Microsoft has not
-// published MAI-Image on Replicate; the model tile is shown as "coming_soon".
+// Nano Banana + gpt-image-2 use Replicate (not Lovable AI) so aspect/quality/refs
+// match each model's published schema exactly (4K, wide aspects, multi-ref).
 const REPLICATE_MAP: Record<string, string> = {
+  "google-nb-pro": "google/nano-banana-pro",
+  "google-nb-2": "google/nano-banana-2",
+  "openai-gpt-image-2": "openai/gpt-image-2",
   "reve-2-1": "reve/reve-2.1",
   "seedream-5-pro": "bytedance/seedream-5-pro",
 };
