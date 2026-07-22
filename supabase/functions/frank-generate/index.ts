@@ -107,6 +107,10 @@ Deno.serve(async (req) => {
   const errors: string[] = [];
 
   for (let i = 0; i < count; i++) {
+    if (req.signal.aborted) {
+      errors.push("canceled");
+      break;
+    }
     try {
       let res: Response;
       if (useImagesEndpoint) {
@@ -124,6 +128,7 @@ Deno.serve(async (req) => {
             size,
             n: 1,
           }),
+          signal: req.signal,
         });
       } else {
         const ar = body.aspect_ratio;
@@ -148,6 +153,7 @@ Deno.serve(async (req) => {
             "Authorization": `Bearer ${apiKey}`,
           },
           body: JSON.stringify(payload),
+          signal: req.signal,
         });
       }
 
@@ -172,6 +178,10 @@ Deno.serve(async (req) => {
       if (imageUrl) images.push(imageUrl);
       else errors.push("no image in response");
     } catch (err) {
+      if (req.signal.aborted) {
+        errors.push("canceled");
+        break;
+      }
       errors.push(err instanceof Error ? err.message : String(err));
     }
   }
