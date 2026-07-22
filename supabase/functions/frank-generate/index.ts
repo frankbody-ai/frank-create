@@ -314,6 +314,7 @@ async function runReplicate(
 
   try {
     const started = Date.now();
+    let transientPollFails = 0;
     while (pred.status !== "succeeded" && pred.status !== "failed" && pred.status !== "canceled") {
       if (signal?.aborted) {
         throw new ReplicateError("Canceled by user.", { code: "canceled", retryable: true, requestId: predictionId });
@@ -324,12 +325,33 @@ async function runReplicate(
       await new Promise((r) => setTimeout(r, 2000));
       const id = pred?.id;
       if (!id) throw new ReplicateError("Replicate did not return a prediction ID.", { code: "provider_error", retryable: true });
-      const r = await fetch(`${gatewayBase}/predictions/${id}`, { headers: replicateHeaders, signal });
+      let r: Response;
+      try {
+        r = await fetch(`${gatewayBase}/predictions/${id}`, { headers: replicateHeaders, signal });
+      } catch (netErr) {
+        transientPollFails++;
+        console.warn("[frank-generate] replicate:poll_network", { slug, id, transientPollFails, err: String(netErr) });
+        if (transientPollFails >= 4) {
+          throw new ReplicateError(`Replicate poll network failure: ${netErr instanceof Error ? netErr.message : String(netErr)}`, { code: "provider_unavailable", retryable: true, requestId: id });
+        }
+        continue;
+      }
       if (!r.ok) {
         const t = await r.text();
+        // Tolerate transient upstream 5xx during poll — Replicate's proxy
+        // occasionally 502s while the prediction is fine.
+        if (r.status >= 500 && r.status <= 599) {
+          transientPollFails++;
+          console.warn("[frank-generate] replicate:poll_transient", { slug, id, status: r.status, transientPollFails });
+          if (transientPollFails >= 4) {
+            throw new ReplicateError(`Replicate poll failed (${r.status}) after retries: ${extractProviderMessage(t)}`, { code: "provider_unavailable", status: r.status, retryable: true, raw: t, requestId: id });
+          }
+          continue;
+        }
         console.error("[frank-generate] replicate:poll_failed", { slug, id, status: r.status, body: t.slice(0, 1000) });
         throw new ReplicateError(`Replicate poll failed (${r.status}): ${extractProviderMessage(t)}`, { code: "provider_error", status: r.status, retryable: true, raw: t, requestId: id });
       }
+      transientPollFails = 0;
       pred = await r.json();
       console.info("[frank-generate] replicate:poll:status", { slug, id, status: pred?.status });
     }
