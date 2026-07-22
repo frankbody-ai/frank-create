@@ -2979,26 +2979,26 @@ export default function App() {
               </button>
             </div>
           ) : null}
-          {busy && (genPhase === "queued" || genPhase === "running") ? (
-            <article className="turn-card turn-card-pending" aria-live="polite" aria-busy="true">
-              <div className="turn-copy">
-                <span className="status-dot pending" />
-                <div>
-                  <p className="eyebrow">Generating</p>
-                  <h3>{selectedModel ? modelName(config, selectedModel.id) : "Model"}</h3>
-                  <p>{prompt || "Preparing the next round..."}</p>
-                  <div className="turn-meta">
-                    <span>{genPhase === "queued" ? "Queued" : "Running"}</span>
-                    <span>{settings.aspect_ratio}</span>
-                    <span>{settings.count} pick{settings.count === 1 ? "" : "s"}</span>
+          {inflightGens.length ? inflightGens.slice().reverse().map((gen) => {
+            const p = aspectRatioParts(gen.aspect);
+            const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
+            return (
+              <article key={gen.id} className="turn-card turn-card-pending" aria-live="polite" aria-busy="true">
+                <div className="turn-copy">
+                  <span className="status-dot pending" />
+                  <div>
+                    <p className="eyebrow">Generating</p>
+                    <h3>{gen.modelLabel}</h3>
+                    <p>{gen.prompt || "Preparing the next round..."}</p>
+                    <div className="turn-meta">
+                      <span>Running</span>
+                      <span>{gen.aspect}</span>
+                      <span>{gen.count} pick{gen.count === 1 ? "" : "s"}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="pending-strip" style={{ display: "grid", gridTemplateColumns: `repeat(${Math.max(1, settings.count)}, minmax(0, 1fr))`, gap: 12, marginTop: 12 }}>
-                {Array.from({ length: Math.max(1, settings.count) }).map((_, i) => {
-                  const p = aspectRatioParts(settings.aspect_ratio);
-                  const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
-                  return (
+                <div className="pending-strip" style={{ display: "grid", gridTemplateColumns: `repeat(${gen.count}, minmax(0, 1fr))`, gap: 12, marginTop: 12 }}>
+                  {Array.from({ length: gen.count }).map((_, i) => (
                     <div
                       key={i}
                       className="pending-tile"
@@ -3011,11 +3011,12 @@ export default function App() {
                     >
                       <Loader2 size={22} className="spin" style={{ opacity: 0.6 }} />
                     </div>
-                  );
-                })}
-              </div>
-            </article>
-          ) : null}
+                  ))}
+                </div>
+              </article>
+            );
+          }) : null}
+
           {turns.length ? (
             [...turns].reverse().map((turn, idx) => {
               const createdMs = turn.created_at ? new Date(turn.created_at).getTime() : 0;
