@@ -1826,15 +1826,15 @@ export default function App() {
           setSessions((current) => current.map((s) => (s.id === renamed.id ? renamed : s)));
         }
       }
+      const invokeBody = {
+        prompt: request.prompt,
+        count: settings.count,
+        modelId: selectedModel.id,
+        aspect_ratio: settings.aspect_ratio,
+        size: settings.image_size,
+        thinking_budget: settings.thinking_budget ?? 0,
+      };
       try {
-        const invokeBody = {
-          prompt: request.prompt,
-          count: settings.count,
-          modelId: selectedModel.id,
-          aspect_ratio: settings.aspect_ratio,
-          size: settings.image_size,
-          thinking_budget: settings.thinking_budget ?? 0,
-        };
         const { data, error } = await supabase.functions.invoke("frank-generate", {
           body: invokeBody,
         });

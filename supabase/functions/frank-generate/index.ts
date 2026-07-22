@@ -75,7 +75,12 @@ Deno.serve(async (req) => {
     }
     if (!images.length) {
       const primary = errors[0] ?? { code: "unknown", message: "Generation failed", retryable: true };
+      await logGenerationErrors(req, "replicate", modelId, body, errors);
       return json({ error: primary.message, code: primary.code, retryable: primary.retryable, details: errors }, primary.status ?? 502);
+    }
+    if (errors.length) {
+      // Partial failures still worth auditing.
+      await logGenerationErrors(req, "replicate", modelId, body, errors);
     }
     return json({ images, errors: errors.length ? errors : undefined });
   }
@@ -168,6 +173,12 @@ Deno.serve(async (req) => {
   }
 
   if (!images.length) {
+    const mapped: MappedError[] = errors.map((raw) => ({
+      code: "gateway_error",
+      message: typeof raw === "string" ? raw.slice(0, 300) : String(raw),
+      retryable: true,
+    }));
+    await logGenerationErrors(req, "lovable-ai", modelId, body, mapped);
     return json({ error: "Generation failed", details: errors }, 502);
   }
 
@@ -360,4 +371,86 @@ function json(payload: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+// -- Error auditing ----------------------------------------------------------
+// Persist mapped errors to public.generation_errors for later debugging.
+// Fire-and-forget: never let logging failure mask the real error to the user.
+function extractUserId(req: Request): string | null {
+  try {
+    const auth = req.headers.get("Authorization") ?? "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (!token || token.split(".").length !== 3) return null;
+    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof payload?.sub === "string" ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
+async function logGenerationErrors(
+  req: Request,
+  provider: string,
+  modelId: string,
+  inputs: Record<string, unknown>,
+  errors: Array<MappedError | string>,
+): Promise<void> {
+  try {
+    const url = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !serviceKey || !errors.length) return;
+
+    const userId = extractUserId(req);
+    // Redact anything that could balloon the row (e.g. base64 refs).
+    const inputSnapshot: Record<string, unknown> = {
+      prompt: typeof inputs.prompt === "string" ? String(inputs.prompt).slice(0, 2000) : undefined,
+      count: inputs.count,
+      modelId: inputs.modelId,
+      model: inputs.model,
+      size: inputs.size,
+      aspect_ratio: inputs.aspect_ratio,
+      quality: inputs.quality,
+      thinking_budget: inputs.thinking_budget,
+    };
+
+    const rows = errors.map((e) => {
+      if (typeof e === "string") {
+        return {
+          user_id: userId,
+          provider,
+          model_id: modelId || null,
+          code: "gateway_error",
+          message: e.slice(0, 500),
+          retryable: true,
+          http_status: null,
+          inputs: inputSnapshot,
+          raw: e.slice(0, 4000),
+        };
+      }
+      return {
+        user_id: userId,
+        provider,
+        model_id: modelId || null,
+        code: e.code,
+        message: (e.message ?? "").slice(0, 500),
+        retryable: !!e.retryable,
+        http_status: e.status ?? null,
+        inputs: inputSnapshot,
+        raw: e.raw ? String(e.raw).slice(0, 4000) : null,
+      };
+    });
+
+    await fetch(`${url}/rest/v1/generation_errors`, {
+      method: "POST",
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify(rows),
+    });
+  } catch (err) {
+    console.error("[frank-generate] failed to log generation errors", err);
+  }
 }
