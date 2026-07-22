@@ -3407,18 +3407,38 @@ export default function App() {
                   </div>
                 );
               })()}
-              <div className="approval-actions" data-tour-id="review-actions" data-tour-active={tourActive("review-actions")}>
-                <button type="button" onClick={() => toggleFavorite(selectedAsset)}>
+              <div className="approval-actions" data-tour-id="review-actions" data-tour-active={tourActive("review-actions")} data-status={selectedAsset.approval_status ?? "review"}>
+                <button type="button" onClick={() => toggleFavorite(selectedAsset)} className={selectedAsset.favorite ? "is-active-fav" : ""}>
                   <Heart size={15} />
                   {selectedAsset.favorite ? "Favorited" : "Favorite"}
                 </button>
-                <button type="button" onClick={() => changeAssetStatus(selectedAsset, "approved")}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    changeAssetStatus(
+                      selectedAsset,
+                      selectedAsset.approval_status === "approved" ? "review" : "approved"
+                    )
+                  }
+                  className={selectedAsset.approval_status === "approved" ? "is-active-approve" : ""}
+                  aria-pressed={selectedAsset.approval_status === "approved"}
+                >
                   <CheckCircle2 size={15} />
-                  Approve
+                  {selectedAsset.approval_status === "approved" ? "Approved" : "Approve"}
                 </button>
-                <button type="button" onClick={() => changeAssetStatus(selectedAsset, "rejected")}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    changeAssetStatus(
+                      selectedAsset,
+                      selectedAsset.approval_status === "rejected" ? "review" : "rejected"
+                    )
+                  }
+                  className={selectedAsset.approval_status === "rejected" ? "is-active-reject" : ""}
+                  aria-pressed={selectedAsset.approval_status === "rejected"}
+                >
                   <XCircle size={15} />
-                  Reject
+                  {selectedAsset.approval_status === "rejected" ? "Rejected" : "Reject"}
                 </button>
               </div>
               {selectedAssetMetadata ? (
