@@ -49,6 +49,8 @@ function Router() {
 
   if (route.isHealth) return <HealthPage />;
   if (route.isCliff) return <AuthGate><CliffAccessPage /><FeedbackWidget /></AuthGate>;
+  if (route.isAdmin)
+    return <AuthGate><AdminPortal /><FeedbackWidget /></AuthGate>;
   if (route.isAdminFeedback)
     return <AuthGate><AdminFeedbackPage /><FeedbackWidget /></AuthGate>;
   if (route.reviewSessionId)
