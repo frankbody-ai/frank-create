@@ -58,7 +58,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   return (
     <div style={styles.wrap}>
       <div style={styles.card}>
-        <h1 style={styles.title}>frank Create</h1>
+        <h1 style={styles.title}>frank create</h1>
         <p style={styles.sub}>
           Sign in with your Frank Body or Autosolutions Google account to continue.
         </p>
