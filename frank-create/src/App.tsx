@@ -3353,7 +3353,7 @@ export default function App() {
                     : undefined
               }
             >
-              {busy ? <RefreshCw className="spin" size={18} /> : <Wand2 size={18} />}
+              <Wand2 size={18} />
               {primaryActionLabel}
             </button>
             <button
