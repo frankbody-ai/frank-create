@@ -75,7 +75,12 @@ Deno.serve(async (req) => {
     }
     if (!images.length) {
       const primary = errors[0] ?? { code: "unknown", message: "Generation failed", retryable: true };
+      await logGenerationErrors(req, "replicate", modelId, body, errors);
       return json({ error: primary.message, code: primary.code, retryable: primary.retryable, details: errors }, primary.status ?? 502);
+    }
+    if (errors.length) {
+      // Partial failures still worth auditing.
+      await logGenerationErrors(req, "replicate", modelId, body, errors);
     }
     return json({ images, errors: errors.length ? errors : undefined });
   }
