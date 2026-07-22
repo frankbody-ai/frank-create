@@ -2,6 +2,8 @@ import {
   ArrowLeft,
   Box,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clipboard,
   Cpu,
   Download,
@@ -3023,6 +3025,8 @@ export default function App() {
                   onSelect={inspectAsset}
                   emptyLabel={studioMode === "approved-hot" ? "No approved picks in this round" : turnEmptyLabel(turn)}
                   selectedAssetId={selectedAsset?.id}
+                  onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
+                  onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
                 />
               </article>
               );
@@ -3291,6 +3295,24 @@ export default function App() {
                   <AssetPreviewMedia asset={selectedAsset} fallbackIconSize={30} />
                 </button>
               </div>
+              {(() => {
+                const siblings = outputAssets.filter((a) => a.turn_id === selectedAsset.turn_id);
+                if (siblings.length <= 1) return null;
+                const idx = siblings.findIndex((a) => a.id === selectedAsset.id);
+                const prev = siblings[(idx - 1 + siblings.length) % siblings.length];
+                const next = siblings[(idx + 1) % siblings.length];
+                return (
+                  <div className="review-pager" aria-label="Navigate picks in this round">
+                    <button type="button" onClick={() => inspectAsset(prev)} aria-label="Previous pick">
+                      <ChevronLeft size={16} />
+                    </button>
+                    <span>{idx + 1} / {siblings.length}</span>
+                    <button type="button" onClick={() => inspectAsset(next)} aria-label="Next pick">
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                );
+              })()}
               <div className="approval-actions" data-tour-id="review-actions" data-tour-active={tourActive("review-actions")}>
                 <button type="button" onClick={() => toggleFavorite(selectedAsset)}>
                   <Heart size={15} />
@@ -5673,12 +5695,16 @@ function OutputStrip({
   assets,
   emptyLabel = "Waiting for provider output",
   selectedAssetId,
-  onSelect
+  onSelect,
+  onQuickApprove,
+  onQuickReject
 }: {
   assets: Asset[];
   emptyLabel?: string;
   selectedAssetId?: string;
   onSelect: (asset: Asset) => void;
+  onQuickApprove?: (asset: Asset) => void;
+  onQuickReject?: (asset: Asset) => void;
 }) {
   if (!assets.length) {
     return (
@@ -5693,17 +5719,49 @@ function OutputStrip({
     <div className="output-grid">
       {assets.map((asset) => {
         const ratio = asset.width && asset.height ? `${asset.width} / ${asset.height}` : undefined;
+        const status = asset.approval_status ?? "review";
         return (
-          <button
-            className={selectedAssetId === asset.id ? "selected" : ""}
+          <div
+            className={`output-tile${selectedAssetId === asset.id ? " selected" : ""} status-${status}`}
             key={asset.id}
-            type="button"
-            onClick={() => onSelect(asset)}
             style={ratio ? ({ ["--asset-aspect" as string]: ratio } as React.CSSProperties) : undefined}
           >
-            <AssetPreviewMedia asset={asset} fallbackIconSize={24} />
-            <span>{assetStatusCopy(asset.approval_status)}</span>
-          </button>
+            <button
+              type="button"
+              className="output-tile-select"
+              onClick={() => onSelect(asset)}
+              aria-label={`Open ${asset.title}`}
+            >
+              <AssetPreviewMedia asset={asset} fallbackIconSize={24} />
+              <span>{assetStatusCopy(status)}</span>
+            </button>
+            {(onQuickApprove || onQuickReject) && asset.kind !== "reference" && asset.kind !== "mask" ? (
+              <div className="output-tile-quick" onClick={(e) => e.stopPropagation()}>
+                {onQuickApprove ? (
+                  <button
+                    type="button"
+                    className={`quick-approve${status === "approved" ? " active" : ""}`}
+                    onClick={() => onQuickApprove(asset)}
+                    aria-label="Approve pick"
+                    title="Approve"
+                  >
+                    <CheckCircle2 size={14} />
+                  </button>
+                ) : null}
+                {onQuickReject ? (
+                  <button
+                    type="button"
+                    className={`quick-reject${status === "rejected" ? " active" : ""}`}
+                    onClick={() => onQuickReject(asset)}
+                    aria-label="Reject pick"
+                    title="Reject"
+                  >
+                    <XCircle size={14} />
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         );
       })}
     </div>
