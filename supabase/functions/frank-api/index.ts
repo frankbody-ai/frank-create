@@ -232,7 +232,7 @@ async function lovableImage(
   prompt: string,
   referenceImageDataUrls: string[] = [],
   opts: { gatewayModel?: string; aspectRatio?: string; size?: string; thinkingBudget?: number } = {},
-): Promise<{ b64: string; mime: string }> {
+): Promise<{ b64?: string; url?: string; mime: string }> {
   const gatewayModel = opts.gatewayModel || "google/gemini-2.5-flash-image";
 
   if (gatewayModel.startsWith("openai/gpt-image")) {
@@ -249,6 +249,7 @@ async function lovableImage(
     if (item?.url) {
       const m = String(item.url).match(/^data:(image\/[a-z]+);base64,(.+)$/);
       if (m) return { b64: m[2], mime: m[1] };
+      return { url: String(item.url), mime: "image/png" };
     }
     throw new Error(`Lovable AI returned no image data. ${JSON.stringify(j).slice(0, 300)}`);
   }
@@ -286,6 +287,7 @@ async function lovableImage(
   if (directUrl) {
     const m = String(directUrl).match(/^data:(image\/[a-z]+);base64,(.+)$/);
     if (m) return { b64: m[2], mime: m[1] };
+    return { url: String(directUrl), mime: "image/png" };
   }
   const msg = j.choices?.[0]?.message;
   const images = msg?.images;
@@ -294,6 +296,7 @@ async function lovableImage(
     const url: string = first.image_url?.url || first.url || "";
     const m = url.match(/^data:(image\/[a-z]+);base64,(.+)$/);
     if (m) return { b64: m[2], mime: m[1] };
+    if (url) return { url, mime: "image/png" };
   }
   throw new Error(`Lovable AI returned no image data. ${JSON.stringify(j).slice(0, 300)}`);
 }
