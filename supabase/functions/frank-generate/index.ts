@@ -15,10 +15,11 @@ const MODEL_MAP: Record<string, string> = {
   "openai-gpt-image-2": "openai/gpt-image-2",
 };
 
-// Replicate model routing: studio model id -> Replicate owner/name
+// Replicate model routing: studio model id -> Replicate owner/name.
+// NOTE: microsoft/mai-image-2.5 is intentionally omitted — Microsoft has not
+// published MAI-Image on Replicate; the model tile is shown as "coming_soon".
 const REPLICATE_MAP: Record<string, string> = {
   "reve-2-1": "reve/reve-2.1",
-  "mai-image-2-5": "microsoft/mai-image-2.5",
   "seedream-5-pro": "bytedance/seedream-5-pro",
 };
 
