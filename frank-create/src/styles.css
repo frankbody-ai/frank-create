@@ -5237,10 +5237,26 @@ body {
 }
 
 .sidebar-nav-button:disabled,
-.sidebar-nav-button.disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  pointer-events: none;
+.sidebar-nav-button.disabled,
+.sidebar-nav-button.is-muted {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  background: transparent !important;
+  color: #7a7a7a !important;
+  box-shadow: none !important;
+  filter: grayscale(1);
+}
+
+.sidebar-soon-tag {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(42, 42, 42, 0.08);
+  color: #6a6a6a;
+  text-transform: uppercase;
 }
 
 .sidebar-badge {
