@@ -2,6 +2,8 @@ import {
   ArrowLeft,
   Box,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clipboard,
   Cpu,
   Download,
