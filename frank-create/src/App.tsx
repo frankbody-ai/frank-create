@@ -3162,6 +3162,15 @@ export default function App() {
                 Fix incompatible settings for {selectedModel?.short_label ?? selectedModel?.label ?? "this model"} before generating.
               </p>
             ) : null}
+            {(() => {
+              const warns = preflightModel(selectedModel, settings, { referenceCount: referenceAssets.length });
+              return warns.length ? (
+                <div className="preflight-warnings" role="status" aria-live="polite">
+                  <strong>Preflight check</strong>
+                  <ul>{warns.map((w, i) => <li key={i}>{w}</li>)}</ul>
+                </div>
+              ) : null;
+            })()}
             <div className="capability-strip">
               <span>{modelOptions.resolutionBadge}</span>
               <span>{modelOptions.canEdit ? "Edits" : "Generate only"}</span>
