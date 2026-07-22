@@ -2072,9 +2072,11 @@ export default function App() {
     } catch (error) {
       setStatusText(error instanceof Error ? error.message : "This round needs another look.");
     } finally {
+      finishInflight();
       setBusy(false);
     }
   }
+
 
   async function handleVideoGenerate() {
     if (!activeSession || !prompt.trim()) {
