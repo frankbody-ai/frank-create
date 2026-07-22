@@ -3025,6 +3025,8 @@ export default function App() {
                   onSelect={inspectAsset}
                   emptyLabel={studioMode === "approved-hot" ? "No approved picks in this round" : turnEmptyLabel(turn)}
                   selectedAssetId={selectedAsset?.id}
+                  onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
+                  onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
                 />
               </article>
               );
