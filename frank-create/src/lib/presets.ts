@@ -176,7 +176,7 @@ export const fallbackConfig: FrankConfig = {
       // Microsoft has not published MAI-Image on Replicate (or any public API) —
       // it is only available inside playground.microsoft.ai. Kept as a disabled
       // tile so it reappears automatically once a public endpoint ships.
-      status: "coming_soon",
+      status: "disabled",
       badge: "SOON",
       max_resolution_label: "—",
       description: "Not yet on Replicate — Microsoft only exposes MAI-Image via playground.microsoft.ai. Enabled the moment a public API ships.",
