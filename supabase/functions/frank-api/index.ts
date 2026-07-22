@@ -553,11 +553,46 @@ async function runReplicate(
     prediction = await poll.json();
   }
   if (prediction.status !== "succeeded") {
+    console.error("Replicate prediction non-success", {
+      slug, id: prediction?.id, status: prediction?.status, error: prediction?.error,
+    });
     const raw = typeof prediction.error === "string" ? prediction.error : JSON.stringify(prediction.error ?? prediction.status);
-    throw new Error(`Replicate failed: ${raw.slice(0, 240)}`);
+    if (typeof prediction.error === "string" && /content|policy|safety|nsfw/i.test(prediction.error)) {
+      throw new Error(`Replicate blocked by content policy: ${raw.slice(0, 200)}`);
+    }
+    throw new Error(`Replicate ${prediction.status}: ${raw.slice(0, 240)}`);
   }
   const output = prediction.output;
-  return Array.isArray(output) ? output[0] : typeof output === "string" ? output : undefined;
+  const extracted = extractReplicateUrl(output);
+  if (!extracted) {
+    console.error("Replicate empty output", {
+      slug, id: prediction?.id, status: prediction?.status,
+      output_type: typeof output, output_sample: JSON.stringify(output ?? null).slice(0, 300),
+    });
+    throw new Error(`Replicate returned no image URL (output=${JSON.stringify(output ?? null).slice(0, 160)})`);
+  }
+  return extracted;
+}
+
+function extractReplicateUrl(output: unknown): string | undefined {
+  if (!output) return undefined;
+  if (typeof output === "string") return output;
+  if (Array.isArray(output)) {
+    for (const item of output) {
+      const u = extractReplicateUrl(item);
+      if (u) return u;
+    }
+    return undefined;
+  }
+  if (typeof output === "object") {
+    const rec = output as Record<string, unknown>;
+    for (const key of ["image", "url", "output", "image_url"]) {
+      const v = rec[key];
+      if (typeof v === "string" && v) return v;
+    }
+    if (Array.isArray(rec.images)) return extractReplicateUrl(rec.images);
+  }
+  return undefined;
 }
 
 function buildReplicateInput(
