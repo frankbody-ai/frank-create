@@ -3918,7 +3918,9 @@ export default function App() {
               <button
                 className="mini-button provider-check-button"
                 type="button"
-                onClick={() => openStudioLink(config.advancedGraphUrl, "Raw Comfy canvas")}
+                disabled
+                title="ComfyUI integration is disabled"
+                style={{ opacity: 0.4, cursor: "not-allowed" }}
               >
                 <ExternalLink size={14} />
                 Raw Comfy
