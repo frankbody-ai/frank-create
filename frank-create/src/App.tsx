@@ -182,7 +182,7 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
       "Image Studio is the active lab. Product Shot Lab and Video Lab are on the roadmap.",
       "Your profile and sign-out live at the bottom of the sidebar."
     ],
-    target: "session-controls"
+    target: "app-header"
   },
   {
     title: "Feedback, any time",
