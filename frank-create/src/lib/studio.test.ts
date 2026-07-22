@@ -131,4 +131,35 @@ describe("studio helpers", () => {
       })
     ).toBe("Comfy was unavailable, so the fallback renderer made this round.");
   });
+
+  it("flags size for models that pick resolution from aspect (Reve)", () => {
+    const reve = fallbackConfig.models.find((m) => m.id === "reve-2-1")!;
+    const errors = validateStudioSettings(reve, { aspect_ratio: "1:1", image_size: "1K", count: 1 });
+    expect(errors.size).toMatch(/leave size empty/i);
+    expect(hasStudioFieldErrors(errors)).toBe(true);
+  });
+
+  it("flags unsupported size for Seedream (no 4K)", () => {
+    const seedream = fallbackConfig.models.find((m) => m.id === "seedream-5-pro")!;
+    const errors = validateStudioSettings(seedream, { aspect_ratio: "1:1", image_size: "4K", count: 1 });
+    expect(errors.size).toMatch(/Unsupported/);
+  });
+
+  it("flags unsupported aspect for Nano Banana 2", () => {
+    const nb2 = fallbackConfig.models.find((m) => m.id === "google-nb-2")!;
+    const errors = validateStudioSettings(nb2, { aspect_ratio: "21:9", image_size: "2K", count: 2 });
+    expect(errors.aspect).toBeTruthy();
+  });
+
+  it("passes validation on a valid Seedream combo", () => {
+    const seedream = fallbackConfig.models.find((m) => m.id === "seedream-5-pro")!;
+    const errors = validateStudioSettings(seedream, { aspect_ratio: "16:9", image_size: "2K", count: 2 });
+    expect(hasStudioFieldErrors(errors)).toBe(false);
+  });
+
+  it("flags too many reference images", () => {
+    const reve = fallbackConfig.models.find((m) => m.id === "reve-2-1")!;
+    const errors = validateStudioSettings(reve, { aspect_ratio: "1:1", image_size: "", count: 1 }, { referenceCount: 20 });
+    expect(errors.references).toMatch(/at most 8/);
+  });
 });
