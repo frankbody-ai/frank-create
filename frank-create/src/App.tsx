@@ -4789,6 +4789,58 @@ export default function App() {
                 <Download size={16} />
                 Save
               </button>
+              {lightboxAsset.approval_status === "approved" ? (
+                <button
+                  type="button"
+                  className="lightbox-approve is-approved"
+                  onClick={() => {
+                    void changeAssetStatus(lightboxAsset, "review");
+                    setLightboxAsset({ ...lightboxAsset, approval_status: "review" });
+                  }}
+                  title="Approved — click to undo"
+                >
+                  <CheckCircle2 size={16} />
+                  Approved
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="lightbox-approve"
+                  onClick={() => {
+                    void changeAssetStatus(lightboxAsset, "approved");
+                    setLightboxAsset({ ...lightboxAsset, approval_status: "approved" });
+                  }}
+                >
+                  <CheckCircle2 size={16} />
+                  Approve
+                </button>
+              )}
+              {lightboxAsset.approval_status !== "rejected" ? (
+                <button
+                  type="button"
+                  className="lightbox-reject"
+                  onClick={() => {
+                    void changeAssetStatus(lightboxAsset, "rejected");
+                    setLightboxAsset({ ...lightboxAsset, approval_status: "rejected" });
+                  }}
+                >
+                  <XCircle size={16} />
+                  Reject
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="lightbox-reject is-rejected"
+                  onClick={() => {
+                    void changeAssetStatus(lightboxAsset, "review");
+                    setLightboxAsset({ ...lightboxAsset, approval_status: "review" });
+                  }}
+                  title="Rejected — click to undo"
+                >
+                  <XCircle size={16} />
+                  Rejected
+                </button>
+              )}
             </div>
           </div>
         </div>
