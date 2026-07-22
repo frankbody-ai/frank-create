@@ -8,6 +8,8 @@ import { ErrorToast } from "./components/ErrorToast";
 import { HealthPage } from "./components/HealthPage";
 import { ReviewBoardPage } from "./components/ReviewBoardPage";
 import { CliffAccessPage } from "./components/CliffAccessPage";
+import { AdminFeedbackPage } from "./components/AdminFeedbackPage";
+import { FeedbackWidget } from "./components/FeedbackWidget";
 import { installErrorReporter } from "./lib/errorReporter";
 import "./styles.css";
 
@@ -18,9 +20,15 @@ function resolveRoute() {
   const hashPath = window.location.hash.replace(/^#/, "").replace(/\/$/, "");
   const isHealth = hashPath === "/health" || pathname === "/health";
   const isCliff = hashPath === "/cliff-access" || pathname === "/cliff-access";
+  const isAdminFeedback = hashPath === "/admin/feedback" || pathname === "/admin/feedback";
   const reviewMatch =
     hashPath.match(/^\/review\/([^/]+)$/) ?? pathname.match(/^\/review\/([^/]+)$/);
-  return { isHealth, isCliff, reviewSessionId: reviewMatch ? decodeURIComponent(reviewMatch[1]) : null };
+  return {
+    isHealth,
+    isCliff,
+    isAdminFeedback,
+    reviewSessionId: reviewMatch ? decodeURIComponent(reviewMatch[1]) : null,
+  };
 }
 
 function Router() {
@@ -36,10 +44,17 @@ function Router() {
   }, []);
 
   if (route.isHealth) return <HealthPage />;
-  if (route.isCliff) return <AuthGate><CliffAccessPage /></AuthGate>;
+  if (route.isCliff) return <AuthGate><CliffAccessPage /><FeedbackWidget /></AuthGate>;
+  if (route.isAdminFeedback)
+    return <AuthGate><AdminFeedbackPage /><FeedbackWidget /></AuthGate>;
   if (route.reviewSessionId)
-    return <AuthGate><ReviewBoardPage sessionId={route.reviewSessionId} /></AuthGate>;
-  return <AuthGate><App /></AuthGate>;
+    return (
+      <AuthGate>
+        <ReviewBoardPage sessionId={route.reviewSessionId} />
+        <FeedbackWidget />
+      </AuthGate>
+    );
+  return <AuthGate><App /><FeedbackWidget /></AuthGate>;
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
