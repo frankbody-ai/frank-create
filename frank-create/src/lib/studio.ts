@@ -79,6 +79,15 @@ export function aspectRatioValue(aspect: string): number | null {
   return w / h;
 }
 
+export function aspectRatioParts(aspect: string): { width: number; height: number } | null {
+  const match = /^(\d+(?:\.\d+)?)[:x](\d+(?:\.\d+)?)$/i.exec(aspect.trim());
+  if (!match) return null;
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  if (!width || !height) return null;
+  return { width, height };
+}
+
 export function sizeMatchesAspect(size: string, aspect: string): boolean {
   // Only filter when size encodes explicit pixel dimensions like "1024x1536".
   const sizeRatio = aspectRatioValue(size);

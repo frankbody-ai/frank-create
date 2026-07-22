@@ -192,12 +192,17 @@ async function lovableChat(messages: any[]) {
 }
 
 const MODEL_MAP: Record<string, string> = {
-  "nano-banana-pro": "google/gemini-3-pro-image-preview",
-  "google-nb-pro": "google/gemini-3-pro-image-preview",
-  "nano-banana-2": "google/gemini-3.1-flash-image-preview",
-  "google-nb-2": "google/gemini-3.1-flash-image-preview",
-  "frank-local-comfy": "google/gemini-2.5-flash-image-preview",
+  "nano-banana-pro": "google/gemini-3-pro-image",
+  "google-nb-pro": "google/gemini-3-pro-image",
+  "nano-banana-2": "google/gemini-3.1-flash-image",
+  "google-nb-2": "google/gemini-3.1-flash-image",
+  "frank-local-comfy": "google/gemini-2.5-flash-image",
   "openai-gpt-image-2": "openai/gpt-image-2",
+};
+
+const REPLICATE_MAP: Record<string, string> = {
+  "reve-2-1": "reve/reve-2.1",
+  "seedream-5-pro": "bytedance/seedream-5-pro",
 };
 
 const OPENAI_SIZES = new Set(["1024x1024", "1536x1024", "1024x1536", "auto"]);
@@ -227,8 +232,8 @@ async function lovableImage(
   prompt: string,
   referenceImageDataUrls: string[] = [],
   opts: { gatewayModel?: string; aspectRatio?: string; size?: string; thinkingBudget?: number } = {},
-): Promise<{ b64: string; mime: string }> {
-  const gatewayModel = opts.gatewayModel || "google/gemini-2.5-flash-image-preview";
+): Promise<{ b64?: string; url?: string; mime: string }> {
+  const gatewayModel = opts.gatewayModel || "google/gemini-2.5-flash-image";
 
   if (gatewayModel.startsWith("openai/gpt-image")) {
     const size = opts.size && OPENAI_SIZES.has(opts.size) ? opts.size : openaiSizeFromAspect(opts.aspectRatio);
@@ -244,14 +249,17 @@ async function lovableImage(
     if (item?.url) {
       const m = String(item.url).match(/^data:(image\/[a-z]+);base64,(.+)$/);
       if (m) return { b64: m[2], mime: m[1] };
+      return { url: String(item.url), mime: "image/png" };
     }
     throw new Error(`Lovable AI returned no image data. ${JSON.stringify(j).slice(0, 300)}`);
   }
 
   const hints: string[] = [];
-  if (opts.aspectRatio) hints.push(`Aspect ratio: ${opts.aspectRatio}.`);
+  if (opts.aspectRatio && opts.aspectRatio !== "auto") {
+    hints.push(`The final image canvas must be exactly ${opts.aspectRatio} aspect ratio. Do not use a square canvas unless ${opts.aspectRatio} is 1:1.`);
+  }
   if (opts.size && ["1K", "2K", "4K"].includes(opts.size)) hints.push(`Output resolution: ${opts.size}.`);
-  const fullText = hints.length ? `${prompt}\n\n${hints.join(" ")}` : prompt;
+  const fullText = hints.length ? `${prompt}\n\nOutput constraints: ${hints.join(" ")}` : prompt;
 
   const content: any[] = [{ type: "text", text: fullText }];
   for (const url of referenceImageDataUrls) {
@@ -259,20 +267,28 @@ async function lovableImage(
   }
   const payload: Record<string, unknown> = {
     model: gatewayModel,
-    messages: [{ role: "user", content }],
+    messages: [{ role: "user", content: content.length === 1 ? fullText : content }],
     modalities: ["image", "text"],
   };
   const budget = Number(opts.thinkingBudget ?? 0);
   if (budget > 0 && gatewayModel.includes("gemini-3-pro")) {
     payload.reasoning = { effort: budget >= 5000 ? "high" : "low" };
   }
-  const r = await fetch(`${LOVABLE_BASE}/chat/completions`, {
+  const r = await fetch(`${LOVABLE_BASE}/images/generations`, {
     method: "POST",
     headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
   if (!r.ok) throw new Error(`Lovable image ${r.status}: ${await r.text()}`);
   const j: any = await r.json();
+  const item = j?.data?.[0];
+  if (item?.b64_json) return { b64: item.b64_json, mime: "image/png" };
+  const directUrl = item?.url;
+  if (directUrl) {
+    const m = String(directUrl).match(/^data:(image\/[a-z]+);base64,(.+)$/);
+    if (m) return { b64: m[2], mime: m[1] };
+    return { url: String(directUrl), mime: "image/png" };
+  }
   const msg = j.choices?.[0]?.message;
   const images = msg?.images;
   if (Array.isArray(images) && images.length) {
@@ -280,7 +296,7 @@ async function lovableImage(
     const url: string = first.image_url?.url || first.url || "";
     const m = url.match(/^data:(image\/[a-z]+);base64,(.+)$/);
     if (m) return { b64: m[2], mime: m[1] };
-    if (url) return { b64: url, mime: "image/png" };
+    if (url) return { url, mime: "image/png" };
   }
   throw new Error(`Lovable AI returned no image data. ${JSON.stringify(j).slice(0, 300)}`);
 }
@@ -330,6 +346,16 @@ function base64Decode(b64: string): Uint8Array {
   return bytes;
 }
 
+function requestedDimensions(aspectRatio?: string, size?: string): { width: number; height: number } | null {
+  const sizeMatch = String(size || "").match(/^(\d+)\s*[x×]\s*(\d+)$/i);
+  if (sizeMatch) {
+    return { width: Number(sizeMatch[1]), height: Number(sizeMatch[2]) };
+  }
+  const ratioMatch = String(aspectRatio || "").match(/^(\d+(?:\.\d+)?)\s*[:x/]\s*(\d+(?:\.\d+)?)$/i);
+  if (!ratioMatch) return null;
+  return { width: Number(ratioMatch[1]), height: Number(ratioMatch[2]) };
+}
+
 async function handleInference(body: any, userId: string) {
   const sb = supabase();
   let sessionId: string = body.session_id;
@@ -340,7 +366,7 @@ async function handleInference(body: any, userId: string) {
 
   const turnId = crypto.randomUUID();
   const modelId: string = body.model || "nano-banana-pro";
-  const gatewayModel = MODEL_MAP[modelId] || "google/gemini-2.5-flash-image-preview";
+  const gatewayModel = MODEL_MAP[modelId] || "google/gemini-2.5-flash-image";
   const reqSettings: any = body.settings || {};
   const settingsSnapshot: any = {
     kind: body.kind || "generate",
@@ -364,19 +390,37 @@ async function handleInference(body: any, userId: string) {
   if (msgIns.error) throw msgIns.error;
   const nextSeq = (msgIns.data as any)?.seq ?? 0;
 
-  let img;
+  const count = Math.min(Math.max(Number(reqSettings.count ?? body.count ?? 1) || 1, 1), 4);
+  const generatedImages: Array<{ b64?: string; url?: string; mime: string }> = [];
   try {
     const refIds: string[] = [
       ...(body.edit_source_asset_id ? [body.edit_source_asset_id] : []),
       ...((body.reference_asset_ids as string[]) || []),
     ];
     const refUrls = await loadReferenceDataUrls(refIds, userId);
-    img = await lovableImage(prompt, refUrls, {
-      gatewayModel,
-      aspectRatio: reqSettings.aspect_ratio,
-      size: reqSettings.image_size || reqSettings.size,
-      thinkingBudget: Number(reqSettings.thinking_budget ?? body.thinking_budget ?? 0),
-    });
+    const replicateSlug = REPLICATE_MAP[modelId];
+    if (replicateSlug) {
+      const replicateKey = Deno.env.get("REPLICATE_API_KEY");
+      if (!replicateKey) throw new Error("Replicate is not connected for this model yet.");
+      for (let i = 0; i < count; i++) {
+        const url = await runReplicate(replicateSlug, prompt, {
+          aspect_ratio: reqSettings.aspect_ratio,
+          size: reqSettings.image_size || reqSettings.size,
+          reference_images: refUrls,
+        }, replicateKey);
+        if (!url) throw new Error("Replicate returned no image URL.");
+        generatedImages.push({ url, mime: "image/png" });
+      }
+    } else {
+      for (let i = 0; i < count; i++) {
+        generatedImages.push(await lovableImage(prompt, refUrls, {
+          gatewayModel,
+          aspectRatio: reqSettings.aspect_ratio,
+          size: reqSettings.image_size || reqSettings.size,
+          thinkingBudget: Number(reqSettings.thinking_budget ?? body.thinking_budget ?? 0),
+        }));
+      }
+    }
   } catch (err) {
     const msg = errMessage(err);
     await sb.from("messages").update({
@@ -394,42 +438,55 @@ async function handleInference(body: any, userId: string) {
     };
   }
 
-  const assetId = crypto.randomUUID();
-  const ext = img.mime.split("/")[1] || "png";
-  const storagePath = `${sessionId}/${assetId}.${ext}`;
-  const bytes = base64Decode(img.b64);
-  const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, {
-    contentType: img.mime, upsert: false,
-  });
-  if (up.error) throw up.error;
+  const requested = requestedDimensions(reqSettings.aspect_ratio, reqSettings.image_size || reqSettings.size);
+  const insertedAssets: any[] = [];
+  for (const img of generatedImages) {
+    const assetId = crypto.randomUUID();
+    const imageBytes = await imageBytesForUpload(img);
+    const bytes = imageBytes.bytes;
+    const mime = imageBytes.mime;
+    const ext = mime.split("/")[1] || "png";
+    const storagePath = `${sessionId}/${assetId}.${ext}`;
+    const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, {
+      contentType: mime, upsert: false,
+    });
+    if (up.error) throw up.error;
 
-  const assetIns = await sb.from("assets").insert({
-    id: assetId,
-    user_id: userId,
-    session_id: sessionId,
-    message_id: turnId,
-    storage_path: storagePath,
-    asset_type: "generated",
-    prompt_snapshot: prompt,
-    model_key: modelId,
-    metadata_json: {
-      media_type: "image",
-      mime: img.mime,
-      title: prompt.slice(0, 80) || "Generated image",
-    },
-  }).select().single();
-  if (assetIns.error) throw assetIns.error;
+    const assetIns = await sb.from("assets").insert({
+      id: assetId,
+      user_id: userId,
+      session_id: sessionId,
+      message_id: turnId,
+      storage_path: storagePath,
+      asset_type: "generated",
+      prompt_snapshot: prompt,
+      model_key: modelId,
+      metadata_json: {
+        media_type: "image",
+        mime,
+        title: prompt.slice(0, 80) || "Generated image",
+        aspect_ratio: reqSettings.aspect_ratio,
+        requested_size: reqSettings.image_size || reqSettings.size || null,
+        width: requested?.width,
+        height: requested?.height,
+      },
+    }).select().single();
+    if (assetIns.error) throw assetIns.error;
+    insertedAssets.push(assetIns.data);
+  }
+
+  const assetIds = insertedAssets.map((asset) => asset.id);
 
   const completedSnapshot = {
     ...settingsSnapshot,
     status: "complete",
-    output_asset_ids: [assetId],
+    output_asset_ids: assetIds,
   };
   await sb.from("messages").update({
     settings_snapshot_json: completedSnapshot,
   }).eq("id", turnId);
 
-  const url = await signed(storagePath);
+  const assets = await Promise.all(insertedAssets.map(async (asset) => rowToAsset(asset, await signed(asset.storage_path))));
   return {
     turn: rowToTurn({
       id: turnId, session_id: sessionId, role: "user",
@@ -438,10 +495,96 @@ async function handleInference(body: any, userId: string) {
       seq: nextSeq, created_at: nowIso(),
     }),
     status: "complete" as const,
-    assets: [rowToAsset(assetIns.data, url)],
+    assets,
     providerPayload: { provider: "lovable", model: gatewayModel },
     localEngine: "cloud" as const,
   };
+}
+
+async function imageBytesForUpload(img: { b64?: string; url?: string; mime: string }): Promise<{ bytes: Uint8Array; mime: string }> {
+  if (img.b64) {
+    return { bytes: base64Decode(img.b64), mime: img.mime || "image/png" };
+  }
+  const url = img.url || "";
+  const dataMatch = url.match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);
+  if (dataMatch) {
+    return { bytes: base64Decode(dataMatch[2]), mime: dataMatch[1] };
+  }
+  if (!url) throw new Error("Provider returned an empty image URL.");
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Could not download generated image (${res.status}).`);
+  const mime = (res.headers.get("content-type") || img.mime || "image/png").split(";")[0];
+  return { bytes: new Uint8Array(await res.arrayBuffer()), mime };
+}
+
+async function runReplicate(
+  slug: string,
+  prompt: string,
+  body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
+  key: string,
+): Promise<string | undefined> {
+  const input = buildReplicateInput(slug, prompt, body);
+  const createRes = await fetch(`https://api.replicate.com/v1/models/${slug}/predictions`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${key}`,
+      "Content-Type": "application/json",
+      "Prefer": "wait=60",
+    },
+    body: JSON.stringify({ input }),
+  });
+  if (!createRes.ok) {
+    const text = await createRes.text();
+    throw new Error(`Replicate ${createRes.status}: ${text.slice(0, 300)}`);
+  }
+  let prediction: any = await createRes.json();
+  const started = Date.now();
+  while (!["succeeded", "failed", "canceled"].includes(prediction.status)) {
+    if (Date.now() - started > 180_000) throw new Error("Replicate timed out after 3 minutes.");
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const pollUrl = prediction?.urls?.get;
+    if (!pollUrl) throw new Error("Replicate did not return a poll URL.");
+    const poll = await fetch(pollUrl, { headers: { "Authorization": `Bearer ${key}` } });
+    if (!poll.ok) throw new Error(`Replicate poll failed (${poll.status}).`);
+    prediction = await poll.json();
+  }
+  if (prediction.status !== "succeeded") {
+    const raw = typeof prediction.error === "string" ? prediction.error : JSON.stringify(prediction.error ?? prediction.status);
+    throw new Error(`Replicate failed: ${raw.slice(0, 240)}`);
+  }
+  const output = prediction.output;
+  return Array.isArray(output) ? output[0] : typeof output === "string" ? output : undefined;
+}
+
+function buildReplicateInput(
+  slug: string,
+  prompt: string,
+  body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
+): Record<string, unknown> {
+  const refs = Array.isArray(body.reference_images) ? body.reference_images.filter(Boolean) : [];
+  if (slug === "reve/reve-2.1") {
+    const allowed = new Set([
+      "auto", "1:1", "4:3", "3:4", "3:2", "2:3", "16:9", "9:16",
+      "5:4", "4:5", "21:9", "17:9", "2:1", "1:2", "3:1", "1:3", "4:1", "1:4",
+    ]);
+    const aspect = body.aspect_ratio && allowed.has(body.aspect_ratio) ? body.aspect_ratio : "auto";
+    const input: Record<string, unknown> = { prompt, aspect_ratio: aspect };
+    if (refs.length) input.reference_images = refs.slice(0, 8);
+    return input;
+  }
+  if (slug === "bytedance/seedream-5-pro") {
+    const allowed = new Set(["match_input_image", "1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3", "21:9"]);
+    const aspect = body.aspect_ratio && allowed.has(body.aspect_ratio) ? body.aspect_ratio : refs.length ? "match_input_image" : "1:1";
+    const input: Record<string, unknown> = {
+      prompt,
+      size: body.size === "2K" ? "2K" : "1K",
+      aspect_ratio: aspect,
+      output_format: "png",
+    };
+    if (refs.length) input.image_input = refs.slice(0, 10);
+    return input;
+  }
+  return { prompt };
 }
 
 async function handleRemix(body: any) {

@@ -95,6 +95,7 @@ import { supabase, hardSignOut } from "./lib/supabaseClient";
 import { assetStatusCopy, createBriefPayload, makeStoredImagePath, makeViewUrl } from "./lib/frankWorkflow";
 import {
   buildTurnRequest,
+  aspectRatioParts,
   defaultStudioSettings,
   filterSizesForAspect,
   inferenceStatusCopy,
@@ -1892,6 +1893,7 @@ export default function App() {
 
         const nowIso = new Date().toISOString();
         const turnId = makeLocalId("turn");
+        const requestedAspect = aspectRatioParts(settings.aspect_ratio);
         const newAssets: Asset[] = images.map((dataUrl, idx) => ({
           id: makeLocalId("asset"),
           session_id: activeSession.id,
@@ -1904,6 +1906,8 @@ export default function App() {
           prompt: request.prompt,
           settings_json: JSON.stringify(settings),
           preview_url: dataUrl,
+          width: requestedAspect?.width,
+          height: requestedAspect?.height,
           favorite: false,
           approval_status: "review",
           sync_status: "local",

@@ -228,8 +228,8 @@ def _run_google_turn(store, turn, payload, model, provider_payload):
 LOVABLE_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions"
 
 LOVABLE_GATEWAY_MODEL_MAP = {
-    "gemini-3-pro-image": "google/gemini-3-pro-image-preview",
-    "gemini-3.1-flash-image": "google/gemini-3.1-flash-image-preview",
+    "gemini-3-pro-image": "google/gemini-3-pro-image",
+    "gemini-3.1-flash-image": "google/gemini-3.1-flash-image",
     "gemini-2.5-flash-image": "google/gemini-2.5-flash-image",
 }
 
@@ -254,6 +254,20 @@ def _run_google_turn_via_lovable_gateway(store, turn, payload, model, provider_p
         model.get("provider_model"), f"google/{model.get('provider_model')}"
     )
 
+    output_hints = []
+    aspect_ratio = settings.get("aspect_ratio")
+    if aspect_ratio and aspect_ratio != "auto":
+        output_hints.append(
+            f"The final image canvas must be exactly {aspect_ratio} aspect ratio. "
+            f"Do not use a square canvas unless {aspect_ratio} is 1:1."
+        )
+    image_size = settings.get("image_size")
+    if image_size in {"1K", "2K", "4K"}:
+        output_hints.append(f"Output resolution: {image_size}.")
+    final_prompt = provider_payload["prompt"]
+    if output_hints:
+        final_prompt = f"{final_prompt}\n\nOutput constraints: {' '.join(output_hints)}"
+
     user_content = []
     for path in image_paths:
         inline = _inline_data(path)
@@ -261,7 +275,7 @@ def _run_google_turn_via_lovable_gateway(store, turn, payload, model, provider_p
             "type": "image_url",
             "image_url": {"url": f"data:{inline['mimeType']};base64,{inline['data']}"},
         })
-    user_content.append({"type": "text", "text": provider_payload["prompt"]})
+    user_content.append({"type": "text", "text": final_prompt})
 
     body = {
         "model": gateway_model,
