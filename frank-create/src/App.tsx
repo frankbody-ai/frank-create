@@ -3008,7 +3008,7 @@ export default function App() {
               Brief in plain English. References and settings are optional. Click a pick to edit, approve, or export.
             </p>
           </div>
-          <div className="studio-topbar-right">
+          <div className="studio-topbar-right" data-tour-id="feedback-button" data-tour-active={tourActive("feedback-button")}>
             <FeedbackWidget variant="inline" />
             <div className="stat-row" aria-label="Studio stats">
               <span>{turns.length} rounds</span>
