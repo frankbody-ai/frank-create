@@ -6096,3 +6096,81 @@ input[aria-invalid="true"] {
   cursor: pointer;
 }
 .gen-stop-btn:hover { background: rgba(220,38,38,0.22); color: #fff; }
+
+/* Review pager (sibling asset navigation) */
+.review-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 8px 0 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.review-pager button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: #fff;
+  cursor: pointer;
+  padding: 0;
+}
+.review-pager button:hover { background: #f4f4f5; }
+
+/* Output tile wrapper + quick approve/reject */
+.output-grid .output-tile {
+  position: relative;
+  aspect-ratio: var(--asset-aspect, 1 / 1);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #111;
+  border: 2px solid transparent;
+}
+.output-grid .output-tile.selected { border-color: var(--accent, #ff6b81); }
+.output-grid .output-tile.status-approved { outline: 2px solid rgba(34,197,94,0.6); outline-offset: -2px; }
+.output-grid .output-tile.status-rejected { opacity: 0.55; }
+.output-grid .output-tile-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.output-grid .output-tile-quick {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.output-grid .output-tile:hover .output-tile-quick,
+.output-grid .output-tile-quick:focus-within { opacity: 1; }
+.output-grid .output-tile-quick button {
+  aspect-ratio: auto;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.92);
+  color: #111;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.output-grid .output-tile-quick button:hover { background: #fff; }
+.output-grid .output-tile-quick .quick-approve.active { background: rgb(34,197,94); color: #fff; border-color: rgb(21,128,61); }
+.output-grid .output-tile-quick .quick-reject.active { background: rgb(220,38,38); color: #fff; border-color: rgb(153,27,27); }
