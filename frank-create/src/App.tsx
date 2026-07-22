@@ -1853,7 +1853,7 @@ export default function App() {
           // supabase-js v2 forwards this AbortSignal to the underlying fetch.
           // Aborting closes the connection so the edge function's req.signal
           // fires and cancels the in-flight Replicate prediction.
-          // @ts-expect-error signal option is supported at runtime.
+          // signal option is supported at runtime by supabase-js v2.
           signal: ctrl.signal,
         });
         if (error) throw error;
