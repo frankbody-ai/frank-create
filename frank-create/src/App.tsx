@@ -110,6 +110,7 @@ import {
   hasStudioFieldErrors,
   preflightModel
 } from "./lib/studio";
+import { FeedbackWidget } from "./components/FeedbackWidget";
 
 import type {
   ActivationChecklist,
