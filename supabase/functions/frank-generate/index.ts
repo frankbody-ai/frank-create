@@ -198,31 +198,117 @@ async function runReplicate(
     },
   );
 
-  if (createRes.status === 402) throw new Error("Replicate account has no credit");
+  if (createRes.status === 402) {
+    throw new ReplicateError("Replicate account has no credit. Enable billing at replicate.com/account/billing.", { code: "quota_exhausted", status: 402, retryable: false });
+  }
+  if (createRes.status === 401 || createRes.status === 403) {
+    throw new ReplicateError("Replicate rejected the API key. Reconnect the Replicate integration.", { code: "auth_failed", status: createRes.status, retryable: false });
+  }
+  if (createRes.status === 422) {
+    const t = await createRes.text();
+    throw new ReplicateError(`Invalid parameters for ${slug}: ${extractProviderMessage(t)}`, { code: "invalid_params", status: 422, retryable: false, raw: t });
+  }
+  if (createRes.status === 429) {
+    throw new ReplicateError("Replicate rate limit hit. Wait a moment and try again.", { code: "rate_limited", status: 429, retryable: true });
+  }
+  if (createRes.status >= 500) {
+    const t = await createRes.text();
+    throw new ReplicateError(`Replicate is having trouble (${createRes.status}). Retry shortly.`, { code: "provider_unavailable", status: createRes.status, retryable: true, raw: t });
+  }
   if (!createRes.ok) {
     const t = await createRes.text();
-    throw new Error(`replicate ${createRes.status}: ${t.slice(0, 300)}`);
+    throw new ReplicateError(`Replicate error ${createRes.status}: ${extractProviderMessage(t)}`, { code: "provider_error", status: createRes.status, retryable: false, raw: t });
   }
 
   let pred = await createRes.json();
   const started = Date.now();
   while (pred.status !== "succeeded" && pred.status !== "failed" && pred.status !== "canceled") {
-    if (Date.now() - started > 180_000) throw new Error("replicate timeout");
+    if (Date.now() - started > 180_000) {
+      throw new ReplicateError("Replicate timed out after 3 minutes.", { code: "timeout", retryable: true });
+    }
     await new Promise((r) => setTimeout(r, 2000));
     const pollUrl = pred?.urls?.get;
-    if (!pollUrl) throw new Error("replicate: missing poll url");
+    if (!pollUrl) throw new ReplicateError("Replicate did not return a poll URL.", { code: "provider_error", retryable: true });
     const r = await fetch(pollUrl, { headers: { "Authorization": `Bearer ${key}` } });
-    if (!r.ok) throw new Error(`replicate poll ${r.status}`);
+    if (!r.ok) throw new ReplicateError(`Replicate poll failed (${r.status}).`, { code: "provider_error", status: r.status, retryable: true });
     pred = await r.json();
   }
 
+  if (pred.status === "canceled") {
+    throw new ReplicateError("Replicate prediction was canceled.", { code: "canceled", retryable: true });
+  }
   if (pred.status !== "succeeded") {
-    throw new Error(`replicate ${pred.status}: ${pred.error ?? "unknown"}`);
+    const rawErr = typeof pred.error === "string" ? pred.error : JSON.stringify(pred.error ?? "unknown");
+    const classified = classifyModelError(rawErr);
+    throw new ReplicateError(classified.message, { code: classified.code, retryable: classified.retryable, raw: rawErr });
   }
 
   const out = pred.output;
   const url: string | undefined = Array.isArray(out) ? out[0] : typeof out === "string" ? out : undefined;
   return url;
+}
+
+type MappedError = { code: string; message: string; retryable: boolean; status?: number; raw?: string };
+
+class ReplicateError extends Error {
+  code: string;
+  status?: number;
+  retryable: boolean;
+  raw?: string;
+  constructor(message: string, opts: { code: string; status?: number; retryable: boolean; raw?: string }) {
+    super(message);
+    this.code = opts.code;
+    this.status = opts.status;
+    this.retryable = opts.retryable;
+    this.raw = opts.raw;
+  }
+}
+
+function mapReplicateError(err: unknown): MappedError {
+  if (err instanceof ReplicateError) {
+    return { code: err.code, message: err.message, retryable: err.retryable, status: err.status, raw: err.raw };
+  }
+  const message = err instanceof Error ? err.message : String(err);
+  // Network / fetch failures
+  if (/fetch failed|ECONN|ENOTFOUND|network|timeout/i.test(message)) {
+    return { code: "network_error", message: "Network error reaching Replicate. Retry in a moment.", retryable: true };
+  }
+  return { code: "unknown", message, retryable: true };
+}
+
+// Try to pull a readable message out of a Replicate JSON error body.
+function extractProviderMessage(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.detail === "string") return parsed.detail;
+    if (typeof parsed?.title === "string") return parsed.title;
+    if (Array.isArray(parsed?.detail)) return parsed.detail.map((d: { msg?: string }) => d.msg ?? "").filter(Boolean).join("; ");
+    return raw.slice(0, 240);
+  } catch {
+    return raw.slice(0, 240);
+  }
+}
+
+// Classify a model runtime error (NSFW filter, OOM, bad input, etc.) from the
+// prediction's `error` field text.
+function classifyModelError(raw: string): { code: string; message: string; retryable: boolean } {
+  const t = raw.toLowerCase();
+  if (t.includes("nsfw") || t.includes("safety") || t.includes("content policy") || t.includes("flagged")) {
+    return { code: "content_filtered", message: "The provider blocked this prompt for safety/policy reasons. Rewrite and try again.", retryable: false };
+  }
+  if (t.includes("cuda") || t.includes("out of memory") || t.includes("oom")) {
+    return { code: "provider_capacity", message: "Model ran out of GPU memory. Try a smaller size or retry later.", retryable: true };
+  }
+  if (t.includes("invalid") || t.includes("must be") || t.includes("expected") || t.includes("required")) {
+    return { code: "invalid_params", message: `Model rejected input parameters: ${raw.slice(0, 200)}`, retryable: false };
+  }
+  if (t.includes("timeout") || t.includes("timed out")) {
+    return { code: "timeout", message: "Model timed out. Retry shortly.", retryable: true };
+  }
+  if (t.includes("rate") && t.includes("limit")) {
+    return { code: "rate_limited", message: "Rate limit hit. Wait and retry.", retryable: true };
+  }
+  return { code: "model_error", message: `Model failed: ${raw.slice(0, 200)}`, retryable: true };
 }
 
 // Per-slug input builders that match each model's published schema exactly.
