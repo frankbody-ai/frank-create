@@ -437,6 +437,7 @@ async function handleInference(body: any, userId: string) {
         error_retryable: mapped.retryable,
         error_status: mapped.status ?? null,
         error_raw: mapped.raw ?? null,
+        error_request_id: mapped.requestId ?? null,
       },
     }).eq("id", turnId);
     return {
@@ -451,11 +452,12 @@ async function handleInference(body: any, userId: string) {
           error_retryable: mapped.retryable,
           error_status: mapped.status ?? null,
           error_raw: mapped.raw ?? null,
+          error_request_id: mapped.requestId ?? null,
         },
         seq: nextSeq, created_at: nowIso(),
       }),
       status: "failed" as const,
-      error: { code: mapped.code, message: msg, retryable: mapped.retryable, status: mapped.status, raw: mapped.raw } as any,
+      error: { code: mapped.code, message: msg, retryable: mapped.retryable, status: mapped.status, raw: mapped.raw, request_id: mapped.requestId } as any,
     };
   }
 
@@ -574,15 +576,15 @@ async function runReplicate(
   let prediction: any = await createRes.json();
   const started = Date.now();
   while (!["succeeded", "failed", "canceled"].includes(prediction.status)) {
-    if (Date.now() - started > 180_000) throw new Error("Replicate timed out after 3 minutes.");
+    if (Date.now() - started > 180_000) throw new ProviderRunError("Replicate timed out after 3 minutes.", "timeout", true, undefined, undefined, prediction?.id);
     await new Promise((resolve) => setTimeout(resolve, 2000));
     const predictionId = prediction?.id;
-    if (!predictionId) throw new Error("Replicate did not return a prediction ID.");
+    if (!predictionId) throw new ProviderRunError("Replicate did not return a prediction ID.", "provider_error", true);
     const poll = await fetch(`${replicateGateway}/predictions/${predictionId}`, { headers: replicateHeaders });
     if (!poll.ok) {
       const text = await poll.text();
       console.error("[frank-api] replicate:poll_failed", { slug, id: predictionId, status: poll.status, body: text.slice(0, 1000) });
-      throw new ProviderRunError(`Replicate poll failed (${poll.status}): ${extractProviderMessage(text)}`, "provider_error", true, poll.status, text);
+      throw new ProviderRunError(`Replicate poll failed (${poll.status}): ${extractProviderMessage(text)}`, "provider_error", true, poll.status, text, predictionId);
     }
     prediction = await poll.json();
     console.info("[frank-api] replicate:poll:status", { slug, id: predictionId, status: prediction?.status });
@@ -593,9 +595,11 @@ async function runReplicate(
     });
     const raw = typeof prediction.error === "string" ? prediction.error : JSON.stringify(prediction.error ?? prediction.status);
     if (typeof prediction.error === "string" && /content|policy|safety|nsfw/i.test(prediction.error)) {
-      throw new ProviderRunError(`Replicate blocked by content policy: ${raw.slice(0, 200)}`, "content_filtered", false, undefined, raw);
+      throw new ProviderRunError(`Replicate blocked by content policy: ${raw.slice(0, 200)}`, "content_filtered", false, undefined, raw, prediction?.id);
     }
-    throw classifyReplicateModelError(raw, prediction.status);
+    const classified = classifyReplicateModelError(raw, prediction.status);
+    classified.requestId = prediction?.id;
+    throw classified;
   }
   const output = prediction.output;
   const extracted = extractReplicateUrl(output);
@@ -604,7 +608,7 @@ async function runReplicate(
       slug, id: prediction?.id, status: prediction?.status,
       output_type: typeof output, output_sample: JSON.stringify(output ?? null).slice(0, 300),
     });
-    throw new ProviderRunError(`Replicate returned no image URL (output=${JSON.stringify(output ?? null).slice(0, 160)})`, "empty_output", true, undefined, JSON.stringify(output ?? null).slice(0, 1000));
+    throw new ProviderRunError(`Replicate returned no image URL (output=${JSON.stringify(output ?? null).slice(0, 160)})`, "empty_output", true, undefined, JSON.stringify(output ?? null).slice(0, 1000), prediction?.id);
   }
   return extracted;
 }
@@ -624,14 +628,17 @@ function sanitizeReplicateInput(input: Record<string, unknown>): Record<string, 
 }
 
 class ProviderRunError extends Error {
+  requestId?: string;
   constructor(
     message: string,
     public code: string,
     public retryable: boolean,
     public status?: number,
     public raw?: string,
+    requestId?: string,
   ) {
     super(message);
+    this.requestId = requestId;
   }
 }
 

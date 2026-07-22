@@ -175,6 +175,56 @@ export function hasStudioFieldErrors(errors: StudioFieldErrors): boolean {
   return Boolean(errors.aspect || errors.size || errors.count || errors.references);
 }
 
+// Preflight compatibility check — returns actionable messages BEFORE the
+// request is sent to the provider. Focused on Reve (which has a strict
+// aspect enum and rejects any `size`/`quality` param), but generalizes to
+// other models via `allowed_aspect_ratios` / `allowed_image_sizes`.
+export function preflightModel(
+  model: StudioModel | undefined | null,
+  settings: StudioSettings,
+  opts: { referenceCount?: number } = {}
+): string[] {
+  if (!model) return [];
+  const issues: string[] = [];
+  const name = model.short_label ?? model.label ?? "This model";
+  const isReve = model.id === "reve-2-1" || /^reve\//i.test(model.provider_model ?? "");
+
+  const aspect = settings.aspect_ratio;
+  if (!aspect) {
+    issues.push(`${name}: pick an aspect ratio (${(model.allowed_aspect_ratios ?? []).slice(0, 6).join(", ")}${(model.allowed_aspect_ratios?.length ?? 0) > 6 ? ", …" : ""}).`);
+  } else if (!(model.allowed_aspect_ratios ?? []).includes(aspect)) {
+    issues.push(`${name} does not support aspect ${aspect}. Allowed: ${(model.allowed_aspect_ratios ?? []).join(", ") || "—"}.`);
+  }
+
+  const size = settings.image_size;
+  const modelSizes = model.allowed_image_sizes ?? [];
+  if (modelSizes.length === 0) {
+    if (size && String(size).trim() !== "") {
+      const hint = isReve
+        ? `Reve picks its own resolution from the aspect ratio — remove the quality override (currently "${size}").`
+        : `${name} picks its own resolution — leave quality empty (currently "${size}").`;
+      issues.push(hint);
+    }
+  } else if (size && !modelSizes.includes(size)) {
+    issues.push(`${name} does not support quality "${size}". Allowed: ${modelSizes.join(", ")}.`);
+  } else if (size && aspect && !sizeMatchesAspect(size, aspect)) {
+    issues.push(`Quality ${size} does not match aspect ${aspect} — pick a matching size or change the aspect.`);
+  }
+
+  const refCount = opts.referenceCount ?? 0;
+  const refLimit = model.reference_image_limit ?? 0;
+  if (refCount > refLimit) {
+    issues.push(`${name} accepts at most ${refLimit} reference image${refLimit === 1 ? "" : "s"} (you attached ${refCount}).`);
+  }
+
+  const count = Number(settings.count);
+  if (!Number.isFinite(count) || count < 1 || count > 4 || Math.trunc(count) !== count) {
+    issues.push("Pick between 1 and 4 images per round.");
+  }
+
+  return issues;
+}
+
 
 export function parseJsonList(value?: string) {
   if (!value) {

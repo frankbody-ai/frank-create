@@ -104,7 +104,8 @@ import {
   parseJsonList,
   selectModelOptions,
   validateStudioSettings,
-  hasStudioFieldErrors
+  hasStudioFieldErrors,
+  preflightModel
 } from "./lib/studio";
 
 import type {
@@ -396,7 +397,7 @@ export default function App() {
   const [retrySafePayload, setRetrySafePayload] = useState<Record<string, unknown> | null>(null);
   type GenPhase = "idle" | "queued" | "running" | "completed" | "failed";
   const [genPhase, setGenPhase] = useState<GenPhase>("idle");
-  const [genError, setGenError] = useState<{ message: string; code?: string; retryable?: boolean; httpStatus?: number; raw?: string } | null>(null);
+  const [genError, setGenError] = useState<{ message: string; code?: string; retryable?: boolean; httpStatus?: number; raw?: string; requestId?: string } | null>(null);
   const [genErrorOpen, setGenErrorOpen] = useState(false);
   const [desktopNotice, setDesktopNotice] = useState<string | null>(null);
   const [videoStartedAt, setVideoStartedAt] = useState<number | null>(null);
@@ -1959,6 +1960,7 @@ export default function App() {
           let retryable: boolean | undefined;
           let httpStatus: number | undefined;
           let raw: string | undefined;
+          let requestId: string | undefined;
           try {
             const ctx = (err as { context?: Response }).context;
             if (ctx && typeof ctx.json === "function") {
@@ -1968,13 +1970,15 @@ export default function App() {
               if (parsed?.error) message = String(parsed.error);
               if (parsed?.code) code = String(parsed.code);
               if (typeof parsed?.retryable === "boolean") retryable = parsed.retryable;
+              if (parsed?.request_id) requestId = String(parsed.request_id);
             }
           } catch { /* body already consumed or non-JSON */ }
-          const suffix = code ? ` [${code}${retryable === false ? " — not retryable" : retryable ? " — safe to retry" : ""}]` : "";
+          const idSuffix = requestId ? ` · req ${requestId.slice(0, 8)}` : "";
+          const suffix = code ? ` [${code}${retryable === false ? " — not retryable" : retryable ? " — safe to retry" : ""}${idSuffix}]` : idSuffix;
           setStatusText(`Lovable AI: ${message}${suffix}`);
           setRetrySafePayload(retryable === true ? invokeBody : null);
           setGenPhase("failed");
-          setGenError({ message, code, retryable, httpStatus, raw });
+          setGenError({ message, code, retryable, httpStatus, raw, requestId });
           const localTurn = makeLocalTurn(activeSession.id, request);
           setTurns((current) => [...current, localTurn]);
         }
@@ -2007,6 +2011,7 @@ export default function App() {
           retryable: result.error?.retryable,
           httpStatus: result.error?.status,
           raw: result.error?.raw,
+          requestId: result.error?.request_id,
         });
         setRetrySafePayload(result.error?.retryable === true ? {
           prompt: request.prompt,
@@ -3157,6 +3162,15 @@ export default function App() {
                 Fix incompatible settings for {selectedModel?.short_label ?? selectedModel?.label ?? "this model"} before generating.
               </p>
             ) : null}
+            {(() => {
+              const warns = preflightModel(selectedModel, settings, { referenceCount: referenceAssets.length });
+              return warns.length ? (
+                <div className="preflight-warnings" role="status" aria-live="polite">
+                  <strong>Preflight check</strong>
+                  <ul>{warns.map((w, i) => <li key={i}>{w}</li>)}</ul>
+                </div>
+              ) : null;
+            })()}
             <div className="capability-strip">
               <span>{modelOptions.resolutionBadge}</span>
               <span>{modelOptions.canEdit ? "Edits" : "Generate only"}</span>
@@ -3764,14 +3778,22 @@ export default function App() {
             </button>
           ) : null}
           {genPhase === "failed" && genError ? (
-            <button
-              type="button"
-              className="gen-error-toggle"
-              onClick={() => setGenErrorOpen((v) => !v)}
-              aria-expanded={genErrorOpen}
-            >
-              {genErrorOpen ? "Hide details" : "Show details"}
-            </button>
+            <>
+              {genError.code ? (
+                <span className="gen-error-chip" title={genError.message}>
+                  <code>{genError.code}</code>
+                  {genError.requestId ? <em title={`Replicate request ID: ${genError.requestId}`}>req {genError.requestId.slice(0, 8)}</em> : null}
+                </span>
+              ) : null}
+              <button
+                type="button"
+                className="gen-error-toggle"
+                onClick={() => setGenErrorOpen((v) => !v)}
+                aria-expanded={genErrorOpen}
+              >
+                {genErrorOpen ? "Hide details" : "Show details"}
+              </button>
+            </>
           ) : null}
           {retrySafePayload ? (
             <button
@@ -3805,7 +3827,24 @@ export default function App() {
         {genPhase === "failed" && genError && genErrorOpen ? (
           <div className="gen-error-details" role="region" aria-label="Error details">
             <dl>
-              {genError.code ? (<><dt>Code</dt><dd>{genError.code}</dd></>) : null}
+              {genError.code ? (<><dt>Code</dt><dd><code>{genError.code}</code></dd></>) : null}
+              {genError.requestId ? (
+                <>
+                  <dt>Request ID</dt>
+                  <dd>
+                    <code>{genError.requestId}</code>{" "}
+                    <button
+                      type="button"
+                      className="mini-button"
+                      style={{ padding: "2px 6px", fontSize: 11 }}
+                      onClick={() => { void navigator.clipboard?.writeText(genError.requestId ?? ""); }}
+                      title="Copy request ID"
+                    >
+                      Copy
+                    </button>
+                  </dd>
+                </>
+              ) : null}
               {typeof genError.httpStatus === "number" ? (<><dt>HTTP</dt><dd>{genError.httpStatus}</dd></>) : null}
               {typeof genError.retryable === "boolean" ? (<><dt>Retryable</dt><dd>{genError.retryable ? "yes" : "no"}</dd></>) : null}
               <dt>Message</dt><dd>{genError.message}</dd>

@@ -6056,6 +6056,33 @@ input[aria-invalid="true"] {
   word-break: break-word;
 }
 
+.gen-error-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 600;
+}
+.gen-error-chip code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.gen-error-chip em { font-style: normal; opacity: 0.8; font-weight: 500; }
+
+.preflight-warnings {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(234, 179, 8, 0.10);
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  color: #92400e;
+  font-size: 12px;
+}
+.preflight-warnings strong { display: block; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+.preflight-warnings ul { margin: 0; padding-left: 18px; }
+.preflight-warnings li + li { margin-top: 2px; }
+
 .gen-stop-btn {
   display: inline-flex;
   align-items: center;
