@@ -1,36 +1,21 @@
 ## Goal
-Prevent submitting unsupported settings (e.g. any `size` for Reve 2.1, `4K` for Seedream/Nano Banana 2, non-schema aspect ratios) and surface clear inline errors next to the offending field before the request is sent.
+Fix Reve 2.1 "Provider returned no image" and surface the real Replicate failure instead of the generic UI label.
 
-## Scope
-Frontend-only. `frank-create/src/App.tsx`, `frank-create/src/lib/studio.ts`, `frank-create/src/styles.css`. No backend changes.
+## Diagnosis (needs log confirmation)
+Reve is routed through `runReplicate` in `supabase/functions/frank-api/index.ts`. Two likely causes for a silent "no image" outcome:
+1. `runReplicate` extracts `output` only as `string | string[]`. If Reve returns `output` as an object (`{ image }`, `{ url }`, or `{ images: [...] }`) or as `null` on a `succeeded` prediction with `content_violation` / policy failure, `url` becomes `undefined` and the outer catch surfaces the generic UI fallback.
+2. The `Prefer: wait=60` create call can return the prediction still pending; the polling loop is fine, but any non-JSON error body or `output: null` on succeed drops us into the empty-URL branch without the real reason.
 
-## Approach
+## Steps
+1. `supabase/functions/frank-api/index.ts` — harden `runReplicate`:
+   - `console.log` the final Replicate prediction (id, status, error, output shape) whenever `output` can't be resolved to a URL.
+   - Accept `output` as `string`, `string[]`, or object with any of `image`, `url`, `images[0]`, `output`.
+   - On `succeeded` with no URL, throw a specific error including the raw output JSON slice; on `content_violation` / policy fields in the prediction, throw a distinct classified message.
+2. `supabase/functions/frank-api/index.ts` — in the generate handler's outer catch for Replicate, propagate the thrown message into the turn's error snapshot so the client shows it verbatim instead of "Provider returned no image".
+3. `frank-create/src/App.tsx` — update the `turnEmptyLabel` fallback so if the turn carries an error message, that message is shown instead of the generic string.
+4. Deploy `frank-api` with `supabase--deploy_edge_functions`.
+5. Verify: run a Reve 2.1 generation from the running preview via Playwright (auth session is injected), then read `frank-api` logs via `supabase--edge_function_logs` to confirm either success or a specific classified error surfaces to the UI.
 
-1. **Central validator in `studio.ts`** — add `validateStudioSettings(model, settings)` returning `{ aspect?: string; size?: string; count?: string }` of inline error strings. Rules:
-   - `aspect_ratio` must be in `model.allowed_aspect_ratios`.
-   - `image_size`: if `model.allowed_image_sizes` is empty (Reve), any non-empty value is an error ("This model picks resolution from aspect — leave size empty"); otherwise must be in `allowed_image_sizes` AND pass `sizeMatchesAspect`.
-   - `count` must be 1–4 and ≤ `model.max_batch` if present.
-   - Reference count vs `reference_image_limit` (already checked, keep as-is but surface via same shape).
-
-2. **UI wiring in `App.tsx`**
-   - Compute `const fieldErrors = useMemo(() => validateStudioSettings(selectedModel, settings), [...])`.
-   - Under each of the two Aspect/Size/Count `setting-row` blocks (lines ~3052 and ~4280), render `<p className="field-error" role="alert">{fieldErrors.size}</p>` etc. when set.
-   - Add `aria-invalid` and `data-invalid` to the offending `<select>`/`<input>` for red-border styling.
-   - When the model has no `allowed_image_sizes` (Reve), hide the Size `<label>` entirely instead of showing an empty dropdown, and show a small helper: "Size auto-selected from aspect".
-   - In `handleGenerate`, before `buildTurnRequest`, run the validator; if any error exists, `setStatusText("Fix the highlighted fields.")`, focus the first invalid control, and return without calling the function.
-
-3. **Styling in `styles.css`**
-   - `.field-error { color: var(--danger, #c0362c); font-size: 12px; margin-top: 4px; }`
-   - `select[aria-invalid="true"], input[aria-invalid="true"] { border-color: var(--danger); outline-color: var(--danger); }`
-   - `.field-hint { font-size: 12px; opacity: 0.7; }`
-
-4. **Tests** — extend `frank-create/src/lib/studio.test.ts` with cases:
-   - Reve model + any size → size error.
-   - Seedream + `4K` → size error.
-   - Nano Banana 2 + `21:9` → aspect error.
-   - Valid combo → no errors.
-
-## Technical Notes
-- `normalizeStudioSettingsForModel` already coerces invalid values on model switch; validator is the *pre-submit* gate for user-edited states and future config drift.
-- Keep validator pure so it can be reused by future server-side echo if needed.
-- No changes to `presets.ts` or edge functions.
+## Out of scope
+- No changes to model schemas, aspect/size validation, or Seedream/Nano Banana paths.
+- No new tables or migrations.
