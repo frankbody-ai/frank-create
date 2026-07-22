@@ -3076,24 +3076,36 @@ export default function App() {
                   <select
                     value={settings.aspect_ratio}
                     onChange={(event) => handleAspectChange(event.target.value)}
+                    aria-invalid={fieldErrors.aspect ? true : undefined}
+                    data-studio-invalid={fieldErrors.aspect ? "true" : undefined}
                   >
                     {modelOptions.allowedAspectRatios.map((ratio) => (
                       <option key={ratio}>{ratio}</option>
                     ))}
                   </select>
+                  {fieldErrors.aspect ? <p className="field-error" role="alert">{fieldErrors.aspect}</p> : null}
                 </label>
-                <label>
-                  Size
-                  <select
-                    value={settings.image_size}
-                    onChange={(event) => setSettings((current) => ({ ...current, image_size: event.target.value }))}
-                  >
-                    {allowedSizesForAspect.map((size) => (
-                      <option key={size}>{size}</option>
-                    ))}
-                  </select>
-
-                </label>
+                {modelHasSizes ? (
+                  <label>
+                    Size
+                    <select
+                      value={settings.image_size}
+                      onChange={(event) => setSettings((current) => ({ ...current, image_size: event.target.value }))}
+                      aria-invalid={fieldErrors.size ? true : undefined}
+                      data-studio-invalid={fieldErrors.size ? "true" : undefined}
+                    >
+                      {allowedSizesForAspect.map((size) => (
+                        <option key={size}>{size}</option>
+                      ))}
+                    </select>
+                    {fieldErrors.size ? <p className="field-error" role="alert">{fieldErrors.size}</p> : null}
+                  </label>
+                ) : (
+                  <label>
+                    Size
+                    <span className="field-hint">Auto from aspect</span>
+                  </label>
+                )}
                 <label>
                   Count
                   <input
@@ -3102,9 +3114,15 @@ export default function App() {
                     type="number"
                     value={settings.count}
                     onChange={(event) => setSettings((current) => ({ ...current, count: Number(event.target.value) }))}
+                    aria-invalid={fieldErrors.count ? true : undefined}
+                    data-studio-invalid={fieldErrors.count ? "true" : undefined}
                   />
+                  {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
                 </label>
               </div>
+              {fieldErrors.references ? (
+                <p className="field-error" role="alert">{fieldErrors.references}</p>
+              ) : null}
               {selectedModel?.id === "google-nb-pro" ? (
                 <div className="setting-row thinking-mode-row" aria-label="Thinking mode (Nano Banana Pro only)">
                   <label>
