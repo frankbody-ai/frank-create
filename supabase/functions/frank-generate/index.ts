@@ -65,8 +65,12 @@ Deno.serve(async (req) => {
     const images: string[] = [];
     const errors: MappedError[] = [];
     for (let i = 0; i < count; i++) {
+      if (req.signal.aborted) {
+        errors.push({ code: "canceled", message: "Canceled by user.", retryable: true });
+        break;
+      }
       try {
-        const url = await runReplicate(slug, prompt, body, replicateKey);
+        const url = await runReplicate(slug, prompt, body, replicateKey, req.signal);
         if (url) images.push(url);
         else errors.push({ code: "empty_output", message: "Replicate returned no image URL.", retryable: true });
       } catch (err) {
@@ -103,6 +107,10 @@ Deno.serve(async (req) => {
   const errors: string[] = [];
 
   for (let i = 0; i < count; i++) {
+    if (req.signal.aborted) {
+      errors.push("canceled");
+      break;
+    }
     try {
       let res: Response;
       if (useImagesEndpoint) {
@@ -120,6 +128,7 @@ Deno.serve(async (req) => {
             size,
             n: 1,
           }),
+          signal: req.signal,
         });
       } else {
         const ar = body.aspect_ratio;
@@ -144,6 +153,7 @@ Deno.serve(async (req) => {
             "Authorization": `Bearer ${apiKey}`,
           },
           body: JSON.stringify(payload),
+          signal: req.signal,
         });
       }
 
@@ -168,6 +178,10 @@ Deno.serve(async (req) => {
       if (imageUrl) images.push(imageUrl);
       else errors.push("no image in response");
     } catch (err) {
+      if (req.signal.aborted) {
+        errors.push("canceled");
+        break;
+      }
       errors.push(err instanceof Error ? err.message : String(err));
     }
   }
@@ -193,6 +207,7 @@ async function runReplicate(
   prompt: string,
   body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
   key: string,
+  signal?: AbortSignal,
 ): Promise<string | undefined> {
   const input = buildReplicateInput(slug, prompt, body);
 
@@ -206,6 +221,7 @@ async function runReplicate(
         "Prefer": "wait=60",
       },
       body: JSON.stringify({ input }),
+      signal,
     },
   );
 
@@ -232,17 +248,40 @@ async function runReplicate(
   }
 
   let pred = await createRes.json();
-  const started = Date.now();
-  while (pred.status !== "succeeded" && pred.status !== "failed" && pred.status !== "canceled") {
-    if (Date.now() - started > 180_000) {
-      throw new ReplicateError("Replicate timed out after 3 minutes.", { code: "timeout", retryable: true });
+  const predictionId: string | undefined = pred?.id;
+  const cancelUrl: string | undefined = pred?.urls?.cancel;
+
+  // If the client disconnects mid-poll, best-effort cancel the Replicate prediction.
+  const onAbort = () => {
+    if (cancelUrl) {
+      fetch(cancelUrl, { method: "POST", headers: { "Authorization": `Bearer ${key}` } }).catch(() => {});
+    } else if (predictionId) {
+      fetch(`https://api.replicate.com/v1/predictions/${predictionId}/cancel`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${key}` },
+      }).catch(() => {});
     }
-    await new Promise((r) => setTimeout(r, 2000));
-    const pollUrl = pred?.urls?.get;
-    if (!pollUrl) throw new ReplicateError("Replicate did not return a poll URL.", { code: "provider_error", retryable: true });
-    const r = await fetch(pollUrl, { headers: { "Authorization": `Bearer ${key}` } });
-    if (!r.ok) throw new ReplicateError(`Replicate poll failed (${r.status}).`, { code: "provider_error", status: r.status, retryable: true });
-    pred = await r.json();
+  };
+  signal?.addEventListener("abort", onAbort, { once: true });
+
+  try {
+    const started = Date.now();
+    while (pred.status !== "succeeded" && pred.status !== "failed" && pred.status !== "canceled") {
+      if (signal?.aborted) {
+        throw new ReplicateError("Canceled by user.", { code: "canceled", retryable: true });
+      }
+      if (Date.now() - started > 180_000) {
+        throw new ReplicateError("Replicate timed out after 3 minutes.", { code: "timeout", retryable: true });
+      }
+      await new Promise((r) => setTimeout(r, 2000));
+      const pollUrl = pred?.urls?.get;
+      if (!pollUrl) throw new ReplicateError("Replicate did not return a poll URL.", { code: "provider_error", retryable: true });
+      const r = await fetch(pollUrl, { headers: { "Authorization": `Bearer ${key}` }, signal });
+      if (!r.ok) throw new ReplicateError(`Replicate poll failed (${r.status}).`, { code: "provider_error", status: r.status, retryable: true });
+      pred = await r.json();
+    }
+  } finally {
+    signal?.removeEventListener("abort", onAbort);
   }
 
   if (pred.status === "canceled") {

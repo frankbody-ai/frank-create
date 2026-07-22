@@ -6031,3 +6031,17 @@ input[aria-invalid="true"] {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+.gen-stop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid #dc2626;
+  background: rgba(220,38,38,0.12);
+  color: #fca5a5;
+  cursor: pointer;
+}
+.gen-stop-btn:hover { background: rgba(220,38,38,0.22); color: #fff; }
