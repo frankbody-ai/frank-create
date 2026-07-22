@@ -13,6 +13,7 @@ import {
   Heart,
   ImageIcon,
   Layers3,
+  Loader2,
   MessageSquareText,
   Paperclip,
   Paintbrush,
