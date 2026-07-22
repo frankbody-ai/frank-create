@@ -1,59 +1,36 @@
-## Verification Plan: Cliff Pack + NB Pro Inference + Phase 2–4 QA
+## Goal
+Prevent submitting unsupported settings (e.g. any `size` for Reve 2.1, `4K` for Seedream/Nano Banana 2, non-schema aspect ratios) and surface clear inline errors next to the offending field before the request is sent.
 
-Three verification tasks against the published `https://frank-create.lovable.app` build (post-`frank-api` fix for `messages.seq` / model routing).
+## Scope
+Frontend-only. `frank-create/src/App.tsx`, `frank-create/src/lib/studio.ts`, `frank-create/src/styles.css`. No backend changes.
 
-### 1. Cliff Pack ZIP export smoke
+## Approach
 
-- Sign in, open the Studio, pick a session that has at least one approved asset (seed one if empty by generating + approving).
-- Click "Export Cliff Pack" in the Studio and on `/#/review/:sessionId`.
-- Confirm:
-  - Button leaves the disabled/0-approved state.
-  - Browser download completes (`cliff-pack-*.zip`).
-  - Unzip locally: verify `manifest.json` matches `handoff.ts` schema, images open, and `run_brief.md` / workflow JSON contain no `LOVABLE_API_KEY`, `sb_secret_`, or bearer tokens.
-- Capture screenshots of: export button state, download toast, unzipped contents.
+1. **Central validator in `studio.ts`** — add `validateStudioSettings(model, settings)` returning `{ aspect?: string; size?: string; count?: string }` of inline error strings. Rules:
+   - `aspect_ratio` must be in `model.allowed_aspect_ratios`.
+   - `image_size`: if `model.allowed_image_sizes` is empty (Reve), any non-empty value is an error ("This model picks resolution from aspect — leave size empty"); otherwise must be in `allowed_image_sizes` AND pass `sizeMatchesAspect`.
+   - `count` must be 1–4 and ≤ `model.max_batch` if present.
+   - Reference count vs `reference_image_limit` (already checked, keep as-is but surface via same shape).
 
-### 2. `/functions/v1/frank-api/inference/turn` NB Pro smoke
+2. **UI wiring in `App.tsx`**
+   - Compute `const fieldErrors = useMemo(() => validateStudioSettings(selectedModel, settings), [...])`.
+   - Under each of the two Aspect/Size/Count `setting-row` blocks (lines ~3052 and ~4280), render `<p className="field-error" role="alert">{fieldErrors.size}</p>` etc. when set.
+   - Add `aria-invalid` and `data-invalid` to the offending `<select>`/`<input>` for red-border styling.
+   - When the model has no `allowed_image_sizes` (Reve), hide the Size `<label>` entirely instead of showing an empty dropdown, and show a small helper: "Size auto-selected from aspect".
+   - In `handleGenerate`, before `buildTurnRequest`, run the validator; if any error exists, `setStatusText("Fix the highlighted fields.")`, focus the first invalid control, and return without calling the function.
 
-- Use `supabase--curl_edge_functions` (auto-injects the preview session bearer) with:
-  - `path`: `/frank-api/inference/turn`
-  - `method`: `POST`
-  - body:
-    ```json
-    {
-      "session_id": "<sample-session-uuid>",
-      "prompt": "frank body coffee scrub hero shot, soft studio light",
-      "model": "nano-banana-pro",
-      "settings": { "aspect_ratio": "1:1", "image_size": "2K", "count": 1 }
-    }
-    ```
-- Assert HTTP 200, response contains a `turn` with `status: "complete"` and at least one `asset` with a signed `preview_url`.
-- Repeat once with `"model": "nano-banana-2"` to confirm the new `MODEL_MAP` routing.
-- If a 5xx returns, capture the JSON `error` string (now a real message, not `[object Object]`) and stop.
+3. **Styling in `styles.css`**
+   - `.field-error { color: var(--danger, #c0362c); font-size: 12px; margin-top: 4px; }`
+   - `select[aria-invalid="true"], input[aria-invalid="true"] { border-color: var(--danger); outline-color: var(--danger); }`
+   - `.field-hint { font-size: 12px; opacity: 0.7; }`
 
-### 3. Rerun Phase 2–4 of the Cliff access QA checklist
+4. **Tests** — extend `frank-create/src/lib/studio.test.ts` with cases:
+   - Reve model + any size → size error.
+   - Seedream + `4K` → size error.
+   - Nano Banana 2 + `21:9` → aspect error.
+   - Valid combo → no errors.
 
-Run against `https://frank-create.lovable.app` using the existing Playwright runbook so results are reproducible:
-
-```text
-scripts/cliff_access_playwright.py
-  env:
-    CLIFF_QA_STORAGE_STATE=/tmp/browser/cliff-storage.json
-    CLIFF_QA_SAMPLE_SESSION=<sample-session-uuid>
-    CLIFF_QA_BASE_URL=https://frank-create.lovable.app
-```
-
-Phases executed:
-- **Phase 2 — NB Pro live gen**: prompt + reference dock (1 image), assert asset renders in center Round card and right rail, screenshot.
-- **Phase 3 — NB 2 live gen**: same flow, model swapped, assert asset appears, screenshot.
-- **Phase 4 — Approve + audit + Cliff Pack**: approve on `/#/review/:sessionId`, assert `POST asset_approval_events` returns 2xx (existing network listener), then trigger Cliff Pack export and assert ZIP download event.
-
-Deliverable:
-- Pass/fail table per phase.
-- Screenshots saved under `/tmp/browser/cliff-qa/` and referenced in a short report.
-- If any phase fails, include the captured console + network error verbatim (no summarization) so the fix target is unambiguous.
-
-### Technical notes
-
-- Requires the `frank-api` deploy that includes the `messages.seq` fix and `MODEL_MAP`; if published build is older, republish before running.
-- Storage state file must be captured once per Cliff-approved Google account (see `scripts/README-cliff-qa.md`).
-- No app code changes are expected from this plan — it is verification only. Any bug found will be a follow-up plan.
+## Technical Notes
+- `normalizeStudioSettingsForModel` already coerces invalid values on model switch; validator is the *pre-submit* gate for user-edited states and future config drift.
+- Keep validator pure so it can be reused by future server-side echo if needed.
+- No changes to `presets.ts` or edge functions.
