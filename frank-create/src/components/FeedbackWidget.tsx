@@ -32,7 +32,7 @@ async function fileToBase64(file: File): Promise<string> {
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_BYTES = 3 * 1024 * 1024;
 
-export function FeedbackWidget() {
+export function FeedbackWidget({ variant = "fixed" }: { variant?: "fixed" | "inline" }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -106,18 +106,30 @@ export function FeedbackWidget() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="feedback-fab"
-        aria-label="Send feedback"
-      >
-        <span className="feedback-fab-ring" aria-hidden />
-        <span className="feedback-fab-inner">
+      {variant === "inline" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="feedback-inline"
+          aria-label="Send feedback"
+        >
           <MessageSquarePlus size={16} />
           <span>Feedback</span>
-        </span>
-      </button>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="feedback-fab"
+          aria-label="Send feedback"
+        >
+          <span className="feedback-fab-ring" aria-hidden />
+          <span className="feedback-fab-inner">
+            <MessageSquarePlus size={16} />
+            <span>Feedback</span>
+          </span>
+        </button>
+      )}
 
       {open && (
         <div className="feedback-backdrop" onClick={close}>
