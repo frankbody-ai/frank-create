@@ -146,6 +146,7 @@ function rowToAsset(row: any, signedUrl = ""): any {
 
 function rowToTurn(row: any): any {
   const settings = row.settings_snapshot_json || {};
+  const errorMsg = settings.error;
   return {
     id: row.id,
     session_id: row.session_id,
@@ -159,6 +160,9 @@ function rowToTurn(row: any): any {
     status: settings.status || "complete",
     output_asset_ids_json: JSON.stringify(settings.output_asset_ids || []),
     reference_asset_ids_json: JSON.stringify(settings.reference_asset_ids || []),
+    error_json: errorMsg
+      ? JSON.stringify({ code: settings.error_code || "provider_error", message: String(errorMsg) })
+      : null,
     created_at: row.created_at,
     updated_at: row.created_at,
   };
