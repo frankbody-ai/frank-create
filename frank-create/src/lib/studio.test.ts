@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { fallbackConfig } from "./presets";
-import { buildTurnRequest, inferenceStatusCopy, normalizeStudioSettingsForModel, selectModelOptions } from "./studio";
+import { buildTurnRequest, inferenceStatusCopy, normalizeStudioSettingsForModel, selectModelOptions, validateStudioSettings, hasStudioFieldErrors } from "./studio";
 import type { StudioModel } from "./types";
 
 const models: StudioModel[] = [
