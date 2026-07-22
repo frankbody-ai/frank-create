@@ -2723,6 +2723,24 @@ input {
   font-size: 0.82rem;
 }
 
+.approval-actions button.is-active-approve {
+  background: #0f9d58;
+  border-color: #0f9d58;
+  color: #fff;
+}
+
+.approval-actions button.is-active-reject {
+  background: #d64545;
+  border-color: #d64545;
+  color: #fff;
+}
+
+.approval-actions button.is-active-fav {
+  background: var(--frank-pink, #ff6b81);
+  border-color: var(--frank-pink, #ff6b81);
+  color: #fff;
+}
+
 .review-notes {
   display: grid;
   gap: 6px;
