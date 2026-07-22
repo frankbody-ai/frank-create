@@ -144,19 +144,17 @@ import { AspectPreview } from "./components/AspectPreview";
 
 type WalkthroughTarget =
   | "app-header"
+  | "feedback-button"
+  | "reference-dock"
   | "composer"
   | "output-thread"
-  | "model-settings"
-  | "model-settings-drawer"
-  | "model-output-controls"
-  | "frank-mode-toggle"
   | "review-panel"
   | "review-actions"
   | "review-metadata"
   | "variant-controls"
   | "edit-controls"
   | "export-controls"
-  | "handoff-pack"
+  | "admin-entry"
   | "advanced-tools";
 
 interface WalkthroughStep {
@@ -177,109 +175,134 @@ interface WalkthroughAnchor {
 
 const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
-    title: "Sessions and demo controls",
-    detail: "This header is the control strip for the call: switch sessions, start fresh, launch this walkthrough, or open Advanced when someone technical asks.",
-    points: ["Session keeps each creative thread separate.", "New session starts another brief without touching the current one.", "Advanced stays hidden during the normal creative flow."],
+    title: "Sessions and sidebar",
+    detail: "The left sidebar is your control strip. Each session is a separate creative thread — switch, rename in place, or start a new one from here.",
+    points: [
+      "Sessions auto-name from your first prompt; click the title to rename.",
+      "Image Studio is the active lab. Product Shot Lab and Video Lab are on the roadmap.",
+      "Your profile and sign-out live at the bottom of the sidebar."
+    ],
     target: "app-header"
   },
   {
-    title: "Brief and references",
-    detail: "This is the working brief. Add product references, write the ask in plain English, choose the job type, and press Generate when the direction is clear.",
-    points: ["References are selectable, so a round can use all refs, some refs, or prompt-only.", "Brief remix gives alternate prompt directions without leaving the Studio.", "Cancel session archives the current scratch brief without deleting generated files."],
+    title: "Feedback, any time",
+    detail: "Hit the Feedback button at the top-right of the studio to report a bug or drop an idea. You can attach a screenshot and it goes straight to the admin triage board.",
+    points: [
+      "Works from any page while signed in.",
+      "Optional screenshot upload for context.",
+      "Admins triage it as tasks in the Admin portal."
+    ],
+    target: "feedback-button"
+  },
+  {
+    title: "Reference dock",
+    detail: "Upload up to 14 reference images. Click any thumbnail to include or exclude it from the next round — a blue outline means it's being used.",
+    points: [
+      "Multimodal models read selected refs as visual guidance.",
+      "Refs persist per session so you can iterate across rounds.",
+      "Any generated pick can be reused as a reference from the review desk."
+    ],
+    target: "reference-dock"
+  },
+  {
+    title: "The composer",
+    detail: "Write the brief in plain English, then dial in Model, Aspect, Size, Count, Quality, and Thinking Mode right inside this card. Sizes are automatically filtered to match the chosen aspect and model.",
+    points: [
+      "Model roster: Nano Banana Pro/2, gpt-image-2, Reve 2.1, Seedream 5.0 Pro (all via Replicate).",
+      "Aspect preview shows the exact canvas shape before you generate.",
+      "Thinking Mode (Off / Low / High) is available on models that support it."
+    ],
     target: "composer"
   },
   {
-    title: "Workflow chips and prompt",
-    detail: "The chips are workflow shortcuts, not separate apps. Product Shot Lab, Video Lab, and Approved only change the current task/filter while keeping one thread.",
-    points: ["Product Shot Lab loads product-focused presets.", "Video Lab briefs a storyboard-style round.", "Approved only filters the thread to keepers."],
+    title: "Frank Body Mode + presets",
+    detail: "Toggle Frank Body Mode to inject brand voice and guardrails. The preset library at the bottom of the right panel gives you 5 curated Frank Body starting points — plus a “+ New preset” tile to save your own.",
+    points: [
+      "Off = neutral, prompt only. On = Frank Body brand brain.",
+      "Custom presets are saved locally and reusable across sessions.",
+      "The active mode is recorded with each round for auditability."
+    ],
     target: "composer"
   },
   {
-    title: "Generated rounds",
-    detail: "Every generate or edit run lands here as a round. The card keeps the prompt, model, status, Frank Body Mode, and reference count attached to the output.",
-    points: ["Click an image to open the review desk on the right.", "Rounds stay in order, so the creative conversation remains explainable.", "Approved only can filter this thread when the team wants the shortlist."],
+    title: "Generate, stop, run in parallel",
+    detail: "Press Generate and a pending card appears immediately in the thread. You can queue additional rounds in parallel, or hit Stop to cancel the current run.",
+    points: [
+      "Parallel generations are capped so providers don't rate-limit you.",
+      "Stop cancels the in-flight request cleanly.",
+      "The three-step progress indicator shows queue → provider → download."
+    ],
+    target: "composer"
+  },
+  {
+    title: "Rounds thread",
+    detail: "Every run lands here, newest on top. A “New” badge pulses on the freshest round. Each card keeps the prompt, model, references, timestamp, and status attached.",
+    points: [
+      "Copy the round ID, delete a round, or expand any image to a lightbox.",
+      "Retry, Retry missing, and Retry safely rebuild the exact settings for another attempt.",
+      "Errors expand inline with a mapped explanation so you know what to change."
+    ],
     target: "output-thread"
   },
   {
-    title: "Model summary",
-    detail: "The right panel starts with the active model, aspect ratio, image size, and number of picks. This is the quick confidence check before spending an API call.",
-    points: ["Nano Banana Pro is the recommended live proof.", "Local Comfy stays as the clearly labelled fallback.", "Change model opens the full drawer."],
-    target: "model-settings"
-  },
-  {
-    title: "Model drawer",
-    detail: "This drawer is where you choose between Gemini, Replicate, OpenAI, or local fallback. It also shows cost labels and readiness badges.",
-    points: ["Missing keys stay out of the first screen but are still visible here.", "Model choice changes what sizes, refs, and edit modes are available.", "Use this before a live client-proof generation."],
-    target: "model-settings-drawer",
-    openSettings: true
-  },
-  {
-    title: "Output controls",
-    detail: "Aspect, size, and count control the next round. The app limits choices to what the selected model actually supports.",
-    points: ["Aspect is the canvas shape.", "Size is the provider output target.", "Count is how many variants come back in the round."],
-    target: "model-output-controls",
-    openSettings: true
-  },
-  {
-    title: "Frank Body Mode",
-    detail: "This toggle is the brand brain. Off means the app sends only the user prompt. On adds Frank Body style guidance, guardrails, and preset structure.",
-    points: ["Leave it off for neutral model tests.", "Turn it on for Frank Body campaign/product work.", "The mode is stored with the run metadata."],
-    target: "frank-mode-toggle",
-    openSettings: true
-  },
-  {
     title: "Review desk",
-    detail: "After a result is selected, this panel becomes the review desk. It shows the chosen image and all actions for deciding what happens next.",
-    points: ["Open selected asset for a larger view.", "Review controls stay beside the image.", "Nothing needs the raw Comfy graph for normal review."],
+    detail: "Click any image to open the review desk on the right. Approvals, rejects, and favorites sync between the thread and this panel — and every decision is written to the audit trail.",
+    points: [
+      "Click the image itself to expand it full-screen.",
+      "Approve / Reject / Favorite are one click and instantly reflected everywhere.",
+      "Audit trail logs who decided what and when."
+    ],
     target: "review-panel",
     selectOutput: true
   },
   {
-    title: "Approve or reject",
-    detail: "These are the fast creative-director decisions: favorite, approve, or reject. Approved picks feed the handoff/export flow.",
-    points: ["Approve marks the keeper.", "Favorite is a softer shortlist.", "Reject keeps the record without presenting it as a candidate."],
+    title: "Approve, reject, favorite",
+    detail: "These three actions are the creative-director controls. Approved picks feed the export flow; favorites are your softer shortlist; rejects stay on record without cluttering the shortlist.",
     target: "review-actions",
     selectOutput: true
   },
   {
     title: "Run metadata",
-    detail: "This section explains where the image came from. It keeps model, settings, dimensions, source image, workflow, references, and prompt together.",
-    points: ["Useful for client notes and repeats.", "Workflow JSON can be downloaded later.", "This is the audit trail for FrankHub or a DAM sync."],
+    detail: "Everything needed to reproduce or explain a pick lives here: model, aspect/size, references used, Frank Body Mode, prompt, and provider IDs.",
+    points: [
+      "Copy the prompt or the round/asset ID.",
+      "Useful for client notes and repeat runs.",
+      "Feeds the audit trail on approve/reject."
+    ],
     target: "review-metadata",
     selectOutput: true
   },
   {
-    title: "Make another round",
-    detail: "These buttons turn a selected result into the next brief. More like this, clean it up, and campaign remix are shortcuts for fast iteration.",
-    points: ["They set up edit mode from the selected asset.", "The prompt updates automatically.", "You can still change the model before generating."],
+    title: "Iterate from a pick",
+    detail: "Turn a selected result into the next brief: more like this, clean it up, or campaign remix. The prompt and settings update automatically.",
     target: "variant-controls",
     selectOutput: true
   },
   {
-    title: "Edit, mask, and reuse",
-    detail: "These controls are the production tools: copy the brief, download workflow JSON, open Comfy, edit with the selected model, paint a mask, or reuse a pick as a reference.",
-    points: ["Edit with selected model starts image-to-image.", "Paint edit mask appears when the model supports masked edit.", "Use as reference turns a good pick into guidance for the next round."],
+    title: "Edit and reuse",
+    detail: "Edit with the selected model, paint a mask where supported, or reuse a good pick as a reference for the next round.",
     target: "edit-controls",
     selectOutput: true
   },
   {
-    title: "Exports",
-    detail: "Export controls appear once a pick is selected. Use the channel set for a complete package, or export one format at a time.",
-    points: ["Channel set creates the ready-to-share pack.", "Individual presets cover PDP, social, email, transparent PNG, and master files.", "Download original keeps the untouched provider result."],
+    title: "Export",
+    detail: "Once a pick is selected you can export it directly, retry a failed download, or grab the original untouched provider file.",
     target: "export-controls",
     selectOutput: true
   },
   {
-    title: "Cliff Pack handoff",
-    detail: "This package area collects approved picks, references, prompts, notes, metadata, and channel exports into one handoff route.",
-    points: ["Export Cliff Pack is the call-day deliverable.", "Review board gives a visual summary.", "Sync manifest is the future FrankHub/DAM bridge."],
-    target: "handoff-pack",
-    selectOutput: true
+    title: "Admin portal",
+    detail: "Admins get a portal for managing user roles and triaging feedback as tasks on a Kanban board. First-time sign-ins default to the standard user role.",
+    points: [
+      "Users tab: promote or demote anyone (including admin).",
+      "Feedback Tasks tab: move items across Open / In progress / Done / Dismissed.",
+      "Only visible if your account has the admin role."
+    ],
+    target: "admin-entry"
   },
   {
-    title: "Advanced tools",
-    detail: "Advanced is for setup, diagnostics, raw Comfy access, provider keys, Demo Doctor, readiness packs, and proof receipts. It is intentionally outside the normal creative path.",
-    points: ["Provider keys are only Gemini, Replicate, and OpenAI.", "Demo Doctor checks call readiness.", "Workflow Map and raw Comfy are escape hatches for power users."],
+    title: "Advanced (off the normal path)",
+    detail: "Advanced holds provider keys, diagnostics, and the /health page. You shouldn't need it during a normal creative session — Lovable AI handles the provider setup for you.",
     target: "advanced-tools",
     openAdvanced: true
   }
@@ -2605,9 +2628,6 @@ export default function App() {
       setInspectorTab("review");
       setLightboxAsset(null);
     }
-    if (activeWalkthroughStep.target === "handoff-pack") {
-      setInspectorTab("export");
-    }
     if (activeWalkthroughStep.target === "review-panel" || activeWalkthroughStep.target === "export-controls") {
       setInspectorTab("review");
     }
@@ -2885,6 +2905,8 @@ export default function App() {
                 className="sidebar-nav-button admin-sidebar-link"
                 href="#/admin"
                 aria-label="Open Admin portal"
+                data-tour-id="admin-entry"
+                data-tour-active={tourActive("admin-entry")}
               >
                 <Sparkles size={16} />
                 Admin portal
@@ -2985,7 +3007,7 @@ export default function App() {
               Brief in plain English. References and settings are optional. Click a pick to edit, approve, or export.
             </p>
           </div>
-          <div className="studio-topbar-right">
+          <div className="studio-topbar-right" data-tour-id="feedback-button" data-tour-active={tourActive("feedback-button")}>
             <FeedbackWidget variant="inline" />
             <div className="stat-row" aria-label="Studio stats">
               <span>{turns.length} rounds</span>
@@ -3370,7 +3392,7 @@ export default function App() {
               Add references
               <input type="file" accept="image/*" multiple onChange={handleReferenceUpload} />
             </label>
-            <div className="reference-dock" aria-label="Reference images">
+            <div className="reference-dock" aria-label="Reference images" data-tour-id="reference-dock" data-tour-active={tourActive("reference-dock")}>
               {referenceAssets.slice(0, 14).map((asset) => (
                 <button
                   type="button"
@@ -3688,8 +3710,8 @@ export default function App() {
         {showHandoffPanel ? (
           <section
             className="context-section handoff-section inspector-panel active"
-            data-tour-id="handoff-pack"
-            data-tour-active={tourActive("handoff-pack")}
+            data-tour-id="export-controls"
+            data-tour-active={tourActive("export-controls")}
           >
             <div className="section-title">
               <p className="eyebrow">Export</p>
