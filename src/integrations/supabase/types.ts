@@ -149,6 +149,48 @@ export type Database = {
         }
         Relationships: []
       }
+      generation_errors: {
+        Row: {
+          code: string
+          created_at: string
+          http_status: number | null
+          id: string
+          inputs: Json
+          message: string
+          model_id: string | null
+          provider: string
+          raw: string | null
+          retryable: boolean
+          user_id: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          http_status?: number | null
+          id?: string
+          inputs?: Json
+          message: string
+          model_id?: string | null
+          provider: string
+          raw?: string | null
+          retryable?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          http_status?: number | null
+          id?: string
+          inputs?: Json
+          message?: string
+          model_id?: string | null
+          provider?: string
+          raw?: string | null
+          retryable?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
