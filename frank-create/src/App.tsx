@@ -391,6 +391,10 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [statusText, setStatusText] = useState("Waiting for the brief...");
   const [retrySafePayload, setRetrySafePayload] = useState<Record<string, unknown> | null>(null);
+  type GenPhase = "idle" | "queued" | "running" | "completed" | "failed";
+  const [genPhase, setGenPhase] = useState<GenPhase>("idle");
+  const [genError, setGenError] = useState<{ message: string; code?: string; retryable?: boolean; httpStatus?: number; raw?: string } | null>(null);
+  const [genErrorOpen, setGenErrorOpen] = useState(false);
   const [desktopNotice, setDesktopNotice] = useState<string | null>(null);
   const [videoStartedAt, setVideoStartedAt] = useState<number | null>(null);
   const [videoNowTick, setVideoNowTick] = useState(Date.now());
@@ -1801,6 +1805,9 @@ export default function App() {
     }
 
     setBusy(true);
+    setGenPhase("queued");
+    setGenError(null);
+    setGenErrorOpen(false);
     setStatusText(promptMode === "generate" ? "Preparing the next round..." : "Preparing the edit brief...");
 
     const request = buildTurnRequest({
@@ -1835,6 +1842,8 @@ export default function App() {
         thinking_budget: settings.thinking_budget ?? 0,
       };
       try {
+        setGenPhase("running");
+        setStatusText("Model is running...");
         const { data, error } = await supabase.functions.invoke("frank-generate", {
           body: invokeBody,
         });
@@ -1887,17 +1896,21 @@ export default function App() {
         setSelectedAsset(newAssets[0]);
         setStatusText(`Generated ${newAssets.length} pick${newAssets.length === 1 ? "" : "s"} via Lovable AI.`);
         setRetrySafePayload(null);
+        setGenPhase("completed");
+        setGenError(null);
       } catch (err) {
         // Surface structured error info from frank-generate when available.
-        // supabase.functions.invoke returns a FunctionsHttpError whose `context`
-        // holds the Response; parse its JSON body for { error, code, retryable }.
         let message = err instanceof Error ? err.message : "Lovable AI generation failed.";
         let code: string | undefined;
         let retryable: boolean | undefined;
+        let httpStatus: number | undefined;
+        let raw: string | undefined;
         try {
           const ctx = (err as { context?: Response }).context;
           if (ctx && typeof ctx.json === "function") {
+            httpStatus = ctx.status;
             const parsed = await ctx.clone().json();
+            raw = JSON.stringify(parsed, null, 2);
             if (parsed?.error) message = String(parsed.error);
             if (parsed?.code) code = String(parsed.code);
             if (typeof parsed?.retryable === "boolean") retryable = parsed.retryable;
@@ -1906,6 +1919,8 @@ export default function App() {
         const suffix = code ? ` [${code}${retryable === false ? " — not retryable" : retryable ? " — safe to retry" : ""}]` : "";
         setStatusText(`Lovable AI: ${message}${suffix}`);
         setRetrySafePayload(retryable === true ? invokeBody : null);
+        setGenPhase("failed");
+        setGenError({ message, code, retryable, httpStatus, raw });
         const localTurn = makeLocalTurn(activeSession.id, request);
         setTurns((current) => [...current, localTurn]);
       } finally {
@@ -3643,7 +3658,37 @@ export default function App() {
         </section>
 
         <div className="status-strip">
+          <div className={`gen-progress phase-${genPhase}`} role="status" aria-live="polite">
+            {(["queued", "running", genPhase === "failed" ? "failed" : "completed"] as const).map((step, i) => {
+              const order: GenPhase[] = ["idle", "queued", "running", genPhase === "failed" ? "failed" : "completed"];
+              const currentIdx = order.indexOf(genPhase);
+              const stepIdx = i + 1;
+              const state =
+                genPhase === "idle" ? "pending" :
+                genPhase === "failed" && step === "failed" ? "failed" :
+                stepIdx < currentIdx ? "done" :
+                stepIdx === currentIdx ? (genPhase === "failed" ? "failed" : genPhase === "completed" ? "done" : "active") :
+                "pending";
+              const label = step === "queued" ? "Queued" : step === "running" ? "Running" : step === "failed" ? "Failed" : "Completed";
+              return (
+                <span key={step} className={`gen-step gen-step-${state}`}>
+                  <span className="gen-step-dot">{stepIdx}</span>
+                  <span className="gen-step-label">{label}</span>
+                </span>
+              );
+            })}
+          </div>
           <span>{statusText}</span>
+          {genPhase === "failed" && genError ? (
+            <button
+              type="button"
+              className="gen-error-toggle"
+              onClick={() => setGenErrorOpen((v) => !v)}
+              aria-expanded={genErrorOpen}
+            >
+              {genErrorOpen ? "Hide details" : "Show details"}
+            </button>
+          ) : null}
           {retrySafePayload ? (
             <button
               type="button"
@@ -3673,6 +3718,19 @@ export default function App() {
             {connection === "online" ? "Comfy connected" : connection === "checking" ? "Checking Comfy" : "Comfy offline"}
           </span>
         </div>
+        {genPhase === "failed" && genError && genErrorOpen ? (
+          <div className="gen-error-details" role="region" aria-label="Error details">
+            <dl>
+              {genError.code ? (<><dt>Code</dt><dd>{genError.code}</dd></>) : null}
+              {typeof genError.httpStatus === "number" ? (<><dt>HTTP</dt><dd>{genError.httpStatus}</dd></>) : null}
+              {typeof genError.retryable === "boolean" ? (<><dt>Retryable</dt><dd>{genError.retryable ? "yes" : "no"}</dd></>) : null}
+              <dt>Message</dt><dd>{genError.message}</dd>
+            </dl>
+            {genError.raw ? (
+              <pre className="gen-error-raw">{genError.raw}</pre>
+            ) : null}
+          </div>
+        ) : null}
       </aside>
 
       {advancedOpen ? (
