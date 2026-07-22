@@ -3180,7 +3180,7 @@ export default function App() {
             onKeyDown={(event) => {
               if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
                 event.preventDefault();
-                if (!busy && prompt.trim()) void handleGenerate();
+                if (prompt.trim()) void handleGenerate();
                 else if (!prompt.trim()) setStatusText("Enter a prompt to generate.");
               }
             }}
