@@ -1848,6 +1848,18 @@ export default function App() {
     setGenError(null);
     setGenErrorOpen(false);
     setStatusText(promptMode === "generate" ? "Preparing the next round..." : "Preparing the edit brief...");
+    const inflightId = makeLocalId("gen");
+    const inflightEntry: InflightGen = {
+      id: inflightId,
+      modelId: selectedModel.id,
+      modelLabel: modelName(config, selectedModel.id),
+      prompt: prompt,
+      aspect: settings.aspect_ratio,
+      count: Math.max(1, settings.count),
+    };
+    setInflightGens((current) => [...current, inflightEntry]);
+    const finishInflight = () => setInflightGens((current) => current.filter((g) => g.id !== inflightId));
+
 
     const request = buildTurnRequest({
       sessionId: activeSession.id,
