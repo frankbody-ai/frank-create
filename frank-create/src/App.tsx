@@ -3132,7 +3132,7 @@ export default function App() {
                 {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
               </label>
             </div>
-            <AspectPreview aspect={settings.aspect_ratio} size={modelHasSizes ? settings.image_size : undefined} label={selectedModel?.short_label ?? selectedModel?.label} />
+            <AspectPreview aspect={settings.aspect_ratio} size={modelHasSizes ? settings.image_size : undefined} label={selectedModel?.short_label ?? selectedModel?.label} count={settings.count} />
             {fieldErrors.references ? (
               <p className="field-error" role="alert">{fieldErrors.references}</p>
             ) : null}
