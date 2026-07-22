@@ -3344,7 +3344,7 @@ export default function App() {
             <button
               className="primary-button"
               type="submit"
-              disabled={busy || !prompt.trim() || hasStudioFieldErrors(fieldErrors)}
+              disabled={!prompt.trim() || hasStudioFieldErrors(fieldErrors)}
               title={
                 !prompt.trim()
                   ? "Enter a prompt to generate"
