@@ -54,7 +54,7 @@ function Router() {
         <FeedbackWidget />
       </AuthGate>
     );
-  return <AuthGate><App /><FeedbackWidget /></AuthGate>;
+  return <AuthGate><App /></AuthGate>;
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
