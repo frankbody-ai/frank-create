@@ -792,6 +792,8 @@ function buildReplicateInput(
   }
   return { prompt };
 }
+
+async function handleRemix(body: any) {
   const prompt = String(body.prompt || "").trim();
   if (!prompt) return { variants: [] };
   const content = await lovableChat([
