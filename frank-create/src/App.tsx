@@ -2294,6 +2294,25 @@ export default function App() {
     }
   }
 
+  function retryTurn(turn: StudioTurn) {
+    try {
+      const parsed = JSON.parse(turn.settings_json || "{}") as Partial<StudioSettings>;
+      setPrompt(turn.prompt || "");
+      setPromptRemixes([]);
+      if (turn.model) setSelectedModelId(turn.model);
+      if (turn.preset_key) setSelectedPresetKey(turn.preset_key);
+      setFrankBodyMode(!!turn.frank_body_mode);
+      setSettings((current) => ({ ...current, ...parsed }));
+      setStatusText("Retrying with previous settings…");
+      // Let React flush the state updates before submitting.
+      window.setTimeout(() => { void handleGenerate(); }, 60);
+    } catch (err) {
+      setStatusText(err instanceof Error ? err.message : "Could not retry this round.");
+    }
+  }
+
+
+
   async function removeAssetFromSession(asset: Asset) {
     try {
       if (connection === "online") {
