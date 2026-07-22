@@ -196,15 +196,16 @@ async function lovableChat(messages: any[]) {
 }
 
 const MODEL_MAP: Record<string, string> = {
-  "nano-banana-pro": "google/gemini-3-pro-image",
-  "google-nb-pro": "google/gemini-3-pro-image",
-  "nano-banana-2": "google/gemini-3.1-flash-image",
-  "google-nb-2": "google/gemini-3.1-flash-image",
+  // Kept only for the local placeholder — every visible model runs on Replicate.
   "frank-local-comfy": "google/gemini-2.5-flash-image",
-  "openai-gpt-image-2": "openai/gpt-image-2",
 };
 
 const REPLICATE_MAP: Record<string, string> = {
+  "google-nb-pro": "google/nano-banana-pro",
+  "nano-banana-pro": "google/nano-banana-pro",
+  "google-nb-2": "google/nano-banana-2",
+  "nano-banana-2": "google/nano-banana-2",
+  "openai-gpt-image-2": "openai/gpt-image-2",
   "reve-2-1": "reve/reve-2.1",
   "seedream-5-pro": "bytedance/seedream-5-pro",
 };
