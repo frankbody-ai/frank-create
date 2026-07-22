@@ -3817,7 +3817,24 @@ export default function App() {
         {genPhase === "failed" && genError && genErrorOpen ? (
           <div className="gen-error-details" role="region" aria-label="Error details">
             <dl>
-              {genError.code ? (<><dt>Code</dt><dd>{genError.code}</dd></>) : null}
+              {genError.code ? (<><dt>Code</dt><dd><code>{genError.code}</code></dd></>) : null}
+              {genError.requestId ? (
+                <>
+                  <dt>Request ID</dt>
+                  <dd>
+                    <code>{genError.requestId}</code>{" "}
+                    <button
+                      type="button"
+                      className="mini-button"
+                      style={{ padding: "2px 6px", fontSize: 11 }}
+                      onClick={() => { void navigator.clipboard?.writeText(genError.requestId ?? ""); }}
+                      title="Copy request ID"
+                    >
+                      Copy
+                    </button>
+                  </dd>
+                </>
+              ) : null}
               {typeof genError.httpStatus === "number" ? (<><dt>HTTP</dt><dd>{genError.httpStatus}</dd></>) : null}
               {typeof genError.retryable === "boolean" ? (<><dt>Retryable</dt><dd>{genError.retryable ? "yes" : "no"}</dd></>) : null}
               <dt>Message</dt><dd>{genError.message}</dd>
