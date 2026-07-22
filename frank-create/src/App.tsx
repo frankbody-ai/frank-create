@@ -13,6 +13,7 @@ import {
   Heart,
   ImageIcon,
   Layers3,
+  Loader2,
   MessageSquareText,
   Paperclip,
   Paintbrush,
@@ -2939,6 +2940,43 @@ export default function App() {
                 Cancel
               </button>
             </div>
+          ) : null}
+          {busy && (genPhase === "queued" || genPhase === "running") ? (
+            <article className="turn-card turn-card-pending" aria-live="polite" aria-busy="true">
+              <div className="turn-copy">
+                <span className="status-dot pending" />
+                <div>
+                  <p className="eyebrow">Generating</p>
+                  <h3>{selectedModel ? modelName(config, selectedModel.id) : "Model"}</h3>
+                  <p>{prompt || "Preparing the next round..."}</p>
+                  <div className="turn-meta">
+                    <span>{genPhase === "queued" ? "Queued" : "Running"}</span>
+                    <span>{settings.aspect_ratio}</span>
+                    <span>{settings.count} pick{settings.count === 1 ? "" : "s"}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="pending-strip" style={{ display: "grid", gridTemplateColumns: `repeat(${Math.max(1, settings.count)}, minmax(0, 1fr))`, gap: 12, marginTop: 12 }}>
+                {Array.from({ length: Math.max(1, settings.count) }).map((_, i) => {
+                  const p = aspectRatioParts(settings.aspect_ratio);
+                  const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
+                  return (
+                    <div
+                      key={i}
+                      className="pending-tile"
+                      style={{
+                        aspectRatio: ar,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        borderRadius: 12, border: "1px dashed rgba(0,0,0,0.15)",
+                        background: "rgba(0,0,0,0.03)",
+                      }}
+                    >
+                      <Loader2 size={22} className="spin" style={{ opacity: 0.6 }} />
+                    </div>
+                  );
+                })}
+              </div>
+            </article>
           ) : null}
           {turns.length ? (
             [...turns].reverse().map((turn, idx) => {
