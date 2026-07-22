@@ -1,15 +1,25 @@
-## Goal
-Remove the now-duplicate Model & output section from the right sidebar, since model selection + aspect/size/count already live in the center generator card.
+## Plan to fix Reve failures
 
-## Change
-- **`frank-create/src/App.tsx`** (lines 3233–3401): delete the entire right-sidebar `<section className="context-section model-summary inspector-model-strip">` block, including its "Change model" toggle button and the `modelSettingsExpanded` drawer (model list, aspect/size/count inputs, AspectPreview, thinking-mode row).
-- Keep the `<aside className="context-panel">` wrapper and the Review section (3403+) intact.
-- Leave `modelSettingsExpanded` state and `showModelSettings` handler in place for now (harmless; safer than a wider refactor). Can prune in a follow-up if desired.
+I checked the current Reve path and the live connector. The Replicate connection is linked and the Reve model is reachable through the Lovable gateway; its schema confirms the app should send only `prompt`, `aspect_ratio`, and optional `reference_images`.
 
-## Out of scope
-- No changes to the center composer or to `studio.ts` validation.
-- No changes to the mobile/tour data-attributes flow — the center card already carries the settings.
+### What I’ll change
+1. **Use the correct Replicate connector secret consistently**
+   - Update the `frank-generate` function so Replicate calls read the linked connector secret expected by the gateway.
+   - Keep `LOVABLE_API_KEY` as the gateway bearer token.
 
-## Verification
-- Right sidebar shows only Review + downstream sections; no "Change model" button or model list on the right.
-- Center generator still shows Model / Aspect / Size / Count / preview and generates normally.
+2. **Add live provider diagnostics for Reve**
+   - Log the Replicate create/poll status and provider error body when Reve fails.
+   - Preserve the user-facing mapped errors, but include enough raw detail in the expandable panel to know whether it is auth, invalid params, quota, timeout, or empty output.
+
+3. **Harden the Reve output parser**
+   - Reve returns a plain string URL on success, but I’ll keep support for arrays/objects so future output changes don’t show “Provider returned no image.”
+
+4. **Validate the deployed function with a real Reve request**
+   - Deploy `frank-generate`.
+   - Call it with a simple Reve prompt and a known-supported ratio like `16:9`.
+   - Confirm it returns an image URL instead of the stale `401` / `Provider returned no image` failure.
+
+### Technical notes
+- No database schema changes are needed.
+- No UI redesign is needed unless the deployed test reveals a frontend-only handling issue.
+- The center Quality control should remain `Auto from aspect` for Reve because the model schema has no size/quality field.
