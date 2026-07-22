@@ -3710,8 +3710,8 @@ export default function App() {
         {showHandoffPanel ? (
           <section
             className="context-section handoff-section inspector-panel active"
-            data-tour-id="handoff-pack"
-            data-tour-active={tourActive("handoff-pack")}
+            data-tour-id="export-controls"
+            data-tour-active={tourActive("export-controls")}
           >
             <div className="section-title">
               <p className="eyebrow">Export</p>
