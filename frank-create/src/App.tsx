@@ -3099,7 +3099,7 @@ export default function App() {
               </label>
               {modelHasSizes ? (
                 <label>
-                  Size
+                  Quality
                   <select
                     value={settings.image_size}
                     onChange={(event) => setSettings((current) => ({ ...current, image_size: event.target.value }))}
@@ -3114,7 +3114,7 @@ export default function App() {
                 </label>
               ) : (
                 <label>
-                  Size
+                  Quality
                   <span className="field-hint">Auto from aspect</span>
                 </label>
               )}
