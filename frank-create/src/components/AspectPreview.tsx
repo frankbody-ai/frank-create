@@ -50,6 +50,9 @@ export function AspectPreview({ aspect, size, label, count }: AspectPreviewProps
       </div>
       <div className="aspect-preview-meta">
         <span className="aspect-preview-orient">{orientation}</span>
+        {typeof count === "number" && count > 0 ? (
+          <span className="aspect-preview-label">{count} pick{count === 1 ? "" : "s"}</span>
+        ) : null}
         {label ? <span className="aspect-preview-label">{label}</span> : null}
         {mismatch ? (
           <span className="aspect-preview-warn" role="alert">Size doesn't match aspect — will letterbox/crop</span>
