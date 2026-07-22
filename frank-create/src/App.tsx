@@ -3701,6 +3701,20 @@ export default function App() {
             })}
           </div>
           <span>{statusText}</span>
+          {(genPhase === "queued" || genPhase === "running") && busy ? (
+            <button
+              type="button"
+              className="gen-stop-btn"
+              onClick={() => {
+                generateAbortRef.current?.abort();
+                setStatusText("Canceling...");
+              }}
+              title="Cancel this generation"
+            >
+              <Square size={12} />
+              Stop
+            </button>
+          ) : null}
           {genPhase === "failed" && genError ? (
             <button
               type="button"
