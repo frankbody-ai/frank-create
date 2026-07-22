@@ -626,14 +626,17 @@ function sanitizeReplicateInput(input: Record<string, unknown>): Record<string, 
 }
 
 class ProviderRunError extends Error {
+  requestId?: string;
   constructor(
     message: string,
     public code: string,
     public retryable: boolean,
     public status?: number,
     public raw?: string,
+    requestId?: string,
   ) {
     super(message);
+    this.requestId = requestId;
   }
 }
 
