@@ -3071,6 +3071,19 @@ export default function App() {
           <div className="composer-settings" aria-label="Output settings">
             <div className="setting-row">
               <label>
+                Model
+                <select
+                  value={selectedModelId}
+                  onChange={(event) => setSelectedModelId(event.target.value)}
+                >
+                  {config.models.map((model) => (
+                    <option key={model.id} value={model.id} disabled={model.status === "disabled"}>
+                      {(model.short_label ?? model.label) + (model.status === "disabled" ? " (soon)" : "")}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
                 Aspect
                 <select
                   value={settings.aspect_ratio}
