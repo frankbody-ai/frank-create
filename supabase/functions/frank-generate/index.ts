@@ -292,10 +292,10 @@ async function runReplicate(
     const started = Date.now();
     while (pred.status !== "succeeded" && pred.status !== "failed" && pred.status !== "canceled") {
       if (signal?.aborted) {
-        throw new ReplicateError("Canceled by user.", { code: "canceled", retryable: true });
+        throw new ReplicateError("Canceled by user.", { code: "canceled", retryable: true, requestId: predictionId });
       }
       if (Date.now() - started > 180_000) {
-        throw new ReplicateError("Replicate timed out after 3 minutes.", { code: "timeout", retryable: true });
+        throw new ReplicateError("Replicate timed out after 3 minutes.", { code: "timeout", retryable: true, requestId: predictionId });
       }
       await new Promise((r) => setTimeout(r, 2000));
       const id = pred?.id;
@@ -304,7 +304,7 @@ async function runReplicate(
       if (!r.ok) {
         const t = await r.text();
         console.error("[frank-generate] replicate:poll_failed", { slug, id, status: r.status, body: t.slice(0, 1000) });
-        throw new ReplicateError(`Replicate poll failed (${r.status}): ${extractProviderMessage(t)}`, { code: "provider_error", status: r.status, retryable: true, raw: t });
+        throw new ReplicateError(`Replicate poll failed (${r.status}): ${extractProviderMessage(t)}`, { code: "provider_error", status: r.status, retryable: true, raw: t, requestId: id });
       }
       pred = await r.json();
       console.info("[frank-generate] replicate:poll:status", { slug, id, status: pred?.status });
@@ -314,12 +314,12 @@ async function runReplicate(
   }
 
   if (pred.status === "canceled") {
-    throw new ReplicateError("Replicate prediction was canceled.", { code: "canceled", retryable: true });
+    throw new ReplicateError("Replicate prediction was canceled.", { code: "canceled", retryable: true, requestId: pred?.id ?? predictionId });
   }
   if (pred.status !== "succeeded") {
     const rawErr = typeof pred.error === "string" ? pred.error : JSON.stringify(pred.error ?? "unknown");
     const classified = classifyModelError(rawErr);
-    throw new ReplicateError(classified.message, { code: classified.code, retryable: classified.retryable, raw: rawErr });
+    throw new ReplicateError(classified.message, { code: classified.code, retryable: classified.retryable, raw: rawErr, requestId: pred?.id ?? predictionId });
   }
 
   const out = pred.output;
@@ -336,6 +336,7 @@ async function runReplicate(
       code: "empty_output",
       retryable: true,
       raw: JSON.stringify(out ?? null).slice(0, 500),
+      requestId: pred?.id ?? predictionId,
     });
   }
   return url;
