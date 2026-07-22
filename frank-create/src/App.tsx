@@ -1554,7 +1554,7 @@ export default function App() {
 
     setSelectedAsset(asset);
     setInspectorTab("review");
-    setLightboxAsset(null);
+    setLightboxAsset(asset);
   }
 
   function startCompare(asset: Asset) {
