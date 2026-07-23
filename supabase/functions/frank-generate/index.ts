@@ -1,6 +1,6 @@
 // Frank Create – Image generation via Lovable AI Gateway + Replicate.
 // Public function: accepts { prompt, count, modelId? } and returns { images: dataUrl[] }.
-import { buildReplicateInput, withReferenceIdentityLock } from "./replicate_input.ts";
+import { buildReplicateInput } from "./replicate_input.ts";
 
 
 const corsHeaders = {
