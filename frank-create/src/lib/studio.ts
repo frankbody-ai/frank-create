@@ -9,6 +9,7 @@ export interface BuildTurnRequestInput {
   presetKey?: string;
   settings: StudioSettings;
   referenceAssetIds?: string[];
+  referenceImageUrls?: string[];
   editSourceAssetId?: string;
   maskAssetId?: string;
 }
@@ -23,6 +24,7 @@ export function buildTurnRequest(input: BuildTurnRequestInput): TurnRequest {
     preset_key: input.presetKey,
     settings: input.settings,
     reference_asset_ids: input.referenceAssetIds ?? [],
+    reference_image_urls: input.referenceImageUrls ?? [],
     edit_source_asset_id: input.editSourceAssetId,
     mask_asset_id: input.maskAssetId
   };

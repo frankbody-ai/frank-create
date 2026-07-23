@@ -32,7 +32,9 @@ export function buildReplicateInput(
   prompt: string,
   body: BuildBody,
 ): Record<string, unknown> {
-  const refs = Array.isArray(body.reference_images) ? body.reference_images.filter(Boolean) : [];
+  const refs = Array.isArray(body.reference_images)
+    ? body.reference_images.map((url) => typeof url === "string" ? url.trim() : "").filter(Boolean)
+    : [];
   const lockedPrompt = refs.length ? withReferenceIdentityLock(prompt, refs.length) : prompt;
 
   if (slug === "reve/reve-2.1") {

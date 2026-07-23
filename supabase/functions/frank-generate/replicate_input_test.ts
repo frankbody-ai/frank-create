@@ -67,8 +67,8 @@ Deno.test("empty / whitespace URLs are filtered before being sent to Replicate",
     const field = REFERENCE_FIELD_BY_SLUG[slug];
     const input = buildReplicateInput(slug, "p", { reference_images: dirty as string[] });
     const arr = input[field] as string[];
-    // Whitespace-only strings are truthy — builder filters only ""; document that.
-    assert(arr.every((u) => u.length > 0), `[${slug}] empty strings must be dropped`);
+    assert(!arr.includes("  "), `[${slug}] whitespace-only strings must be dropped`);
+    assert(arr.every((u) => u.trim().length > 0), `[${slug}] empty strings must be dropped`);
     assert(arr.includes(REFS[0]), `[${slug}] real URL missing after filtering`);
   }
 });

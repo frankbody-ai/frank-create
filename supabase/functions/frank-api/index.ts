@@ -134,6 +134,7 @@ function rowToAsset(row: any, signedUrl = ""): any {
     prompt: row.prompt_snapshot || undefined,
     file_path: row.storage_path,
     preview_url: signedUrl,
+    remote_url: signedUrl,
     width: meta.width,
     height: meta.height,
     favorite: !!meta.favorite,
@@ -317,16 +318,22 @@ async function loadReferenceDataUrls(assetIds: string[], userId: string): Promis
     .eq("user_id", userId).in("id", assetIds);
   const out: string[] = [];
   for (const row of data || []) {
-    try {
-      const dl = await sb.storage.from(BUCKET).download(row.storage_path);
-      if (dl.error || !dl.data) continue;
-      const buf = new Uint8Array(await dl.data.arrayBuffer());
-      let bin = "";
-      for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
-      const b64 = btoa(bin);
-      const mime = (row.metadata_json as any)?.mime || "image/png";
-      out.push(`data:${mime};base64,${b64}`);
-    } catch (_) { /* skip */ }
+    const url = await signed(row.storage_path);
+    if (url) out.push(url);
+  }
+  return out;
+}
+
+function normalizeReferenceUrls(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of value) {
+    const url = typeof item === "string" ? item.trim() : "";
+    if (!url || seen.has(url)) continue;
+    if (!/^https?:\/\//i.test(url) && !/^data:image\//i.test(url)) continue;
+    seen.add(url);
+    out.push(url);
   }
   return out;
 }
@@ -407,7 +414,10 @@ async function handleInference(body: any, userId: string) {
       ...(body.edit_source_asset_id ? [body.edit_source_asset_id] : []),
       ...((body.reference_asset_ids as string[]) || []),
     ];
-    const refUrls = await loadReferenceDataUrls(refIds, userId);
+    const refUrls = normalizeReferenceUrls([
+      ...normalizeReferenceUrls(body.reference_image_urls),
+      ...(await loadReferenceDataUrls(refIds, userId)),
+    ]);
     const providerPrompt = refUrls.length ? withReferenceIdentityLock(prompt, refUrls.length) : prompt;
     const replicateSlug = REPLICATE_MAP[modelId];
     if (replicateSlug) {
@@ -819,7 +829,9 @@ function buildReplicateInput(
   prompt: string,
   body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
 ): Record<string, unknown> {
-  const refs = Array.isArray(body.reference_images) ? body.reference_images.filter(Boolean) : [];
+  const refs = Array.isArray(body.reference_images)
+    ? body.reference_images.map((url) => typeof url === "string" ? url.trim() : "").filter(Boolean)
+    : [];
   if (slug === "reve/reve-2.1") {
     const allowed = new Set([
       "auto", "1:1", "4:3", "3:4", "3:2", "2:3", "16:9", "9:16",
@@ -1061,6 +1073,36 @@ Deno.serve(async (req) => {
       const { data } = sid ? await q.eq("session_id", sid) : await q.eq("user_id", userId);
       const items = await Promise.all((data || []).map(async (r: any) => rowToAsset(r, await signed(r.storage_path))));
       return json({ assets: items });
+    }
+
+    if (path === "/references" && method === "POST") {
+      const body = await readJson(req).catch(() => ({}));
+      const sessionId = String(body.session_id || "");
+      const storagePath = String(body.file_path || "");
+      if (!sessionId || !storagePath) {
+        return json({ error: { code: "invalid_reference", message: "Reference needs a session and uploaded image path." } }, 400);
+      }
+      const metadata = {
+        title: String(body.title || "Reference image"),
+        media_type: "image",
+        mime: typeof body.mime === "string" ? body.mime : "image/png",
+        source_asset_id: typeof body.source_asset_id === "string" ? body.source_asset_id : null,
+        width: typeof body.width === "number" ? body.width : null,
+        height: typeof body.height === "number" ? body.height : null,
+        approval_status: "review",
+      };
+      const { data, error } = await supabase().from("assets").insert({
+        id: crypto.randomUUID(),
+        user_id: userId,
+        session_id: sessionId,
+        storage_path: storagePath,
+        asset_type: "reference",
+        prompt_snapshot: typeof body.prompt === "string" ? body.prompt : null,
+        model_key: typeof body.model === "string" ? body.model : null,
+        metadata_json: metadata,
+      }).select().single();
+      if (error) return json({ error: { code: "reference_create_failed", message: error.message } }, 400);
+      return json({ asset: rowToAsset(data, await signed(data.storage_path)) });
     }
 
     const turnDelMatch = path.match(/^\/turns\/([^/]+)$/);

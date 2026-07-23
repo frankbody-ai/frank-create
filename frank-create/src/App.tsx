@@ -1652,12 +1652,33 @@ export default function App() {
       const localPreview = await fileToDataUrl(file).catch(() => URL.createObjectURL(file));
       let remoteUrl: string | undefined;
       let storagePath: string | undefined;
+      let uploadedReference: Asset | undefined;
       if (connection === "online") {
         try {
           const { uploadReferenceToStorage } = await import("./lib/api");
           const { url, path } = await uploadReferenceToStorage(file, activeSession.id);
           remoteUrl = url;
           storagePath = path;
+          const created = await createReference({
+            session_id: activeSession.id,
+            title: file.name,
+            file_path: path,
+            preview_url: url,
+            media_type: "image",
+            sync_status: "cloud"
+          });
+          uploadedReference = {
+            ...created.asset,
+            title: created.asset.title || file.name,
+            preview_url: localPreview,
+            remote_url: created.asset.remote_url || url,
+            file_path: created.asset.file_path || path,
+            kind: "reference",
+            media_type: "image",
+            favorite: created.asset.favorite ?? false,
+            approval_status: created.asset.approval_status || "review",
+            sync_status: "cloud"
+          };
         } catch (err) {
           console.error("[frank] reference upload failed", err);
           failedUploads.push(file.name);
@@ -1665,7 +1686,7 @@ export default function App() {
         }
       }
 
-      createdAssets.push({
+      createdAssets.push(uploadedReference ?? {
         id: makeLocalId("asset"),
         session_id: activeSession.id,
         kind: "reference",
@@ -1908,6 +1929,7 @@ export default function App() {
       presetKey: selectedPresetKey,
       settings,
       referenceAssetIds: selectedReferenceAssets.map((asset) => asset.id),
+      referenceImageUrls: generationReferenceUrls,
       editSourceAssetId: editSourceAsset?.id,
       maskAssetId: promptMode === "masked_edit" ? maskAsset?.id : undefined
     });
@@ -2079,6 +2101,7 @@ export default function App() {
           aspect_ratio: settings.aspect_ratio,
           size: settings.image_size,
           thinking_budget: settings.thinking_budget ?? 0,
+          reference_images: generationReferenceUrls,
         } : null);
         setStatusText(
           message ||
