@@ -7,6 +7,9 @@
     "build:dev": "npm run build"
   },
   "dependencies": {
-    "@lovable.dev/cloud-auth-js": "^1.1.2"
+    "@lovable.dev/cloud-auth-js": "^1.1.2",
+    "@lovable.dev/email-js": "^0.1.2",
+    "@lovable.dev/webhooks-js": "^0.0.2",
+    "@supabase/supabase-js": "^2.110.8"
   }
 }
