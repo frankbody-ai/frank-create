@@ -1350,6 +1350,8 @@ select:focus {
 .reference-selection-count--empty {
   color: color-mix(in srgb, var(--coffee) 60%, transparent);
   font-style: italic;
+}
+
 
 .reference-selection-count {
   min-height: 42px;
