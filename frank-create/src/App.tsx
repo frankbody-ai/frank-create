@@ -1652,18 +1652,23 @@ export default function App() {
       const localPreview = URL.createObjectURL(file);
       if (connection === "online") {
         try {
-          const uploaded = await uploadImage(file);
-          const created = await createReference({
+          const { uploadReferenceToStorage } = await import("./lib/api");
+          const { url, path } = await uploadReferenceToStorage(file, activeSession.id);
+          createdAssets.push({
+            id: makeLocalId("asset"),
             session_id: activeSession.id,
+            kind: "reference",
             title: file.name,
-            file_path: makeStoredImagePath(uploaded),
-            preview_url: makeViewUrl(uploaded),
             media_type: "image",
+            file_path: path,
+            preview_url: url,
+            favorite: false,
+            approval_status: "review",
             sync_status: "local"
           });
-          createdAssets.push(created.asset);
           continue;
-        } catch {
+        } catch (err) {
+          console.error("[frank] reference upload failed", err);
           failedUploads.push(file.name);
           continue;
         }
@@ -1689,7 +1694,7 @@ export default function App() {
     if (failedUploads.length && createdAssets.length) {
       setStatusText(`${createdAssets.length} reference${createdAssets.length === 1 ? "" : "s"} locked. ${failedUploads.length} upload${failedUploads.length === 1 ? "" : "s"} failed.`);
     } else if (failedUploads.length) {
-      setStatusText("Reference upload failed. Try again after restarting Comfy.");
+      setStatusText("Reference upload failed. Please try again.");
     } else if (createdAssets.length) {
       setStatusText("Reference locked. Nice.");
     }
