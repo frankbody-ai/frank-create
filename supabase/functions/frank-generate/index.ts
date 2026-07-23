@@ -1,5 +1,7 @@
 // Frank Create – Image generation via Lovable AI Gateway + Replicate.
 // Public function: accepts { prompt, count, modelId? } and returns { images: dataUrl[] }.
+import { buildReplicateInput, withReferenceIdentityLock } from "./replicate_input.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -516,110 +518,10 @@ function classifyModelError(raw: string): { code: string; message: string; retry
   return { code: "model_error", message: `Model failed: ${raw.slice(0, 200)}`, retryable: true };
 }
 
-// Per-slug input builders that match each model's published schema exactly.
-function buildReplicateInput(
-  slug: string,
-  prompt: string,
-  body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
-): Record<string, unknown> {
-  const refs = Array.isArray(body.reference_images) ? body.reference_images.filter(Boolean) : [];
-  const lockedPrompt = refs.length ? withReferenceIdentityLock(prompt, refs.length) : prompt;
+// buildReplicateInput + withReferenceIdentityLock live in ./replicate_input.ts
+// so they can be exercised by replicate_input_test.ts as an E2E guarantee that
+// reference URLs land in the field each model's Replicate schema requires.
 
-  if (slug === "reve/reve-2.1") {
-    // Schema: prompt, aspect_ratio (enum incl. "auto"), reference_images (<=8). No size.
-    const REVE_AR = new Set([
-      "auto","1:1","4:3","3:4","3:2","2:3","16:9","9:16",
-      "5:4","4:5","21:9","17:9","2:1","1:2","3:1","1:3","4:1","1:4",
-    ]);
-    const ar = body.aspect_ratio && REVE_AR.has(body.aspect_ratio) ? body.aspect_ratio : "auto";
-    const input: Record<string, unknown> = { prompt: lockedPrompt, aspect_ratio: ar };
-    if (refs.length) input.reference_images = refs.slice(0, 8);
-    return input;
-  }
-
-  if (slug === "bytedance/seedream-5-pro") {
-    // Schema: prompt, size ("1K"|"2K"), image_input (<=10),
-    // aspect_ratio (match_input_image|1:1|4:3|3:4|16:9|9:16|3:2|2:3|21:9), output_format.
-    const SEEDREAM_AR = new Set([
-      "match_input_image","1:1","4:3","3:4","16:9","9:16","3:2","2:3","21:9",
-    ]);
-    const size = body.size === "2K" ? "2K" : "1K";
-    const ar = body.aspect_ratio && SEEDREAM_AR.has(body.aspect_ratio)
-      ? body.aspect_ratio
-      : (refs.length ? "match_input_image" : "1:1");
-    const input: Record<string, unknown> = {
-      prompt: lockedPrompt,
-      size,
-      aspect_ratio: ar,
-      output_format: "png",
-    };
-    if (refs.length) input.image_input = refs.slice(0, 10);
-    return input;
-  }
-
-  if (slug === "google/nano-banana-pro" || slug === "google/nano-banana-2") {
-    // Schema: prompt, aspect_ratio, resolution (1K/2K/4K), image_input (<=14), output_format.
-    const NB_PRO_AR = new Set([
-      "match_input_image", "1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9",
-    ]);
-    const NB2_AR = new Set([
-      "match_input_image", "1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9",
-    ]);
-    const allowed = slug === "google/nano-banana-pro" ? NB_PRO_AR : NB2_AR;
-    const ar = body.aspect_ratio && allowed.has(body.aspect_ratio)
-      ? body.aspect_ratio
-      : (refs.length ? "match_input_image" : "1:1");
-    const resolution = body.size === "4K" ? "4K" : body.size === "2K" ? "2K" : "1K";
-    const input: Record<string, unknown> = {
-      prompt: lockedPrompt,
-      aspect_ratio: ar,
-      resolution,
-      output_format: "png",
-    };
-    if (refs.length) input.image_input = refs.slice(0, 14);
-    return input;
-  }
-
-  if (slug === "openai/gpt-image-2") {
-    // Schema: prompt, aspect_ratio (ratios OR pixel presets), quality, number_of_images,
-    // input_images (nullable), output_format, background, moderation, output_compression.
-    const RATIO_AR = new Set(["auto", "1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16"]);
-    const PIXEL_AR = new Set([
-      "1024x1024", "1536x1024", "1024x1536",
-      "1536x1152", "1152x1536",
-      "2048x2048", "2048x1152", "1152x2048",
-      "3840x2160", "2160x3840",
-    ]);
-    // Prefer explicit pixel size when supplied, else fall back to the aspect ratio.
-    let aspect: string = "1:1";
-    if (body.size && PIXEL_AR.has(body.size)) aspect = body.size;
-    else if (body.size && RATIO_AR.has(body.size)) aspect = body.size;
-    else if (body.aspect_ratio && RATIO_AR.has(body.aspect_ratio)) aspect = body.aspect_ratio;
-    else if (body.aspect_ratio && PIXEL_AR.has(body.aspect_ratio)) aspect = body.aspect_ratio;
-    const input: Record<string, unknown> = {
-      prompt: lockedPrompt,
-      aspect_ratio: aspect,
-      quality: "auto",
-      number_of_images: 1,
-      output_format: "png",
-    };
-    if (refs.length) input.input_images = refs.slice(0, 10);
-    return input;
-  }
-
-  // Fallback (should not hit — REPLICATE_MAP is closed).
-  return { prompt };
-}
-
-function withReferenceIdentityLock(prompt: string, referenceCount: number): string {
-  return [
-    `STRICT REFERENCE REQUIREMENT: ${referenceCount} image reference${referenceCount === 1 ? " is" : "s are"} attached and must define the product identity.`,
-    "Use the reference image(s) for the exact product/packaging/logo/colors/label/shape/material details.",
-    "Do not replace the reference product with another object, animal product, shipping box, generic pack, different brand, or invented label.",
-    "If the user asks for a product, pack, box, bottle, tube, or object, it means the product shown in the attached reference image(s).",
-    prompt,
-  ].join("\n");
-}
 
 function json(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
