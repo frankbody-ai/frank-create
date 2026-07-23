@@ -557,6 +557,43 @@ export async function uploadImage(file: File): Promise<UploadedImage> {
   return (await response.json()) as UploadedImage;
 }
 
+/**
+ * Upload a reference image to the private `studio-images` bucket and return a
+ * long-lived signed URL. The URL is publicly fetchable (until expiry) so the
+ * frank-generate edge function and downstream providers (Replicate, etc.) can
+ * read the image directly.
+ */
+export async function uploadReferenceToStorage(
+  file: File,
+  sessionId: string
+): Promise<{ url: string; path: string }> {
+  const { supabase } = await import("./supabaseClient");
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user?.id;
+  if (!userId) {
+    throw new Error("Sign in required to upload references.");
+  }
+  const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+  const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+  const path = `${userId}/${sessionId}/references/${uniqueName}`;
+
+  const { error: upErr } = await supabase.storage
+    .from("studio-images")
+    .upload(path, file, { cacheControl: "3600", upsert: false, contentType: file.type || undefined });
+  if (upErr) {
+    throw new Error(`Upload failed: ${upErr.message}`);
+  }
+
+  // 7-day signed URL is plenty for a single generation round.
+  const { data: signed, error: signErr } = await supabase.storage
+    .from("studio-images")
+    .createSignedUrl(path, 60 * 60 * 24 * 7);
+  if (signErr || !signed?.signedUrl) {
+    throw new Error(`Could not sign reference URL: ${signErr?.message || "unknown"}`);
+  }
+  return { url: signed.signedUrl, path };
+}
+
 export async function queuePrompt(prompt: Record<string, unknown>, clientId = makeClientId()) {
   if (isLovablePreview) {
     throw new Error("Direct ComfyUI prompt queueing requires the desktop install.");
