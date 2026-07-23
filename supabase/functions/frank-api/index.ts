@@ -408,6 +408,7 @@ async function handleInference(body: any, userId: string) {
       ...((body.reference_asset_ids as string[]) || []),
     ];
     const refUrls = await loadReferenceDataUrls(refIds, userId);
+    const providerPrompt = refUrls.length ? withReferenceIdentityLock(prompt, refUrls.length) : prompt;
     const replicateSlug = REPLICATE_MAP[modelId];
     if (replicateSlug) {
       const replicateKey = getReplicateGatewayKey();
@@ -419,7 +420,7 @@ async function handleInference(body: any, userId: string) {
       const PER_PREDICTION_MS = replicateSlug.includes("seedream") || replicateSlug.includes("nano-banana") ? 140_000 : 120_000;
       const replicateErrors: unknown[] = [];
       const runOne = () => Promise.race<string | undefined>([
-        runReplicate(replicateSlug, prompt, {
+        runReplicate(replicateSlug, providerPrompt, {
           aspect_ratio: reqSettings.aspect_ratio,
           size: reqSettings.image_size || reqSettings.size,
           reference_images: refUrls,
@@ -451,7 +452,7 @@ async function handleInference(body: any, userId: string) {
       }
     } else {
       for (let i = 0; i < count; i++) {
-        generatedImages.push(await lovableImage(prompt, refUrls, {
+        generatedImages.push(await lovableImage(providerPrompt, refUrls, {
           gatewayModel,
           aspectRatio: reqSettings.aspect_ratio,
           size: reqSettings.image_size || reqSettings.size,
@@ -591,6 +592,7 @@ async function runReplicate(
   console.info("[frank-api] replicate:create", {
     slug,
     input: sanitizeReplicateInput(input),
+    reference_count: countReferenceInputs(input),
     has_lovable_key: !!LOVABLE_API_KEY,
     has_connector_key: !!key,
   });
@@ -694,11 +696,18 @@ function getReplicateGatewayKey(): string | undefined {
 function sanitizeReplicateInput(input: Record<string, unknown>): Record<string, unknown> {
   const copy: Record<string, unknown> = { ...input };
   if (typeof copy.prompt === "string") copy.prompt = String(copy.prompt).slice(0, 240);
-  for (const key of ["reference_images", "image_input"]) {
+  for (const key of ["reference_images", "image_input", "input_images"]) {
     const value = copy[key];
     if (Array.isArray(value)) copy[key] = value.map((item) => typeof item === "string" ? `[uri:${item.length}]` : "[non-string]");
   }
   return copy;
+}
+
+function countReferenceInputs(input: Record<string, unknown>): number {
+  return ["reference_images", "image_input", "input_images"].reduce((total, key) => {
+    const value = input[key];
+    return total + (Array.isArray(value) ? value.length : 0);
+  }, 0);
 }
 
 class ProviderRunError extends Error {
@@ -878,6 +887,16 @@ function buildReplicateInput(
     return input;
   }
   return { prompt };
+}
+
+function withReferenceIdentityLock(prompt: string, referenceCount: number): string {
+  return [
+    `STRICT REFERENCE REQUIREMENT: ${referenceCount} image reference${referenceCount === 1 ? " is" : "s are"} attached and must define the product identity.`,
+    "Use the reference image(s) for the exact product/packaging/logo/colors/label/shape/material details.",
+    "Do not replace the reference product with another object, animal product, shipping box, generic pack, different brand, or invented label.",
+    "If the user asks for a product, pack, box, bottle, tube, or object, it means the product shown in the attached reference image(s).",
+    prompt,
+  ].join("\n");
 }
 
 async function handleRemix(body: any) {
