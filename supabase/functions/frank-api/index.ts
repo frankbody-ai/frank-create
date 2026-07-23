@@ -829,7 +829,9 @@ function buildReplicateInput(
   prompt: string,
   body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
 ): Record<string, unknown> {
-  const refs = Array.isArray(body.reference_images) ? body.reference_images.filter(Boolean) : [];
+  const refs = Array.isArray(body.reference_images)
+    ? body.reference_images.map((url) => typeof url === "string" ? url.trim() : "").filter(Boolean)
+    : [];
   if (slug === "reve/reve-2.1") {
     const allowed = new Set([
       "auto", "1:1", "4:3", "3:4", "3:2", "2:3", "16:9", "9:16",
