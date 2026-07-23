@@ -677,6 +677,7 @@ export interface TurnRequest {
   preset_key?: string;
   settings: StudioSettings;
   reference_asset_ids: string[];
+  reference_image_urls?: string[];
   edit_source_asset_id?: string;
   mask_asset_id?: string;
 }
