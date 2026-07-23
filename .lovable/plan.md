@@ -1,33 +1,31 @@
-## Update the in-app walkthrough
+## Problem
 
-Rewrite `WALKTHROUGH_STEPS` in `frank-create/src/App.tsx` so it matches the current Studio and drops references to disabled features.
+1. **Uploads fail on Lovable Cloud.** `uploadImage()` in `frank-create/src/lib/api.ts` POSTs to `/api/upload/image` — a ComfyUI-only endpoint that doesn't exist in the cloud runtime. Every online upload returns non-OK, so the catch branch shows "Reference upload failed. Try again after restarting Comfy."
+2. **References never reach the model.** The `invokeBody` sent to the `frank-generate` edge function (App.tsx ~L1919) only includes `prompt`, `count`, `modelId`, `aspect_ratio`, `size`, `thinking_budget` — `reference_images` is dropped, so even a successful upload wouldn't influence the generation.
+3. **No composer-level indicator.** Thumbnails only appear inside the dock row. Users don't get a quick visual cue near the "Add references" button telling them how many refs are loaded vs. actively in use for the next round.
 
-### Remove
-- Product Shot Lab step and mentions (feature greyed out)
-- Video Lab mentions (feature greyed out)
-- Comfy graph / raw Comfy escape hatches on the main path
-- Right-side "Model summary / drawer" separate steps — settings now live inside the composer card
-- Cliff Pack / handoff / readiness pack / Demo Doctor language from the main tour (kept only as a brief Advanced note)
+## Fix
 
-### Add new steps for features shipped since the last version
-1. Feedback button (top‑right of center pane) — how anyone reports bugs/ideas with an optional screenshot.
-2. Reference dock (14‑slot) + selectable refs per round.
-3. Inline composer settings — Model, Aspect, Size (linked to aspect), Count, Quality, and Aspect preview.
-4. Model roster — Nano Banana Pro/2, gpt‑image‑2, Reve 2.1, Seedream 5.0 Pro (all via Replicate), plus Thinking Mode (Off/Low/High) where applicable.
-5. Frank Body Mode + the 5 brand prompt presets and the "+ New preset" tile in the preset library at the bottom of the right menu.
-6. Generate flow — pending card appears immediately, Stop to cancel, parallel rounds allowed.
-7. Rounds thread — newest on top, "New" badge, per‑round Retry / Retry missing / Retry safely, expandable error panel, copy ID, timestamp, delete round.
-8. Review desk — click any image to expand (lightbox), approve/reject/favorite sync between center and right panel, audit trail recorded.
-9. Sessions — rename in place, auto‑naming from first prompt, session switcher.
-10. Account & Admin — profile/sign‑out, and (admins only) the Admin portal for user roles and feedback triage.
-11. Advanced (short) — provider keys, diagnostics, health page; explicitly noted as off the normal creative path.
+### 1. Upload references to Supabase Storage (replaces ComfyUI upload)
+- Add a migration that creates a public bucket `frank-references` with RLS on `storage.objects` allowing authenticated users to insert/select/delete their own files (path prefix `auth.uid()/...`), and public SELECT so the URL works in `<img>` and in the edge function.
+- New helper `uploadReferenceToStorage(file)` in `frank-create/src/lib/api.ts` that uses the Supabase JS client to upload under `${userId}/${sessionId}/${uuid}-${filename}` and returns the public URL.
+- In `addReferenceFiles` (App.tsx ~L1642), when `connection === "online"` call the new helper and store the returned URL as both `preview_url` and `file_path` on the local reference asset. Drop the ComfyUI `uploadImage` + `createReference` path. Keep the offline branch as-is.
+- Update the failure copy to "Reference upload failed. Please try again." (remove the "restart Comfy" wording).
 
-### Housekeeping
-- Update the `WalkthroughTarget` union to match the new steps (drop `handoff-pack`, `model-settings-drawer`, `model-output-controls`, `frank-mode-toggle` if merged into the composer step; add targets like `feedback-button`, `reference-dock`, `session-controls`, `admin-entry`).
-- Update the corresponding `data-walkthrough` anchor attributes in the JSX where targets change.
-- Remove `openSettings` / `openAdvanced` side effects that pointed at the retired right‑side drawers.
-- Keep the walkthrough launcher and popover UI unchanged.
+### 2. Pass references into `frank-generate`
+- In App.tsx (~L1919) extend `invokeBody` with `reference_images: selectedReferenceAssets.map(a => a.preview_url).filter(Boolean)`. The edge function already accepts and routes `reference_images` per model (verified in `supabase/functions/frank-generate/index.ts` L227, L513).
 
-### Out of scope
-- No changes to business logic, generation, or backend.
-- No visual redesign of the popover itself.
+### 3. Composer indicator so users can see refs are loaded
+- Add a small badge on the "Add references" button showing the count of uploaded refs (e.g. a pink pill with the number), and a paperclip/image glyph next to it.
+- Add a compact status chip next to the button: `N loaded · M in use` (or `No references` when empty), styled with the existing `--paper`/`--coffee` tokens.
+- Add a subtle check-mark overlay on selected thumbnails in the dock (currently only a blue outline) so the selected vs. loaded distinction is obvious at a glance.
+
+### 4. Verification
+- `bun run --cwd frank-create build` (typecheck).
+- Playwright: sign in, upload an image, confirm the badge shows "1 loaded · 1 in use", generate on Nano Banana Pro with a prompt like "put this on a beach", confirm the returned image reflects the reference.
+
+## Files touched
+- `supabase/migrations/*` — new bucket + policies (via migration tool)
+- `frank-create/src/lib/api.ts` — add `uploadReferenceToStorage`
+- `frank-create/src/App.tsx` — swap upload path, include `reference_images` in generate body, add badge + status chip + selected-check overlay
+- `frank-create/src/styles.css` — badge / chip / check styles

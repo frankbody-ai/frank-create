@@ -1652,18 +1652,23 @@ export default function App() {
       const localPreview = URL.createObjectURL(file);
       if (connection === "online") {
         try {
-          const uploaded = await uploadImage(file);
-          const created = await createReference({
+          const { uploadReferenceToStorage } = await import("./lib/api");
+          const { url, path } = await uploadReferenceToStorage(file, activeSession.id);
+          createdAssets.push({
+            id: makeLocalId("asset"),
             session_id: activeSession.id,
+            kind: "reference",
             title: file.name,
-            file_path: makeStoredImagePath(uploaded),
-            preview_url: makeViewUrl(uploaded),
             media_type: "image",
+            file_path: path,
+            preview_url: url,
+            favorite: false,
+            approval_status: "review",
             sync_status: "local"
           });
-          createdAssets.push(created.asset);
           continue;
-        } catch {
+        } catch (err) {
+          console.error("[frank] reference upload failed", err);
           failedUploads.push(file.name);
           continue;
         }
@@ -1689,7 +1694,7 @@ export default function App() {
     if (failedUploads.length && createdAssets.length) {
       setStatusText(`${createdAssets.length} reference${createdAssets.length === 1 ? "" : "s"} locked. ${failedUploads.length} upload${failedUploads.length === 1 ? "" : "s"} failed.`);
     } else if (failedUploads.length) {
-      setStatusText("Reference upload failed. Try again after restarting Comfy.");
+      setStatusText("Reference upload failed. Please try again.");
     } else if (createdAssets.length) {
       setStatusText("Reference locked. Nice.");
     }
@@ -1923,6 +1928,9 @@ export default function App() {
         aspect_ratio: settings.aspect_ratio,
         size: settings.image_size,
         thinking_budget: settings.thinking_budget ?? 0,
+        reference_images: selectedReferenceAssets
+          .map((asset) => asset.preview_url)
+          .filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u)),
       };
       try {
         setGenPhase("running");
@@ -3387,32 +3395,46 @@ export default function App() {
           ) : null}
 
           <div className="composer-actions" data-tour-id="reference-dock" data-tour-active={tourActive("reference-dock")}>
-            <label className="upload-button">
+            <label className={`upload-button reference-upload${referenceAssets.length ? " has-refs" : ""}`}>
               <Upload size={16} />
               Add references
+              {referenceAssets.length ? (
+                <span className="reference-count-badge" aria-label={`${referenceAssets.length} references loaded`}>
+                  <Paperclip size={11} />
+                  {referenceAssets.length}
+                </span>
+              ) : null}
               <input type="file" accept="image/*" multiple onChange={handleReferenceUpload} />
             </label>
             <div className="reference-dock" aria-label="Reference images">
 
-              {referenceAssets.slice(0, 14).map((asset) => (
-                <button
-                  type="button"
-                  key={asset.id}
-                  className={selectedReferenceIdSet.has(asset.id) ? "selected" : ""}
-                  aria-pressed={selectedReferenceIdSet.has(asset.id)}
-                  title={`${selectedReferenceIdSet.has(asset.id) ? "Using" : "Skipping"} ${asset.title}`}
-                  onClick={() => toggleReferenceForRound(asset)}
-                >
-                  {asset.preview_url ? <img src={asset.preview_url} alt={asset.title} /> : <Paperclip size={15} />}
-                </button>
-              ))}
+              {referenceAssets.slice(0, 14).map((asset) => {
+                const isSelected = selectedReferenceIdSet.has(asset.id);
+                return (
+                  <button
+                    type="button"
+                    key={asset.id}
+                    className={isSelected ? "selected" : ""}
+                    aria-pressed={isSelected}
+                    title={`${isSelected ? "Using" : "Skipping"} ${asset.title}`}
+                    onClick={() => toggleReferenceForRound(asset)}
+                  >
+                    {asset.preview_url ? <img src={asset.preview_url} alt={asset.title} /> : <Paperclip size={15} />}
+                    {isSelected ? <span className="ref-check" aria-hidden="true">✓</span> : null}
+                  </button>
+                );
+              })}
               {referenceAssets.length ? (
                 <span className="reference-selection-count">
                   {selectedReferenceAssets.length
-                    ? `${selectedReferenceAssets.length}/${Math.min(referenceAssets.length, 14)} ref${selectedReferenceAssets.length === 1 ? "" : "s"} selected`
-                    : `Prompt-only (${referenceAssets.length}/14)`}
+                    ? `${selectedReferenceAssets.length}/${Math.min(referenceAssets.length, 14)} in use`
+                    : `${Math.min(referenceAssets.length, 14)} loaded · prompt-only`}
                 </span>
-              ) : null}
+              ) : (
+                <span className="reference-selection-count reference-selection-count--empty">
+                  No references loaded
+                </span>
+              )}
             </div>
             {editSourceAsset && selectedModel?.capabilities.masked_edit ? (
               <>

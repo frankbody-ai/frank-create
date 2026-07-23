@@ -1309,6 +1309,48 @@ select:focus {
   object-fit: cover;
 }
 
+.reference-dock button .ref-check {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--pink, #ff6f91);
+  color: var(--white, #fff);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--white, #fff);
+}
+
+.reference-upload {
+  position: relative;
+}
+
+.reference-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--pink, #ff6f91);
+  color: var(--white, #fff);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.reference-upload.has-refs {
+  border-color: var(--pink, #ff6f91);
+}
+
+.reference-selection-count--empty {
+  color: color-mix(in srgb, var(--coffee) 60%, transparent);
+  font-style: italic;
+
 .reference-selection-count {
   min-height: 42px;
   border: 1px solid var(--line);
