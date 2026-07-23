@@ -1650,23 +1650,14 @@ export default function App() {
 
     for (const file of files.slice(0, modelOptions.referenceLimit || files.length)) {
       const localPreview = URL.createObjectURL(file);
+      let remoteUrl: string | undefined;
+      let storagePath: string | undefined;
       if (connection === "online") {
         try {
           const { uploadReferenceToStorage } = await import("./lib/api");
           const { url, path } = await uploadReferenceToStorage(file, activeSession.id);
-          createdAssets.push({
-            id: makeLocalId("asset"),
-            session_id: activeSession.id,
-            kind: "reference",
-            title: file.name,
-            media_type: "image",
-            file_path: path,
-            preview_url: url,
-            favorite: false,
-            approval_status: "review",
-            sync_status: "local"
-          });
-          continue;
+          remoteUrl = url;
+          storagePath = path;
         } catch (err) {
           console.error("[frank] reference upload failed", err);
           failedUploads.push(file.name);
@@ -1680,7 +1671,9 @@ export default function App() {
         kind: "reference",
         title: file.name,
         media_type: "image",
+        file_path: storagePath,
         preview_url: localPreview,
+        remote_url: remoteUrl,
         favorite: false,
         approval_status: "review",
         sync_status: "local"
@@ -1929,7 +1922,7 @@ export default function App() {
         size: settings.image_size,
         thinking_budget: settings.thinking_budget ?? 0,
         reference_images: selectedReferenceAssets
-          .map((asset) => asset.preview_url)
+          .map((asset) => asset.remote_url ?? asset.preview_url)
           .filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u)),
       };
       try {
