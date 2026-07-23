@@ -1649,7 +1649,7 @@ export default function App() {
     const failedUploads: string[] = [];
 
     for (const file of files.slice(0, modelOptions.referenceLimit || files.length)) {
-      const localPreview = URL.createObjectURL(file);
+      const localPreview = await fileToDataUrl(file).catch(() => URL.createObjectURL(file));
       let remoteUrl: string | undefined;
       let storagePath: string | undefined;
       if (connection === "online") {
@@ -1873,6 +1873,14 @@ export default function App() {
       return;
     }
 
+    const generationReferenceUrls = selectedReferenceAssets
+      .map(referenceUrlForGeneration)
+      .filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u));
+    if (selectedReferenceAssets.length && !generationReferenceUrls.length) {
+      setStatusText("Reference images are still uploading. Try again in a moment.");
+      return;
+    }
+
     setBusy(true);
     setGenPhase("queued");
     setGenError(null);
@@ -1915,15 +1923,13 @@ export default function App() {
         }
       }
       const invokeBody = {
-        prompt: request.prompt,
+        prompt: composeReferenceLockedPrompt(request.prompt, generationReferenceUrls.length),
         count: settings.count,
         modelId: selectedModel.id,
         aspect_ratio: settings.aspect_ratio,
         size: settings.image_size,
         thinking_budget: settings.thinking_budget ?? 0,
-        reference_images: selectedReferenceAssets
-          .map((asset) => asset.remote_url ?? asset.preview_url)
-          .filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u)),
+        reference_images: generationReferenceUrls,
       };
       try {
         setGenPhase("running");
@@ -6937,6 +6943,30 @@ function joinWithOr(values: string[]) {
 
 function referenceIdsFromAssets(assets: Asset[]) {
   return assets.filter((asset) => asset.kind === "reference").map((asset) => asset.id);
+}
+
+function referenceUrlForGeneration(asset: Asset) {
+  return asset.remote_url || asset.preview_url || asset.file_path;
+}
+
+function composeReferenceLockedPrompt(prompt: string, referenceCount: number) {
+  if (!referenceCount) return prompt;
+  return [
+    `Use the ${referenceCount} attached reference image${referenceCount === 1 ? "" : "s"} as strict product identity input.`,
+    "The product, packaging, logo, colors, label layout, shape, and material details must come from the reference image(s).",
+    "Do not invent or substitute a different object, animal product, box, brand, flavour, label, or packaging. If the prompt says product/object/pack, it means the referenced Frank Body product.",
+    "Keep the referenced product clearly visible and recognizable in the final image.",
+    prompt,
+  ].join("\n");
+}
+
+function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("Could not read image preview."));
+    reader.readAsDataURL(file);
+  });
 }
 
 function makeLocalSession(): StudioSession {

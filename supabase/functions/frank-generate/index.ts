@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
     aspect_ratio?: string;
     quality?: string;
     thinking_budget?: number;
+    reference_images?: string[];
   } = {};
   try {
     body = await req.json();
@@ -240,6 +241,7 @@ async function runReplicate(
   };
   console.info("[frank-generate] replicate:create", {
     slug,
+    reference_count: countReferenceInputs(input),
     input: sanitizeReplicateInput(input),
     has_lovable_key: !!lovableApiKey,
     has_connector_key: !!key,
@@ -408,11 +410,19 @@ function getReplicateGatewayKey(): string | undefined {
 function sanitizeReplicateInput(input: Record<string, unknown>): Record<string, unknown> {
   const copy: Record<string, unknown> = { ...input };
   if (typeof copy.prompt === "string") copy.prompt = String(copy.prompt).slice(0, 240);
-  for (const key of ["reference_images", "image_input"]) {
+  for (const key of ["reference_images", "image_input", "input_images"]) {
     const value = copy[key];
     if (Array.isArray(value)) copy[key] = value.map((item) => typeof item === "string" ? `[uri:${item.length}]` : "[non-string]");
   }
   return copy;
+}
+
+function countReferenceInputs(input: Record<string, unknown>): number {
+  for (const key of ["reference_images", "image_input", "input_images"]) {
+    const value = input[key];
+    if (Array.isArray(value)) return value.length;
+  }
+  return 0;
 }
 
 function extractReplicateUrl(output: unknown): string | undefined {
@@ -513,6 +523,7 @@ function buildReplicateInput(
   body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
 ): Record<string, unknown> {
   const refs = Array.isArray(body.reference_images) ? body.reference_images.filter(Boolean) : [];
+  const lockedPrompt = refs.length ? withReferenceIdentityLock(prompt, refs.length) : prompt;
 
   if (slug === "reve/reve-2.1") {
     // Schema: prompt, aspect_ratio (enum incl. "auto"), reference_images (<=8). No size.
@@ -521,7 +532,7 @@ function buildReplicateInput(
       "5:4","4:5","21:9","17:9","2:1","1:2","3:1","1:3","4:1","1:4",
     ]);
     const ar = body.aspect_ratio && REVE_AR.has(body.aspect_ratio) ? body.aspect_ratio : "auto";
-    const input: Record<string, unknown> = { prompt, aspect_ratio: ar };
+    const input: Record<string, unknown> = { prompt: lockedPrompt, aspect_ratio: ar };
     if (refs.length) input.reference_images = refs.slice(0, 8);
     return input;
   }
@@ -537,7 +548,7 @@ function buildReplicateInput(
       ? body.aspect_ratio
       : (refs.length ? "match_input_image" : "1:1");
     const input: Record<string, unknown> = {
-      prompt,
+      prompt: lockedPrompt,
       size,
       aspect_ratio: ar,
       output_format: "png",
@@ -560,7 +571,7 @@ function buildReplicateInput(
       : (refs.length ? "match_input_image" : "1:1");
     const resolution = body.size === "4K" ? "4K" : body.size === "2K" ? "2K" : "1K";
     const input: Record<string, unknown> = {
-      prompt,
+      prompt: lockedPrompt,
       aspect_ratio: ar,
       resolution,
       output_format: "png",
@@ -586,7 +597,7 @@ function buildReplicateInput(
     else if (body.aspect_ratio && RATIO_AR.has(body.aspect_ratio)) aspect = body.aspect_ratio;
     else if (body.aspect_ratio && PIXEL_AR.has(body.aspect_ratio)) aspect = body.aspect_ratio;
     const input: Record<string, unknown> = {
-      prompt,
+      prompt: lockedPrompt,
       aspect_ratio: aspect,
       quality: "auto",
       number_of_images: 1,
@@ -598,6 +609,16 @@ function buildReplicateInput(
 
   // Fallback (should not hit — REPLICATE_MAP is closed).
   return { prompt };
+}
+
+function withReferenceIdentityLock(prompt: string, referenceCount: number): string {
+  return [
+    `STRICT REFERENCE REQUIREMENT: ${referenceCount} image reference${referenceCount === 1 ? " is" : "s are"} attached and must define the product identity.`,
+    "Use the reference image(s) for the exact product/packaging/logo/colors/label/shape/material details.",
+    "Do not replace the reference product with another object, animal product, shipping box, generic pack, different brand, or invented label.",
+    "If the user asks for a product, pack, box, bottle, tube, or object, it means the product shown in the attached reference image(s).",
+    prompt,
+  ].join("\n");
 }
 
 function json(payload: unknown, status = 200) {
