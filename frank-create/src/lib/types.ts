@@ -621,6 +621,7 @@ export interface Asset {
   reference_asset_ids_json?: string;
   file_path?: string;
   preview_url?: string;
+  remote_url?: string;
   width?: number;
   height?: number;
   favorite: boolean;
