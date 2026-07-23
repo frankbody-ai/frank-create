@@ -1928,6 +1928,9 @@ export default function App() {
         aspect_ratio: settings.aspect_ratio,
         size: settings.image_size,
         thinking_budget: settings.thinking_budget ?? 0,
+        reference_images: selectedReferenceAssets
+          .map((asset) => asset.preview_url)
+          .filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u)),
       };
       try {
         setGenPhase("running");
