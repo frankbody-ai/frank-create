@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>frank hub — starter</title>
+<!-- Copy this file + the fonts/ folder + design.md into any new app. Every value below is from design.md. -->
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root{
+  --frank-pink:#FFB6A5; --frank-ink:#3F2A2D; --frank-blush:#FFEFEA;
+  --frank-pink-soft:#FFD0C6; --frank-ink-40:rgba(63,42,45,.4);
+  /* module accent — swap per app (see design.md §2 concern palette) */
+  --accent:#FFB6A5; --accent-soft:#FFD0C6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--frank-blush);color:var(--frank-ink);font:300 14px/1.5 "Founders Grotesk",ui-sans-serif,system-ui,sans-serif}
+h1,h2,h3{font-family:"Pitch","Courier New",ui-monospace,monospace;font-weight:600;margin:0}
+a{color:var(--frank-ink)}a:hover{color:#8a625f}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--frank-pink);outline-offset:2px}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-track{background:#FFEFEA}
+::-webkit-scrollbar-thumb{background:#FFD0C6;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#3F2A2D}
+@keyframes fade-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+.shell{display:flex;min-height:100vh}
+/* ── Sidebar: invariant on every page — only the active row changes ── */
+.sidebar{width:256px;flex:none;background:#fff;border-right:2px solid rgba(63,42,45,.1);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.logo-zone{display:flex;flex-direction:column;align-items:center;gap:8px;border-bottom:2px solid rgba(63,42,45,.1);padding:18px 16px 14px}
+.wordmark{display:flex;width:100%}
+.wordmark span{flex:1;border:2px solid var(--frank-ink);padding:8px 0;text-align:center;font-family:"Pitch",monospace;font-weight:600;font-size:23px}
+.wordmark span:first-child{border-radius:6px 0 0 6px}
+.wordmark span:last-child{border-left:0;border-radius:0 6px 6px 0}
+.tagline{font-weight:600;font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:rgba(63,42,45,.35)}
+.nav{padding:20px 12px;display:flex;flex-direction:column;gap:4px;flex:1;overflow-y:auto}
+.nav-section{font-weight:600;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--frank-ink-40);padding:14px 12px 6px}
+.nav-section:first-child{padding-top:0}
+.nav-item{display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;color:var(--frank-ink);border-radius:8px;padding:10px 12px;font-weight:500;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.nav-item:hover{background:rgba(255,208,198,.4)}
+.nav-item.active{background:var(--frank-ink);color:#fff;box-shadow:0 8px 24px rgba(63,42,45,.12)}
+.me{margin:12px;padding:12px;background:#FFEFEA;border-radius:10px;display:flex;align-items:center;gap:10px}
+.avatar{width:32px;height:32px;border-radius:50%;background:#FFD0C6;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;flex:none}
+
+.main{flex:1;padding:32px 40px;animation:fade-in .35s ease-out both}
+.main-inner{max-width:1280px;margin:0 auto}
+.page-h{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.page-h h2{font-size:30px;letter-spacing:.2em;text-transform:uppercase}
+.page-h p{margin:4px 0 0;font-size:13px;color:rgba(63,42,45,.6)}
+
+.btn{background:var(--frank-ink);color:#fff;border:0;padding:10px 16px;border-radius:8px;font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px;transition:transform .15s}
+.btn:hover{background:#000}.btn:active{transform:scale(.95)}
+.btn-2{background:#fff;color:rgba(63,42,45,.7);border:1px solid rgba(63,42,45,.15);padding:10px 16px;border-radius:8px;font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.btn-2:hover{background:#FFF6F3}
+.btn:disabled,.btn-2:disabled{opacity:.4;cursor:not-allowed}
+
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.card{background:#fff;border:1px solid rgba(63,42,45,.08);border-radius:12px;box-shadow:0 1px 2px rgba(63,42,45,.05);padding:24px}
+.tile{border:2px solid transparent;cursor:pointer;position:relative;overflow:hidden;transition:all .3s}
+.tile:hover{border-color:var(--frank-ink);box-shadow:0 8px 24px rgba(63,42,45,.12)}
+.tile .glow{position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:var(--accent);opacity:.15;filter:blur(30px);pointer-events:none}
+.tile .disc{width:48px;height:48px;border-radius:50%;background:var(--accent);margin-bottom:14px}
+.tile h3{font-size:20px;letter-spacing:.15em;text-transform:uppercase}
+.tile p{font-size:13px;color:rgba(63,42,45,.55);margin:8px 0 18px;line-height:1.5}
+.tile .cta{font-weight:600;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:99px;font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.input{width:100%;background:#FFFBFA;border:1.5px solid rgba(63,42,45,.12);border-radius:8px;padding:11px 14px;font:400 14px "Founders Grotesk",sans-serif;color:var(--frank-ink)}
+.input:focus{outline:0;border-color:var(--accent)}
+.label{display:block;font-weight:600;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.num{font-family:"Pitch",monospace;font-weight:600}
+
+/* ── Mobile top bar (hidden on desktop) ── */
+.topbar{display:none;position:fixed;inset:0 0 auto;height:64px;background:#fff;border-bottom:2px solid rgba(63,42,45,.08);z-index:40;align-items:center;justify-content:space-between;padding:0 18px}
+.topbar .wordmark span{font-size:14px;padding:3px 10px;flex:none}
+.burger{background:none;border:0;display:flex;flex-direction:column;gap:4px;padding:10px}
+.burger span{width:20px;height:2px;background:var(--frank-ink)}
+
+/* Tablet: sidebar → 64px icon rail (labels hidden) */
+@media (max-width:1023px){
+  .sidebar{width:64px}
+  .logo-zone{padding:14px 8px 10px}.tagline{display:none}
+  .wordmark span{font-size:11px;padding:5px 0}.wordmark span:first-child{border-radius:6px 0 0 6px}
+  .nav-section{visibility:hidden;height:8px;padding:0}
+  .nav-item{justify-content:center;padding:12px 0}.nav-item .txt{display:none}
+  .me .meta{display:none}.me{justify-content:center;padding:8px;margin:8px}
+  .main{padding:24px}
+  .grid{grid-template-columns:1fr 1fr}
+}
+/* Phone: rail → top bar, one column */
+@media (max-width:767px){
+  .sidebar{display:none}
+  .topbar{display:flex}
+  .main{padding:80px 16px 24px}
+  .grid{grid-template-columns:1fr}
+  .page-h h2{font-size:24px}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="wordmark"><span>frank</span><span>hub</span></div>
+  <button class="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+</div>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="logo-zone">
+      <div class="wordmark"><span>frank</span><span>hub</span></div>
+      <div class="tagline">Internal tools</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Section A.</div>
+      <button class="nav-item active"><span class="ico">◻</span><span class="txt">Hub home</span></button>
+      <button class="nav-item"><span class="ico">◻</span><span class="txt">Module one</span></button>
+      <button class="nav-item"><span class="ico">◻</span><span class="txt">Module two</span></button>
+      <div class="nav-section">Section B.</div>
+      <button class="nav-item"><span class="ico">◻</span><span class="txt">Module three</span></button>
+    </nav>
+    <div class="me">
+      <div class="avatar">AB</div>
+      <div class="meta"><div style="font-weight:600;font-size:12px">Logged in as</div><div style="font-size:11px;color:rgba(63,42,45,.5)">name@frankbody.com</div></div>
+    </div>
+  </aside>
+  <main class="main"><div class="main-inner">
+    <div class="page-h">
+      <div><h2>Hey babe.</h2><p>One sentence about what this app actually does.</p></div>
+      <button class="btn">+ Add thing.</button>
+    </div>
+    <div class="grid">
+      <div class="card tile"><div class="glow"></div><div class="disc"></div><h3>Module name.</h3><p>One line on what it does, in a normal sentence.</p><div class="cta">Open it →</div></div>
+      <div class="card tile"><div class="glow" style="background:#4FA6E1"></div><div class="disc" style="background:#4FA6E1"></div><h3>Module name.</h3><p>One line on what it does, in a normal sentence.</p><div class="cta">Open it →</div></div>
+      <div class="card tile"><div class="glow" style="background:#69E9D2"></div><div class="disc" style="background:#69E9D2"></div><h3>Module name.</h3><p>One line on what it does, in a normal sentence.</p><div class="cta">Open it →</div></div>
+      <div class="card">
+        <div class="label">Field label.</div>
+        <input class="input" placeholder="Placeholder text…">
+        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+          <span class="pill" style="background:#ACFAEA">Active</span>
+          <span class="pill" style="background:#FFD0C6">Pending</span>
+          <span class="pill" style="background:#3F2A2D;color:#fff">Overdue</span>
+        </div>
+      </div>
+      <div class="card"><div class="label" style="color:var(--frank-ink-40)">Metric name</div><div class="num" style="font-size:26px">$12,400</div><div style="margin-top:6px"><span class="pill" style="background:#ACFAEA;font-size:10px">+12%</span></div></div>
+      <div class="card" style="display:flex;flex-direction:column;justify-content:center;gap:10px"><button class="btn">Primary.</button><button class="btn-2">Secondary.</button><button class="btn" disabled>Disabled.</button></div>
+    </div>
+  </div></main>
+</div>
+</body>
+</html>
