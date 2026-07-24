@@ -134,7 +134,7 @@ button:disabled {
 }
 
 .studio-shell.guided-studio {
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   gap: 0;
   background:
