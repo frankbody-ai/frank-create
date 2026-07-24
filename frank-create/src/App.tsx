@@ -800,19 +800,22 @@ export default function App() {
     setReviewFilter("approved");
     setSelectedAsset(firstApproved);
     setInspectorTab("review");
+    setInspectorOpen(true);
     setLightboxAsset(null);
     clearCompare();
-    setStatusText(firstApproved ? "Approved only. Hot." : "No approved images yet.");
+    setStatusText(firstApproved ? "approved only. hot." : "no approved images yet.");
   }
 
   function showExportsPanel() {
     setInspectorTab("export");
-    setStatusText(showHandoffPanel ? "Export desk is open." : "Approve a pick to unlock exports.");
+    setInspectorOpen(true);
+    setStatusText(showHandoffPanel ? "export desk is open." : "approve a pick to unlock exports.");
   }
 
   function showBrandPanel() {
     setInspectorTab("brand");
-    setStatusText("Brand Kit is open.");
+    setInspectorOpen(true);
+    setStatusText("brand kit is open.");
     requestAnimationFrame(() => {
       document.querySelector(".brand-kit-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
