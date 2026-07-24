@@ -459,6 +459,7 @@ export default function App() {
 
       setAdvancedOpen(false);
       setSettingsOpen(false);
+      setInspectorOpen(false);
     }
 
     window.addEventListener("keydown", handleDrawerKeyDown);
