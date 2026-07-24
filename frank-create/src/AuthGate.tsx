@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS, hardSignOut } from "./lib/supabaseClient";
+import { lovable } from "./lib/lovableAuth";
 import frankCreateLogo from "./assets/frank-create.png.asset.json";
 
 
@@ -37,14 +38,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   const signIn = async () => {
     setError(null);
-    const { error: err } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-        queryParams: { prompt: "select_account" },
-      },
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+      extraParams: { prompt: "select_account" },
     });
-    if (err) setError(err.message || "sign-in didn't work. try again, babe.");
+    if (result?.error) {
+      setError(result.error.message || "sign-in didn't work. try again, babe.");
+    }
   };
 
   const signOut = async () => {
