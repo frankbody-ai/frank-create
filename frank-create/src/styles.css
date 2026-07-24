@@ -5167,7 +5167,7 @@ body {
   min-height: 100vh;
   height: 100vh;
   display: grid;
-  grid-template-columns: 256px minmax(0, 1fr) 380px;
+  grid-template-columns: 256px minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   gap: 0;
   overflow: hidden;
