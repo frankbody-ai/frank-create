@@ -369,6 +369,7 @@ export default function App() {
   const [advancedOpen, setAdvancedOpen] = useState(() => shouldAutoOpenProviderAudit());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [inspectorTab, setInspectorTab] = useState<"review" | "settings" | "brand" | "export">("review");
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
   const [walkthroughStep, setWalkthroughStep] = useState(0);
   const [walkthroughAnchor, setWalkthroughAnchor] = useState<WalkthroughAnchor | null>(null);
