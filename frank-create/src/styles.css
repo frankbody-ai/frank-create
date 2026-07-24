@@ -6986,3 +6986,7 @@ input:focus, textarea:focus, select:focus {
   .sidebar-nav-button { justify-content: center; padding: 12px 0; margin: 0 6px; }
   .sidebar-nav-button > span:not(.sidebar-badge) { display: none; }
 }
+
+/* Brand logo image (replaces the wordmark capsules) */
+.sidebar-brand-logo { display: block; width: 100%; height: auto; margin: 0; }
+.frank-auth-logo { display: block; width: 220px; max-width: 100%; height: auto; margin: 0 auto 8px; }
