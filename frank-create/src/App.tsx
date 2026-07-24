@@ -3517,7 +3517,34 @@ export default function App() {
         </form>
       </main>
 
-      <aside className="context-panel" aria-label="Review and settings">
+      {inspectorOpen ? (
+        <button
+          type="button"
+          className="inspector-scrim"
+          aria-label="Close inspector"
+          onClick={() => setInspectorOpen(false)}
+        />
+      ) : null}
+      <aside
+        className={`context-panel inspector-drawer ${inspectorOpen ? "open" : ""}`}
+        aria-label="Review and settings"
+        aria-hidden={!inspectorOpen}
+      >
+        <div className="inspector-drawer-toolbar">
+          <span>
+            <strong>Inspector</strong>
+            <small>review picks, brand kit, presets.</small>
+          </span>
+          <button
+            className="mini-button drawer-close-button"
+            type="button"
+            onClick={() => setInspectorOpen(false)}
+          >
+            <XCircle size={14} />
+            close
+          </button>
+        </div>
+
 
 
 
