@@ -7036,3 +7036,101 @@ input:focus, textarea:focus, select:focus {
 /* Brand logo image (replaces the wordmark capsules) */
 .sidebar-brand-logo { display: block; width: 100%; height: auto; margin: 0; }
 .frank-auth-logo { display: block; width: 220px; max-width: 100%; height: auto; margin: 0 auto 8px; }
+
+/* ============= Sidebar bottom sections — blend with top nav (§) ============= */
+.guided-header .sidebar-session-card,
+.guided-header .sidebar-account {
+  background: transparent !important;
+  border-top: 1px solid rgba(63, 42, 45, 0.08) !important;
+  padding: 8px 8px 12px !important;
+  margin: 0 !important;
+  gap: 2px !important;
+}
+
+.guided-header .sidebar-session-card .session-picker {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 10px 12px !important;
+  margin: 0 !important;
+  border-radius: 8px !important;
+  gap: 6px !important;
+}
+.guided-header .sidebar-session-card .session-picker span {
+  color: var(--frank-ink-40);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.guided-header .sidebar-session-card .session-picker select {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--frank-ink);
+  background: transparent;
+  border: 0;
+}
+
+.guided-header .sidebar-session-card p {
+  padding: 4px 12px 8px;
+  font-family: var(--font-body);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--frank-ink-40);
+  text-transform: none;
+}
+
+/* Rename / New session / Sign out — match .sidebar-nav-button look */
+.guided-header .sidebar-session-card .compact-action.secondary-button,
+.guided-header .sidebar-session-card .sidebar-new-session,
+.guided-header .sidebar-signout {
+  width: auto !important;
+  margin: 0 8px !important;
+  padding: 10px 12px !important;
+  min-height: 38px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--frank-ink) !important;
+  font-family: var(--font-body) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+}
+.guided-header .sidebar-session-card .compact-action.secondary-button:hover,
+.guided-header .sidebar-session-card .sidebar-new-session:hover,
+.guided-header .sidebar-signout:hover {
+  background: rgba(255, 208, 198, 0.4) !important;
+  color: var(--frank-ink) !important;
+}
+
+.guided-header .sidebar-account {
+  padding-top: 6px !important;
+}
+.guided-header .sidebar-account-info {
+  padding: 10px 12px 4px;
+}
+.guided-header .sidebar-account-label {
+  color: var(--frank-ink-40);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 1;
+}
+.guided-header .sidebar-account-email {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--frank-ink);
+  margin-top: 2px;
+}
