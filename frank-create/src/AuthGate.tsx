@@ -55,10 +55,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   return (
     <div className="frank-auth-wrap">
       <div className="frank-auth-card">
-        <div className="brand-mark sidebar-brand-mark frank-auth-wordmark" aria-label="frank create">
-          <span>frank</span>
-          <span>create</span>
-        </div>
+        <img src={frankCreateLogo.url} alt="frank create" className="frank-auth-logo" />
+
         <p className="frank-auth-tagline">THE ART DEPT.</p>
         <h1 className="frank-auth-title">Hey babe.</h1>
         <p className="frank-auth-sub">

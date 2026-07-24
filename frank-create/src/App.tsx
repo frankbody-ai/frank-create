@@ -2826,10 +2826,8 @@ export default function App() {
 
       <aside className="guided-header app-sidebar" data-tour-id="app-header" data-tour-active={tourActive("app-header")}>
         <div className="sidebar-brand-block">
-          <div className="brand-mark sidebar-brand-mark" aria-label="frank create">
-            <span>frank</span>
-            <span>create</span>
-          </div>
+          <img src={frankCreateLogo.url} alt="frank create" className="sidebar-brand-logo" />
+
           <p className="sidebar-app-tagline">THE ART DEPT.</p>
 
         </div>
