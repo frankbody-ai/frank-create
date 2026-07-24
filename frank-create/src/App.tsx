@@ -2826,13 +2826,15 @@ export default function App() {
 
       <aside className="guided-header app-sidebar" data-tour-id="app-header" data-tour-active={tourActive("app-header")}>
         <div className="sidebar-brand-block">
-          <div className="brand-mark sidebar-brand-mark" aria-label="Frank Create">
+          <div className="brand-mark sidebar-brand-mark" aria-label="frank create">
             <span>frank</span>
             <span>create</span>
           </div>
-          <p className="sidebar-app-copy">Add references, brief the image, generate picks, edit or approve one, export it.</p>
+          <p className="sidebar-app-tagline">THE ART DEPT.</p>
 
         </div>
+
+
 
 
         <nav className="sidebar-nav" aria-label="Frank Create navigation">
