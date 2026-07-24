@@ -1600,6 +1600,7 @@ export default function App() {
 
     setSelectedAsset(asset);
     setInspectorTab("review");
+    setInspectorOpen(true);
     setLightboxAsset(asset);
   }
 
