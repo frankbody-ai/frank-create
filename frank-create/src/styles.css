@@ -5523,23 +5523,21 @@ body {
 .studio-shell.guided-studio .context-panel.inspector-drawer {
   position: fixed;
   top: 0;
-  left: 256px;
+  right: 0;
   bottom: 0;
-  width: min(440px, calc(100vw - 256px));
+  width: min(420px, 92vw);
   height: 100vh;
   min-height: 0;
   overflow-y: auto;
   z-index: 60;
-  border-left: 1px solid rgba(63, 42, 45, 0.08);
-  border-right: 1px solid rgba(63, 42, 45, 0.08);
+  border-left: 1px solid rgba(63, 42, 45, 0.1);
   background: #fff;
-  backdrop-filter: none;
-  box-shadow: 24px 0 60px -30px rgba(63, 42, 45, 0.35);
+  box-shadow: -24px 0 60px -30px rgba(63, 42, 45, 0.35);
   display: flex;
   flex-direction: column;
   gap: 14px;
   padding: 0 16px 16px;
-  transform: translateX(-102%);
+  transform: translateX(102%);
   transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
   grid-column: auto;
   grid-row: auto;
@@ -5554,8 +5552,7 @@ body {
   inset: 0;
   z-index: 55;
   border: 0;
-  background: rgba(63, 42, 45, 0.28);
-  backdrop-filter: blur(2px);
+  background: transparent;
   cursor: pointer;
 }
 
