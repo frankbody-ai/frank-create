@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS, hardSignOut } from "./lib/supabaseClient";
+import frankCreateLogo from "./assets/frank-create.png.asset.json";
+
 
 type Status = "loading" | "signed-out" | "denied" | "ready";
 

@@ -141,6 +141,8 @@ import type {
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
+import frankCreateLogo from "./assets/frank-create.png.asset.json";
+
 
 type WalkthroughTarget =
   | "app-header"
