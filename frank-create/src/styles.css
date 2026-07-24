@@ -134,7 +134,7 @@ button:disabled {
 }
 
 .studio-shell.guided-studio {
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  grid-template-columns: 256px minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   gap: 0;
   background:
@@ -5520,22 +5520,71 @@ body {
   margin-left: auto;
 }
 
-.studio-shell.guided-studio .context-panel {
-  grid-column: 3;
-  grid-row: 1;
-  position: sticky;
+.studio-shell.guided-studio .context-panel.inspector-drawer {
+  position: fixed;
   top: 0;
+  left: 256px;
+  bottom: 0;
+  width: min(440px, calc(100vw - 256px));
   height: 100vh;
   min-height: 0;
   overflow-y: auto;
-  border-left: 2px solid rgba(63, 42, 45, 0.06);
+  z-index: 60;
+  border-left: 1px solid rgba(63, 42, 45, 0.08);
+  border-right: 1px solid rgba(63, 42, 45, 0.08);
   background: #fff;
   backdrop-filter: none;
+  box-shadow: 24px 0 60px -30px rgba(63, 42, 45, 0.35);
   display: flex;
   flex-direction: column;
   gap: 14px;
   padding: 0 16px 16px;
+  transform: translateX(-102%);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  grid-column: auto;
+  grid-row: auto;
 }
+
+.studio-shell.guided-studio .context-panel.inspector-drawer.open {
+  transform: translateX(0);
+}
+
+.inspector-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  border: 0;
+  background: rgba(63, 42, 45, 0.28);
+  backdrop-filter: blur(2px);
+  cursor: pointer;
+}
+
+.inspector-drawer-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 4px 12px;
+  margin: 0 -4px 4px;
+  background: linear-gradient(180deg, #fff 82%, rgba(255, 255, 255, 0));
+  border-bottom: 1px solid rgba(63, 42, 45, 0.08);
+}
+
+.inspector-drawer-toolbar strong {
+  font-family: var(--font-display, "Pitch", serif);
+  font-size: 1.05rem;
+  color: var(--frank-ink, #3F2A2D);
+  display: block;
+}
+
+.inspector-drawer-toolbar small {
+  color: rgba(63, 42, 45, 0.6);
+  font-size: 0.78rem;
+}
+
 
 .inspector-tabs {
   position: sticky;

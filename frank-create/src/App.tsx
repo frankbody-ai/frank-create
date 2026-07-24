@@ -369,6 +369,7 @@ export default function App() {
   const [advancedOpen, setAdvancedOpen] = useState(() => shouldAutoOpenProviderAudit());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [inspectorTab, setInspectorTab] = useState<"review" | "settings" | "brand" | "export">("review");
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
   const [walkthroughStep, setWalkthroughStep] = useState(0);
   const [walkthroughAnchor, setWalkthroughAnchor] = useState<WalkthroughAnchor | null>(null);
@@ -458,6 +459,7 @@ export default function App() {
 
       setAdvancedOpen(false);
       setSettingsOpen(false);
+      setInspectorOpen(false);
     }
 
     window.addEventListener("keydown", handleDrawerKeyDown);
@@ -799,19 +801,22 @@ export default function App() {
     setReviewFilter("approved");
     setSelectedAsset(firstApproved);
     setInspectorTab("review");
+    setInspectorOpen(true);
     setLightboxAsset(null);
     clearCompare();
-    setStatusText(firstApproved ? "Approved only. Hot." : "No approved images yet.");
+    setStatusText(firstApproved ? "approved only. hot." : "no approved images yet.");
   }
 
   function showExportsPanel() {
     setInspectorTab("export");
-    setStatusText(showHandoffPanel ? "Export desk is open." : "Approve a pick to unlock exports.");
+    setInspectorOpen(true);
+    setStatusText(showHandoffPanel ? "export desk is open." : "approve a pick to unlock exports.");
   }
 
   function showBrandPanel() {
     setInspectorTab("brand");
-    setStatusText("Brand Kit is open.");
+    setInspectorOpen(true);
+    setStatusText("brand kit is open.");
     requestAnimationFrame(() => {
       document.querySelector(".brand-kit-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -1596,6 +1601,7 @@ export default function App() {
 
     setSelectedAsset(asset);
     setInspectorTab("review");
+    setInspectorOpen(true);
     setLightboxAsset(asset);
   }
 
@@ -3512,7 +3518,34 @@ export default function App() {
         </form>
       </main>
 
-      <aside className="context-panel" aria-label="Review and settings">
+      {inspectorOpen ? (
+        <button
+          type="button"
+          className="inspector-scrim"
+          aria-label="Close inspector"
+          onClick={() => setInspectorOpen(false)}
+        />
+      ) : null}
+      <aside
+        className={`context-panel inspector-drawer ${inspectorOpen ? "open" : ""}`}
+        aria-label="Review and settings"
+        aria-hidden={!inspectorOpen}
+      >
+        <div className="inspector-drawer-toolbar">
+          <span>
+            <strong>Inspector</strong>
+            <small>review picks, brand kit, presets.</small>
+          </span>
+          <button
+            className="mini-button drawer-close-button"
+            type="button"
+            onClick={() => setInspectorOpen(false)}
+          >
+            <XCircle size={14} />
+            close
+          </button>
+        </div>
+
 
 
 
