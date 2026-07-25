@@ -141,7 +141,7 @@ import type {
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
-import frankCreateLogo from "./assets/frank-create.png.asset.json";
+import frankCreateLogo from "./assets/frank-create.png";
 
 
 type WalkthroughTarget =
@@ -2834,7 +2834,7 @@ export default function App() {
 
       <aside className="guided-header app-sidebar" data-tour-id="app-header" data-tour-active={tourActive("app-header")}>
         <div className="sidebar-brand-block">
-          <img src={frankCreateLogo.url} alt="frank create" className="sidebar-brand-logo" />
+          <img src={frankCreateLogo} alt="frank create" className="sidebar-brand-logo" />
 
           <p className="sidebar-app-tagline">THE ART DEPT.</p>
 
