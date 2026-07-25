@@ -7037,8 +7037,8 @@ input:focus, textarea:focus, select:focus {
 .guided-header .sidebar-session-card,
 .guided-header .sidebar-account {
   background: transparent !important;
-  border-top: 1px solid rgba(63, 42, 45, 0.08) !important;
-  padding: 8px 8px 12px !important;
+  border-top: 0 !important;
+  padding: 4px 8px !important;
   margin: 0 !important;
   gap: 2px !important;
 }
