@@ -3035,6 +3035,9 @@ export default function App() {
             Sign out
           </button>
         </nav>
+      </aside>
+
+
 
       <main className="conversation-column">
         <header className="studio-topbar">
