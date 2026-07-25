@@ -7223,8 +7223,8 @@ input:focus, textarea:focus, select:focus {
   gap: 0;
   margin-top: 0;
   padding: 0 0 10px;
-  border-top: 2px solid color-mix(in oklab, var(--frank-ink) 10%, transparent);
-  background: var(--frank-white, #fff);
+  border-top: 0 !important;
+  background: transparent !important;
 }
 
 .guided-header.app-sidebar .sidebar-session-card,
@@ -7233,14 +7233,10 @@ input:focus, textarea:focus, select:focus {
   display: grid;
   gap: 2px !important;
   margin: 0 !important;
-  padding: 8px 0 !important;
+  padding: 4px 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
-}
-
-.guided-header.app-sidebar .sidebar-session-card {
-  border-bottom: 1px solid color-mix(in oklab, var(--frank-ink) 8%, transparent) !important;
 }
 
 .guided-header.app-sidebar .sidebar-session-card .session-picker {
