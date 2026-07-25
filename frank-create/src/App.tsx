@@ -2952,7 +2952,8 @@ export default function App() {
               </a>
             </>
           )}
-        </nav>
+
+
 
           <p className="sidebar-section-label">Sessions</p>
           <button
