@@ -2953,86 +2953,88 @@ export default function App() {
           )}
         </nav>
 
-        <div className="sidebar-session-card">
-          <label className="session-picker">
-            <span>Session</span>
-            <select
-              aria-label="Active session"
-              value={activeSession?.id ?? ""}
-              onChange={(event) => {
-                const next = sessions.find((session) => session.id === event.target.value);
-                if (next) {
-                  void selectSession(next);
-                }
-              }}
-            >
-              {sessions.map((session) => (
-                <option value={session.id} key={session.id}>
-                  {session.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          {activeSession ? (
-            <button
-              className="secondary-button compact-action"
-              type="button"
-              onClick={() => {
-                const next = window.prompt("Rename session", activeSession.name);
-                if (!next) return;
-                const trimmed = next.trim().slice(0, 80);
-                if (!trimmed || trimmed === activeSession.name) return;
-                const optimistic = { ...activeSession, name: trimmed };
-                setActiveSession(optimistic);
-                setSessions((current) => current.map((s) => (s.id === optimistic.id ? optimistic : s)));
-                void updateSession(activeSession.id, { name: trimmed })
-                  .then((result) => {
-                    if (result?.session) {
-                      setActiveSession(result.session);
-                      setSessions((current) => current.map((s) => (s.id === result.session.id ? result.session : s)));
-                    }
-                  })
-                  .catch((error) => {
-                    console.error("Failed to rename session", error);
-                  });
-              }}
-            >
-              <Pencil size={16} />
-              Rename
+        <div className="sidebar-footer" aria-label="Session and account controls">
+          <div className="sidebar-session-card">
+            <label className="session-picker">
+              <span>Session</span>
+              <select
+                aria-label="Active session"
+                value={activeSession?.id ?? ""}
+                onChange={(event) => {
+                  const next = sessions.find((session) => session.id === event.target.value);
+                  if (next) {
+                    void selectSession(next);
+                  }
+                }}
+              >
+                {sessions.map((session) => (
+                  <option value={session.id} key={session.id}>
+                    {session.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {activeSession ? (
+              <button
+                className="secondary-button compact-action"
+                type="button"
+                onClick={() => {
+                  const next = window.prompt("Rename session", activeSession.name);
+                  if (!next) return;
+                  const trimmed = next.trim().slice(0, 80);
+                  if (!trimmed || trimmed === activeSession.name) return;
+                  const optimistic = { ...activeSession, name: trimmed };
+                  setActiveSession(optimistic);
+                  setSessions((current) => current.map((s) => (s.id === optimistic.id ? optimistic : s)));
+                  void updateSession(activeSession.id, { name: trimmed })
+                    .then((result) => {
+                      if (result?.session) {
+                        setActiveSession(result.session);
+                        setSessions((current) => current.map((s) => (s.id === result.session.id ? result.session : s)));
+                      }
+                    })
+                    .catch((error) => {
+                      console.error("Failed to rename session", error);
+                    });
+                }}
+              >
+                <Pencil size={16} />
+                Rename
+              </button>
+            ) : null}
+            <p className="sidebar-session-stats">
+              {turns.length} rounds / {approvedCount} approved / {favoriteCount} fave{favoriteCount === 1 ? "" : "s"}
+            </p>
+            {showMainDemoAction ? (
+              <button className="secondary-button compact-action" type="button" onClick={returnToMainDemo}>
+                <ArrowLeft size={16} />
+                Main demo
+              </button>
+            ) : null}
+            <button className="secondary-button compact-action sidebar-new-session" type="button" onClick={handleNewSession}>
+              <Plus size={16} />
+              New session
             </button>
-          ) : null}
-          <p>
-            {turns.length} rounds / {approvedCount} approved / {favoriteCount} fave{favoriteCount === 1 ? "" : "s"}
-          </p>
-          {showMainDemoAction ? (
-            <button className="secondary-button compact-action" type="button" onClick={returnToMainDemo}>
-              <ArrowLeft size={16} />
-              Main demo
-            </button>
-          ) : null}
-          <button className="secondary-button compact-action sidebar-new-session" type="button" onClick={handleNewSession}>
-            <Plus size={16} />
-            New session
-          </button>
-        </div>
-
-        <div className="sidebar-account">
-          <div className="sidebar-account-info">
-            <span className="sidebar-account-label">Signed in as</span>
-            <span className="sidebar-account-email" title={userEmail ?? ""}>
-              {userEmail ?? "—"}
-            </span>
           </div>
-          <button
-            type="button"
-            className="sidebar-signout"
-            onClick={handleSignOut}
-            aria-label="Sign out"
-            title="Sign out"
-          >
-            <LogOut size={14} />
-            Sign out
-          </button>
+
+          <div className="sidebar-account">
+            <div className="sidebar-account-info">
+              <span className="sidebar-account-label">Signed in as</span>
+              <span className="sidebar-account-email" title={userEmail ?? ""}>
+                {userEmail ?? "—"}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="sidebar-signout"
+              onClick={handleSignOut}
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut size={14} />
+              Sign out
+            </button>
+          </div>
         </div>
       </aside>
 
