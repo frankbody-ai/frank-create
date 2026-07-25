@@ -2971,47 +2971,66 @@ export default function App() {
           </button>
           {sessionsOpen ? (
             <div id="sidebar-sessions-list">
-              {sessions.map((session) => (
-                <button
-                  key={session.id}
-                  type="button"
-                  className={`sidebar-nav-sub ${activeSession?.id === session.id ? "active" : ""}`}
-                  onClick={() => { void selectSession(session); }}
-                  title={session.name}
-                >
-                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.name}</span>
-                </button>
-              ))}
+              {sessions.map((session) => {
+                const renameThis = () => {
+                  const next = window.prompt("Rename session", session.name);
+                  if (!next) return;
+                  const trimmed = next.trim().slice(0, 80);
+                  if (!trimmed || trimmed === session.name) return;
+                  const optimistic = { ...session, name: trimmed };
+                  if (activeSession?.id === session.id) setActiveSession(optimistic);
+                  setSessions((current) => current.map((s) => (s.id === session.id ? optimistic : s)));
+                  void updateSession(session.id, { name: trimmed })
+                    .then((result) => {
+                      if (result?.session) {
+                        if (activeSession?.id === result.session.id) setActiveSession(result.session);
+                        setSessions((current) => current.map((s) => (s.id === result.session.id ? result.session : s)));
+                      }
+                    })
+                    .catch((error) => { console.error("Failed to rename session", error); });
+                };
+                const deleteThis = () => {
+                  if (!window.confirm(`Archive "${session.name}"? It will be removed from your active sessions.`)) return;
+                  void archiveSession(session);
+                };
+                return (
+                  <div
+                    key={session.id}
+                    className={`sidebar-nav-sub sidebar-session-row ${activeSession?.id === session.id ? "active" : ""}`}
+                  >
+                    <button
+                      type="button"
+                      className="sidebar-session-pick"
+                      onClick={() => { void selectSession(session); }}
+                      title={session.name}
+                    >
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.name}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="sidebar-session-icon"
+                      onClick={(e) => { e.stopPropagation(); renameThis(); }}
+                      title="Rename session"
+                      aria-label="Rename session"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                    <button
+                      type="button"
+                      className="sidebar-session-icon"
+                      onClick={(e) => { e.stopPropagation(); deleteThis(); }}
+                      title="Delete session"
+                      aria-label="Delete session"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                );
+              })}
               <button className="sidebar-nav-sub" type="button" onClick={handleNewSession}>
                 <Plus size={13} />
                 New session
               </button>
-              {activeSession ? (
-                <button
-                  className="sidebar-nav-sub"
-                  type="button"
-                  onClick={() => {
-                    const next = window.prompt("Rename session", activeSession.name);
-                    if (!next) return;
-                    const trimmed = next.trim().slice(0, 80);
-                    if (!trimmed || trimmed === activeSession.name) return;
-                    const optimistic = { ...activeSession, name: trimmed };
-                    setActiveSession(optimistic);
-                    setSessions((current) => current.map((s) => (s.id === optimistic.id ? optimistic : s)));
-                    void updateSession(activeSession.id, { name: trimmed })
-                      .then((result) => {
-                        if (result?.session) {
-                          setActiveSession(result.session);
-                          setSessions((current) => current.map((s) => (s.id === result.session.id ? result.session : s)));
-                        }
-                      })
-                      .catch((error) => { console.error("Failed to rename session", error); });
-                  }}
-                >
-                  <Pencil size={13} />
-                  Rename current
-                </button>
-              ) : null}
               {showMainDemoAction ? (
                 <button className="sidebar-nav-sub" type="button" onClick={returnToMainDemo}>
                   <ArrowLeft size={13} />
