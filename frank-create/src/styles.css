@@ -7134,3 +7134,237 @@ input:focus, textarea:focus, select:focus {
   color: var(--frank-ink);
   margin-top: 2px;
 }
+
+/* ============= Sidebar repair — clean frank left rail footer ============= */
+@media (min-width: 1024px) {
+  .studio-shell.guided-studio {
+    grid-template-columns: 256px minmax(0, 1fr) !important;
+  }
+}
+
+.guided-header.app-sidebar {
+  width: 256px;
+  max-width: 256px;
+  overflow: hidden !important;
+}
+
+.guided-header.app-sidebar .sidebar-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 0 8px;
+}
+
+.guided-header.app-sidebar .sidebar-nav-button,
+.guided-header.app-sidebar .admin-sidebar-link,
+.guided-header.app-sidebar .sidebar-session-card .compact-action.secondary-button,
+.guided-header.app-sidebar .sidebar-session-card .sidebar-new-session,
+.guided-header.app-sidebar .sidebar-signout {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px !important;
+  width: calc(100% - 16px) !important;
+  margin: 0 8px !important;
+  padding: 10px 12px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--frank-ink) !important;
+  font-family: var(--font-body) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  line-height: 1.1;
+  text-transform: uppercase !important;
+  text-decoration: none;
+  box-shadow: none !important;
+}
+
+.guided-header.app-sidebar .sidebar-nav-button > span:not(.sidebar-badge):not(.sidebar-soon-tag),
+.guided-header.app-sidebar .admin-sidebar-link > span:not(.sidebar-badge):not(.sidebar-soon-tag),
+.guided-header.app-sidebar .sidebar-session-card .compact-action.secondary-button,
+.guided-header.app-sidebar .sidebar-session-card .sidebar-new-session,
+.guided-header.app-sidebar .sidebar-signout {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guided-header.app-sidebar .sidebar-nav-button svg,
+.guided-header.app-sidebar .admin-sidebar-link svg,
+.guided-header.app-sidebar .sidebar-session-card .compact-action.secondary-button svg,
+.guided-header.app-sidebar .sidebar-session-card .sidebar-new-session svg,
+.guided-header.app-sidebar .sidebar-signout svg {
+  flex: 0 0 auto;
+}
+
+.guided-header.app-sidebar .sidebar-nav-button:hover,
+.guided-header.app-sidebar .admin-sidebar-link:hover,
+.guided-header.app-sidebar .sidebar-session-card .compact-action.secondary-button:hover,
+.guided-header.app-sidebar .sidebar-session-card .sidebar-new-session:hover,
+.guided-header.app-sidebar .sidebar-signout:hover {
+  background: color-mix(in oklab, var(--frank-pink-soft) 40%, transparent) !important;
+  color: var(--frank-ink) !important;
+}
+
+.guided-header.app-sidebar .sidebar-nav-button.active,
+.guided-header.app-sidebar .admin-sidebar-link.active {
+  background: var(--frank-ink) !important;
+  color: var(--frank-white, #fff) !important;
+}
+
+.guided-header.app-sidebar .sidebar-nav-button.active svg,
+.guided-header.app-sidebar .admin-sidebar-link.active svg {
+  color: var(--frank-white, #fff) !important;
+}
+
+.guided-header.app-sidebar .sidebar-footer {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 0;
+  margin-top: 0;
+  padding: 0 0 10px;
+  border-top: 2px solid color-mix(in oklab, var(--frank-ink) 10%, transparent);
+  background: var(--frank-white, #fff);
+}
+
+.guided-header.app-sidebar .sidebar-session-card,
+.guided-header.app-sidebar .sidebar-account {
+  min-width: 0;
+  display: grid;
+  gap: 2px !important;
+  margin: 0 !important;
+  padding: 8px 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.guided-header.app-sidebar .sidebar-session-card {
+  border-bottom: 1px solid color-mix(in oklab, var(--frank-ink) 8%, transparent) !important;
+}
+
+.guided-header.app-sidebar .sidebar-session-card .session-picker {
+  min-width: 0;
+  width: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px !important;
+  margin: 0 8px 2px !important;
+  padding: 8px 12px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+}
+
+.guided-header.app-sidebar .sidebar-session-card .session-picker:hover {
+  background: color-mix(in oklab, var(--frank-pink-soft) 26%, transparent) !important;
+}
+
+.guided-header.app-sidebar .sidebar-session-card .session-picker span,
+.guided-header.app-sidebar .sidebar-account-label {
+  min-width: 0;
+  color: var(--frank-ink-40) !important;
+  font-family: var(--font-body) !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.14em !important;
+  line-height: 1.1;
+  text-transform: uppercase !important;
+}
+
+.guided-header.app-sidebar .sidebar-session-card .session-picker select {
+  min-width: 0;
+  width: 100%;
+  height: 22px;
+  padding: 0 18px 0 0 !important;
+  border: 0 !important;
+  background-color: transparent !important;
+  color: var(--frank-ink) !important;
+  font-family: var(--font-body) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  line-height: 1.1;
+  text-transform: none !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.guided-header.app-sidebar .sidebar-session-stats {
+  min-width: 0;
+  margin: 0 !important;
+  padding: 4px 20px 6px !important;
+  color: var(--frank-ink-40) !important;
+  font-family: var(--font-body) !important;
+  font-size: 11px !important;
+  font-weight: 400;
+  letter-spacing: 0.02em !important;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.guided-header.app-sidebar .sidebar-account {
+  padding-top: 8px !important;
+}
+
+.guided-header.app-sidebar .sidebar-account-info {
+  min-width: 0;
+  padding: 8px 20px 6px !important;
+  display: grid;
+  gap: 3px;
+}
+
+.guided-header.app-sidebar .sidebar-account-email {
+  min-width: 0;
+  color: var(--frank-ink) !important;
+  font-family: var(--font-body) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1023px) {
+  .studio-shell.guided-studio {
+    grid-template-columns: 64px minmax(0, 1fr) !important;
+  }
+
+  .guided-header.app-sidebar {
+    width: 64px;
+    max-width: 64px;
+  }
+
+  .guided-header.app-sidebar .sidebar-footer {
+    display: none;
+  }
+}
+
+@media (max-width: 920px) {
+  .studio-shell.guided-studio {
+    grid-template-columns: 1fr !important;
+  }
+
+  .guided-header.app-sidebar {
+    width: 100%;
+    max-width: none;
+    overflow: visible !important;
+  }
+
+  .guided-header.app-sidebar .sidebar-nav {
+    overflow: visible;
+  }
+
+  .guided-header.app-sidebar .sidebar-footer {
+    display: grid;
+  }
+}

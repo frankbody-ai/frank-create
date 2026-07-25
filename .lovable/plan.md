@@ -1,56 +1,37 @@
 ## Goal
+Make the left sidebar look complete and brand-consistent again, especially the lower session/account area shown in your screenshot, and verify it visually before handing it back.
 
-Kill the permanent right-hand column so the studio matches the standard frank app shell (left sidebar + single main canvas), and give the current visual pass a second, tighter run against `brand guidelines/frankhub-kit/design.md`.
+## What I’ll fix
 
-## 1. Relocate the right panel
+1. **Stop the sidebar footer from overlapping.**
+   - Rework the sidebar as a proper vertical shell: logo, grouped nav, then session/account controls at the bottom.
+   - Prevent the session name, stats, admin link, rename button, and sign-out area from colliding.
+   - Keep the sidebar at the frank kit’s 256px desktop width.
 
-The right `aside.context-panel` in `src/App.tsx` (lines ~3515–4136) currently holds five sections:
+2. **Make the bottom controls match the top nav.**
+   - Style `Session`, `Rename`, `New session`, `Admin portal`, and `Sign out` as the same clean left-menu row system.
+   - Use frank kit tokens: white sidebar, ink text, blush hover, ink active state, 8px nav radius, Pitch/Founders typography.
+   - Remove the current cramped/stacked treatment that makes it look broken.
 
-- Review (selected asset inspector, approve/reject, siblings)
-- Cliff Pack (handoff)
-- Recent exports
-- Brand Kit
-- Prompt presets
+3. **Improve information hierarchy.**
+   - Move the session stats into a compact muted line that cannot overlap controls.
+   - Make the active session selector readable and truncated safely.
+   - Keep the signed-in email visible but clipped/truncated professionally.
 
-Plan:
+4. **Clean up responsive behavior.**
+   - At the current preview width, ensure the sidebar remains visible and the main canvas starts after it.
+   - On narrower tablet/mobile rules, avoid leaking desktop-only session footer styles into the icon rail.
 
-- Remove the always-visible `.context-panel` from the main grid. The studio becomes: left sidebar (256px) + main canvas only, matching Auth/Admin screens.
-- Split its contents into two left-sidebar entries that open the existing drawer pattern (mirrors how "Advanced" already works via `advancedOpen`):
-  - **Review** — opens automatically when an asset is selected in the thread; also reachable from a sidebar button. Contains the selected-asset inspector + Cliff Pack + Recent exports.
-  - **Brand & presets** — sidebar button opens a drawer with Brand Kit + Prompt presets (including the "+ New preset" tile).
-- Both drawers slide in as an overlay from the left edge (same treatment as Advanced), so the canvas stays uncluttered on all viewports. Close via ✕ or Esc.
-- Auto-open Review when the user clicks an image in the thread; auto-close on session change.
-- Delete the right-panel media query blocks in `styles.css` and the `studio-shell` grid column that reserved the right rail.
+5. **Verify before returning it.**
+   - Run a local browser check at the current-style viewport.
+   - Capture screenshots of the fixed sidebar/studio view.
+   - Confirm there is no right-side empty gutter and no sidebar text/control overlap.
 
-## 2. Brand pass on the current UI
+## Files expected to change
 
-Re-audit against the kit and fix what still reads half-baked:
+- `frank-create/src/styles.css` — primary layout/style fix.
+- `frank-create/src/App.tsx` — only if markup needs a small class/structure adjustment to support the clean sidebar layout.
 
-- **Sidebar (256px)**: confirm white surface, ink text, wordmark logo top, "THE ART DEPT." tagline, active state = ink pill with white text, hover = blush-tint. Remove any leftover borders/shadows that don't match the kit.
-- **Typography**: enforce Pitch for headings/eyebrows/data, Founders Grotesk for body. Sweep remaining `font-family` fallbacks and any Inter/Space Grotesk holdovers in `styles.css`.
-- **Color tokens**: audit `styles.css` for stray hex/rgba that bypass `--frank-blush`, `--frank-ink`, `--frank-cream`, `--frank-lilac`. Replace them with tokens.
-- **Buttons**: primary = ink fill / cream text / 999px radius; secondary = white / ink border; ghost = transparent / ink text. Normalize `.mini-button`, `.provider-check-button`, generate/stop buttons.
-- **Cards & inputs**: 12px radius, `#FFFBFA` input background, ink 1px borders, subtle blush focus ring. Apply to composer, session list, thread cards, drawer sections.
-- **Copy sweep (frank voice)**: second person, lowercase, no exclamation marks. Rewrite drawer titles, tour steps, toasts, and empty states that still read as generic SaaS.
-- **Auth + Admin**: verify they already match the new tokens; tighten spacing/margins if needed.
+## Done when
 
-## 3. Verification
-
-- Playwright screenshots (1280×1800): Auth, empty studio, studio with Review drawer open, studio with Brand & presets drawer open.
-- Confirm no right-side aside renders on any route.
-- Grep for `context-panel` and legacy tokens to catch leftovers.
-
-## Technical notes
-
-- Reuse existing drawer plumbing (`advancedOpen`/`setAdvancedOpen` pattern) — add `reviewOpen` and `brandOpen` state, wire two new `sidebar-nav-button`s.
-- `selectedAsset` selection handler flips `reviewOpen = true`.
-- No backend changes. No route changes. No changes to generation logic, Replicate routing, references, or feedback.
-
-```text
-before:                          after:
-┌──────┬──────────┬────────┐     ┌──────┬────────────────────┐
-│ side │  canvas  │ right  │     │ side │      canvas        │
-│ nav  │          │ panel  │     │ nav  │ (drawers overlay   │
-│      │          │        │     │      │  from the left)    │
-└──────┴──────────┴────────┘     └──────┴────────────────────┘
-```
+The sidebar reads as one cohesive frank left menu: top nav and bottom session/account controls align, nothing overlaps, the selected session is legible, and the main canvas fills the remaining space without the old right-side blank column.

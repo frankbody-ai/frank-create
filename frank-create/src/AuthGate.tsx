@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS, hardSignOut } from "./lib/supabaseClient";
 import { lovable } from "./lib/lovableAuth";
-import frankCreateLogo from "./assets/frank-create.png.asset.json";
+import frankCreateLogo from "./assets/frank-create.png";
 
 
 type Status = "loading" | "signed-out" | "denied" | "ready";
@@ -57,7 +57,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   return (
     <div className="frank-auth-wrap">
       <div className="frank-auth-card">
-        <img src={frankCreateLogo.url} alt="frank create" className="frank-auth-logo" />
+        <img src={frankCreateLogo} alt="frank create" className="frank-auth-logo" />
 
         <p className="frank-auth-tagline">THE ART DEPT.</p>
         <h1 className="frank-auth-title">Hey babe.</h1>
