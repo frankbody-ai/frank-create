@@ -3068,12 +3068,12 @@ export default function App() {
             </p>
           </div>
           <div className="studio-topbar-right" data-tour-id="feedback-button" data-tour-active={tourActive("feedback-button")}>
+            <FeedbackWidget variant="inline" />
             <div className="stat-row" aria-label="Studio stats">
               <span>{turns.length} rounds</span>
               <span>{approvedCount} approved</span>
               <span>{favoriteCount} favorites</span>
             </div>
-            <FeedbackWidget variant="inline" />
           </div>
         </header>
 

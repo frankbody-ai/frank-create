@@ -6649,7 +6649,7 @@ input[aria-invalid="true"] {
 }
 .admin-sidebar-link { color: var(--frank-pink, #ff6b81) !important; }
 
-.studio-topbar-right { display: flex; align-items: center; gap: 12px; flex-direction: row; }
+.studio-topbar-right { display: flex; align-items: flex-end; gap: 10px; flex-direction: column; }
 
 
 /* ============================================================
