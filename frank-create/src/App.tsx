@@ -108,7 +108,8 @@ import {
   selectModelOptions,
   validateStudioSettings,
   hasStudioFieldErrors,
-  preflightModel
+  preflightModel,
+  maxCountForModel
 } from "./lib/studio";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { PresetCreator } from "./components/PresetCreator";
