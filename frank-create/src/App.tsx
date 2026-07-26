@@ -328,7 +328,8 @@ export default function App() {
   const [prompt, setPrompt] = useState("");
   const [promptRemixes, setPromptRemixes] = useState<PromptRemixVariant[]>([]);
   const [selectedModelId, setSelectedModelId] = useState(() => preferredStudioModel(fallbackConfig.models).id);
-  const [selectedPresetKey, setSelectedPresetKey] = useState("product-shot-lab");
+  const [selectedPresetKey, setSelectedPresetKey] = useState<string | null>(null);
+  const [attachedPresetSnapshot, setAttachedPresetSnapshot] = useState<string | null>(null);
   const [customPresets, setCustomPresets] = useState<PromptPreset[]>(() => {
     try {
       const raw = typeof window !== "undefined" ? window.localStorage.getItem("frank.customPromptPresets") : null;
