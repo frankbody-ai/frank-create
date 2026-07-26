@@ -56,8 +56,17 @@ Deno.serve(async (req) => {
   const prompt = (body.prompt ?? "").trim();
   if (!prompt) return json({ error: "prompt is required" }, 400);
 
-  const count = Math.min(Math.max(Number(body.count) || 1, 1), 4);
   const modelId = body.modelId ?? "";
+  const MAX_COUNT_BY_MODEL: Record<string, number> = {
+    "frank-local-comfy": 4,
+    "google-nb-pro": 4,
+    "google-nb-2": 4,
+    "openai-gpt-image-2": 10,
+    "reve-2-1": 4,
+    "seedream-5-pro": 6,
+  };
+  const modelCap = MAX_COUNT_BY_MODEL[modelId] ?? 4;
+  const count = Math.min(Math.max(Number(body.count) || 1, 1), modelCap);
 
   // ---- Replicate branch ----
   if (REPLICATE_MAP[modelId]) {

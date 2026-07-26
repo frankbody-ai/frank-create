@@ -106,6 +106,7 @@ export function filterSizesForAspect(sizes: string[], aspect: string): string[] 
 
 export function normalizeStudioSettingsForModel(settings: StudioSettings, model: StudioModel): StudioSettings {
   const count = Number.isFinite(settings.count) ? Math.trunc(settings.count) : 1;
+  const cap = maxCountForModel(model);
   const aspect = model.allowed_aspect_ratios.includes(settings.aspect_ratio)
     ? settings.aspect_ratio
     : model.allowed_aspect_ratios[0] ?? "1:1";
@@ -114,7 +115,7 @@ export function normalizeStudioSettingsForModel(settings: StudioSettings, model:
       ...settings,
       aspect_ratio: aspect,
       image_size: "",
-      count: Math.min(Math.max(count, 1), 4)
+      count: Math.min(Math.max(count, 1), cap)
     };
   }
   const sizesForAspect = filterSizesForAspect(model.allowed_image_sizes, aspect);
@@ -125,8 +126,13 @@ export function normalizeStudioSettingsForModel(settings: StudioSettings, model:
     image_size: sizesForAspect.includes(settings.image_size)
       ? settings.image_size
       : sizesForAspect[sizesForAspect.length - 1] ?? "1K",
-    count: Math.min(Math.max(count, 1), 4)
+    count: Math.min(Math.max(count, 1), cap)
   };
+}
+
+export function maxCountForModel(model: StudioModel | undefined | null): number {
+  const value = Number(model?.max_count);
+  return Number.isFinite(value) && value > 0 ? Math.trunc(value) : 4;
 }
 
 export interface StudioFieldErrors {
@@ -161,8 +167,9 @@ export function validateStudioSettings(
   }
 
   const count = Number(settings.count);
-  if (!Number.isFinite(count) || count < 1 || count > 4 || Math.trunc(count) !== count) {
-    errors.count = "Pick 1–4 images.";
+  const cap = maxCountForModel(model);
+  if (!Number.isFinite(count) || count < 1 || count > cap || Math.trunc(count) !== count) {
+    errors.count = `Pick 1–${cap} images.`;
   }
 
   const refCount = opts.referenceCount ?? 0;
@@ -220,8 +227,9 @@ export function preflightModel(
   }
 
   const count = Number(settings.count);
-  if (!Number.isFinite(count) || count < 1 || count > 4 || Math.trunc(count) !== count) {
-    issues.push("Pick between 1 and 4 images per round.");
+  const cap = maxCountForModel(model);
+  if (!Number.isFinite(count) || count < 1 || count > cap || Math.trunc(count) !== count) {
+    issues.push(`Pick between 1 and ${cap} images per round.`);
   }
 
   return issues;

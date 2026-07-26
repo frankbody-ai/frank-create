@@ -46,6 +46,7 @@ export interface StudioModel {
   allowed_aspect_ratios: string[];
   allowed_image_sizes: string[];
   reference_image_limit: number;
+  max_count?: number;
   cost_label: string;
   configured?: boolean;
   configured_env_var?: string;
