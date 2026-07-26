@@ -1937,7 +1937,7 @@ export default function App() {
       prompt,
       promptMode,
       frankBodyMode,
-      presetKey: selectedPresetKey,
+      presetKey: selectedPresetKey ?? undefined,
       settings,
       referenceAssetIds: selectedReferenceAssets.map((asset) => asset.id),
       referenceImageUrls: generationReferenceUrls,
