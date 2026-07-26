@@ -2400,7 +2400,7 @@ export default function App() {
       setSettings((current) => ({
         ...current,
         ...parsed,
-        ...(typeof overrideCount === "number" ? { count: Math.max(1, Math.min(4, overrideCount)) } : {}),
+        ...(typeof overrideCount === "number" ? { count: Math.max(1, Math.min(maxCountForModel(config.models.find((m) => m.id === turn.model) ?? selectedModel), overrideCount)) } : {}),
       }));
       setStatusText(typeof overrideCount === "number" ? `Retrying ${overrideCount} missing…` : "Retrying with previous settings…");
       window.setTimeout(() => { void handleGenerate(); }, 60);
@@ -2656,7 +2656,7 @@ export default function App() {
     setAttachedPresetSnapshot(null);
     startEditFromAsset(asset);
     setPrompt(nextRoundPrompt(asset, direction, preset));
-    setSettings((current) => ({ ...current, count: 4 }));
+    setSettings((current) => ({ ...current, count: Math.min(4, maxCountForModel(selectedModel)) }));
     setLightboxAsset(null);
     clearCompare();
     setStatusText("Next round is briefed from this pick.");
@@ -3435,7 +3435,7 @@ export default function App() {
                 Count
                 <input
                   min={1}
-                  max={4}
+                  max={maxCountForModel(selectedModel)}
                   type="number"
                   value={settings.count}
                   onChange={(event) => setSettings((current) => ({ ...current, count: Number(event.target.value) }))}
