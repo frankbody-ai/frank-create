@@ -3434,6 +3434,19 @@ export default function App() {
                 />
                 {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
               </label>
+              <label>
+                Preset
+                <select
+                  value={selectedPresetKey ?? ""}
+                  onChange={(event) => attachPreset(event.target.value || null)}
+                >
+                  <option value="">— None —</option>
+                  {promptPresets.map((preset) => (
+                    <option key={preset.key} value={preset.key}>{preset.label}</option>
+                  ))}
+                </select>
+                <span className="field-hint">Appended as an editable paragraph to your brief.</span>
+              </label>
             </div>
             <AspectPreview aspect={settings.aspect_ratio} size={modelHasSizes ? settings.image_size : undefined} label={selectedModel?.short_label ?? selectedModel?.label} count={settings.count} />
             {fieldErrors.references ? (
