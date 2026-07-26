@@ -2598,10 +2598,37 @@ export default function App() {
     openStudioLink(sessionSyncManifestUrl(activeSession.id), "Sync manifest", "Opening the FrankHub sync manifest.");
   }
 
-  function selectPreset(preset: PromptPreset) {
-    setSelectedPresetKey(preset.key);
-    setPrompt((current) => (current.trim() ? current : preset.prompt));
+  function attachPreset(nextKey: string | null) {
+    const preset = nextKey ? promptPresets.find((p) => p.key === nextKey) ?? null : null;
+    setPrompt((current) => {
+      let base = current;
+      if (attachedPresetSnapshot && base.endsWith(attachedPresetSnapshot)) {
+        base = base.slice(0, -attachedPresetSnapshot.length);
+      }
+      base = base.replace(/\s+$/, "");
+      if (!preset) {
+        return base;
+      }
+      const snapshot = (base ? "\n\n" : "") + preset.prompt;
+      return base + snapshot;
+    });
+    if (!preset) {
+      setSelectedPresetKey(null);
+      setAttachedPresetSnapshot(null);
+    } else {
+      setSelectedPresetKey(preset.key);
+      setAttachedPresetSnapshot((prev) => {
+        // We need the snapshot to match what we just appended. Recompute based on current prompt state.
+        // Because setPrompt above is async, store the pure preset segment; strip logic uses endsWith.
+        return `\n\n${preset.prompt}`;
+      });
+    }
   }
+
+  function selectPreset(preset: PromptPreset) {
+    attachPreset(preset.key);
+  }
+
 
   function selectTaskShortcut(task: FrankTask) {
     const taskPrompt = promptForTask(task);
