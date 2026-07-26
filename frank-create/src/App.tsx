@@ -1846,7 +1846,7 @@ export default function App() {
     try {
       const result = await remixPrompt({
         prompt: seedPrompt,
-        preset_key: selectedPresetKey,
+        preset_key: selectedPresetKey ?? "",
         frank_body_mode: frankBodyMode
       });
       setPromptRemixes(result.variants);
