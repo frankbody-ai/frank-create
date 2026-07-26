@@ -453,7 +453,16 @@ async function handleInference(body: any, userId: string) {
   if (msgIns.error) throw msgIns.error;
   const nextSeq = (msgIns.data as any)?.seq ?? 0;
 
-  const count = Math.min(Math.max(Number(reqSettings.count ?? body.count ?? 1) || 1, 1), 4);
+  const MAX_COUNT_BY_MODEL: Record<string, number> = {
+    "frank-local-comfy": 4,
+    "google-nb-pro": 4,
+    "google-nb-2": 4,
+    "openai-gpt-image-2": 10,
+    "reve-2-1": 4,
+    "seedream-5-pro": 6,
+  };
+  const modelCap = MAX_COUNT_BY_MODEL[modelId] ?? 4;
+  const count = Math.min(Math.max(Number(reqSettings.count ?? body.count ?? 1) || 1, 1), modelCap);
   const generatedImages: Array<{ b64?: string; url?: string; mime: string }> = [];
   const partialErrors: Array<{ code: string; message: string; retryable: boolean; status?: number; request_id?: string }> = [];
   try {
