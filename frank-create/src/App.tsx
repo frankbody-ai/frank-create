@@ -4007,13 +4007,13 @@ export default function App() {
                   tabIndex={0}
                   aria-pressed={isActive}
                   onClick={() => {
-                    setSelectedPresetKey(preset.key);
-                    setPrompt((current) =>
-                      current.trim()
-                        ? (current.includes(preset.prompt) ? current : `${current.trim()}\n\n${preset.prompt}`)
-                        : preset.prompt,
-                    );
-                    setStatusText(`Loaded preset: ${preset.label}`);
+                    if (selectedPresetKey === preset.key) {
+                      attachPreset(null);
+                      setStatusText(`Removed preset: ${preset.label}`);
+                    } else {
+                      attachPreset(preset.key);
+                      setStatusText(`Loaded preset: ${preset.label}`);
+                    }
                   }}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }}
                 >
