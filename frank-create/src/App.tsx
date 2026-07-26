@@ -3103,6 +3103,14 @@ export default function App() {
 
 
 
+      {studioMode === "preset-creator" ? (
+        <PresetCreator
+          builtinPresets={config.promptPresets}
+          customPresets={customPresets}
+          setCustomPresets={setCustomPresets}
+          onStatus={setStatusText}
+        />
+      ) : (
       <main className="conversation-column">
         <header className="studio-topbar">
           <div>
