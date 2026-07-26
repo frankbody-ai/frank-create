@@ -224,6 +224,13 @@ export const fallbackConfig: FrankConfig = {
   backlogModels: [],
   promptPresets: [
     {
+      key: "product-shot-lab",
+      label: "🧪 Product Shot Lab",
+      description: "Clean product image for PDP, retouching, and channel crops.",
+      prompt:
+        "Frank Body [PRODUCT NAME] product-first composition. Clean label facing camera, honest skin-care texture, Frank pink accent, channel-ready negative space. Studio photography, soft realistic shadow, high-conversion PDP finish. 4K, photorealistic."
+    },
+    {
       key: "clean-ecom",
       label: "🛒 Clean Ecom",
       description: "Crisp commerce frame with readable packaging.",
@@ -242,21 +249,28 @@ export const fallbackConfig: FrankConfig = {
       label: "👤 FB Model Image",
       description: "Campaign hero with a real body-care model moment.",
       prompt:
-        "Frank Body campaign hero. Young woman, radiant glowing skin, applying or holding [PRODUCT NAME], warm natural light, beauty editorial mood. Authentic skin texture — not AI-smooth. 4K, photorealistic."
+        "Frank Body campaign hero. Young woman, radiant glowing skin, applying or holding [PRODUCT NAME], warm natural light, beauty editorial mood. Authentic skin texture — not AI-smooth. Inclusive casting, confident body-care moment, warm direct flash, tactile product use, no plastic retouching. 4K, photorealistic."
+    },
+    {
+      key: "campaign-variants",
+      label: "🎯 Campaign Variants",
+      description: "Creative rounds from one approved product direction.",
+      prompt:
+        "Frank Body [PRODUCT NAME] campaign variant. Keep product recognizable and label clean, push set styling, leave channel-ready headline space in the composition. Sharpen the Frank Body attitude — cheeky, warm, director-ready. Editorial realism, warm flash, tactile surfaces. 4K, photorealistic."
     },
     {
       key: "product-texture",
       label: "🧴 Product Texture",
       description: "Macro scrub, cream, and tactile swipes.",
       prompt:
-        "Extreme close-up macro photography of [INGREDIENT/TEXTURE] — e.g. coffee grounds, shea butter, vitamin C crystals. Warm studio light, soft shadows, editorial beauty feel."
+        "Extreme close-up macro photography of [INGREDIENT/TEXTURE] — e.g. coffee grounds, shea butter, vitamin C crystals, creamy body-care texture, tactile swipes. Warm studio light, soft shadows, high detail, editorial beauty feel. Delicious but skin-care appropriate. 4K, photorealistic."
     },
     {
       key: "retail-mock",
       label: "🏪 Retail Mock",
       description: "Packaging, shelf, display, and type exploration.",
       prompt:
-        "Realistic retail shelf or branded display mock for Frank Body [PRODUCT NAME]. Pharmacy or beauty retailer environment — e.g. Chemist Warehouse, MECCA, Target. Correct shelf height, accurate product facings."
+        "Realistic retail shelf or branded display mock for Frank Body [PRODUCT NAME]. Pharmacy or beauty retailer environment — e.g. Chemist Warehouse, MECCA, Target. Correct shelf height, accurate product facings, packaging readable, brand block clear, campaign headline space, sharp typography."
     }
   ],
   exportPresets: [
