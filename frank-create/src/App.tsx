@@ -6312,12 +6312,13 @@ function initialSurface() {
   return window.location.pathname === "/graph" ? "graph" : "studio";
 }
 
-function initialStudioMode(): "image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" {
+function initialStudioMode(): "image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator" {
   if (typeof window === "undefined") {
     return "image-studio";
   }
 
   const mode = new URLSearchParams(window.location.search).get("mode");
+  if (mode === "preset-creator") return "preset-creator";
   return mode === "product-shot-lab" || mode === "video-lab" || mode === "approved-hot" ? mode : "image-studio";
 }
 
