@@ -1096,7 +1096,8 @@ export default function App() {
       clearCompare();
       setPrompt(result.brief.prompt ?? result.turn.prompt ?? "");
       setPromptRemixes([]);
-      setSelectedPresetKey(result.turn.preset_key ?? result.brief.task_type ?? "product-shot-lab");
+      setSelectedPresetKey(result.turn.preset_key ?? result.brief.task_type ?? null);
+      setAttachedPresetSnapshot(null);
       setSettings((current) => ({ ...current, ...turnSettings }));
       setDemoDoctor(result.doctor);
       setDemoEvidencePath("");
