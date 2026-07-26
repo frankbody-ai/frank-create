@@ -769,6 +769,12 @@ export default function App() {
     setStatusText("Image Studio is open.");
   }
 
+  function showPresetCreator() {
+    setStudioMode("preset-creator");
+    setInspectorOpen(false);
+    setStatusText("Preset Creator is open.");
+  }
+
   function showProductShotLab() {
     const productPreset = promptPresets.find((preset) => preset.key === "product-shot-lab") ?? promptPresets[0];
     setStudioMode("product-shot-lab");
