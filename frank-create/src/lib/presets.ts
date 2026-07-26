@@ -84,6 +84,7 @@ export const fallbackConfig: FrankConfig = {
       allowed_aspect_ratios: ["1:1", "4:5", "3:4", "16:9", "9:16", "3:2", "2:3"],
       allowed_image_sizes: ["1K", "2K", "4K"],
       reference_image_limit: 8,
+      max_count: 4,
       cost_label: "local",
       configured: true,
       missing_env_vars: []
@@ -105,6 +106,7 @@ export const fallbackConfig: FrankConfig = {
       ],
       allowed_image_sizes: ["1K", "2K", "4K"],
       reference_image_limit: 14,
+      max_count: 4,
       cost_label: "premium",
       configured: true,
       missing_env_vars: []
@@ -126,6 +128,7 @@ export const fallbackConfig: FrankConfig = {
       ],
       allowed_image_sizes: ["1K", "2K", "4K"],
       reference_image_limit: 14,
+      max_count: 4,
       cost_label: "fast",
       configured: true,
       missing_env_vars: []
@@ -151,6 +154,7 @@ export const fallbackConfig: FrankConfig = {
         "3840x2160", "2160x3840"
       ],
       reference_image_limit: 10,
+      max_count: 10,
       cost_label: "premium",
       configured: true,
       missing_env_vars: []
@@ -174,6 +178,7 @@ export const fallbackConfig: FrankConfig = {
       // Reve does not expose a size/resolution knob — output size is derived from the aspect.
       allowed_image_sizes: [],
       reference_image_limit: 8,
+      max_count: 4,
       cost_label: "premium",
       configured: true,
       missing_env_vars: []
@@ -215,6 +220,7 @@ export const fallbackConfig: FrankConfig = {
       // Seedream exposes only 1K / 2K (no 4K).
       allowed_image_sizes: ["1K", "2K"],
       reference_image_limit: 10,
+      max_count: 6,
       cost_label: "premium",
       configured: true,
       missing_env_vars: []
