@@ -132,6 +132,13 @@ export async function remixPrompt(payload: { prompt: string; preset_key: string;
   });
 }
 
+export async function improvePresetPrompt(payload: { prompt: string; label?: string; description?: string }) {
+  return fetchJson<{ prompt: string }>("/improve-preset", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
 export async function fetchBrandKit() {
   return fetchJson<{ brandKit: BrandKit; filePath: string }>("/brand-kit");
 }
