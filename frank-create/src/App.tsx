@@ -111,6 +111,7 @@ import {
   preflightModel
 } from "./lib/studio";
 import { FeedbackWidget } from "./components/FeedbackWidget";
+import { PresetCreator } from "./components/PresetCreator";
 
 import type {
   ActivationChecklist,
@@ -364,7 +365,7 @@ export default function App() {
     await hardSignOut();
     window.location.replace("/");
   };
-  const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot">(() =>
+  const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator">(() =>
     initialStudioMode()
   );
   const [advancedOpen, setAdvancedOpen] = useState(() => shouldAutoOpenProviderAudit());
@@ -767,6 +768,12 @@ export default function App() {
     setStudioMode("image-studio");
     setReviewFilter("all");
     setStatusText("Image Studio is open.");
+  }
+
+  function showPresetCreator() {
+    setStudioMode("preset-creator");
+    setInspectorOpen(false);
+    setStatusText("Preset Creator is open.");
   }
 
   function showProductShotLab() {
@@ -2895,6 +2902,16 @@ export default function App() {
             <span className="sidebar-soon-tag">Soon</span>
           </button>
           <button
+            className={`sidebar-nav-button ${studioMode === "preset-creator" ? "active" : ""}`}
+            type="button"
+            aria-label="Open Preset Creator"
+            onClick={showPresetCreator}
+          >
+            <Sparkles size={16} />
+            Preset Creator
+          </button>
+
+          <button
             className="sidebar-nav-button is-muted"
             type="button"
             aria-label="Video Lab (coming soon)"
@@ -3086,6 +3103,14 @@ export default function App() {
 
 
 
+      {studioMode === "preset-creator" ? (
+        <PresetCreator
+          builtinPresets={config.promptPresets}
+          customPresets={customPresets}
+          setCustomPresets={setCustomPresets}
+          onStatus={setStatusText}
+        />
+      ) : (
       <main className="conversation-column">
         <header className="studio-topbar">
           <div>
@@ -3580,6 +3605,7 @@ export default function App() {
           </div>
         </form>
       </main>
+      )}
 
       {inspectorOpen ? (
         <button
@@ -6312,12 +6338,13 @@ function initialSurface() {
   return window.location.pathname === "/graph" ? "graph" : "studio";
 }
 
-function initialStudioMode(): "image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" {
+function initialStudioMode(): "image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator" {
   if (typeof window === "undefined") {
     return "image-studio";
   }
 
   const mode = new URLSearchParams(window.location.search).get("mode");
+  if (mode === "preset-creator") return "preset-creator";
   return mode === "product-shot-lab" || mode === "video-lab" || mode === "approved-hot" ? mode : "image-studio";
 }
 
