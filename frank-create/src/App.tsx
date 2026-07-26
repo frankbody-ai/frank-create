@@ -111,6 +111,7 @@ import {
   preflightModel
 } from "./lib/studio";
 import { FeedbackWidget } from "./components/FeedbackWidget";
+import { PresetCreator } from "./components/PresetCreator";
 
 import type {
   ActivationChecklist,
