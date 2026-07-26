@@ -2902,6 +2902,16 @@ export default function App() {
             <span className="sidebar-soon-tag">Soon</span>
           </button>
           <button
+            className={`sidebar-nav-button ${studioMode === "preset-creator" ? "active" : ""}`}
+            type="button"
+            aria-label="Open Preset Creator"
+            onClick={showPresetCreator}
+          >
+            <Sparkles size={16} />
+            Preset Creator
+          </button>
+
+          <button
             className="sidebar-nav-button is-muted"
             type="button"
             aria-label="Video Lab (coming soon)"
