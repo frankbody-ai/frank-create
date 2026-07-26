@@ -2606,24 +2606,20 @@ export default function App() {
         base = base.slice(0, -attachedPresetSnapshot.length);
       }
       base = base.replace(/\s+$/, "");
-      if (!preset) {
-        return base;
-      }
-      const snapshot = (base ? "\n\n" : "") + preset.prompt;
-      return base + snapshot;
+      if (!preset) return base;
+      return base ? `${base}\n\n${preset.prompt}` : preset.prompt;
     });
     if (!preset) {
       setSelectedPresetKey(null);
       setAttachedPresetSnapshot(null);
     } else {
       setSelectedPresetKey(preset.key);
-      setAttachedPresetSnapshot((prev) => {
-        // We need the snapshot to match what we just appended. Recompute based on current prompt state.
-        // Because setPrompt above is async, store the pure preset segment; strip logic uses endsWith.
-        return `\n\n${preset.prompt}`;
-      });
+      // Snapshot stores exactly what suffix we appended so we can strip it later.
+      // We check both the "with leading \n\n" form and the "bare" form when stripping.
+      setAttachedPresetSnapshot(preset.prompt);
     }
   }
+
 
   function selectPreset(preset: PromptPreset) {
     attachPreset(preset.key);
