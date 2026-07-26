@@ -233,14 +233,14 @@ function rowToSession(row: any): any {
   };
 }
 
-async function lovableChat(messages: any[]) {
+async function lovableChat(messages: any[], model = "google/gemini-3-flash-preview") {
   const r = await fetch(`${LOVABLE_BASE}/chat/completions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model: "google/gemini-3-flash-preview", messages }),
+    body: JSON.stringify({ model, messages }),
   });
   if (!r.ok) throw new Error(`Lovable chat ${r.status}: ${await r.text()}`);
   const j: any = await r.json();
