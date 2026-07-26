@@ -328,7 +328,8 @@ export default function App() {
   const [prompt, setPrompt] = useState("");
   const [promptRemixes, setPromptRemixes] = useState<PromptRemixVariant[]>([]);
   const [selectedModelId, setSelectedModelId] = useState(() => preferredStudioModel(fallbackConfig.models).id);
-  const [selectedPresetKey, setSelectedPresetKey] = useState("product-shot-lab");
+  const [selectedPresetKey, setSelectedPresetKey] = useState<string | null>(null);
+  const [attachedPresetSnapshot, setAttachedPresetSnapshot] = useState<string | null>(null);
   const [customPresets, setCustomPresets] = useState<PromptPreset[]>(() => {
     try {
       const raw = typeof window !== "undefined" ? window.localStorage.getItem("frank.customPromptPresets") : null;
@@ -1022,7 +1023,7 @@ export default function App() {
         settings,
         reference_asset_ids: selectedReferenceAssets.map((asset) => asset.id),
         frank_body_mode: frankBodyMode,
-        preset_key: selectedPresetKey,
+        preset_key: selectedPresetKey ?? undefined,
         edit_source_asset_id: kind === "video" ? videoSourceAsset?.id : editSourceAsset?.id,
         mask_asset_id: kind === "masked_edit" ? maskAsset?.id : undefined
       });
@@ -1095,7 +1096,8 @@ export default function App() {
       clearCompare();
       setPrompt(result.brief.prompt ?? result.turn.prompt ?? "");
       setPromptRemixes([]);
-      setSelectedPresetKey(result.turn.preset_key ?? result.brief.task_type ?? "product-shot-lab");
+      setSelectedPresetKey(result.turn.preset_key ?? result.brief.task_type ?? null);
+      setAttachedPresetSnapshot(null);
       setSettings((current) => ({ ...current, ...turnSettings }));
       setDemoDoctor(result.doctor);
       setDemoEvidencePath("");
@@ -1844,7 +1846,7 @@ export default function App() {
     try {
       const result = await remixPrompt({
         prompt: seedPrompt,
-        preset_key: selectedPresetKey,
+        preset_key: selectedPresetKey ?? "",
         frank_body_mode: frankBodyMode
       });
       setPromptRemixes(result.variants);
@@ -1935,7 +1937,7 @@ export default function App() {
       prompt,
       promptMode,
       frankBodyMode,
-      presetKey: selectedPresetKey,
+      presetKey: selectedPresetKey ?? undefined,
       settings,
       referenceAssetIds: selectedReferenceAssets.map((asset) => asset.id),
       referenceImageUrls: generationReferenceUrls,
@@ -2389,8 +2391,9 @@ export default function App() {
       const parsed = JSON.parse(turn.settings_json || "{}") as Partial<StudioSettings>;
       setPrompt(turn.prompt || "");
       setPromptRemixes([]);
+      setAttachedPresetSnapshot(null);
       if (turn.model) setSelectedModelId(turn.model);
-      if (turn.preset_key) setSelectedPresetKey(turn.preset_key);
+      if (turn.preset_key) setSelectedPresetKey(turn.preset_key); else setSelectedPresetKey(null);
       setFrankBodyMode(!!turn.frank_body_mode);
       setSettings((current) => ({
         ...current,
@@ -2597,14 +2600,38 @@ export default function App() {
     openStudioLink(sessionSyncManifestUrl(activeSession.id), "Sync manifest", "Opening the FrankHub sync manifest.");
   }
 
-  function selectPreset(preset: PromptPreset) {
-    setSelectedPresetKey(preset.key);
-    setPrompt((current) => (current.trim() ? current : preset.prompt));
+  function attachPreset(nextKey: string | null) {
+    const preset = nextKey ? promptPresets.find((p) => p.key === nextKey) ?? null : null;
+    setPrompt((current) => {
+      let base = current;
+      if (attachedPresetSnapshot && base.endsWith(attachedPresetSnapshot)) {
+        base = base.slice(0, -attachedPresetSnapshot.length);
+      }
+      base = base.replace(/\s+$/, "");
+      if (!preset) return base;
+      return base ? `${base}\n\n${preset.prompt}` : preset.prompt;
+    });
+    if (!preset) {
+      setSelectedPresetKey(null);
+      setAttachedPresetSnapshot(null);
+    } else {
+      setSelectedPresetKey(preset.key);
+      // Snapshot stores exactly what suffix we appended so we can strip it later.
+      // We check both the "with leading \n\n" form and the "bare" form when stripping.
+      setAttachedPresetSnapshot(preset.prompt);
+    }
   }
+
+
+  function selectPreset(preset: PromptPreset) {
+    attachPreset(preset.key);
+  }
+
 
   function selectTaskShortcut(task: FrankTask) {
     const taskPrompt = promptForTask(task);
     setSelectedPresetKey(task.key);
+    setAttachedPresetSnapshot(null);
     setStudioMode(task.key === "prompt-remix" ? "image-studio" : "product-shot-lab");
     setPrompt((current) => (current.trim() ? `${current.trim()}\n\n${taskPrompt}` : taskPrompt));
     setSettings((current) => settingsForTask(task.key, current, selectedModel));
@@ -2624,6 +2651,7 @@ export default function App() {
       setSelectedModelId(editModel.id);
     }
     setSelectedPresetKey(preset?.key ?? selectedPresetKey);
+    setAttachedPresetSnapshot(null);
     startEditFromAsset(asset);
     setPrompt(nextRoundPrompt(asset, direction, preset));
     setSettings((current) => ({ ...current, count: 4 }));
@@ -3406,6 +3434,19 @@ export default function App() {
                 />
                 {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
               </label>
+              <label>
+                Preset
+                <select
+                  value={selectedPresetKey ?? ""}
+                  onChange={(event) => attachPreset(event.target.value || null)}
+                >
+                  <option value="">— None —</option>
+                  {promptPresets.map((preset) => (
+                    <option key={preset.key} value={preset.key}>{preset.label}</option>
+                  ))}
+                </select>
+                <span className="field-hint">Appended as an editable paragraph to your brief.</span>
+              </label>
             </div>
             <AspectPreview aspect={settings.aspect_ratio} size={modelHasSizes ? settings.image_size : undefined} label={selectedModel?.short_label ?? selectedModel?.label} count={settings.count} />
             {fieldErrors.references ? (
@@ -3979,13 +4020,13 @@ export default function App() {
                   tabIndex={0}
                   aria-pressed={isActive}
                   onClick={() => {
-                    setSelectedPresetKey(preset.key);
-                    setPrompt((current) =>
-                      current.trim()
-                        ? (current.includes(preset.prompt) ? current : `${current.trim()}\n\n${preset.prompt}`)
-                        : preset.prompt,
-                    );
-                    setStatusText(`Loaded preset: ${preset.label}`);
+                    if (selectedPresetKey === preset.key) {
+                      attachPreset(null);
+                      setStatusText(`Removed preset: ${preset.label}`);
+                    } else {
+                      attachPreset(preset.key);
+                      setStatusText(`Loaded preset: ${preset.label}`);
+                    }
                   }}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }}
                 >
@@ -4002,7 +4043,7 @@ export default function App() {
                           e.stopPropagation();
                           setCustomPresets((current) => current.filter((p) => p.key !== preset.key));
                           if (selectedPresetKey === preset.key) {
-                            setSelectedPresetKey(config.promptPresets[0]?.key ?? "product-shot-lab");
+                            attachPreset(null);
                           }
                           setStatusText(`Removed preset: ${preset.label}`);
                         }}

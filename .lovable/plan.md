@@ -1,31 +1,41 @@
-Merge the sidebar footer into the main nav so it reads as one continuous menu, and turn Sessions into an expandable nav item that lists previous sessions inline.
+## Goal
 
-## Sidebar structure (frank-create/src/App.tsx)
+Add a **Preset** dropdown next to the Count field in the composer. Selecting a preset appends its prompt text as a second paragraph to whatever the user has typed. The appended paragraph stays visible and fully editable in the textarea. Swapping to a different preset removes the previously-appended paragraph and appends the new one.
 
-Remove `<div className="sidebar-footer">` entirely. Move its logic into the existing `<nav className="sidebar-nav">` as new nav items placed under a final "Account" section:
+## Behavior spec
 
-1. New "Sessions" section in the nav (near the top, above "Create" or below "Configure" — place under Configure to keep primary actions on top):
-   - A `sidebar-nav-button` labeled "Sessions" with a chevron icon that toggles a new local state `sessionsOpen`.
-   - When open, render an indented list of `sessions` as `<button className="sidebar-nav-sub">` rows; the active session gets `.active`. Click switches session via `selectSession`.
-   - Below the list: two compact sub-rows using the same styling — "Rename current" (only if activeSession) and "New session". These reuse the existing rename prompt and `handleNewSession`.
-   - Drop the `<select>`, the `sidebar-session-stats` line, and the "Main demo" button (or keep "Main demo" only when `showMainDemoAction` — as a sub-row).
+- **Location**: inline in the composer settings row, right after the Count control.
+- **Options**: every entry from `promptPresets` (the same list shown in the preset library card), plus a `"None"` option at the top.
+- **Default**: `"None"` on a fresh session. No preset text is injected automatically anymore.
+- **On select preset X**:
+  1. If a preset paragraph is currently appended, strip it from the textarea.
+  2. Append `\n\n` + preset X's prompt to whatever remains.
+  3. Remember which preset is "attached" so the next swap knows what to strip.
+- **On select "None"**: strip the attached preset paragraph, leave the rest of the user's text intact.
+- **If the user edits the appended paragraph**: their edits win. On the next swap we still strip the currently-attached block by matching the stored snapshot; if the snapshot no longer matches (user edited it heavily), we leave their text alone and just append the new preset — better to keep user edits than to eat them.
+- **Frank Body Mode toggle**: unchanged, still just metadata for now (out of scope for this task).
 
-2. New "Account" section at the bottom of the same nav:
-   - A non-interactive row showing the email (small, muted) — reuse existing `sidebar-account-info` markup but styled to sit inside the nav flow.
-   - A `sidebar-nav-button` "Sign out" that calls `handleSignOut`.
+## Technical notes
 
-Result: `<aside>` contains only brand block + one `<nav>`. No footer div, no card, no divider.
+- File: `frank-create/src/App.tsx`. The composer settings row is around the existing Aspect / Size / Quality / Count controls (grep for the Count select).
+- Track two pieces of state:
+  - `attachedPresetKey: string | null` — which preset's text is currently in the textarea.
+  - `attachedPresetSnapshot: string | null` — the exact `\n\n<preset.prompt>` string we appended, used to strip it cleanly.
+- New handler `attachPreset(newKey)`:
+  - `base = prompt.endsWith(attachedPresetSnapshot) ? prompt.slice(0, -attachedPresetSnapshot.length) : prompt`
+  - if `newKey === "none"`: `setPrompt(base.trimEnd()); clear attached state`
+  - else: `snapshot = "\n\n" + preset.prompt; setPrompt(base.trimEnd() + snapshot); store key + snapshot`
+- Keep the existing preset library card (bottom-right) working; clicking a card there should call the same `attachPreset` handler so both surfaces stay in sync (and the current-only-if-empty behavior in `selectPreset` gets replaced by this always-append behavior).
+- `selectedPresetKey` (used for `preset_key` metadata on the turn) tracks `attachedPresetKey` — sends `null`/undefined when None.
 
-## Styles (frank-create/src/styles.css)
+## UI
 
-- Delete rules for `.sidebar-footer`, `.sidebar-session-card`, `.sidebar-session-stats`, `.sidebar-account`, `.sidebar-account-info`, `.sidebar-account-label`, `.sidebar-account-email`, `.sidebar-signout`, `.session-picker`, `.sidebar-new-session` — anything that was drawing the separate bottom block.
-- Add `.sidebar-nav-sub`: same font/tracking as `.sidebar-nav-button` but with `padding-left: 32px`, slightly smaller font (12px), used for expanded session list rows and inline actions.
-- Add `.sidebar-nav-button .chevron` rotation state for the expanded Sessions item.
-- Ensure the `<nav>` scrolls if it overflows (`overflow-y: auto`) so the merged menu still fits on short viewports.
+- Dropdown styled to match the existing Count/Aspect selects in that row.
+- Label: `Preset`.
+- Option labels come from `preset.label`; first option is `— None —`.
 
-## Verification
+## Out of scope
 
-- Sidebar shows a single uninterrupted menu — Create / Review / Configure / Sessions (expandable) / Account — with no card or divider between sections.
-- Clicking Sessions expands to show all prior sessions; clicking one switches; Rename + New session appear as sub-rows.
-- Sign out sits as the last nav item and still signs the user out.
-- Build passes; no leftover references to removed classes.
+- No server-side prompt injection; the preset text becomes part of the user's editable prompt, which is already what the edge function sends to Replicate. That's the whole fix for "presets weren't reaching Replicate."
+- Frank Body Mode wiring stays as-is.
+- No migration; `preset_key` column already exists on turns.
