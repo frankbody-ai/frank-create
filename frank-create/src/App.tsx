@@ -4030,7 +4030,7 @@ export default function App() {
                           e.stopPropagation();
                           setCustomPresets((current) => current.filter((p) => p.key !== preset.key));
                           if (selectedPresetKey === preset.key) {
-                            setSelectedPresetKey(config.promptPresets[0]?.key ?? "product-shot-lab");
+                            attachPreset(null);
                           }
                           setStatusText(`Removed preset: ${preset.label}`);
                         }}
