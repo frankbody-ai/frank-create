@@ -3605,6 +3605,7 @@ export default function App() {
           </div>
         </form>
       </main>
+      )}
 
       {inspectorOpen ? (
         <button
