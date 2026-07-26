@@ -2391,8 +2391,9 @@ export default function App() {
       const parsed = JSON.parse(turn.settings_json || "{}") as Partial<StudioSettings>;
       setPrompt(turn.prompt || "");
       setPromptRemixes([]);
+      setAttachedPresetSnapshot(null);
       if (turn.model) setSelectedModelId(turn.model);
-      if (turn.preset_key) setSelectedPresetKey(turn.preset_key);
+      if (turn.preset_key) setSelectedPresetKey(turn.preset_key); else setSelectedPresetKey(null);
       setFrankBodyMode(!!turn.frank_body_mode);
       setSettings((current) => ({
         ...current,
