@@ -1437,6 +1437,11 @@ select:focus {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+  align-items: start;
+}
+
+.setting-row > label {
+  grid-template-rows: auto 42px auto;
 }
 
 label {
