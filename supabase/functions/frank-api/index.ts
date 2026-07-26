@@ -100,8 +100,55 @@ const DEFAULT_CONFIG = {
   models: [DEFAULT_MODEL],
   backlogModels: [],
   promptPresets: [
-    { key: "default", label: "Default", description: "No styling.", prompt: "" },
-    { key: "studio", label: "Studio photo", description: "Clean studio look.", prompt: "studio lighting, high detail, sharp focus" },
+    {
+      key: "product-shot-lab",
+      label: "🧪 Product Shot Lab",
+      description: "Clean product image for PDP, retouching, and channel crops.",
+      prompt:
+        "Frank Body [PRODUCT NAME] product-first composition. Clean label facing camera, honest skin-care texture, Frank pink accent, channel-ready negative space. Studio photography, soft realistic shadow, high-conversion PDP finish. 4K, photorealistic.",
+    },
+    {
+      key: "clean-ecom",
+      label: "🛒 Clean Ecom",
+      description: "Crisp commerce frame with readable packaging.",
+      prompt:
+        "Frank Body [PRODUCT NAME] product hero image for e-commerce PDP. High-gloss plastic packaging, centred in frame, clean white or soft off-white background, soft box lighting, no harsh shadows, full product visible, label legible. Studio photography style. 4K, photorealistic. Professional beauty brand e-commerce standard. No props, no model, no hands.",
+    },
+    {
+      key: "fb-lifestyle",
+      label: "📸 FB Lifestyle",
+      description: "Warm editorial lifestyle moment.",
+      prompt:
+        "Frank Body [PRODUCT NAME] warm editorial lifestyle image. Human skin or product-only flat lay — specify which. Warm natural light, bathroom or bedroom setting or marble surface. Product as supporting element or hero. Dried botanicals, minimal props. Vogue Beauty editorial feel, warm cream and terracotta tones. 4K, photorealistic.",
+    },
+    {
+      key: "fb-model-image",
+      label: "👤 FB Model Image",
+      description: "Campaign hero with a real body-care model moment.",
+      prompt:
+        "Frank Body campaign hero. Young woman, radiant glowing skin, applying or holding [PRODUCT NAME], warm natural light, beauty editorial mood. Authentic skin texture — not AI-smooth. Inclusive casting, confident body-care moment, warm direct flash, tactile product use, no plastic retouching. 4K, photorealistic.",
+    },
+    {
+      key: "campaign-variants",
+      label: "🎯 Campaign Variants",
+      description: "Creative rounds from one approved product direction.",
+      prompt:
+        "Frank Body [PRODUCT NAME] campaign variant. Keep product recognizable and label clean, push set styling, leave channel-ready headline space in the composition. Sharpen the Frank Body attitude — cheeky, warm, director-ready. Editorial realism, warm flash, tactile surfaces. 4K, photorealistic.",
+    },
+    {
+      key: "product-texture",
+      label: "🧴 Product Texture",
+      description: "Macro scrub, cream, and tactile swipes.",
+      prompt:
+        "Extreme close-up macro photography of [INGREDIENT/TEXTURE] — e.g. coffee grounds, shea butter, vitamin C crystals, creamy body-care texture, tactile swipes. Warm studio light, soft shadows, high detail, editorial beauty feel. Delicious but skin-care appropriate. 4K, photorealistic.",
+    },
+    {
+      key: "retail-mock",
+      label: "🏪 Retail Mock",
+      description: "Packaging, shelf, display, and type exploration.",
+      prompt:
+        "Realistic retail shelf or branded display mock for Frank Body [PRODUCT NAME]. Pharmacy or beauty retailer environment — e.g. Chemist Warehouse, MECCA, Target. Correct shelf height, accurate product facings, packaging readable, brand block clear, campaign headline space, sharp typography.",
+    },
   ],
   localEngine: {
     active_engine: "lovable",
