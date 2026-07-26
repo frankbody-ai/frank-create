@@ -1023,7 +1023,7 @@ export default function App() {
         settings,
         reference_asset_ids: selectedReferenceAssets.map((asset) => asset.id),
         frank_body_mode: frankBodyMode,
-        preset_key: selectedPresetKey,
+        preset_key: selectedPresetKey ?? undefined,
         edit_source_asset_id: kind === "video" ? videoSourceAsset?.id : editSourceAsset?.id,
         mask_asset_id: kind === "masked_edit" ? maskAsset?.id : undefined
       });
