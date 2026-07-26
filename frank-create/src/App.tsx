@@ -2631,6 +2631,7 @@ export default function App() {
   function selectTaskShortcut(task: FrankTask) {
     const taskPrompt = promptForTask(task);
     setSelectedPresetKey(task.key);
+    setAttachedPresetSnapshot(null);
     setStudioMode(task.key === "prompt-remix" ? "image-studio" : "product-shot-lab");
     setPrompt((current) => (current.trim() ? `${current.trim()}\n\n${taskPrompt}` : taskPrompt));
     setSettings((current) => settingsForTask(task.key, current, selectedModel));
