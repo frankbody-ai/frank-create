@@ -2651,6 +2651,7 @@ export default function App() {
       setSelectedModelId(editModel.id);
     }
     setSelectedPresetKey(preset?.key ?? selectedPresetKey);
+    setAttachedPresetSnapshot(null);
     startEditFromAsset(asset);
     setPrompt(nextRoundPrompt(asset, direction, preset));
     setSettings((current) => ({ ...current, count: 4 }));
