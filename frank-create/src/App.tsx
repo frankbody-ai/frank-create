@@ -364,7 +364,7 @@ export default function App() {
     await hardSignOut();
     window.location.replace("/");
   };
-  const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot">(() =>
+  const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator">(() =>
     initialStudioMode()
   );
   const [advancedOpen, setAdvancedOpen] = useState(() => shouldAutoOpenProviderAudit());
