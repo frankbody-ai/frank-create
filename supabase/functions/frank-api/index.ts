@@ -1312,7 +1312,7 @@ Deno.serve(async (req) => {
         const improved = await lovableChat([
           { role: "system", content: system },
           { role: "user", content: userMsg },
-        ]);
+        ], "openai/gpt-5.5");
         const cleaned = String(improved || "").trim().replace(/^["'`]+|["'`]+$/g, "");
         if (!cleaned) return json({ error: { code: "empty", message: "AI returned no content" } }, 502);
         return json({ prompt: cleaned });
