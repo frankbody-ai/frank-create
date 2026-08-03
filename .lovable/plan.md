@@ -1,41 +1,23 @@
-## Goal
+## Diagnosis (verified)
 
-Add a **Preset** dropdown next to the Count field in the composer. Selecting a preset appends its prompt text as a second paragraph to whatever the user has typed. The appended paragraph stays visible and fully editable in the textarea. Swapping to a different preset removes the previously-appended paragraph and appends the new one.
+Reve 2.1 is down on the provider side. A control prediction sent straight through the Replicate gateway — plain text prompt, no reference images, `aspect_ratio: "1:1"` — failed in 0.5 seconds with the same `ModelError ... (E001)`. The live model schema confirms our request fields (`prompt`, `aspect_ratio`, `reference_images` up to 8) are correct. Nothing in FrankCreate is causing it, and no code change can make Reve generate images until Reve recovers.
 
-## Behavior spec
+## What to change
 
-- **Location**: inline in the composer settings row, right after the Count control.
-- **Options**: every entry from `promptPresets` (the same list shown in the preset library card), plus a `"None"` option at the top.
-- **Default**: `"None"` on a fresh session. No preset text is injected automatically anymore.
-- **On select preset X**:
-  1. If a preset paragraph is currently appended, strip it from the textarea.
-  2. Append `\n\n` + preset X's prompt to whatever remains.
-  3. Remember which preset is "attached" so the next swap knows what to strip.
-- **On select "None"**: strip the attached preset paragraph, leave the rest of the user's text intact.
-- **If the user edits the appended paragraph**: their edits win. On the next swap we still strip the currently-attached block by matching the stored snapshot; if the snapshot no longer matches (user edited it heavily), we leave their text alone and just append the new preset — better to keep user edits than to eat them.
-- **Frank Body Mode toggle**: unchanged, still just metadata for now (out of scope for this task).
+Right now this looks like an app bug: the card fails, the error text is cryptic, and "Retry" hammers a dead model. Proposal:
+
+1. **Classify E001 as a provider outage** in `supabase/functions/frank-api/index.ts` (`classifyReplicateModelError`). Add an `E001` / `ModelError` branch returning a `provider_unavailable` code with a plain message: "Reve 2.1 is temporarily unavailable on the provider side. Try Nano Banana Pro, Seedream 5 Pro, or GPT-image-2." Keep it retryable but flagged.
+
+2. **Show it as an outage in the UI**, not a validation failure — in the generation card error panel, `provider_unavailable` gets a distinct treatment (warning tone, no "fix your inputs" hint) plus a one-click "Switch model and retry" action that re-runs the same prompt/references on the currently selected fallback model.
+
+3. **Mark Reve 2.1 as degraded in the model picker** (`presets.ts` + composer): a small "Provider issue" badge and a tooltip, so nobody burns a round on it. This is a manual flag I flip back once Reve is healthy — no automatic health polling, which would add cost and complexity for a transient outage.
+
+## Alternative if you prefer minimal churn
+
+Just grey out Reve 2.1 in the model dropdown (same treatment as Video Lab / Product Shot Lab), and re-enable it later. No error-mapping work. Say the word if you want this instead of the fuller version above.
 
 ## Technical notes
 
-- File: `frank-create/src/App.tsx`. The composer settings row is around the existing Aspect / Size / Quality / Count controls (grep for the Count select).
-- Track two pieces of state:
-  - `attachedPresetKey: string | null` — which preset's text is currently in the textarea.
-  - `attachedPresetSnapshot: string | null` — the exact `\n\n<preset.prompt>` string we appended, used to strip it cleanly.
-- New handler `attachPreset(newKey)`:
-  - `base = prompt.endsWith(attachedPresetSnapshot) ? prompt.slice(0, -attachedPresetSnapshot.length) : prompt`
-  - if `newKey === "none"`: `setPrompt(base.trimEnd()); clear attached state`
-  - else: `snapshot = "\n\n" + preset.prompt; setPrompt(base.trimEnd() + snapshot); store key + snapshot`
-- Keep the existing preset library card (bottom-right) working; clicking a card there should call the same `attachPreset` handler so both surfaces stay in sync (and the current-only-if-empty behavior in `selectPreset` gets replaced by this always-append behavior).
-- `selectedPresetKey` (used for `preset_key` metadata on the turn) tracks `attachedPresetKey` — sends `null`/undefined when None.
-
-## UI
-
-- Dropdown styled to match the existing Count/Aspect selects in that row.
-- Label: `Preset`.
-- Option labels come from `preset.label`; first option is `— None —`.
-
-## Out of scope
-
-- No server-side prompt injection; the preset text becomes part of the user's editable prompt, which is already what the edge function sends to Replicate. That's the whole fix for "presets weren't reaching Replicate."
-- Frank Body Mode wiring stays as-is.
-- No migration; `preset_key` column already exists on turns.
+- Files: `supabase/functions/frank-api/index.ts` (error classification), `supabase/functions/frank-generate/index.ts` (same classifier for parity), `frank-create/src/lib/presets.ts` (degraded flag + fallback model hint), `frank-create/src/App.tsx` (error panel branch, switch-and-retry), `frank-create/src/styles.css` (outage badge styling).
+- The existing `generation_errors` Supabase table already captures raw provider text, so outage frequency stays queryable — no schema change.
+- Both edge functions get redeployed after the change.
