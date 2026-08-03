@@ -2132,6 +2132,7 @@ export default function App() {
         if (result.status === "complete" && result.assets?.length) {
           setAssets((current) => [...result.assets!, ...current]);
           setSelectedAsset(result.assets[0]);
+          setSelectedReferenceIds([]);
           if (promptMode !== "generate") {
             setEditSourceAsset(null);
             setMaskAsset(null);
@@ -2147,6 +2148,7 @@ export default function App() {
           })
         );
       }
+
     } catch (error) {
       setStatusText(error instanceof Error ? error.message : "This round needs another look.");
     } finally {
