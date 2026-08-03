@@ -3296,10 +3296,32 @@ export default function App() {
                       {timeLabel ? <span title={timeLabel}>{timeLabel}</span> : null}
                       <span>{turn.status}</span>
                       {turn.frank_body_mode ? <span>Frank Body Mode</span> : <span>User prompt</span>}
+                      <button
+                        type="button"
+                        className="turn-copy-prompt"
+                        onClick={() => {
+                          void navigator.clipboard?.writeText(turn.prompt || "").then(() => {
+                            setStatusText("Prompt copied to clipboard.");
+                          }).catch(() => {
+                            setStatusText("Could not copy prompt.");
+                          });
+                        }}
+                        title="Copy prompt"
+                        style={{
+                          fontSize: 11, padding: "2px 8px", borderRadius: 999,
+                          background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.65)",
+                          border: "1px solid rgba(0,0,0,0.12)", cursor: "pointer",
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                        }}
+                      >
+                        <Clipboard size={12} />
+                        Copy prompt
+                      </button>
                       {parseJsonList(turn.reference_asset_ids_json).length ? (
                         <span>{referenceCountLabel(parseJsonList(turn.reference_asset_ids_json).length)}</span>
                       ) : null}
                       {turnErrorCopy(turn) ? <span className="turn-error">{turnErrorCopy(turn)}</span> : null}
+
                       {(() => {
                         const anyTurn = turn as any;
                         const requested = typeof anyTurn.requested_count === "number" ? anyTurn.requested_count : 0;
