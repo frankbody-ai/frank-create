@@ -2175,7 +2175,9 @@ export default function App() {
       setAssets((current) => {
         const byId = new Map(current.map((a) => [a.id, a]));
         for (const asset of assetResult.assets) byId.set(asset.id, asset);
-        return Array.from(byId.values());
+        return Array.from(byId.values()).sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
       });
     } catch {
       /* reconcile is best-effort */
