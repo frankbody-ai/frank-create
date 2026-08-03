@@ -444,6 +444,9 @@ export default function App() {
   const [videoNowTick, setVideoNowTick] = useState(Date.now());
   const videoAbortRef = useRef<AbortController | null>(null);
   const generateAbortRef = useRef<AbortController | null>(null);
+  // Set by "Switch model and retry": once the picker has re-rendered on the new
+  // model, the effect below fires the generation with the fresh selection.
+  const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
   useEffect(() => {
     if (videoStartedAt == null) return;
     const iv = setInterval(() => setVideoNowTick(Date.now()), 1000);
