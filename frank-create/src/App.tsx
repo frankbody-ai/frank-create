@@ -587,6 +587,15 @@ export default function App() {
     () => config.models.find((model) => model.id === selectedModelId) ?? config.models[0],
     [config.models, selectedModelId]
   );
+  // First healthy alternative, used for the one-click "switch model and retry"
+  // action when the selected model is down on the provider side.
+  const fallbackModel = useMemo(
+    () =>
+      config.models.find(
+        (model) => model.id !== selectedModelId && model.status === "ready" && !model.degraded
+      ) ?? null,
+    [config.models, selectedModelId]
+  );
   const providerAuditMode = shouldAutoOpenProviderAudit();
   const modelOptions = useMemo(() => selectModelOptions(config.models, selectedModelId), [config.models, selectedModelId]);
   const allowedSizesForAspect = useMemo(
