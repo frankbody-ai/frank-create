@@ -5420,7 +5420,17 @@ function OutputStrip({
 }
 
 function mergeModels(remote: StudioModel[] | undefined, fallback: StudioModel[]): StudioModel[] {
-  const out: StudioModel[] = remote?.length ? [...remote] : [];
+  const localById = new Map(fallback.map((m) => [m.id, m]));
+  // Provider-outage flags live in the local model roster, so re-apply them onto
+  // remote entries — otherwise a backend config refresh silently clears them.
+  const out: StudioModel[] = remote?.length
+    ? remote.map((m) => {
+        const local = localById.get(m.id);
+        return local?.degraded
+          ? { ...m, degraded: true, degraded_note: local.degraded_note }
+          : m;
+      })
+    : [];
   const seen = new Set(out.map((m) => m.id));
   for (const m of fallback) {
     if (!seen.has(m.id)) out.push(m);
