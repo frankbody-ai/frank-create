@@ -2150,6 +2150,35 @@ export default function App() {
     } finally {
       finishInflight();
       setBusy(false);
+      // The request can time out while the server keeps finishing the round
+      // (e.g. 4 images). Re-read the session so every produced image lands.
+      void reconcileSessionAssets();
+    }
+  }
+
+  // Pull turns + assets for the active session and merge them into local state
+  // without dropping anything already on screen.
+  async function reconcileSessionAssets() {
+    if (connection !== "online" || !activeSession) return;
+    try {
+      const [turnResult, assetResult] = await Promise.all([
+        listTurns(activeSession.id),
+        listAssets({ sessionId: activeSession.id }),
+      ]);
+      setTurns((current) => {
+        const byId = new Map(current.map((t) => [t.id, t]));
+        for (const turn of turnResult.turns) byId.set(turn.id, turn);
+        return Array.from(byId.values()).sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      });
+      setAssets((current) => {
+        const byId = new Map(current.map((a) => [a.id, a]));
+        for (const asset of assetResult.assets) byId.set(asset.id, asset);
+        return Array.from(byId.values());
+      });
+    } catch {
+      /* reconcile is best-effort */
     }
   }
 
