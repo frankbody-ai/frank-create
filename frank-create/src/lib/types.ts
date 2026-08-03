@@ -52,6 +52,9 @@ export interface StudioModel {
   configured_env_var?: string;
   missing_env_vars?: string[];
   lora_candidate?: boolean;
+  /** Provider-side outage flag: model stays selectable but is clearly marked. */
+  degraded?: boolean;
+  degraded_note?: string;
 }
 
 export interface PromptPreset {
