@@ -3455,6 +3455,11 @@ export default function App() {
                     </option>
                   ))}
                 </select>
+                {selectedModel?.degraded ? (
+                  <span className="model-degraded-note" title={selectedModel.degraded_note}>
+                    {selectedModel.degraded_note ?? "This model is currently failing upstream."}
+                  </span>
+                ) : null}
               </label>
               <label>
                 Aspect
