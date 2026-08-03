@@ -2030,10 +2030,12 @@ export default function App() {
         setTurns((current) => [...current, turn]);
         setAssets((current) => [...newAssets, ...current]);
         setSelectedAsset(newAssets[0]);
+        setSelectedReferenceIds([]);
         setStatusText(`Generated ${newAssets.length} pick${newAssets.length === 1 ? "" : "s"} via Lovable AI.`);
         setRetrySafePayload(null);
         setGenPhase("completed");
         setGenError(null);
+
       } catch (err) {
         // Aborted by the user: don't render a red "failed" error card; show a canceled state.
         const isAbort =
@@ -2130,6 +2132,7 @@ export default function App() {
         if (result.status === "complete" && result.assets?.length) {
           setAssets((current) => [...result.assets!, ...current]);
           setSelectedAsset(result.assets[0]);
+          setSelectedReferenceIds([]);
           if (promptMode !== "generate") {
             setEditSourceAsset(null);
             setMaskAsset(null);
@@ -2145,6 +2148,7 @@ export default function App() {
           })
         );
       }
+
     } catch (error) {
       setStatusText(error instanceof Error ? error.message : "This round needs another look.");
     } finally {
