@@ -4248,11 +4248,25 @@ export default function App() {
           ) : null}
           {genPhase === "failed" && genError ? (
             <>
-              {genError.code ? (
+              {genError.code === "provider_unavailable" ? (
+                <span className="gen-error-chip outage" title={genError.message}>
+                  <code>provider outage</code>
+                </span>
+              ) : genError.code ? (
                 <span className="gen-error-chip" title={genError.message}>
                   <code>{genError.code}</code>
                   {genError.requestId ? <em title={`Replicate request ID: ${genError.requestId}`}>req {genError.requestId.slice(0, 8)}</em> : null}
                 </span>
+              ) : null}
+              {genError.code === "provider_unavailable" && fallbackModel ? (
+                <button
+                  type="button"
+                  onClick={() => setAutoRetryModelId(fallbackModel.id)}
+                  title={`Re-run the same prompt and references on ${fallbackModel.short_label ?? fallbackModel.label}`}
+                >
+                  <RefreshCw size={13} />
+                  Switch to {fallbackModel.short_label ?? fallbackModel.label} and retry
+                </button>
               ) : null}
               <button
                 type="button"
