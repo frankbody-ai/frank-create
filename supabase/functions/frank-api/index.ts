@@ -564,8 +564,9 @@ async function handleInference(body: any, userId: string) {
   }
 
   const requested = requestedDimensions(reqSettings.aspect_ratio, reqSettings.image_size || reqSettings.size);
-  const insertedAssets: any[] = [];
-  for (const img of generatedImages) {
+  // Download + upload + insert in parallel: serial persistence added ~10s per
+  // image, which pushed multi-image rounds past the function's time budget.
+  const insertedAssets: any[] = (await Promise.all(generatedImages.map(async (img) => {
     const assetId = crypto.randomUUID();
     const imageBytes = await imageBytesForUpload(img);
     const bytes = imageBytes.bytes;
@@ -597,8 +598,8 @@ async function handleInference(body: any, userId: string) {
       },
     }).select().single();
     if (assetIns.error) throw assetIns.error;
-    insertedAssets.push(assetIns.data);
-  }
+    return assetIns.data;
+  }))).filter(Boolean);
 
   const assetIds = insertedAssets.map((asset) => asset.id);
 
