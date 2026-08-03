@@ -6226,6 +6226,23 @@ input[aria-invalid="true"] {
 }
 .gen-error-chip code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .gen-error-chip em { font-style: normal; opacity: 0.8; font-weight: 500; }
+/* Provider-side outage reads as a warning, not a user input mistake. */
+.gen-error-chip.outage {
+  background: rgba(234, 179, 8, 0.16);
+  color: #92400e;
+}
+.model-degraded-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #92400e;
+}
+
+
 
 .preflight-warnings {
   margin-top: 8px;

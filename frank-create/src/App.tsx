@@ -444,6 +444,9 @@ export default function App() {
   const [videoNowTick, setVideoNowTick] = useState(Date.now());
   const videoAbortRef = useRef<AbortController | null>(null);
   const generateAbortRef = useRef<AbortController | null>(null);
+  // Set by "Switch model and retry": once the picker has re-rendered on the new
+  // model, the effect below fires the generation with the fresh selection.
+  const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
   useEffect(() => {
     if (videoStartedAt == null) return;
     const iv = setInterval(() => setVideoNowTick(Date.now()), 1000);
@@ -587,6 +590,21 @@ export default function App() {
     () => config.models.find((model) => model.id === selectedModelId) ?? config.models[0],
     [config.models, selectedModelId]
   );
+  // First healthy alternative, used for the one-click "switch model and retry"
+  // action when the selected model is down on the provider side.
+  const fallbackModel = useMemo(
+    () =>
+      config.models.find(
+        (model) => model.id !== selectedModelId && model.status === "ready" && !model.degraded
+      ) ?? null,
+    [config.models, selectedModelId]
+  );
+  useEffect(() => {
+    if (!autoRetryModelId || selectedModelId !== autoRetryModelId) return;
+    setAutoRetryModelId(null);
+    void handleGenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRetryModelId, selectedModelId]);
   const providerAuditMode = shouldAutoOpenProviderAudit();
   const modelOptions = useMemo(() => selectModelOptions(config.models, selectedModelId), [config.models, selectedModelId]);
   const allowedSizesForAspect = useMemo(
@@ -3450,10 +3468,16 @@ export default function App() {
                 >
                   {config.models.map((model) => (
                     <option key={model.id} value={model.id} disabled={model.status === "disabled"}>
-                      {(model.short_label ?? model.label) + (model.status === "disabled" ? " (soon)" : "")}
+                      {(model.short_label ?? model.label)
+                        + (model.status === "disabled" ? " (soon)" : model.degraded ? " (provider issue)" : "")}
                     </option>
                   ))}
                 </select>
+                {selectedModel?.degraded ? (
+                  <span className="model-degraded-note" title={selectedModel.degraded_note}>
+                    {selectedModel.degraded_note ?? "This model is currently failing upstream."}
+                  </span>
+                ) : null}
               </label>
               <label>
                 Aspect
@@ -4224,11 +4248,25 @@ export default function App() {
           ) : null}
           {genPhase === "failed" && genError ? (
             <>
-              {genError.code ? (
+              {genError.code === "provider_unavailable" ? (
+                <span className="gen-error-chip outage" title={genError.message}>
+                  <code>provider outage</code>
+                </span>
+              ) : genError.code ? (
                 <span className="gen-error-chip" title={genError.message}>
                   <code>{genError.code}</code>
                   {genError.requestId ? <em title={`Replicate request ID: ${genError.requestId}`}>req {genError.requestId.slice(0, 8)}</em> : null}
                 </span>
+              ) : null}
+              {genError.code === "provider_unavailable" && fallbackModel ? (
+                <button
+                  type="button"
+                  onClick={() => setAutoRetryModelId(fallbackModel.id)}
+                  title={`Re-run the same prompt and references on ${fallbackModel.short_label ?? fallbackModel.label}`}
+                >
+                  <RefreshCw size={13} />
+                  Switch to {fallbackModel.short_label ?? fallbackModel.label} and retry
+                </button>
               ) : null}
               <button
                 type="button"
@@ -5382,7 +5420,17 @@ function OutputStrip({
 }
 
 function mergeModels(remote: StudioModel[] | undefined, fallback: StudioModel[]): StudioModel[] {
-  const out: StudioModel[] = remote?.length ? [...remote] : [];
+  const localById = new Map(fallback.map((m) => [m.id, m]));
+  // Provider-outage flags live in the local model roster, so re-apply them onto
+  // remote entries — otherwise a backend config refresh silently clears them.
+  const out: StudioModel[] = remote?.length
+    ? remote.map((m) => {
+        const local = localById.get(m.id);
+        return local?.degraded
+          ? { ...m, degraded: true, degraded_note: local.degraded_note }
+          : m;
+      })
+    : [];
   const seen = new Set(out.map((m) => m.id));
   for (const m of fallback) {
     if (!seen.has(m.id)) out.push(m);

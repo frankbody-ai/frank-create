@@ -181,7 +181,12 @@ export const fallbackConfig: FrankConfig = {
       max_count: 4,
       cost_label: "premium",
       configured: true,
-      missing_env_vars: []
+      missing_env_vars: [],
+      // Reve's hosted model is currently returning ModelError (E001) on every
+      // prediction — including plain text-to-image with no references. Flip this
+      // back to false once the provider recovers.
+      degraded: true,
+      degraded_note: "Reve 2.1 is failing upstream on Replicate (ModelError E001). Use Nano Banana Pro, Seedream 5 Pro, or GPT-image-2 until it recovers."
     },
     {
       id: "mai-image-2-5",

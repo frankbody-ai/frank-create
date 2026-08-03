@@ -509,6 +509,16 @@ function extractProviderMessage(raw: string): string {
 // prediction's `error` field text.
 function classifyModelError(raw: string): { code: string; message: string; retryable: boolean } {
   const t = raw.toLowerCase();
+  // Generic upstream model outage: Replicate relays the vendor's opaque
+  // "ModelError ... (E001)" when the hosted model itself is unhealthy. This
+  // fails within a second, before inference, regardless of prompt or params.
+  if (t.includes("e001") || t.includes("modelerror")) {
+    return {
+      code: "provider_unavailable",
+      message: "This model is temporarily unavailable on the provider side. Try Nano Banana Pro, Seedream 5 Pro, or GPT-image-2.",
+      retryable: true
+    };
+  }
   if (t.includes("nsfw") || t.includes("safety") || t.includes("content policy") || t.includes("flagged")) {
     return { code: "content_filtered", message: "The provider blocked this prompt for safety/policy reasons. Rewrite and try again.", retryable: false };
   }
