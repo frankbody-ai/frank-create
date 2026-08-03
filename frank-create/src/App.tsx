@@ -599,6 +599,12 @@ export default function App() {
       ) ?? null,
     [config.models, selectedModelId]
   );
+  useEffect(() => {
+    if (!autoRetryModelId || selectedModelId !== autoRetryModelId) return;
+    setAutoRetryModelId(null);
+    void handleGenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRetryModelId, selectedModelId]);
   const providerAuditMode = shouldAutoOpenProviderAudit();
   const modelOptions = useMemo(() => selectModelOptions(config.models, selectedModelId), [config.models, selectedModelId]);
   const allowedSizesForAspect = useMemo(
