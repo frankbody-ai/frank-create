@@ -3450,7 +3450,8 @@ export default function App() {
                 >
                   {config.models.map((model) => (
                     <option key={model.id} value={model.id} disabled={model.status === "disabled"}>
-                      {(model.short_label ?? model.label) + (model.status === "disabled" ? " (soon)" : "")}
+                      {(model.short_label ?? model.label)
+                        + (model.status === "disabled" ? " (soon)" : model.degraded ? " (provider issue)" : "")}
                     </option>
                   ))}
                 </select>
