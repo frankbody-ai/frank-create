@@ -89,8 +89,8 @@ export function StudioRail(props: StudioRailProps) {
         <button
           type="button"
           role="tab"
-          aria-selected={!isVideo}
-          className={!isVideo ? "active" : ""}
+          aria-selected={mediaKind === "image"}
+          className={mediaKind === "image" ? "active" : ""}
           onClick={() => onMediaKindChange("image")}
         >
           <ImageIcon size={14} />
@@ -99,17 +99,29 @@ export function StudioRail(props: StudioRailProps) {
         <button
           type="button"
           role="tab"
-          aria-selected={isVideo}
-          className={isVideo ? "active" : ""}
+          aria-selected={mediaKind === "video"}
+          className={mediaKind === "video" ? "active" : ""}
           onClick={() => onMediaKindChange("video")}
         >
           <Film size={14} />
           Video
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={isCompare}
+          className={isCompare ? "active" : ""}
+          onClick={() => onMediaKindChange("compare")}
+          title="Run two models on the same brief and compare the results"
+        >
+          <Columns2 size={14} />
+          Side&#8209;by&#8209;side
+        </button>
         <button className="rail-close" type="button" onClick={onClose} aria-label="Close studio settings">
           <ChevronLeft size={14} />
         </button>
       </div>
+
 
       <div className="rail-scroll">
         <section className="rail-block">
