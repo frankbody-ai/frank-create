@@ -7726,12 +7726,42 @@ input:focus, textarea:focus, select:focus {
   font-size: 11.5px;
   line-height: 1.45;
   opacity: 0.72;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+.rail-model-price {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.rail-model-price strong { font-size: 13px; }
+.rail-model-price span { opacity: 0.6; }
+.rail-price-tag.cheapest {
+  background: rgba(38, 122, 78, 0.14) !important;
+  color: #1F6B45;
+}
+.rail-price-tag.premium {
+  background: rgba(196, 45, 62, 0.14) !important;
+  color: #A32234;
+}
+.rail-model-card select {
+  min-width: 0;
+  max-width: 100%;
 }
 .rail-model-badges {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  min-width: 0;
 }
+
 .rail-model-badges span {
   padding: 3px 8px;
   border-radius: 999px;

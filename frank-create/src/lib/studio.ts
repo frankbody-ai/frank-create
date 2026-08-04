@@ -164,6 +164,54 @@ export function maxCountForModel(model: StudioModel | undefined | null): number 
   return Number.isFinite(value) && value > 0 ? Math.trunc(value) : 4;
 }
 
+function usd(value: number): string {
+  return `$${value.toFixed(2)}`;
+}
+
+/** Per-second rate label for a video model, e.g. "$0.05/s" or "$0.05–0.11/s". */
+export function modelRateLabel(model: StudioModel | undefined | null): string | null {
+  if (!model || !isVideoModel(model)) return null;
+  if (model.price_per_second) {
+    return model.price_max_per_second && model.price_max_per_second > model.price_per_second
+      ? `${usd(model.price_per_second)}–${model.price_max_per_second.toFixed(2)}/s`
+      : `${usd(model.price_per_second)}/s`;
+  }
+  if (model.price_table) {
+    const values = Object.values(model.price_table);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    return min === max ? `${usd(min)}/video` : `${usd(min)}–${max.toFixed(2)}/video`;
+  }
+  if (model.price_flat) return `${usd(model.price_flat)}/video`;
+  return null;
+}
+
+/** Live estimate for the current duration / resolution selection. */
+export function estimateVideoCost(
+  model: StudioModel | undefined | null,
+  settings: StudioSettings
+): string | null {
+  if (!model || !isVideoModel(model)) return null;
+  const duration = Number(settings.duration) || model.allowed_durations?.[0] || 5;
+  const resolution = settings.video_resolution ?? model.allowed_resolutions?.[0] ?? "";
+  const suffix = `${duration}s${resolution ? ` @ ${resolution}` : ""}`;
+
+  if (model.price_table) {
+    const exact = model.price_table[`${duration}@${resolution}`];
+    if (typeof exact === "number") return `~${usd(exact)} · ${suffix}`;
+  }
+  if (model.price_per_second) {
+    const low = model.price_per_second * duration;
+    const high = (model.price_max_per_second ?? model.price_per_second) * duration;
+    return high > low
+      ? `~${usd(low)}–${high.toFixed(2)} · ${suffix}`
+      : `~${usd(low)} · ${suffix}`;
+  }
+  if (model.price_flat) return `~${usd(model.price_flat)} · ${suffix}`;
+  return null;
+}
+
+
 export interface StudioFieldErrors {
   aspect?: string;
   size?: string;

@@ -266,61 +266,84 @@ const REPLICATE_MAP: Record<string, string> = {
 };
 
 const VIDEO_REPLICATE_MAP: Record<string, string> = {
-  "kling-2-5-turbo-pro": "kwaivgi/kling-v2.5-turbo-pro",
-  "hailuo-02": "minimax/hailuo-02",
-  "seedance-1-pro": "bytedance/seedance-1-pro",
-  "veo-3-fast": "google/veo-3-fast",
-  "wan-2-5-i2v": "wan-video/wan-2.5-i2v",
+  "grok-imagine-video": "xai/grok-imagine-video",
+  "grok-imagine-video-1-5": "xai/grok-imagine-video-1.5",
+  "dreamina-seedance-2": "bytedance/seedance-2.0",
+  "happyhorse-1-0": "alibaba/happyhorse-1.0",
+  "wan-2-7-i2v": "wan-video/wan-2.7-i2v",
+  "hailuo-2-3": "minimax/hailuo-2.3",
 };
+
+function pick<T>(value: T | undefined, allowed: T[], fallback: T): T {
+  return value !== undefined && allowed.includes(value) ? value : fallback;
+}
 
 function buildVideoInput(
   slug: string,
   prompt: string,
-  opts: { aspect_ratio?: string; duration?: number; resolution?: string; image?: string },
+  opts: {
+    aspect_ratio?: string;
+    duration?: number;
+    resolution?: string;
+    image?: string;
+    last_frame?: string;
+  },
 ): Record<string, unknown> {
   const input: Record<string, unknown> = { prompt };
   const duration = Number(opts.duration);
-  if (slug === "kwaivgi/kling-v2.5-turbo-pro") {
-    const allowed = new Set(["16:9", "9:16", "1:1"]);
-    input.duration = [5, 10].includes(duration) ? duration : 5;
-    if (opts.image) input.start_image = opts.image;
-    else input.aspect_ratio = opts.aspect_ratio && allowed.has(opts.aspect_ratio) ? opts.aspect_ratio : "16:9";
+  const clamp = (min: number, max: number, fallback: number) =>
+    Number.isFinite(duration) && duration >= min && duration <= max ? Math.round(duration) : fallback;
+
+  if (slug === "xai/grok-imagine-video" || slug === "xai/grok-imagine-video-1.5") {
+    const aspects = ["auto", "16:9", "4:3", "1:1", "9:16", "3:4", "3:2", "2:3"];
+    input.duration = clamp(1, 15, 5);
+    input.resolution = pick(opts.resolution, ["480p", "720p"], "720p");
+    input.aspect_ratio = pick(opts.aspect_ratio, aspects, "auto");
+    if (opts.image) input.image = opts.image;
     return input;
   }
-  if (slug === "minimax/hailuo-02") {
-    input.duration = [6, 10].includes(duration) ? duration : 6;
-    const res = new Set(["512p", "768p", "1080p"]);
-    input.resolution = opts.resolution && res.has(opts.resolution) ? opts.resolution : "1080p";
+  if (slug === "bytedance/seedance-2.0") {
+    const aspects = ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "9:21", "adaptive"];
+    input.duration = clamp(1, 15, 5);
+    input.resolution = pick(opts.resolution, ["480p", "720p", "1080p", "4k"], "1080p");
+    input.generate_audio = true;
+    if (opts.image) {
+      input.image = opts.image;
+      if (opts.last_frame) input.last_frame_image = opts.last_frame;
+      input.aspect_ratio = "adaptive";
+    } else {
+      input.aspect_ratio = pick(opts.aspect_ratio, aspects, "16:9");
+    }
+    return input;
+  }
+  if (slug === "alibaba/happyhorse-1.0") {
+    input.duration = clamp(3, 15, 5);
+    input.resolution = pick(opts.resolution, ["720p", "1080p"], "1080p");
+    if (opts.image) input.image = opts.image;
+    else input.aspect_ratio = pick(opts.aspect_ratio, ["16:9", "9:16", "1:1", "4:3", "3:4"], "16:9");
+    return input;
+  }
+  if (slug === "wan-video/wan-2.7-i2v") {
+    input.duration = clamp(2, 15, 5);
+    input.resolution = pick(opts.resolution, ["720p", "1080p"], "1080p");
+    if (opts.image) input.first_frame = opts.image;
+    if (opts.last_frame) input.last_frame = opts.last_frame;
+    return input;
+  }
+  if (slug === "minimax/hailuo-2.3") {
+    // 1080p supports 6s only; 10s is 768p only.
+    let resolution = pick(opts.resolution, ["768p", "1080p"], "1080p");
+    let clip = [6, 10].includes(Math.round(duration)) ? Math.round(duration) : 6;
+    if (clip === 10) resolution = "768p";
+    if (resolution === "1080p") clip = 6;
+    input.duration = clip;
+    input.resolution = resolution;
     if (opts.image) input.first_frame_image = opts.image;
-    return input;
-  }
-  if (slug === "bytedance/seedance-1-pro") {
-    const allowed = new Set(["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "9:21"]);
-    const res = new Set(["480p", "720p", "1080p"]);
-    input.duration = [5, 10].includes(duration) ? duration : 5;
-    input.resolution = opts.resolution && res.has(opts.resolution) ? opts.resolution : "1080p";
-    if (opts.image) input.image = opts.image;
-    else input.aspect_ratio = opts.aspect_ratio && allowed.has(opts.aspect_ratio) ? opts.aspect_ratio : "16:9";
-    return input;
-  }
-  if (slug === "google/veo-3-fast") {
-    const allowed = new Set(["16:9", "9:16"]);
-    const res = new Set(["720p", "1080p"]);
-    input.duration = [4, 6, 8].includes(duration) ? duration : 8;
-    input.resolution = opts.resolution && res.has(opts.resolution) ? opts.resolution : "1080p";
-    input.aspect_ratio = opts.aspect_ratio && allowed.has(opts.aspect_ratio) ? opts.aspect_ratio : "16:9";
-    if (opts.image) input.image = opts.image;
-    return input;
-  }
-  if (slug === "wan-video/wan-2.5-i2v") {
-    const res = new Set(["480p", "720p", "1080p"]);
-    input.duration = [5, 10].includes(duration) ? duration : 5;
-    input.resolution = opts.resolution && res.has(opts.resolution) ? opts.resolution : "1080p";
-    if (opts.image) input.image = opts.image;
     return input;
   }
   return input;
 }
+
 
 async function handleVideo(body: any, userId: string) {
   const sb = supabase();
@@ -330,7 +353,7 @@ async function handleVideo(body: any, userId: string) {
   const prompt: string = body.prompt || "";
   if (!prompt.trim()) throw new Error("Prompt is required");
 
-  const modelId: string = body.model || "kling-2-5-turbo-pro";
+  const modelId: string = body.model || "grok-imagine-video";
   const slug = VIDEO_REPLICATE_MAP[modelId];
   if (!slug) {
     return {
@@ -393,7 +416,9 @@ async function handleVideo(body: any, userId: string) {
       duration: Number(reqSettings.duration ?? 5),
       resolution: reqSettings.video_resolution || reqSettings.image_size,
       image: sourceUrls[0],
+      last_frame: sourceUrls[1],
     });
+
     videoUrl = await runReplicatePrediction(slug, input, key, 300_000);
   } catch (err) {
     const mapped = mapReplicateError(err);

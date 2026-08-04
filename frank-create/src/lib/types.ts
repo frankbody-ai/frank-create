@@ -56,9 +56,20 @@ export interface StudioModel {
   reference_image_limit: number;
   max_count?: number;
   cost_label: string;
+  /** Video-only: provider rate in USD per output second. */
+  price_per_second?: number;
+  /** Video-only: upper bound when the provider bills a hardware-dependent range. */
+  price_max_per_second?: number;
+  /** Video-only: flat USD price per output video. */
+  price_flat?: number;
+  /** Video-only: exact USD prices keyed as `${duration}@${resolution}`. */
+  price_table?: Record<string, number>;
+  /** Relative price band, drives the Cheapest / Premium badges. */
+  price_tier?: "cheapest" | "standard" | "premium";
   configured?: boolean;
   configured_env_var?: string;
   missing_env_vars?: string[];
+
   lora_candidate?: boolean;
   /** Provider-side outage flag: model stays selectable but is clearly marked. */
   degraded?: boolean;
