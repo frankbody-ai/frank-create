@@ -798,10 +798,46 @@ export default function App() {
   const selectedReferenceIdSet = useMemo(() => new Set(selectedReferenceIds), [selectedReferenceIds]);
   const selectedReferenceAssets = referenceAssets.filter((asset) => selectedReferenceIdSet.has(asset.id));
 
-  const fieldErrors = useMemo(
+  const baseFieldErrors = useMemo(
     () => validateStudioSettings(modelOptions.model, settings, { referenceCount: selectedReferenceAssets.length }),
     [modelOptions.model, settings, selectedReferenceAssets.length]
   );
+  // Side-by-side: resolve the shared settings against each model and surface
+  // every snap so the user can approve it before we spend two calls.
+  const compareResolved = useMemo(() => {
+    if (mediaKind !== "compare" || !modelOptions.model || !compareModelB) return null;
+    const referenceCount = selectedReferenceAssets.length;
+    return {
+      a: resolveForModel(modelOptions.model, settings, { referenceCount }),
+      b: resolveForModel(compareModelB, settings, { referenceCount })
+    };
+  }, [mediaKind, modelOptions.model, compareModelB, settings, selectedReferenceAssets.length]);
+  const compareAdjustments = useMemo(() => {
+    if (!compareResolved) return [];
+    return [
+      { side: "A" as const, modelLabel: modelOptions.model?.short_label ?? modelOptions.model?.label ?? "Model A", items: compareResolved.a.adjustments },
+      { side: "B" as const, modelLabel: compareModelB?.short_label ?? compareModelB?.label ?? "Model B", items: compareResolved.b.adjustments }
+    ];
+  }, [compareResolved, modelOptions.model, compareModelB]);
+  const compareNeedsApproval = compareAdjustments.some((entry) => entry.items.length > 0);
+  const fieldErrors = useMemo(() => {
+    if (mediaKind !== "compare") return baseFieldErrors;
+    // In compare mode each model gets snapped settings, so per-field validation
+    // against model A alone would block valid runs — only gate on real blockers.
+    const errors: StudioFieldErrors = {};
+    if (!compareModelB) errors.compare = "Pick a second model to compare against.";
+    else if (compareModelB.id === modelOptions.model?.id) errors.compare = "Pick two different models.";
+    else if (compareNeedsApproval && !compareApproved) errors.compare = "Approve the adjusted settings to continue.";
+    return errors;
+  }, [mediaKind, baseFieldErrors, compareModelB, modelOptions.model?.id, compareNeedsApproval, compareApproved]);
+  const compareCostLabel = useMemo(() => {
+    if (mediaKind !== "compare" || compareMedia !== "video" || !compareResolved) return null;
+    const a = estimateVideoCost(modelOptions.model, compareResolved.a.settings);
+    const b = estimateVideoCost(compareModelB, compareResolved.b.settings);
+    if (!a && !b) return null;
+    return `A ${a ?? "—"} · B ${b ?? "—"}`;
+  }, [mediaKind, compareMedia, compareResolved, modelOptions.model, compareModelB]);
+
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
   const firstOutputAsset = outputAssets[0] ?? null;
   const displayOutputAssets =
