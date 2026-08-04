@@ -111,9 +111,13 @@ import {
   validateStudioSettings,
   hasStudioFieldErrors,
   preflightModel,
-  maxCountForModel
+  maxCountForModel,
+  modelsForMedia,
+  normalizeVideoSettings,
+  isVideoModel
 } from "./lib/studio";
 import { FeedbackWidget } from "./components/FeedbackWidget";
+import { StudioRail } from "./components/StudioRail";
 import { PresetCreator } from "./components/PresetCreator";
 
 import type {
@@ -450,6 +454,7 @@ export default function App() {
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
   const [settingsRailOpen, setSettingsRailOpen] = useState(true);
+  const [mediaKind, setMediaKind] = useState<"image" | "video">("image");
   const [refineBusy, setRefineBusy] = useState(false);
   useEffect(() => {
     if (videoStartedAt == null) return;
@@ -786,7 +791,7 @@ export default function App() {
     setStudioMode("image-studio");
     setReviewFilter("all");
     setSettingsRailOpen(true);
-    setStatusText("Image Studio is open.");
+    setStatusText("Studio is open.");
   }
 
   function showPresetCreator() {
@@ -2967,11 +2972,11 @@ export default function App() {
           <button
             className={`sidebar-nav-button ${studioMode === "image-studio" && reviewFilter === "all" ? "active" : ""}`}
             type="button"
-            aria-label="Open Image Studio"
+            aria-label="Open Studio"
             onClick={showImageStudio}
           >
             <Wand2 size={16} />
-            Image Studio
+            Studio
           </button>
           <button
             className="sidebar-nav-button is-muted"
@@ -2992,18 +2997,6 @@ export default function App() {
           >
             <Sparkles size={16} />
             Preset Creator
-          </button>
-
-          <button
-            className="sidebar-nav-button is-muted"
-            type="button"
-            aria-label="Video Lab (coming soon)"
-            title="Video Lab is paused — waiting on Cliff's feedback to refine it."
-            disabled
-          >
-            <Film size={16} />
-            <span style={{ flex: 1 }}>Video Lab</span>
-            <span className="sidebar-soon-tag">Soon</span>
           </button>
 
           <p className="sidebar-section-label">Review</p>
