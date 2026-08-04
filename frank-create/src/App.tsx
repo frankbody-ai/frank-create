@@ -857,13 +857,16 @@ export default function App() {
   const favoriteCount = outputAssets.filter((asset) => asset.favorite).length;
   const promptMode = editSourceAsset ? (maskAsset ? "masked_edit" : "edit") : "generate";
   const primaryActionLabel =
-    mediaKind === "video"
-      ? "Generate video"
-      : promptMode === "masked_edit"
-        ? "Edit"
-        : promptMode === "edit"
+    mediaKind === "compare"
+      ? "Generate both"
+      : mediaKind === "video"
+        ? "Generate video"
+        : promptMode === "masked_edit"
           ? "Edit"
-          : "Generate";
+          : promptMode === "edit"
+            ? "Edit"
+            : "Generate";
+
   const selectedExportPresets = useMemo(
     () => (selectedAsset ? exportPresetsForAsset(config.exportPresets, selectedAsset) : []),
     [config.exportPresets, selectedAsset]
