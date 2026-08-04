@@ -48,21 +48,18 @@ export function selectModelOptions(models: StudioModel[], selectedId: string) {
 export function inferenceStatusCopy(result: {
   status: "queued" | "running" | "blocked" | "failed" | "complete";
   assetCount?: number;
-  localEngine?: "comfy" | "fallback" | "frank_renderer";
+  localEngine?: "fallback" | "frank_renderer";
   fallbackReason?: string;
 }) {
   if (result.status === "blocked") {
     return "Server key needed.";
   }
   if (result.status === "failed") {
-    return "Provider returned no usable image. Check the turn details or try local Comfy.";
+    return "Provider returned no usable image. Check the turn details and retry.";
   }
   if (result.status === "complete" && result.assetCount) {
-    if (result.localEngine === "comfy") {
-      return "Comfy round is on the wall.";
-    }
     if (result.localEngine === "fallback") {
-      return "Comfy was unavailable, so the fallback renderer made this round.";
+      return "The fallback renderer made this round.";
     }
     if (result.localEngine === "frank_renderer") {
       return "Frank masked edit is on the wall.";

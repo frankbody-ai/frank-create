@@ -64,29 +64,25 @@ describe("studio helpers", () => {
     });
   });
 
-  it("advertises local Comfy as the offline-safe Video Lab option", () => {
-    expect(selectModelOptions(fallbackConfig.models, "frank-local-comfy")).toMatchObject({
-      canVideo: true,
-      resolutionBadge: "Ready"
-    });
-  });
-
   it("keeps the fallback launch registry aligned with the Cliff model roster", () => {
     expect(fallbackConfig.models.map((model) => model.id)).toEqual([
-      "frank-local-comfy",
       "google-nb-pro",
       "google-nb-2",
       "openai-gpt-image-2",
       "reve-2-1",
       "mai-image-2-5",
-      "seedream-5-pro"
+      "seedream-5-pro",
+      "grok-imagine-video",
+      "dreamina-seedance-2",
+      "grok-imagine-video-1-5",
+      "happyhorse-1-0",
+      "wan-2-7-i2v",
+      "hailuo-2-3"
     ]);
     expect(fallbackConfig.backlogModels).toEqual([]);
     expect(fallbackConfig.models.find((model) => model.id === "openai-gpt-image-2")?.provider_model).toBe(
-      "gpt-image-2"
+      "openai/gpt-image-2"
     );
-    expect(fallbackConfig.models.find((model) => model.id === "google-nb-pro")?.provider_api_version).toBe("v1beta");
-    expect(fallbackConfig.models.find((model) => model.id === "google-nb-2")?.provider_api_version).toBe("v1beta");
     expect(fallbackConfig.models.find((model) => model.id === "reve-2-1")?.provider_model).toBe("reve/reve-2.1");
     expect(fallbackConfig.models.find((model) => model.id === "seedream-5-pro")?.allowed_image_sizes).toEqual(["1K", "2K"]);
     expect(fallbackConfig.models.find((model) => model.id === "mai-image-2-5")?.status).toBe("coming_soon");
@@ -118,17 +114,14 @@ describe("studio helpers", () => {
   });
 
   it("names the local engine used for completed rounds", () => {
-    expect(inferenceStatusCopy({ status: "complete", assetCount: 2, localEngine: "comfy" })).toBe(
-      "Comfy round is on the wall."
-    );
     expect(
       inferenceStatusCopy({
         status: "complete",
         assetCount: 1,
         localEngine: "fallback",
-        fallbackReason: "No Comfy queue"
+        fallbackReason: "No queue"
       })
-    ).toBe("Comfy was unavailable, so the fallback renderer made this round.");
+    ).toBe("The fallback renderer made this round.");
   });
 
   it("flags size for models that pick resolution from aspect (Reve)", () => {
@@ -146,7 +139,7 @@ describe("studio helpers", () => {
 
   it("flags unsupported aspect for Nano Banana 2", () => {
     const nb2 = fallbackConfig.models.find((m) => m.id === "google-nb-2")!;
-    const errors = validateStudioSettings(nb2, { aspect_ratio: "21:9", image_size: "2K", count: 2 });
+    const errors = validateStudioSettings(nb2, { aspect_ratio: "7:3", image_size: "2K", count: 2 });
     expect(errors.aspect).toBeTruthy();
   });
 

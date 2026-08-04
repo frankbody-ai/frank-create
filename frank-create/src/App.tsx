@@ -8,8 +8,8 @@ import {
   Clipboard,
   Cpu,
   Download,
-  ExternalLink,
   GitBranch,
+  ExternalLink,
   Heart,
   ImageIcon,
   Layers3,
@@ -43,7 +43,6 @@ import {
   fetchActivationChecklist,
   assetDownloadUrl,
   assetWorkflowReceiptUrl,
-  comfyCanvasAssetUrl,
   createAsset,
   createAssetChannelSet,
   createBrief,
@@ -70,14 +69,12 @@ import {
   fetchProviderAudit,
   fetchProviderEnvStatus,
   fetchProviderStatus,
-  fetchWorkflowBlueprints,
   listBriefs,
   listExports,
   listAssets,
   listProjects,
   listSessions,
   listTurns,
-  prepareLocalEngineFolders,
   preflightProvider,
   reloadProviderEnv,
   remixPrompt,
@@ -88,14 +85,12 @@ import {
   updateAsset,
   updateBrief,
   updateBrandKit,
-  updateSession,
-  uploadImage,
-  isLovablePreview
+  updateSession
 } from "./lib/api";
 
 import { fallbackBrandKit, fallbackConfig } from "./lib/presets";
 import { supabase, hardSignOut } from "./lib/supabaseClient";
-import { assetStatusCopy, createBriefPayload, makeStoredImagePath, makeViewUrl } from "./lib/frankWorkflow";
+import { assetStatusCopy, createBriefPayload } from "./lib/frankWorkflow";
 import {
   buildTurnRequest,
   aspectRatioParts,
@@ -148,9 +143,7 @@ import type {
   StudioModel,
   StudioSession,
   StudioSettings,
-  StudioTurn,
-  WorkflowBlueprint,
-  WorkflowBlueprintsResponse
+  StudioTurn
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
@@ -170,8 +163,7 @@ type WalkthroughTarget =
   | "variant-controls"
   | "edit-controls"
   | "export-controls"
-  | "admin-entry"
-  | "advanced-tools";
+  | "admin-entry";
 
 interface WalkthroughStep {
   title: string;
@@ -179,7 +171,6 @@ interface WalkthroughStep {
   points?: string[];
   target: WalkthroughTarget;
   openSettings?: boolean;
-  openAdvanced?: boolean;
   selectOutput?: boolean;
 }
 
@@ -320,7 +311,6 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
 
 export default function App() {
   const [config, setConfig] = useState<FrankConfig>(fallbackConfig);
-  const [surface, setSurface] = useState<"studio" | "graph">(() => initialSurface());
   const [connection, setConnection] = useState<"checking" | "online" | "offline">("checking");
   const [projects, setProjects] = useState<Project[]>([]);
   const [briefs, setBriefs] = useState<Brief[]>([]);
@@ -375,8 +365,6 @@ export default function App() {
   const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator" | "prompt-generator">(() =>
     initialStudioMode()
   );
-  const advancedOpen = false;
-  const setAdvancedOpen = (_: boolean | ((v: boolean) => boolean)) => {};
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [inspectorTab, setInspectorTab] = useState<"review" | "settings" | "brand" | "export">("review");
@@ -405,7 +393,6 @@ export default function App() {
   const [brandKit, setBrandKit] = useState<BrandKit>(fallbackBrandKit);
   const [brandKitDraft, setBrandKitDraft] = useState<BrandKit>(fallbackBrandKit);
   const [demoDoctor, setDemoDoctor] = useState<DemoDoctorStatus | null>(null);
-  const [workflowBlueprints, setWorkflowBlueprints] = useState<WorkflowBlueprintsResponse | null>(null);
   const [checkingProviders, setCheckingProviders] = useState(false);
   const [checkingProviderPreflight, setCheckingProviderPreflight] = useState(false);
   const [checkingProviderAudit, setCheckingProviderAudit] = useState(false);
@@ -433,7 +420,6 @@ export default function App() {
   const [implementationManifestUrl, setImplementationManifestUrl] = useState("");
   const [readinessPackManifest, setReadinessPackManifest] = useState<DemoReadinessPackResult["manifest"] | null>(null);
   const [providerEnvBusy, setProviderEnvBusy] = useState(false);
-  const [localEngineBusy, setLocalEngineBusy] = useState(false);
   const [maskPainterBusy, setMaskPainterBusy] = useState(false);
   const [brandKitBusy, setBrandKitBusy] = useState(false);
   const [brandContextBusy, setBrandContextBusy] = useState(false);
@@ -477,7 +463,6 @@ export default function App() {
         return;
       }
 
-      setAdvancedOpen(false);
       setSettingsOpen(false);
       setInspectorOpen(false);
     }
@@ -510,8 +495,7 @@ export default function App() {
           providerEnvResult,
           activationChecklistResult,
           brandKitResult,
-          projectResult,
-          workflowBlueprintResult
+          projectResult
         ] = await Promise.all([
           listTurns(nextSession.id),
           listAssets({ sessionId: nextSession.id }),
@@ -519,8 +503,7 @@ export default function App() {
           fetchProviderEnvStatus().catch(() => null),
           fetchActivationChecklist().catch(() => null),
           fetchBrandKit().catch(() => null),
-          listProjects().catch(() => ({ projects: [] })),
-          fetchWorkflowBlueprints().catch(() => null)
+          listProjects().catch(() => ({ projects: [] }))
         ]);
         const projectForSession =
           projectResult.projects.find((project) => project.id === nextSession.project_id) ?? projectResult.projects[0] ?? null;
@@ -554,10 +537,9 @@ export default function App() {
           setBrandKit(brandKitResult.brandKit);
           setBrandKitDraft(brandKitResult.brandKit);
         }
-        setWorkflowBlueprints(workflowBlueprintResult);
         setSelectedAsset(firstReviewableAsset(assetResult.assets));
         setConnection("online");
-        setStatusText("Comfy is in the room.");
+        setStatusText("Studio is connected.");
       } catch {
         if (cancelled) {
           return;
@@ -595,14 +577,6 @@ export default function App() {
     void checkProviderAdapterAudit();
   }, [connection, providerAudit, checkingProviderAudit]);
 
-  useEffect(() => {
-    function handlePopState() {
-      setSurface(initialSurface());
-    }
-
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
 
   const selectedModel = useMemo(
     () => config.models.find((model) => model.id === selectedModelId) ?? config.models[0],
@@ -1045,7 +1019,6 @@ export default function App() {
       return;
     }
 
-    setAdvancedOpen(false);
     setSettingsOpen(false);
     await selectSession(mainDemoSession);
     setStatusText("Back to the Frank Body demo.");
@@ -1148,7 +1121,7 @@ export default function App() {
       return;
     }
     if (connection !== "online") {
-      setStatusText("Start ComfyUI to check the selected model.");
+      setStatusText("Connect to the studio backend to check the selected model.");
       return;
     }
 
@@ -1184,7 +1157,7 @@ export default function App() {
 
   async function checkProviderAdapterAudit() {
     if (connection !== "online") {
-      setStatusText("Start ComfyUI to audit provider adapters.");
+      setStatusText("Connect to the studio backend to audit provider adapters.");
       return;
     }
 
@@ -1362,7 +1335,7 @@ export default function App() {
 
   async function saveProviderReadinessReceipt() {
     if (connection !== "online") {
-      setStatusText("Start ComfyUI to save the provider receipt.");
+      setStatusText("Connect to the studio backend to save the provider receipt.");
       return;
     }
 
@@ -1589,61 +1562,12 @@ export default function App() {
     }
   }
 
-  async function prepareLocalEngine() {
-    if (connection !== "online") {
-      setStatusText("Start ComfyUI before preparing local model folders.");
-      return;
-    }
-
-    setLocalEngineBusy(true);
-    try {
-      const result = await prepareLocalEngineFolders();
-      setConfig((current) => ({ ...current, localEngine: result.localEngine }));
-      const createdCount = result.created_dirs?.length ?? 0;
-      setStatusText(
-        createdCount
-          ? `${createdCount} local model folders created. Add checkpoints, then run Demo Doctor.`
-          : "Local model folders are ready. Add checkpoints, then run Demo Doctor."
-      );
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not prepare local model folders.");
-    } finally {
-      setLocalEngineBusy(false);
-    }
-  }
-
-  function downloadWorkflowBlueprint(blueprint: WorkflowBlueprint) {
-    try {
-      const payload = {
-        product: "Frank Create",
-        key: blueprint.key,
-        label: blueprint.label,
-        use: blueprint.use,
-        node_types: blueprint.node_types,
-        workflow_json: blueprint.workflow_json,
-        provider_keys: "server-side only; no secrets included"
-      };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `${safeFileStem(blueprint.key)}-workflow.json`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
-      setStatusText("Comfy workflow blueprint downloaded.");
-    } catch {
-      setStatusText("Could not download that Comfy workflow blueprint.");
-    }
-  }
-
   async function saveBrandKit() {
     setBrandKitBusy(true);
     try {
       if (connection !== "online") {
         setBrandKit(brandKitDraft);
-        setStatusText("Start ComfyUI to save the Brand Kit server-side.");
+        setStatusText("Connect to the studio backend to save the Brand Kit.");
         return;
       }
       const updated = await updateBrandKit(brandKitDraft);
@@ -1659,7 +1583,7 @@ export default function App() {
 
   async function saveBrandContextBrief() {
     if (connection !== "online") {
-      setStatusText("Start ComfyUI to save the brand context brief.");
+      setStatusText("Connect to the studio backend to save the brand context brief.");
       return;
     }
 
@@ -1690,7 +1614,7 @@ export default function App() {
     setBriefBusy(true);
     try {
       if (connection !== "online") {
-        setStatusText("Start ComfyUI to save the brief server-side.");
+        setStatusText("Connect to the studio backend to save the brief.");
         return;
       }
 
@@ -1914,23 +1838,6 @@ export default function App() {
 
     setStatusText("Adding edit mask...");
 
-    if (connection === "online") {
-      const uploaded = await uploadImage(file);
-      const created = await createAsset({
-        session_id: sourceAsset.session_id ?? activeSession.id,
-        kind: "mask",
-        title: file.name,
-        file_path: makeStoredImagePath(uploaded),
-        preview_url: makeViewUrl(uploaded),
-        media_type: "image",
-        source_asset_id: sourceAsset.id,
-        sync_status: "local"
-      });
-      setMaskAsset(created.asset);
-      setAssets((current) => [created.asset, ...current]);
-      setStatusText("Mask locked for this edit.");
-      return created.asset;
-    }
 
     const localPreview = URL.createObjectURL(file);
     const localMask: Asset = {
@@ -1960,7 +1867,7 @@ export default function App() {
     try {
       await saveMaskFile(file, editSourceAsset);
     } catch {
-      setStatusText("Mask upload failed. Try again after restarting Comfy.");
+      setStatusText("Mask upload failed. Try again.");
     }
     event.target.value = "";
   }
@@ -2407,8 +2314,8 @@ export default function App() {
         setStatusText("Video generation canceled.");
       } else {
         const msg = error instanceof Error ? error.message : "Video generation needs another look.";
-        if (/desktop|video_not_supported|ComfyUI/i.test(msg)) {
-          setDesktopNotice("Video generation requires the desktop ComfyUI install. This action isn't available in the cloud preview.");
+        if (/desktop|video_not_supported/i.test(msg)) {
+          setDesktopNotice("This video action is not available in the current environment.");
           setStatusText("Video generation is desktop-only. See the notice at the top for details.");
         } else {
           setStatusText(msg);
@@ -2800,15 +2707,9 @@ export default function App() {
     }
   }
 
-  function openAssetInComfyCanvas(asset: Asset) {
-    const url = comfyCanvasAssetUrl(asset.id);
-    const opened = window.open(url, "_blank");
-    setStatusText(opened ? "Opening this pick in the branded Comfy canvas." : `Comfy canvas link ready: ${url}`);
-  }
-
   async function exportAsset(asset: Asset, preset: ExportPreset) {
     if (connection !== "online") {
-      setStatusText("Start ComfyUI to export this pick.");
+      setStatusText("Connect to the studio backend to export this pick.");
       return;
     }
 
@@ -2848,7 +2749,7 @@ export default function App() {
     }
 
     if (connection !== "online") {
-      setStatusText("Start ComfyUI to export a channel set.");
+      setStatusText("Connect to the studio backend to export a channel set.");
       return;
     }
 
@@ -2988,16 +2889,6 @@ export default function App() {
     setStatusText("Next round is briefed from this pick.");
   }
 
-  function showGraph() {
-    window.history.pushState({ surface: "graph" }, "", "/graph");
-    setSurface("graph");
-  }
-
-  function showStudio() {
-    window.history.pushState({ surface: "studio" }, "", "/");
-    setSurface("studio");
-  }
-
   function startWalkthrough() {
     setWalkthroughStep(0);
     setWalkthroughOpen(true);
@@ -3015,9 +2906,6 @@ export default function App() {
       setSettingsOpen(true);
       setInspectorTab("settings");
     }
-    if (activeWalkthroughStep.openAdvanced) {
-      setAdvancedOpen(true);
-    }
     if (activeWalkthroughStep.selectOutput && !selectedAsset && firstOutputAsset) {
       setSelectedAsset(firstOutputAsset);
       setInspectorTab("review");
@@ -3027,7 +2915,6 @@ export default function App() {
       setInspectorTab("review");
     }
   }, [
-    activeWalkthroughStep.openAdvanced,
     activeWalkthroughStep.openSettings,
     activeWalkthroughStep.selectOutput,
     activeWalkthroughStep.target,
@@ -3067,7 +2954,6 @@ export default function App() {
   }, [
     activeSession?.id,
     activeWalkthroughStep.target,
-    advancedOpen,
     assets.length,
     selectedAsset?.id,
     settingsOpen,
@@ -3112,27 +2998,9 @@ export default function App() {
   const statusReadyLink = parseReadyStatusLink(statusText);
   const modelSettingsExpanded = settingsOpen || inspectorTab === "settings";
 
-  if (surface === "graph") {
-    return (
-      <FrankGraphView
-        activeSession={activeSession}
-        assets={assets}
-        connection={connection}
-        rawGraphUrl={config.advancedGraphUrl}
-        selectedModel={selectedModel}
-        statusText={statusText}
-        statusReadyLink={statusReadyLink}
-        turns={turns}
-        onBack={showStudio}
-        onCopyLink={copyStudioLink}
-        onOpenLink={openStudioLink}
-      />
-    );
-  }
-
   return (
     <div
-      className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${advancedOpen ? "advanced-open" : ""} ${studioMode !== "preset-creator" && studioMode !== "prompt-generator" && settingsRailOpen ? "settings-rail-open" : ""}`}
+      className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${studioMode !== "preset-creator" && studioMode !== "prompt-generator" && settingsRailOpen ? "settings-rail-open" : ""}`}
       data-provider-audit={providerAuditMode ? "open" : undefined}
     >
       {desktopNotice ? (
@@ -4062,18 +3930,6 @@ export default function App() {
                     Download workflow JSON
                   </button>
                 ) : null}
-                {selectedAsset.kind !== "reference" ? (
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    disabled
-                    title="ComfyUI integration is disabled"
-                    style={{ opacity: 0.4, cursor: "not-allowed" }}
-                  >
-                    <GitBranch size={16} />
-                    Open in Comfy Canvas
-                  </button>
-                ) : null}
                 <button className="secondary-button" type="button" onClick={() => startEditFromAsset(selectedAsset)}>
                   <Sparkles size={16} />
                   Edit with selected model
@@ -4487,7 +4343,7 @@ export default function App() {
           ) : null}
           <span className={`connection-pill ${connection}`}>
             <span />
-            {connection === "online" ? "Comfy connected" : connection === "checking" ? "Checking Comfy" : "Comfy offline"}
+            {connection === "online" ? "Studio connected" : connection === "checking" ? "Checking studio" : "Studio offline"}
           </span>
         </div>
         {genPhase === "failed" && genError && genErrorOpen ? (
@@ -4948,340 +4804,6 @@ function taskShortcutIcon(taskKey: string) {
   return <RefreshCw size={15} />;
 }
 
-function FrankGraphView({
-  activeSession,
-  assets,
-  connection,
-  rawGraphUrl,
-  selectedModel,
-  statusText,
-  statusReadyLink,
-  turns,
-  onBack,
-  onCopyLink,
-  onOpenLink
-}: {
-  activeSession: StudioSession | null;
-  assets: Asset[];
-  connection: "checking" | "online" | "offline";
-  rawGraphUrl: string;
-  selectedModel?: StudioModel;
-  statusText: string;
-  statusReadyLink: ReturnType<typeof parseReadyStatusLink>;
-  turns: StudioTurn[];
-  onBack: () => void;
-  onCopyLink: (url: string, label: string) => Promise<void>;
-  onOpenLink: (url: string, label: string, openingText?: string) => Window | null;
-}) {
-  const motionAssetCount = assets.filter((asset) => asset.media_type === "video").length;
-  const referenceAssetCount = assets.filter((asset) => asset.kind === "reference").length;
-  const outputAssetCount = assets.filter((asset) => !["reference", "mask"].includes(asset.kind)).length;
-  const approvedAssetCount = assets.filter((asset) => !["reference", "mask"].includes(asset.kind) && asset.approval_status === "approved").length;
-  const reviewAssetCount = assets.filter((asset) => !["reference", "mask"].includes(asset.kind) && asset.approval_status === "review").length;
-  const maskedEditAssetCount = assets.filter((asset) => {
-    if (["reference", "mask"].includes(asset.kind)) {
-      return false;
-    }
-    const settings = parseJsonRecord(asset.settings_json);
-    const workflow = parseJsonRecord(settings.workflow_provenance);
-    return workflow.workflow_key === "frank-local-masked-edit-renderer" || workflow.masked_edit === true;
-  }).length;
-  const activeSessionName = activeSession?.name ?? "New session";
-  const sessionModeLabel = activeSession?.mode === "video" ? "Video Lab" : "Image Studio";
-  const sessionSyncLabel = activeSession?.sync_status ?? "local";
-  const graphNodes = [
-    {
-      key: "brief",
-      step: "01",
-      stage: "brief",
-      tone: "pink",
-      title: "The Brief",
-      meta: activeSessionName,
-      detail: "Product truth, channel, mood, and the part we do not mess with.",
-      icon: <MessageSquareText size={18} />
-    },
-    {
-      key: "references",
-      step: "02",
-      stage: "brief",
-      tone: "coffee",
-      title: "The Goods",
-      meta: `${formatCount(referenceAssetCount, "ref")} / ${formatCount(outputAssetCount, "output")}`,
-      detail: "Product refs, approved shots, texture scraps, and edit sources.",
-      icon: <ImageIcon size={18} />
-    },
-    {
-      key: "frank-mode",
-      step: "03",
-      stage: "make",
-      tone: "cherry",
-      title: "Frank Body Mode",
-      meta: "Opt-in",
-      detail: "Frank tone, soft pink, scrub texture, negatives, and preset structure.",
-      icon: <Sparkles size={18} />
-    },
-    {
-      key: "magic",
-      step: "04",
-      stage: "make",
-      tone: "dark",
-      title: "Make Magic",
-      meta: selectedModel?.short_label ?? "Local Comfy",
-      detail: "Comfy queue, provider proxy, model settings, and retry-friendly runs.",
-      icon: <Cpu size={18} />
-    },
-    {
-      key: "variants",
-      step: "05",
-      stage: "make",
-      tone: "pink",
-      title: "Variants",
-      meta: `${turns.length} rounds`,
-      detail: maskedEditAssetCount
-        ? "Rounds, masked edits, favorites, and the hot little audit trail."
-        : "Rounds, edits, favorites, and the hot little audit trail.",
-      icon: <Layers3 size={18} />
-    },
-    {
-      key: "review",
-      step: "06",
-      stage: "send",
-      tone: "cherry",
-      title: "Approved. Hot.",
-      meta: `${approvedAssetCount} hot / ${reviewAssetCount} review`,
-      detail: "Review states, notes, director-ready picks, and no mystery files.",
-      icon: <CheckCircle2 size={18} />
-    },
-    {
-      key: "export",
-      step: "07",
-      stage: "send",
-      tone: "coffee",
-      title: "Send It",
-      meta: "PDP / social",
-      detail: "Channel packs, prompt metadata, and sync-ready files for the next home.",
-      icon: <Download size={18} />
-    }
-  ];
-  const [selectedNodeKey, setSelectedNodeKey] = useState(graphNodes[3].key);
-  const selectedNode = graphNodes.find((node) => node.key === selectedNodeKey) ?? graphNodes[3];
-
-  const stageGroups = [
-    {
-      key: "brief",
-      title: "Brief",
-      helper: "What comes in",
-      nodes: graphNodes.slice(0, 2)
-    },
-    {
-      key: "make",
-      title: "Make",
-      helper: "Where Comfy and providers work",
-      nodes: graphNodes.slice(2, 5)
-    },
-    {
-      key: "send",
-      title: "Review and export",
-      helper: "What leaves the studio",
-      nodes: graphNodes.slice(5)
-    }
-  ];
-
-  return (
-    <div className="graph-shell" data-frank-surface="workflow-map">
-      <header className="graph-topbar">
-        <button className="secondary-button graph-back" type="button" onClick={onBack}>
-          <ArrowLeft size={17} />
-          Back to Studio
-        </button>
-        <div className="graph-brand">
-          <div className="brand-mark" aria-label="Frank Body">
-            <span>frank</span>
-            <span>body</span>
-          </div>
-          <div>
-            <p className="eyebrow">Studio workflow map</p>
-            <h1>Workflow Map</h1>
-            <p className="graph-kicker">Real node graph lives in Comfy Canvas.</p>
-          </div>
-        </div>
-        <button
-          className="secondary-button graph-raw"
-          type="button"
-          disabled
-          title="ComfyUI integration is disabled"
-          style={{ opacity: 0.4, cursor: "not-allowed" }}
-        >
-          <ExternalLink size={16} />
-          Open Comfy Canvas
-        </button>
-      </header>
-      <div className="status-strip graph-status-strip">
-        <span>{statusText}</span>
-        {statusReadyLink ? (
-          <button type="button" onClick={() => onOpenLink(statusReadyLink.url, statusReadyLink.label)}>
-            <ExternalLink size={13} />
-            Try {statusReadyLink.label} link
-          </button>
-        ) : null}
-        {statusReadyLink ? (
-          <button type="button" onClick={() => onCopyLink(statusReadyLink.url, statusReadyLink.label)}>
-            <Clipboard size={13} />
-            Copy {statusReadyLink.label} link
-          </button>
-        ) : null}
-      </div>
-
-      <main className="graph-workspace">
-        <section className="graph-canvas" aria-label="Frank Create workflow map">
-          <div className="graph-canvas-heading">
-            <p className="eyebrow">Frank Create</p>
-            <h2>From brief to approved asset</h2>
-            <p>Click a stage to see what it owns. Use the Comfy button when you need the raw node canvas.</p>
-          </div>
-          <div className="graph-flow" aria-label="Studio stages">
-            {stageGroups.map((group) => (
-              <section className="graph-stage-group" key={group.key} aria-label={`${group.title} stage`}>
-                <div className="graph-stage-header">
-                  <span>{group.helper}</span>
-                  <h3>{group.title}</h3>
-                </div>
-                <div className="graph-stage-nodes">
-                  {group.nodes.map((node) => (
-                    <GraphNodeButton
-                      key={node.key}
-                      node={node}
-                      selected={selectedNode.key === node.key}
-                      onSelect={() => setSelectedNodeKey(node.key)}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-          <div className="graph-proof-strip" aria-label="Workflow receipts">
-            <span>{referenceAssetCount} refs</span>
-            <span>{turns.length} rounds</span>
-            <span>{outputAssetCount} outputs</span>
-            <span>{approvedAssetCount} approved</span>
-            <span>{maskedEditAssetCount} masked edits</span>
-            <span>{motionAssetCount} motion</span>
-          </div>
-        </section>
-
-        <aside className="graph-inspector">
-          <div className="graph-explainer">
-            <p className="eyebrow">What this page is</p>
-            <p>Use it to inspect the Frank Create flow without opening the raw Comfy node canvas.</p>
-          </div>
-          <div className="graph-selected-panel" aria-label="Selected workflow stage">
-            <p className="graph-selected-step">Selected stage {selectedNode.step}</p>
-            <h2>{selectedNode.title}</h2>
-            <p>{selectedNode.detail}</p>
-            <div className="graph-inspector-actions">
-              <button className="primary-button" type="button" onClick={onBack}>
-                <ArrowLeft size={16} />
-                Use in Studio
-              </button>
-              <button
-                className="secondary-button"
-                type="button"
-                disabled
-                title="ComfyUI integration is disabled"
-                style={{ opacity: 0.4, cursor: "not-allowed" }}
-              >
-                <ExternalLink size={16} />
-                Open Comfy Canvas
-              </button>
-            </div>
-          </div>
-          <div className="graph-stat-list">
-            <span>
-              <strong>{connection === "online" ? "Connected" : connection === "checking" ? "Checking" : "Offline"}</strong>
-              Comfy
-            </span>
-            <span>
-              <strong>{selectedModel?.badge ?? "Ready"}</strong>
-              Model badge
-            </span>
-            <span>
-              <strong>{turns.length}</strong>
-              Rounds
-            </span>
-            <span>
-              <strong>{outputAssetCount}</strong>
-              Outputs
-            </span>
-            <span>
-              <strong>{maskedEditAssetCount}</strong>
-              Masked edits
-            </span>
-            <span>
-              <strong>{motionAssetCount}</strong>
-              Motion boards
-            </span>
-          </div>
-          <div className="graph-job-jacket" aria-label="Workflow session summary">
-            <span>
-              <small>Session</small>
-              <strong>{activeSessionName}</strong>
-            </span>
-            <span>
-              <small>Surface</small>
-              <strong>{sessionModeLabel}</strong>
-            </span>
-            <span>
-              <small>Review</small>
-              <strong>{approvedAssetCount} approved / {reviewAssetCount} review</strong>
-            </span>
-            <span>
-              <small>Sync</small>
-              <strong>{sessionSyncLabel}</strong>
-            </span>
-          </div>
-          <div className="graph-mini-node">
-            <Box size={18} />
-            <span>
-              {selectedModel?.short_label ?? "Local Comfy"} / {selectedModel?.provider ?? "local"}
-            </span>
-          </div>
-        </aside>
-      </main>
-    </div>
-  );
-}
-
-function GraphNodeButton({
-  node,
-  selected,
-  onSelect
-}: {
-  node: { title: string; meta: string; detail: string; icon: JSX.Element; stage: string; step: string; tone: string };
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      className={`graph-node graph-node-${node.tone} ${selected ? "selected" : ""}`}
-      type="button"
-      aria-label={`Inspect ${node.title}`}
-      aria-pressed={selected}
-      data-brand-stage={node.stage}
-      data-brand-step={node.step}
-      onClick={onSelect}
-    >
-      <span className="graph-node-step" aria-hidden="true">{node.step}</span>
-      <span className="graph-node-icon">{node.icon}</span>
-      <span className="graph-node-copy">
-        <strong>{node.title}</strong>
-        <small>{node.meta}</small>
-        <p>{node.detail}</p>
-      </span>
-      <span className="graph-node-action">View details</span>
-    </button>
-  );
-}
-
 function formatCount(count: number, singular: string, plural = `${singular}s`) {
   return `${count} ${count === 1 ? singular : plural}`;
 }
@@ -5631,7 +5153,6 @@ function mergeConfig(config: FrankConfig): FrankConfig {
     exportPresets: config.exportPresets?.length ? config.exportPresets : fallbackConfig.exportPresets,
     tasks: config.tasks?.length ? config.tasks : fallbackConfig.tasks,
     providers: config.providers?.length ? config.providers : fallbackConfig.providers,
-    localEngine: { ...fallbackConfig.localEngine, ...config.localEngine },
     voice: { ...fallbackConfig.voice, ...config.voice }
   };
 }
@@ -5743,14 +5264,6 @@ function titleize(value: string) {
     .join(" ");
 }
 
-function initialSurface() {
-  if (typeof window === "undefined") {
-    return "studio";
-  }
-
-  return window.location.pathname === "/graph" ? "graph" : "studio";
-}
-
 function initialStudioMode(): "image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator" | "prompt-generator" {
   if (typeof window === "undefined") {
     return "image-studio";
@@ -5773,7 +5286,6 @@ function shouldAutoOpenProviderAudit() {
 function preferredStudioModel(models: StudioModel[]) {
   return (
     models.find((model) => model.id === "google-nb-pro" && model.configured !== false) ??
-    models.find((model) => model.id === "frank-local-comfy") ??
     models[0] ??
     fallbackConfig.models[0]
   );
@@ -5828,7 +5340,6 @@ function selectedAssetRunBrief(asset: Asset, assets: Asset[], config: FrankConfi
     metadata.settingsLabel ? `Settings: ${metadata.settingsLabel}` : "",
     metadata.dimensionsLabel ? `Size: ${metadata.dimensionsLabel}` : "",
     metadata.workflowLabel ? `Workflow: ${metadata.workflowLabel}` : "",
-    workflowBridge.raw_canvas_url ? `Raw Comfy: ${workflowBridge.raw_canvas_url}` : "",
     workflowBridge.workflow_receipt_url ? `Workflow receipt: ${workflowBridge.workflow_receipt_url}` : "",
     metadata.sourceLabel ? `Source: ${metadata.sourceLabel}` : "",
     `References: ${referenceNames.length ? referenceNames.join(", ") : metadata.referenceLabel}`,
@@ -5882,16 +5393,11 @@ function assetWorkflowBridge(asset: Asset, turns: StudioTurn[], workflowProvenan
     : (parseJsonRecord(asset.settings_json ?? turn?.settings_json) as Record<string, unknown>);
   const workflow = workflowProvenance ?? parseJsonRecord(settings.workflow_provenance);
   const workflowJson = parseJsonRecord(workflow.workflow_json);
-  const canLoadComfyApiPrompt = Boolean(Object.keys(workflowJson).length);
   return {
     asset_id: asset.id,
     workflow_key: typeof workflow.workflow_key === "string" ? workflow.workflow_key : asset.model ?? turn?.model ?? null,
     engine: typeof workflow.engine === "string" ? workflow.engine : asset.provider ?? turn?.provider ?? null,
-    can_open_raw_canvas: asset.kind !== "reference",
-    can_load_comfy_api_prompt: canLoadComfyApiPrompt,
-    raw_canvas_load_status: canLoadComfyApiPrompt ? "api_prompt_attached" : "receipt_only",
-    comfy_node_types: workflowNodeTypes(workflow, workflowJson),
-    raw_canvas_url: comfyCanvasAssetUrl(asset.id),
+    node_types: workflowNodeTypes(workflow, workflowJson),
     workflow_receipt_url: assetWorkflowReceiptUrl(asset.id)
   };
 }
@@ -5901,8 +5407,8 @@ function workflowNodeTypes(workflow: Record<string, unknown>, workflowJson: Reco
   if (localNodeTypes.length) {
     return localNodeTypes;
   }
-  if (Array.isArray(workflow.comfy_node_types)) {
-    return workflow.comfy_node_types.filter((item): item is string => typeof item === "string" && item.length > 0);
+  if (Array.isArray(workflow.node_types)) {
+    return workflow.node_types.filter((item): item is string => typeof item === "string" && item.length > 0);
   }
   return Object.entries(workflowJson)
     .sort(([left], [right]) => workflowNodeSortKey(left).localeCompare(workflowNodeSortKey(right)))
@@ -5912,11 +5418,6 @@ function workflowNodeTypes(workflow: Record<string, unknown>, workflowJson: Reco
 
 function localWorkflowNodeTypes(workflowKey: string) {
   const byWorkflow: Record<string, string[]> = {
-    "frank-local-variant-renderer": ["FrankCreateVariant", "SaveImage"],
-    "frank-local-background-remove-renderer": ["FrankCreateBackgroundRemove", "SaveImage"],
-    "frank-local-background-replace-renderer": ["FrankCreateBackgroundReplace", "SaveImage"],
-    "frank-local-masked-edit-renderer": ["FrankCreateMaskedEdit", "SaveImage"],
-    "frank-local-video-storyboard": ["FrankCreateVideoStoryboard", "SaveAnimatedImage"]
   };
   return byWorkflow[workflowKey] ?? [];
 }
@@ -6080,7 +5581,6 @@ function buildLaunchReadinessItems(
   checklist: ActivationChecklist | null,
   readinessPackSha: string
 ) {
-  const hasDiffusionCheckpoint = config.localEngine.diffusion_ready && config.localEngine.checkpoint_count > 0;
   const liveWaiting = checklist?.summary.waiting_provider_models ?? doctor?.summary.waitingProviderModels ?? waitingModelCount;
   const packReady = Boolean(readinessPackSha || doctor?.summary.readinessPackReady);
   const demoIsCurated = doctor ? doctor.summary.demoCurated !== false : true;
@@ -6094,7 +5594,7 @@ function buildLaunchReadinessItems(
         ? `${doctor?.summary.imageOutputAssetCount ?? doctor?.summary.outputAssetCount ?? 0} visible image outputs; use Reset demo for the clean seed.`
         : doctor?.summary.workflowSmokeOk
           ? "Smoke-tested generate, edit, approve, export, and handoff."
-          : "Local Comfy renderer is the fallback path for the call."
+          : "Generate, edit, approve, export, and handoff are wired to the cloud backend."
     },
     {
       key: "live-keys",
@@ -6104,15 +5604,6 @@ function buildLaunchReadinessItems(
       detail: liveWaiting
         ? "Use Provider Setup for rotated server-side keys; no browser secrets."
         : "Provider proxy can run the visible live model roster."
-    },
-    {
-      key: "checkpoint",
-      status: hasDiffusionCheckpoint ? "ready" : "recommended",
-      badge: hasDiffusionCheckpoint ? "OK" : "Tip",
-      label: hasDiffusionCheckpoint ? "Checkpoint installed" : "Checkpoint optional",
-      detail: hasDiffusionCheckpoint
-        ? `${config.localEngine.checkpoint_count} local checkpoint file ready for Comfy workflows.`
-        : "Frank renderer works now; add a checkpoint later for native txt2img/img2img/inpaint."
     },
     {
       key: "proof-pack",
@@ -6146,11 +5637,6 @@ function buildCliffGuideSteps(outputAssets: Asset[], referenceAssets: Asset[], a
       label: "Video Lab",
       detail: "Turn an approved image into a motion storyboard and export the storyboard ZIP.",
       status: approvedMotionCount ? `${approvedMotionCount} motion` : "storyboard path"
-    },
-    {
-      label: "Advanced Graph",
-      detail: "Open the Frank-branded Comfy escape hatch and raw canvas for power users.",
-      status: approvedCount ? `${approvedCount} approved` : "show escape"
     }
   ];
 }
