@@ -144,29 +144,47 @@ export const fallbackConfig: FrankConfig = {
       short_label: "Reve 2.1",
       provider: "replicate",
       provider_model: "reve/reve-2.1",
-      status: "ready",
-      badge: "HQ",
-      max_resolution_label: "auto",
-      description: "Reve 2.1 (Replicate) — text-to-image + reference remix (up to 8 refs). Model picks its own resolution from the aspect ratio.",
-      capabilities: { generation: true, edit: true, masked_edit: false, video: false },
-      // Full Reve 2.1 aspect enum from the model schema.
+      // Reve's hosted model fails 100% of predictions upstream on Replicate
+      // (ModelError E001), so it is greyed out. Flip back to "ready" if it recovers.
+      status: "disabled",
+      badge: "OFF",
+      max_resolution_label: "—",
+      description: "Disabled — Reve 2.1 is failing upstream on Replicate (ModelError E001). Use Riverflow 2.0 Pro, Nano Banana Pro, Seedream 5 Pro, or GPT-image-2.",
+      capabilities: { generation: false, edit: false, masked_edit: false, video: false },
       allowed_aspect_ratios: [
         "auto", "1:1", "4:3", "3:4", "3:2", "2:3", "16:9", "9:16",
         "5:4", "4:5", "21:9", "17:9", "2:1", "1:2", "3:1", "1:3", "4:1", "1:4"
       ],
-      // Reve does not expose a size/resolution knob — output size is derived from the aspect.
       allowed_image_sizes: [],
       reference_image_limit: 8,
       max_count: 4,
       cost_label: "premium",
-      configured: true,
+      configured: false,
       missing_env_vars: [],
-      // Reve's hosted model is currently returning ModelError (E001) on every
-      // prediction — including plain text-to-image with no references. Flip this
-      // back to false once the provider recovers.
       degraded: true,
-      degraded_note: "Reve 2.1 is failing upstream on Replicate (ModelError E001). Use Nano Banana Pro, Seedream 5 Pro, or GPT-image-2 until it recovers."
+      degraded_note: "Reve 2.1 is failing upstream on Replicate (ModelError E001)."
     },
+    {
+      id: "riverflow-2-pro",
+      label: "Riverflow 2.0 Pro (Sourceful)",
+      short_label: "Riverflow 2 Pro",
+      provider: "replicate",
+      provider_model: "sourceful/riverflow-2.0-pro",
+      status: "ready",
+      badge: "4K",
+      max_resolution_label: "4K",
+      description: "Sourceful Riverflow 2.0 Pro (Replicate) — agentic, high-precision generation with strong text/font control. 1K / 2K / 4K, up to 10 init images.",
+      capabilities: { generation: true, edit: true, masked_edit: false, video: false },
+      // Exact aspect enum from the riverflow-2.0-pro schema.
+      allowed_aspect_ratios: ["auto", "21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"],
+      allowed_image_sizes: ["1K", "2K", "4K"],
+      reference_image_limit: 10,
+      max_count: 4,
+      cost_label: "premium",
+      configured: true,
+      missing_env_vars: []
+    },
+
     {
       id: "mai-image-2-5",
       label: "MAI-Image-2.5 (Microsoft)",
