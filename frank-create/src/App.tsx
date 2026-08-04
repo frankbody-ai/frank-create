@@ -465,7 +465,6 @@ export default function App() {
   const [compareModelBId, setCompareModelBId] = useState<string>("");
   const [compareApproved, setCompareApproved] = useState(false);
 
-  const [refineBusy, setRefineBusy] = useState(false);
   useEffect(() => {
     if (videoStartedAt == null) return;
     const iv = setInterval(() => setVideoNowTick(Date.now()), 1000);
