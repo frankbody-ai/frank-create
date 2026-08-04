@@ -183,6 +183,73 @@ export function StudioRail(props: StudioRailProps) {
           </div>
         </section>
 
+        {isCompare ? (
+          <section className="rail-block">
+            <p className="rail-label">Model B</p>
+            <div className="rail-model-card">
+              <select
+                aria-label="Model B"
+                value={modelB?.id ?? ""}
+                onChange={(event) => onCompareModelBChange?.(event.target.value)}
+              >
+                <option value="">— Pick a second model —</option>
+                {models.filter((item) => item.id !== model?.id).map((item) => {
+                  const rate = modelRateLabel(item);
+                  return (
+                    <option key={item.id} value={item.id} disabled={item.status === "disabled"}>
+                      {(item.short_label ?? item.label)
+                        + (rate ? ` — ${rate}` : "")
+                        + (item.status === "disabled" ? " (soon)" : item.degraded ? " (provider issue)" : "")}
+                    </option>
+                  );
+                })}
+              </select>
+              <p className="rail-model-desc">{modelB?.description ?? "Both sides run the same prompt at the same time."}</p>
+              {modelB ? (
+                <div className="rail-model-badges">
+                  <span>{modelB.badge || (isVideo ? "video" : "image")}</span>
+                  <span>{modelB.reference_image_limit ?? 0} refs</span>
+                  {tierBadge(modelB) ? <span className={tierBadge(modelB)!.className}>{tierBadge(modelB)!.label}</span> : null}
+                </div>
+              ) : null}
+              {modelB?.degraded ? (
+                <p className="model-degraded-note">{modelB.degraded_note ?? "This model is failing upstream."}</p>
+              ) : null}
+            </div>
+            {compareCostLabel ? <p className="rail-model-price"><strong>{compareCostLabel}</strong></p> : null}
+            {fieldErrors.compare ? <p className="field-error" role="alert">{fieldErrors.compare}</p> : null}
+          </section>
+        ) : null}
+
+        {isCompare && pendingAdjustments.length ? (
+          <section className="rail-block rail-adjustments">
+            <p className="rail-label">Settings to adjust</p>
+            {pendingAdjustments.map((entry) => (
+              <div className="rail-adjust-side" key={entry.side}>
+                <p className="rail-adjust-title">Side {entry.side} · {entry.modelLabel}</p>
+                <ul>
+                  {entry.items.map((item) => (
+                    <li key={`${entry.side}-${item.field}`}>
+                      <strong>{item.label}:</strong> {item.from} → {item.to}
+                      <span>{item.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+            <label className="rail-adjust-approve">
+              <input
+                type="checkbox"
+                checked={compareApproved}
+                onChange={(event) => onCompareApprovedChange?.(event.target.checked)}
+              />
+              Use the closest supported settings for both sides
+            </label>
+          </section>
+        ) : null}
+
+
+
         {aspects.length ? (
           <section className="rail-block">
             <p className="rail-label">{isVideo ? "Video dimensions" : "Aspect ratio"}</p>
