@@ -1,23 +1,66 @@
-## Diagnosis (verified)
+# Rebuild the Studio rail + merge image and video
 
-Reve 2.1 is down on the provider side. A control prediction sent straight through the Replicate gateway — plain text prompt, no reference images, `aspect_ratio: "1:1"` — failed in 0.5 seconds with the same `ModelError ... (E001)`. The live model schema confirms our request fields (`prompt`, `aspect_ratio`, `reference_images` up to 8) are correct. Nothing in FrankCreate is causing it, and no code change can make Reve generate images until Reve recovers.
+Rename **Image Studio** to **Studio**, throw away the current cramped setup rail, and rebuild it as a proper settings panel modelled on the reference: model card on top, tile pickers for dimensions, chip row for count, extras at the bottom. Then merge image and video into one session so a generated image can be reused as the source frame for a video without leaving the view.
 
-## What to change
+## 1. The new Studio rail
 
-Right now this looks like an app bug: the card fails, the error text is cryptic, and "Retry" hammers a dead model. Proposal:
+Replaces the current `studio-settings-rail`. Same position (second column, right of the main nav), full height, scrolls independently, styled in the frank blush/ink brand palette — structure copied from the reference, look stays on-brand.
 
-1. **Classify E001 as a provider outage** in `supabase/functions/frank-api/index.ts` (`classifyReplicateModelError`). Add an `E001` / `ModelError` branch returning a `provider_unavailable` code with a plain message: "Reve 2.1 is temporarily unavailable on the provider side. Try Nano Banana Pro, Seedream 5 Pro, or GPT-image-2." Keep it retryable but flagged.
+Top to bottom:
 
-2. **Show it as an outage in the UI**, not a validation failure — in the generation card error panel, `provider_unavailable` gets a distinct treatment (warning tone, no "fix your inputs" hint) plus a one-click "Switch model and retry" action that re-runs the same prompt/references on the currently selected fallback model.
+```text
+┌────────────────────────────┐
+│ [icon] Model               │  large card, dropdown
+│        Nano Banana Pro   ▾ │
+├────────────────────────────┤
+│ Preset            Clear all│  card rows, like reference "Styles"
+│ [icon] Preset              │
+│        Clean Ecom        ▾ │
+├────────────────────────────┤
+│ Duration (video only)      │
+│ [ 5s ] [ 10s ]             │
+├────────────────────────────┤
+│ Image / Video Dimensions ? │
+│ [2:3] [1:1] [16:9] [9:16]  │  ratio tiles, drawn to shape
+│ [1024x1024] [2K] [4K]      │  size chips, filtered by ratio
+├────────────────────────────┤
+│ Number of generations ?    │
+│ [1] [2] [3] [4] [ ▾ ]      │  chips; ▾ opens rest up to model max
+├────────────────────────────┤
+│ Reference behaviour        │
+│ clear after generate  [on] │
+├────────────────────────────┤
+│ ⟲ Reset to defaults        │
+└────────────────────────────┘
+```
 
-3. **Mark Reve 2.1 as degraded in the model picker** (`presets.ts` + composer): a small "Provider issue" badge and a tooltip, so nobody burns a round on it. This is a manual flag I flip back once Reve is healthy — no automatic health polling, which would add cost and complexity for a transient outage.
+Rules kept from today: ratio and size options come only from the selected model's real schema, sizes filter by the chosen ratio, count caps at the model's `max_count`, preflight warnings and field errors still render in the rail, aspect preview stays.
 
-## Alternative if you prefer minimal churn
+The centre column keeps only prompt box, reference dock, Generate, Refine Prompt, Brief remix — unchanged.
 
-Just grey out Reve 2.1 in the model dropdown (same treatment as Video Lab / Product Shot Lab), and re-enable it later. No error-mapping work. Say the word if you want this instead of the fuller version above.
+## 2. Image + Video in one session
+
+A media toggle sits at the top of the centre composer: **Image | Video**. It swaps the model list and the rail's controls (duration and video ratios appear, size chips become video resolutions), but keeps the same session, same prompt box, same timeline. `Video Lab` is retired as a separate nav entry.
+
+Any image already in the timeline can be sent to a video generation with a **Use as video source** action on the image card. Nothing is auto-attached — you pick the frame explicitly, and the chosen frame shows as a thumbnail in the rail with a remove button.
+
+## 3. Five Replicate video models
+
+Wired the same way as the image models — each with its own real schema, not a shared guess:
+
+- Kling v2.5 Turbo Pro
+- Minimax Hailuo 02
+- ByteDance Seedance 1 Pro
+- Google Veo 3 Fast
+- Wan 2.5 image-to-video
+
+For each one I fetch the live schema from Replicate first, then encode exactly its allowed aspect ratios, resolutions, duration values, whether it needs a start image, and its per-request output count. The UI only ever offers what that model accepts, so no request can be built with an invalid field. Video outputs are downloaded and stored in the project's storage bucket like images (Replicate URLs expire), and appear in the timeline as playable cards with download, approve/reject, copy prompt, and delete.
 
 ## Technical notes
 
-- Files: `supabase/functions/frank-api/index.ts` (error classification), `supabase/functions/frank-generate/index.ts` (same classifier for parity), `frank-create/src/lib/presets.ts` (degraded flag + fallback model hint), `frank-create/src/App.tsx` (error panel branch, switch-and-retry), `frank-create/src/styles.css` (outage badge styling).
-- The existing `generation_errors` Supabase table already captures raw provider text, so outage frequency stays queryable — no schema change.
-- Both edge functions get redeployed after the change.
+- `frank-create/src/lib/presets.ts`: add a `media` field (`image` / `video`) to the model type and add the five video model entries with `allowed_aspect_ratios`, `allowed_resolutions`, `allowed_durations`, `requires_source_image`, `max_count` from each Replicate schema. Mirror the same list in `supabase/functions/frank-api` so server-side validation matches.
+- `frank-create/src/App.tsx`: rename the nav entry and `studioMode` value `image-studio` → `studio`; delete the `video-lab` mode and its sidebar row; add `mediaKind` state driving model filtering and rail contents; replace the rail JSX with the new tile/chip components; add `videoSourceAssetId` state plus the "Use as video source" action on asset cards.
+- New small components for `RatioTiles`, `SizeChips`, `CountChips` so the rail stays readable.
+- `frank-create/src/lib/api.ts` + `frank-api`: extend the video path to Replicate (create prediction → poll → persist to storage → insert asset with `media_type: "video"`), replacing the ComfyUI-only route. Polling budget up to ~10 minutes with backoff, cancellable by the existing Stop control. Provider errors (402 no credit, model errors) surface with the same detailed error panel as images.
+- `frank-create/src/styles.css`: rewrite the `.studio-settings-rail` block for the new layout; grid stays `256px 320px minmax(0,1fr)` and collapses to stacked on narrow screens.
+- The Replicate connector is already linked, so no new keys are needed.
