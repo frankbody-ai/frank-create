@@ -362,7 +362,7 @@ export default function App() {
     await hardSignOut();
     window.location.replace("/");
   };
-  const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator" | "prompt-generator">(() =>
+  const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator" | "prompt-generator" | "enhancer">(() =>
     initialStudioMode()
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -880,6 +880,13 @@ export default function App() {
     setStudioMode("preset-creator");
     setInspectorOpen(false);
     setStatusText("Preset Creator is open.");
+  }
+
+  function showEnhancer() {
+    setStudioMode("enhancer");
+    setInspectorOpen(false);
+    setSettingsRailOpen(false);
+    setStatusText("Enhancer is open.");
   }
 
   function showPromptGenerator() {
@@ -3000,7 +3007,7 @@ export default function App() {
 
   return (
     <div
-      className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${studioMode !== "preset-creator" && studioMode !== "prompt-generator" && settingsRailOpen ? "settings-rail-open" : ""}`}
+      className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${studioMode !== "preset-creator" && studioMode !== "prompt-generator" && studioMode !== "enhancer" && settingsRailOpen ? "settings-rail-open" : ""}`}
       data-provider-audit={providerAuditMode ? "open" : undefined}
     >
       {desktopNotice ? (
@@ -3085,6 +3092,16 @@ export default function App() {
           >
             <Layers3 size={16} />
             Prompt Generator
+          </button>
+          <button
+            className={`sidebar-nav-button ${studioMode === "enhancer" ? "active" : ""}`}
+            type="button"
+            aria-label="Open Enhancer"
+            title="Upscale stills and clips with Recraft, Topaz, and Crystal"
+            onClick={showEnhancer}
+          >
+            <Sparkles size={16} />
+            Enhancer
           </button>
           <button
             className={`sidebar-nav-button ${studioMode === "preset-creator" ? "active" : ""}`}
@@ -3232,7 +3249,7 @@ export default function App() {
         </nav>
       </aside>
 
-      {studioMode !== "preset-creator" && studioMode !== "prompt-generator" && settingsRailOpen ? (
+      {studioMode !== "preset-creator" && studioMode !== "prompt-generator" && studioMode !== "enhancer" && settingsRailOpen ? (
         <StudioRail
           mediaKind={mediaKind}
           onMediaKindChange={switchMediaKind}
@@ -3264,7 +3281,22 @@ export default function App() {
 
       ) : null}
 
-      {studioMode === "prompt-generator" ? (
+      {studioMode === "enhancer" ? (
+        <Enhancer
+          models={config.models}
+          assets={assets}
+          sessionId={activeSession?.id ?? null}
+          connection={connection}
+          onAssetsCreated={(created) =>
+            setAssets((current) => [
+              ...created.filter((asset) => !current.some((existing) => existing.id === asset.id)),
+              ...current
+            ])
+          }
+          onStatus={setStatusText}
+          onExpandAsset={(asset) => setLightboxAsset(asset)}
+        />
+      ) : studioMode === "prompt-generator" ? (
         <PromptGenerator
           onStatus={setStatusText}
           onUsePrompt={(value) => {
@@ -5266,7 +5298,7 @@ function titleize(value: string) {
     .join(" ");
 }
 
-function initialStudioMode(): "image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator" | "prompt-generator" {
+function initialStudioMode(): "image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator" | "prompt-generator" | "enhancer" {
   if (typeof window === "undefined") {
     return "image-studio";
   }
@@ -5274,6 +5306,7 @@ function initialStudioMode(): "image-studio" | "product-shot-lab" | "video-lab" 
   const mode = new URLSearchParams(window.location.search).get("mode");
   if (mode === "preset-creator") return "preset-creator";
   if (mode === "prompt-generator") return "prompt-generator";
+  if (mode === "enhancer") return "enhancer";
   return mode === "product-shot-lab" || mode === "video-lab" || mode === "approved-hot" ? mode : "image-studio";
 }
 
