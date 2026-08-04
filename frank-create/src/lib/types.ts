@@ -60,6 +60,8 @@ export interface StudioModel {
   price_per_second?: number;
   /** Video-only: upper bound when the provider bills a hardware-dependent range. */
   price_max_per_second?: number;
+  /** Video-only: per-second USD rate keyed by resolution, e.g. { "480p": 0.08 }. */
+  price_per_second_by_resolution?: Record<string, number>;
   /** Video-only: flat USD price per output video. */
   price_flat?: number;
   /** Video-only: exact USD prices keyed as `${duration}@${resolution}`. */

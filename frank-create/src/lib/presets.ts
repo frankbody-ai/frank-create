@@ -264,7 +264,7 @@ export const fallbackConfig: FrankConfig = {
       status: "ready",
       badge: "4K",
       max_resolution_label: "4K",
-      description: "ByteDance Seedance 2.0 (Replicate) — native audio, 480p → 4K, 5–15s, first/last frame plus up to 9 reference images.",
+      description: "ByteDance Seedance 2.0 (Replicate) — native audio, 480p → 4K, 5–15s, first/last frame plus up to 9 reference images. Billed per output second by resolution: 480p $0.08, 720p $0.18, 1080p $0.45, 4K $1.00.",
       capabilities: { generation: true, edit: false, masked_edit: false, video: true },
       allowed_aspect_ratios: ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "9:21", "adaptive"],
       allowed_image_sizes: [],
@@ -273,7 +273,9 @@ export const fallbackConfig: FrankConfig = {
       reference_image_limit: 9,
       max_count: 1,
       cost_label: "premium",
-      price_per_second: 0.05,
+      // Replicate bills Seedance per output second, scaled by target resolution.
+      // These are the non_video_in rates (text/image-to-video, what this app sends).
+      price_per_second_by_resolution: { "480p": 0.08, "720p": 0.18, "1080p": 0.45, "4k": 1.0 },
       price_tier: "standard",
       configured: true,
       missing_env_vars: []

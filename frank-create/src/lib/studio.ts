@@ -168,9 +168,17 @@ function usd(value: number): string {
   return `$${value.toFixed(2)}`;
 }
 
-/** Per-second rate label for a video model, e.g. "$0.05/s" or "$0.05–0.11/s". */
+/** Per-second rate label for a video model, e.g. "$0.05/s" or "$0.08–1.00/s". */
 export function modelRateLabel(model: StudioModel | undefined | null): string | null {
   if (!model || !isVideoModel(model)) return null;
+  if (model.price_per_second_by_resolution) {
+    const values = Object.values(model.price_per_second_by_resolution);
+    if (values.length) {
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      return min === max ? `${usd(min)}/s` : `${usd(min)}–${max.toFixed(2)}/s`;
+    }
+  }
   if (model.price_per_second) {
     return model.price_max_per_second && model.price_max_per_second > model.price_per_second
       ? `${usd(model.price_per_second)}–${model.price_max_per_second.toFixed(2)}/s`
@@ -200,6 +208,11 @@ export function estimateVideoCost(
     const exact = model.price_table[`${duration}@${resolution}`];
     if (typeof exact === "number") return `~${usd(exact)} · ${suffix}`;
   }
+  const byRes = model.price_per_second_by_resolution?.[resolution.toLowerCase()]
+    ?? model.price_per_second_by_resolution?.[resolution];
+  if (typeof byRes === "number") {
+    return `~${usd(byRes * duration)} · ${suffix} · ${usd(byRes)}/s`;
+  }
   if (model.price_per_second) {
     const low = model.price_per_second * duration;
     const high = (model.price_max_per_second ?? model.price_per_second) * duration;
@@ -210,6 +223,7 @@ export function estimateVideoCost(
   if (model.price_flat) return `~${usd(model.price_flat)} · ${suffix}`;
   return null;
 }
+
 
 
 export interface StudioFieldErrors {
