@@ -784,6 +784,16 @@ export default function App() {
   const selectedReferenceIdSet = useMemo(() => new Set(selectedReferenceIds), [selectedReferenceIds]);
   const selectedReferenceAssets = referenceAssets.filter((asset) => selectedReferenceIdSet.has(asset.id));
 
+  // Wipe the reference dock after a run finishes so nothing carries over.
+  function clearReferenceDock() {
+    setSelectedReferenceIds([]);
+    setAssets((current) => {
+      const ids = current.filter((asset) => asset.kind === "reference").map((asset) => asset.id);
+      if (ids.length) setRetiredReferenceIds((prev) => Array.from(new Set([...prev, ...ids])));
+      return current;
+    });
+  }
+
   const baseFieldErrors = useMemo(
     () => validateStudioSettings(modelOptions.model, settings, { referenceCount: selectedReferenceAssets.length }),
     [modelOptions.model, settings, selectedReferenceAssets.length]
