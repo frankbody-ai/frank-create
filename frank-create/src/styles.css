@@ -4008,7 +4008,7 @@ body {
 }
 
 .inspector-drawer-toolbar strong {
-  font-family: var(--font-display, "Michroma", serif);
+  font-family: var(--font-display, "Jura", serif);
   font-size: 1.05rem;
   color: var(--frank-ink, #3F2A2D);
   display: block;
@@ -6033,7 +6033,8 @@ input:focus, textarea:focus, select:focus {
 
 .settings-rail-head strong {
   display: block;
-  font-family: var(--font-display, "Michroma", monospace);
+  font-family: var(--font-display, "Jura", monospace);
+
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -6183,7 +6184,8 @@ input:focus, textarea:focus, select:focus {
   border-radius: 999px;
   background: transparent;
   color: #3F2A2D;
-  font-family: var(--font-display, "Michroma", monospace);
+  font-family: var(--font-display, "Jura", monospace);
+
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -6231,7 +6233,8 @@ input:focus, textarea:focus, select:focus {
 }
 .rail-label {
   margin: 0;
-  font-family: var(--font-display, "Michroma", monospace);
+  font-family: var(--font-display, "Jura", monospace);
+
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -6382,7 +6385,7 @@ input:focus, textarea:focus, select:focus {
   border-radius: 999px;
   background: transparent;
   color: #3F2A2D;
-  font-family: var(--font-display, "Michroma", monospace);
+  font-family: var(--font-display, "Jura", monospace);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.14em;
