@@ -181,6 +181,9 @@ interface WalkthroughAnchor {
   placement: "above" | "below";
 }
 
+// How many reference thumbnails stay in the dock after a run completes.
+const REFERENCE_HISTORY_KEEP = 5;
+
 const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: "Sessions and sidebar",
