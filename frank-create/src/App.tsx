@@ -3036,22 +3036,6 @@ export default function App() {
 
 
           <p className="sidebar-section-label">Sessions</p>
-              <a
-                className="sidebar-nav-button admin-sidebar-link"
-                href="#/admin"
-                aria-label="Open Admin portal"
-                data-tour-id="admin-entry"
-                data-tour-active={tourActive("admin-entry")}
-              >
-                <Sparkles size={16} />
-                Admin portal
-              </a>
-            </>
-          )}
-
-
-
-          <p className="sidebar-section-label">Sessions</p>
           <button
             className={`sidebar-nav-button ${sessionsOpen ? "active" : ""}`}
             type="button"
