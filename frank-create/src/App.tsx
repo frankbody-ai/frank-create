@@ -384,6 +384,9 @@ export default function App() {
   const [maskPainterAsset, setMaskPainterAsset] = useState<Asset | null>(null);
   const [sessionCancelTarget, setSessionCancelTarget] = useState<StudioSession | null>(null);
   const [selectedReferenceIds, setSelectedReferenceIds] = useState<string[]>([]);
+  // References consumed by a finished run: hidden from the dock so they never
+  // carry over (and stay hidden when the session reconciles from the server).
+  const [retiredReferenceIds, setRetiredReferenceIds] = useState<string[]>([]);
   const [assetNotesDraft, setAssetNotesDraft] = useState("");
   const [providerReadiness, setProviderReadiness] = useState<ProviderReadiness | null>(null);
   const [activationChecklist, setActivationChecklist] = useState<ActivationChecklist | null>(null);
@@ -774,9 +777,22 @@ export default function App() {
     setAssetNotesDraft(selectedAsset?.notes ?? "");
   }, [selectedAsset?.id]);
 
-  const referenceAssets = assets.filter((asset) => asset.kind === "reference");
+  const retiredReferenceIdSet = useMemo(() => new Set(retiredReferenceIds), [retiredReferenceIds]);
+  const referenceAssets = assets.filter(
+    (asset) => asset.kind === "reference" && !retiredReferenceIdSet.has(asset.id)
+  );
   const selectedReferenceIdSet = useMemo(() => new Set(selectedReferenceIds), [selectedReferenceIds]);
   const selectedReferenceAssets = referenceAssets.filter((asset) => selectedReferenceIdSet.has(asset.id));
+
+  // Wipe the reference dock after a run finishes so nothing carries over.
+  function clearReferenceDock() {
+    setSelectedReferenceIds([]);
+    setAssets((current) => {
+      const ids = current.filter((asset) => asset.kind === "reference").map((asset) => asset.id);
+      if (ids.length) setRetiredReferenceIds((prev) => Array.from(new Set([...prev, ...ids])));
+      return current;
+    });
+  }
 
   const baseFieldErrors = useMemo(
     () => validateStudioSettings(modelOptions.model, settings, { referenceCount: selectedReferenceAssets.length }),
@@ -2222,7 +2238,7 @@ export default function App() {
       finishInflight();
       setBusy(false);
       // Never carry references over into the next run.
-      setSelectedReferenceIds([]);
+      clearReferenceDock();
       // The request can time out while the server keeps finishing the round
       // (e.g. 4 images). Re-read the session so every produced image lands.
       void reconcileSessionAssets();
@@ -2335,7 +2351,7 @@ export default function App() {
       videoAbortRef.current = null;
       setVideoStartedAt(null);
       setBusy(false);
-      setSelectedReferenceIds([]);
+      clearReferenceDock();
     }
   }
 
@@ -2480,7 +2496,7 @@ export default function App() {
       const ids = new Set(inflight.map((entry) => entry.id));
       setInflightGens((current) => current.filter((entry) => !ids.has(entry.id)));
       setBusy(false);
-      setSelectedReferenceIds([]);
+      clearReferenceDock();
       void reconcileSessionAssets();
     }
   }
