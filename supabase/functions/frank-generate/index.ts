@@ -22,6 +22,7 @@ const REPLICATE_MAP: Record<string, string> = {
   "google-nb-2": "google/nano-banana-2",
   "openai-gpt-image-2": "openai/gpt-image-2",
   "reve-2-1": "reve/reve-2.1",
+  "riverflow-2-pro": "sourceful/riverflow-2.0-pro",
   "seedream-5-pro": "bytedance/seedream-5-pro",
 };
 

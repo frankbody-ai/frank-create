@@ -19,12 +19,13 @@ export function withReferenceIdentityLock(prompt: string, referenceCount: number
 }
 
 // Every supported slug + which reference field it must land in on Replicate.
-export const REFERENCE_FIELD_BY_SLUG: Record<string, "reference_images" | "image_input" | "input_images"> = {
+export const REFERENCE_FIELD_BY_SLUG: Record<string, "reference_images" | "image_input" | "input_images" | "init_images"> = {
   "reve/reve-2.1": "reference_images",
   "bytedance/seedream-5-pro": "image_input",
   "google/nano-banana-pro": "image_input",
   "google/nano-banana-2": "image_input",
   "openai/gpt-image-2": "input_images",
+  "sourceful/riverflow-2.0-pro": "init_images",
 };
 
 export function buildReplicateInput(
