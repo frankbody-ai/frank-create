@@ -131,9 +131,24 @@ export function isVideoModel(model: StudioModel | undefined | null): boolean {
   return model?.media === "video";
 }
 
-export function modelsForMedia(models: StudioModel[], media: "image" | "video"): StudioModel[] {
-  return models.filter((model) => (media === "video" ? isVideoModel(model) : !isVideoModel(model)));
+/** Upscalers live in the Enhancer tab, never in the Studio model pickers. */
+export function isUpscaleModel(model: StudioModel | undefined | null): boolean {
+  return model?.capabilities?.upscale === true;
 }
+
+export function modelsForMedia(models: StudioModel[], media: "image" | "video"): StudioModel[] {
+  return models.filter((model) =>
+    !isUpscaleModel(model) && (media === "video" ? isVideoModel(model) : !isVideoModel(model))
+  );
+}
+
+/** Enhancer roster: upscale-capable models for the requested media kind. */
+export function upscaleModelsForMedia(models: StudioModel[], media: "image" | "video"): StudioModel[] {
+  return models.filter((model) =>
+    isUpscaleModel(model) && (media === "video" ? isVideoModel(model) : !isVideoModel(model))
+  );
+}
+
 
 export function normalizeVideoSettings(settings: StudioSettings, model: StudioModel): StudioSettings {
   const durations = model.allowed_durations ?? [];

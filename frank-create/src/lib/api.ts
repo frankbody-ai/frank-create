@@ -5,6 +5,7 @@ import type {
   BrandKit,
   Brief,
   DemoCallBriefResult,
+  EnhanceSettings,
   DemoEvidenceResult,
   DemoDoctorStatus,
   DemoReadinessPackResult,
@@ -420,6 +421,31 @@ export async function createVideoStoryboard(payload: VideoRequest, opts: { signa
     signal: opts.signal,
   });
 }
+
+export async function createEnhancement(
+  payload: {
+    session_id?: string;
+    model: string;
+    source_asset_id?: string;
+    source_url?: string;
+    settings: EnhanceSettings & { media: "image" | "video" };
+  },
+  opts: { signal?: AbortSignal } = {}
+) {
+  return fetchJson<{
+    turn: StudioTurn | null;
+    status: "complete" | "failed" | "blocked";
+    assets?: Asset[];
+    providerPayload?: Record<string, unknown>;
+    error?: { code: string; env_vars?: string[]; message?: string };
+  }>("/enhance", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    signal: opts.signal,
+  });
+}
+
+
 
 export async function createAsset(payload: Record<string, unknown>) {
   return fetchJson<{ asset: Asset }>("/assets", {

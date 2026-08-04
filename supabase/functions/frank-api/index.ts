@@ -474,7 +474,199 @@ async function handleVideo(body: any, userId: string) {
   };
 }
 
+// ---- Enhancer (upscale) ----------------------------------------------------
+
+const UPSCALE_REPLICATE_MAP: Record<string, string> = {
+  "recraft-crisp-upscale": "recraft-ai/recraft-crisp-upscale",
+  "topaz-image-upscale": "topazlabs/image-upscale",
+  "topaz-video-upscale": "topazlabs/video-upscale",
+  "crystal-video-upscaler": "philz1337x/crystal-video-upscaler",
+};
+
+const UPSCALE_MEDIA: Record<string, "image" | "video"> = {
+  "recraft-ai/recraft-crisp-upscale": "image",
+  "topazlabs/image-upscale": "image",
+  "topazlabs/video-upscale": "video",
+  "philz1337x/crystal-video-upscaler": "video",
+};
+
+// Only fields each model's Replicate schema actually accepts.
+function buildUpscaleInput(slug: string, sourceUrl: string, s: any = {}): Record<string, unknown> {
+  if (slug === "recraft-ai/recraft-crisp-upscale") {
+    return { image: sourceUrl };
+  }
+  if (slug === "topazlabs/image-upscale") {
+    const input: Record<string, unknown> = {
+      image: sourceUrl,
+      enhance_model: pick(s.enhance_model, ["Standard V2", "Low Resolution V2", "CGI", "High Fidelity V2", "Text Refine"], "Standard V2"),
+      upscale_factor: pick(s.upscale_factor, ["None", "2x", "4x", "6x"], "2x"),
+      subject_detection: pick(s.subject_detection, ["None", "All", "Foreground", "Background"], "None"),
+      output_format: pick(s.output_format, ["jpg", "png"], "png"),
+      face_enhancement: !!s.face_enhancement,
+    };
+    if (s.face_enhancement) {
+      const strength = Number(s.face_enhancement_strength);
+      const creativity = Number(s.face_enhancement_creativity);
+      input.face_enhancement_strength = Number.isFinite(strength) ? Math.min(1, Math.max(0, strength)) : 0.8;
+      input.face_enhancement_creativity = Number.isFinite(creativity) ? Math.min(1, Math.max(0, creativity)) : 0;
+    }
+    return input;
+  }
+  if (slug === "topazlabs/video-upscale") {
+    const fps = Number(s.target_fps);
+    return {
+      video: sourceUrl,
+      target_resolution: pick(String(s.target_resolution || ""), ["720p", "1080p", "4k"], "1080p"),
+      target_fps: Number.isFinite(fps) ? Math.min(120, Math.max(15, Math.round(fps))) : 60,
+    };
+  }
+  if (slug === "philz1337x/crystal-video-upscaler") {
+    const scale = Number(s.scale_factor);
+    return {
+      video: sourceUrl,
+      scale_factor: Number.isFinite(scale) && scale >= 1 ? Math.min(8, scale) : 2,
+    };
+  }
+  return { image: sourceUrl };
+}
+
+async function handleEnhance(body: any, userId: string) {
+  const sb = supabase();
+  let sessionId: string = body.session_id;
+  if (!sessionId) sessionId = (await getOrCreateDefaultSession(userId)).id;
+
+  const modelId: string = body.model || "";
+  const slug = UPSCALE_REPLICATE_MAP[modelId];
+  if (!slug) {
+    return {
+      turn: null, status: "failed" as const,
+      error: { code: "model_unavailable", message: `${modelId || "This model"} is not a supported enhancer.` },
+    };
+  }
+  const key = getReplicateGatewayKey();
+  if (!key) {
+    return {
+      turn: null, status: "blocked" as const,
+      error: { code: "missing_key", env_vars: ["REPLICATE_API_KEY"], message: "Replicate is not connected yet." },
+    };
+  }
+
+  const media = UPSCALE_MEDIA[slug];
+  const reqSettings: any = body.settings || {};
+  const sourceAssetId: string | undefined = body.source_asset_id || undefined;
+  let sourceUrl: string = typeof body.source_url === "string" ? body.source_url.trim() : "";
+  let sourceTitle = "";
+  if (sourceAssetId) {
+    const { data: row } = await sb.from("assets").select("id,storage_path,metadata_json")
+      .eq("user_id", userId).eq("id", sourceAssetId).maybeSingle();
+    if (!row) {
+      return {
+        turn: null, status: "failed" as const,
+        error: { code: "not_found", message: "The selected source asset is missing." },
+      };
+    }
+    sourceUrl = await signed((row as any).storage_path);
+    sourceTitle = ((row as any).metadata_json?.title as string) || "";
+  }
+  if (!sourceUrl) {
+    return {
+      turn: null, status: "failed" as const,
+      error: { code: "missing_source", message: `Pick a source ${media} to enhance.` },
+    };
+  }
+
+  const turnId = crypto.randomUUID();
+  const promptText = `Enhance · ${sourceTitle || media} · ${modelId}`;
+  const settingsSnapshot: any = {
+    kind: "enhance",
+    model: modelId,
+    settings: { ...reqSettings, media, source_asset_id: sourceAssetId ?? null },
+    preset_key: null,
+    reference_asset_ids: sourceAssetId ? [sourceAssetId] : [],
+    status: "running",
+  };
+  const msgIns = await sb.from("messages").insert({
+    id: turnId,
+    user_id: userId,
+    session_id: sessionId,
+    role: "user",
+    message_type: "edit",
+    prompt_text: promptText,
+    settings_snapshot_json: settingsSnapshot,
+  }).select("seq").single();
+  if (msgIns.error) throw msgIns.error;
+  const nextSeq = (msgIns.data as any)?.seq ?? 0;
+
+  const failTurn = (code: string, message: string) => {
+    const snapshot = { ...settingsSnapshot, status: "failed", error: message, error_code: code };
+    return sb.from("messages").update({ settings_snapshot_json: snapshot }).eq("id", turnId).then(() => ({
+      turn: rowToTurn({
+        id: turnId, session_id: sessionId, role: "user", message_type: "edit",
+        prompt_text: promptText, settings_snapshot_json: snapshot, seq: nextSeq, created_at: nowIso(),
+      }),
+      status: "failed" as const,
+      error: { code, message },
+    }));
+  };
+
+  let outputUrl: string | undefined;
+  try {
+    const input = buildUpscaleInput(slug, sourceUrl, reqSettings);
+    // Topaz 4K video runs for several minutes; images are quick.
+    const maxMs = media === "video" ? 540_000 : 180_000;
+    outputUrl = await runReplicatePrediction(slug, input, key, maxMs);
+  } catch (err) {
+    const mapped = mapReplicateError(err);
+    return await failTurn(mapped.code, mapped.message);
+  }
+  if (!outputUrl) return await failTurn("empty_output", "The enhancer returned no output.");
+
+  const res = await fetch(outputUrl);
+  if (!res.ok) return await failTurn("download_failed", `Could not download the enhanced ${media} (${res.status}).`);
+  const mime = (res.headers.get("content-type") || (media === "video" ? "video/mp4" : "image/png")).split(";")[0];
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  const assetId = crypto.randomUUID();
+  const ext = media === "video" ? "mp4" : (mime.split("/")[1] || "png");
+  const storagePath = `${sessionId}/${assetId}.${ext}`;
+  const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, { contentType: mime, upsert: false });
+  if (up.error) return await failTurn("storage_failed", up.error.message);
+
+  const assetIns = await sb.from("assets").insert({
+    id: assetId,
+    user_id: userId,
+    session_id: sessionId,
+    message_id: turnId,
+    storage_path: storagePath,
+    asset_type: "edited",
+    prompt_snapshot: promptText,
+    model_key: modelId,
+    metadata_json: {
+      media_type: media,
+      mime,
+      title: `Enhanced · ${sourceTitle || media}`,
+      enhanced: true,
+      source_asset_id: sourceAssetId ?? null,
+      enhance_settings: reqSettings,
+    },
+  }).select().single();
+  if (assetIns.error) return await failTurn("db_failed", assetIns.error.message);
+
+  const completedSnapshot = { ...settingsSnapshot, status: "complete", output_asset_ids: [assetId], requested_count: 1 };
+  await sb.from("messages").update({ settings_snapshot_json: completedSnapshot }).eq("id", turnId);
+
+  return {
+    turn: rowToTurn({
+      id: turnId, session_id: sessionId, role: "user", message_type: "edit",
+      prompt_text: promptText, settings_snapshot_json: completedSnapshot, seq: nextSeq, created_at: nowIso(),
+    }),
+    status: "complete" as const,
+    assets: [rowToAsset(assetIns.data, await signed(storagePath))],
+    providerPayload: { provider: "replicate", model: slug },
+  };
+}
+
 const OPENAI_SIZES = new Set(["1024x1024", "1536x1024", "1024x1536", "auto"]);
+
 function openaiSizeFromAspect(ar?: string): string {
   switch (ar) {
     case "3:2":
@@ -1694,6 +1886,13 @@ Deno.serve(async (req) => {
       const result = await handleVideo(body, userId);
       return json(result, result.status === "blocked" ? 200 : 200);
     }
+
+    if (path === "/enhance" && method === "POST") {
+      const body = await readJson(req);
+      const result = await handleEnhance(body, userId);
+      return json(result, 200);
+    }
+
 
     // ---- Exports / handoff / review board ----
     const exportMatch = path.match(/^\/exports\/([^/]+)\/download$/);

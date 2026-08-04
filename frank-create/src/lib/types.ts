@@ -27,7 +27,34 @@ export interface StudioCapabilities {
   edit: boolean;
   masked_edit: boolean;
   video: boolean;
+  /** Upscale/enhance-only model — shows up in the Enhancer tab. */
+  upscale?: boolean;
 }
+
+/** Controls an upscale model exposes, matching its Replicate schema exactly. */
+export type UpscaleControl =
+  | "enhance_model"
+  | "upscale_factor"
+  | "subject_detection"
+  | "output_format"
+  | "face_enhancement"
+  | "target_resolution"
+  | "target_fps"
+  | "scale_factor";
+
+export interface EnhanceSettings {
+  enhance_model?: string;
+  upscale_factor?: string;
+  subject_detection?: string;
+  output_format?: string;
+  face_enhancement?: boolean;
+  face_enhancement_strength?: number;
+  face_enhancement_creativity?: number;
+  target_resolution?: string;
+  target_fps?: number;
+  scale_factor?: number;
+}
+
 
 export interface StudioModel {
   id: string;
@@ -53,6 +80,18 @@ export interface StudioModel {
   allowed_resolutions?: string[];
   /** Video-only: model cannot run text-to-video, a source frame is required. */
   requires_source_image?: boolean;
+  /** Upscale-only: which controls this model's Replicate schema exposes. */
+  upscale_controls?: UpscaleControl[];
+  /** Upscale-only: enums straight from the provider schema. */
+  allowed_enhance_models?: string[];
+  allowed_upscale_factors?: string[];
+  allowed_subject_detections?: string[];
+  allowed_output_formats?: string[];
+  allowed_target_fps?: number[];
+  /** Upscale-only: numeric scale factor bounds (Crystal). */
+  scale_factor_min?: number;
+  scale_factor_max?: number;
+
   reference_image_limit: number;
   max_count?: number;
   cost_label: string;
