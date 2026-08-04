@@ -777,7 +777,10 @@ export default function App() {
     setAssetNotesDraft(selectedAsset?.notes ?? "");
   }, [selectedAsset?.id]);
 
-  const referenceAssets = assets.filter((asset) => asset.kind === "reference");
+  const retiredReferenceIdSet = useMemo(() => new Set(retiredReferenceIds), [retiredReferenceIds]);
+  const referenceAssets = assets.filter(
+    (asset) => asset.kind === "reference" && !retiredReferenceIdSet.has(asset.id)
+  );
   const selectedReferenceIdSet = useMemo(() => new Set(selectedReferenceIds), [selectedReferenceIds]);
   const selectedReferenceAssets = referenceAssets.filter((asset) => selectedReferenceIdSet.has(asset.id));
 
