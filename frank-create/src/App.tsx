@@ -2046,10 +2046,16 @@ export default function App() {
       return;
     }
 
+    if (mediaKind === "compare") {
+      await handleCompareGenerate();
+      return;
+    }
+
     if (mediaKind === "video" || isVideoModel(selectedModel)) {
       await handleVideoGenerate();
       return;
     }
+
 
     if (promptMode === "edit" && !selectedModel.capabilities.edit) {
       setStatusText(`${selectedModel.short_label ?? selectedModel.label} cannot edit images yet.`);
