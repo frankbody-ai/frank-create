@@ -6614,3 +6614,44 @@ input:focus, textarea:focus, select:focus {
   font-size: 11px;
   color: rgba(63, 42, 45, 0.75);
 }
+
+/* Prompt Generator — reference image attachments */
+.prompt-agent-attachments,
+.prompt-agent-msg-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.prompt-agent-attachment {
+  position: relative;
+}
+.prompt-agent-attachment img,
+.prompt-agent-msg-refs img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line, rgba(63, 42, 45, 0.18));
+}
+.prompt-agent-attachment button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--line, rgba(63, 42, 45, 0.18));
+  background: #fff;
+  color: var(--ink, #3f2a2d);
+  cursor: pointer;
+  padding: 0;
+}
+.prompt-agent-composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
