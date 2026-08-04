@@ -5108,10 +5108,10 @@ input[aria-invalid="true"] {
   --pink: #FFB6A5;
   --pink-soft: #FFD0C6;
   --coffee: #3F2A2D;
-  --font-heading: "Pitch", "Courier New", monospace;
-  --font-brand: "Pitch", "Courier New", monospace;
-  --font-display: "Pitch", "Courier New", monospace;
-  --font-body: "Founders Grotesk Text", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Michroma", Arial, sans-serif;
+  --font-brand: "Michroma", Arial, sans-serif;
+  --font-display: "Michroma", Arial, sans-serif;
+  --font-body: "Michroma", Arial, sans-serif;
   color: var(--frank-ink);
   background: var(--frank-blush);
 }
