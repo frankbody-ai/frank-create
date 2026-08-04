@@ -3074,7 +3074,6 @@ export default function App() {
           <div className="sidebar-studio-block">
             <img src={frankBodyLogo} alt="frank body" className="sidebar-studio-logo" />
           </div>
-          <p className="sidebar-section-label">Create</p>
           <button
             className={`sidebar-nav-button ${studioMode === "image-studio" && reviewFilter === "all" ? "active" : ""}`}
             type="button"
@@ -3114,7 +3113,6 @@ export default function App() {
             Preset Creator
           </button>
 
-          <p className="sidebar-section-label">Review</p>
           <button
             className={`sidebar-nav-button ${reviewFilter === "approved" ? "active" : ""}`}
             type="button"
@@ -3135,9 +3133,6 @@ export default function App() {
             Exports
           </button>
 
-
-
-          <p className="sidebar-section-label">Sessions</p>
           <button
             className={`sidebar-nav-button ${sessionsOpen ? "active" : ""}`}
             type="button"
@@ -3222,7 +3217,7 @@ export default function App() {
             </div>
           ) : null}
 
-          <p className="sidebar-section-label">Account</p>
+          <div className="sidebar-bottom-divider" aria-hidden="true" />
           <div className="sidebar-nav-account" title={userEmail ?? ""}>
             {userEmail ?? "—"}
           </div>
