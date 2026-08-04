@@ -2221,6 +2221,8 @@ export default function App() {
     } finally {
       finishInflight();
       setBusy(false);
+      // Never carry references over into the next run.
+      setSelectedReferenceIds([]);
       // The request can time out while the server keeps finishing the round
       // (e.g. 4 images). Re-read the session so every produced image lands.
       void reconcileSessionAssets();
