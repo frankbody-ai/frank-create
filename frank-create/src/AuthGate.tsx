@@ -3,7 +3,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS, hardSignOut } from "./lib/supabaseClient";
 import { lovable } from "./lib/lovableAuth";
 import frankCreateLogo from "./assets/frank-create.png";
-import designStudioLogo from "./assets/Design_Studio_1.svg.asset.json";
+import designStudioLogo from "./assets/Design_Studio_1.svg";
 
 
 type Status = "loading" | "signed-out" | "denied" | "ready";
