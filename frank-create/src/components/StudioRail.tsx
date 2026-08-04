@@ -1,13 +1,20 @@
-import { ChevronLeft, Film, Image as ImageIcon, RotateCcw } from "lucide-react";
+import { ChevronLeft, Columns2, Film, Image as ImageIcon, RotateCcw } from "lucide-react";
 import type { PromptPreset, StudioModel, StudioSettings } from "../lib/types";
 import { estimateVideoCost, filterSizesForAspect, maxCountForModel, modelRateLabel } from "../lib/studio";
-import type { StudioFieldErrors } from "../lib/studio";
+import type { StudioAdjustment, StudioFieldErrors } from "../lib/studio";
 import { AspectPreview } from "./AspectPreview";
 
+export type StudioMediaKind = "image" | "video" | "compare";
+
+export interface CompareSideAdjustments {
+  side: "A" | "B";
+  modelLabel: string;
+  items: StudioAdjustment[];
+}
 
 export interface StudioRailProps {
-  mediaKind: "image" | "video";
-  onMediaKindChange: (kind: "image" | "video") => void;
+  mediaKind: StudioMediaKind;
+  onMediaKindChange: (kind: StudioMediaKind) => void;
   models: StudioModel[];
   selectedModelId: string;
   onModelChange: (id: string) => void;
@@ -21,6 +28,16 @@ export interface StudioRailProps {
   referenceCount: number;
   onReset: () => void;
   onClose: () => void;
+  /** Side-by-side: media the comparison runs on. */
+  compareMedia?: "image" | "video";
+  onCompareMediaChange?: (media: "image" | "video") => void;
+  /** Side-by-side: second model. */
+  compareModelBId?: string;
+  onCompareModelBChange?: (id: string) => void;
+  compareAdjustments?: CompareSideAdjustments[];
+  compareApproved?: boolean;
+  onCompareApprovedChange?: (approved: boolean) => void;
+  compareCostLabel?: string | null;
 }
 
 function ratioBoxStyle(aspect: string) {
@@ -43,21 +60,27 @@ export function StudioRail(props: StudioRailProps) {
   const {
     mediaKind, onMediaKindChange, models, selectedModelId, onModelChange,
     settings, onSettingsChange, onAspectChange, presets, selectedPresetKey,
-    onPresetChange, fieldErrors, referenceCount, onReset, onClose
+    onPresetChange, fieldErrors, referenceCount, onReset, onClose,
+    compareMedia = "image", onCompareMediaChange, compareModelBId, onCompareModelBChange,
+    compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel
   } = props;
 
+  const isCompare = mediaKind === "compare";
   const model = models.find((item) => item.id === selectedModelId) ?? models[0];
-  const isVideo = mediaKind === "video";
+  const modelB = models.find((item) => item.id === compareModelBId) ?? null;
+  const isVideo = mediaKind === "video" || (isCompare && compareMedia === "video");
   const aspects = model?.allowed_aspect_ratios ?? [];
   const durations = model?.allowed_durations ?? [];
   const resolutions = model?.allowed_resolutions ?? [];
   const sizes = model?.allowed_image_sizes?.length
     ? filterSizesForAspect(model.allowed_image_sizes, settings.aspect_ratio)
     : [];
-  const countCap = isVideo ? 1 : maxCountForModel(model);
+  const countCap = isVideo || isCompare ? 1 : maxCountForModel(model);
   const counts = Array.from({ length: Math.min(countCap, 10) }, (_, index) => index + 1);
   const costEstimate = isVideo ? estimateVideoCost(model, settings) : null;
   const badge = isVideo ? tierBadge(model) : null;
+  const pendingAdjustments = compareAdjustments.filter((entry) => entry.items.length);
+
 
 
   return (
@@ -66,8 +89,8 @@ export function StudioRail(props: StudioRailProps) {
         <button
           type="button"
           role="tab"
-          aria-selected={!isVideo}
-          className={!isVideo ? "active" : ""}
+          aria-selected={mediaKind === "image"}
+          className={mediaKind === "image" ? "active" : ""}
           onClick={() => onMediaKindChange("image")}
         >
           <ImageIcon size={14} />
@@ -76,21 +99,52 @@ export function StudioRail(props: StudioRailProps) {
         <button
           type="button"
           role="tab"
-          aria-selected={isVideo}
-          className={isVideo ? "active" : ""}
+          aria-selected={mediaKind === "video"}
+          className={mediaKind === "video" ? "active" : ""}
           onClick={() => onMediaKindChange("video")}
         >
           <Film size={14} />
           Video
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={isCompare}
+          className={isCompare ? "active" : ""}
+          onClick={() => onMediaKindChange("compare")}
+          title="Run two models on the same brief and compare the results"
+        >
+          <Columns2 size={14} />
+          Side&#8209;by&#8209;side
         </button>
         <button className="rail-close" type="button" onClick={onClose} aria-label="Close studio settings">
           <ChevronLeft size={14} />
         </button>
       </div>
 
+
       <div className="rail-scroll">
+        {isCompare ? (
+          <section className="rail-block">
+            <p className="rail-label">Compare on</p>
+            <div className="rail-chips">
+              {(["image", "video"] as const).map((kind) => (
+                <button
+                  key={kind}
+                  type="button"
+                  className={`rail-chip${compareMedia === kind ? " active" : ""}`}
+                  onClick={() => onCompareMediaChange?.(kind)}
+                >
+                  {kind === "image" ? "Images" : "Videos"}
+                </button>
+              ))}
+            </div>
+            <p className="rail-hint">One output per side, same brief and settings — a clean A/B.</p>
+          </section>
+        ) : null}
         <section className="rail-block">
-          <p className="rail-label">Model</p>
+          <p className="rail-label">{isCompare ? "Model A" : "Model"}</p>
+
           <div className="rail-model-card">
             <select
               aria-label="Model"
@@ -128,6 +182,73 @@ export function StudioRail(props: StudioRailProps) {
 
           </div>
         </section>
+
+        {isCompare ? (
+          <section className="rail-block">
+            <p className="rail-label">Model B</p>
+            <div className="rail-model-card">
+              <select
+                aria-label="Model B"
+                value={modelB?.id ?? ""}
+                onChange={(event) => onCompareModelBChange?.(event.target.value)}
+              >
+                <option value="">— Pick a second model —</option>
+                {models.filter((item) => item.id !== model?.id).map((item) => {
+                  const rate = modelRateLabel(item);
+                  return (
+                    <option key={item.id} value={item.id} disabled={item.status === "disabled"}>
+                      {(item.short_label ?? item.label)
+                        + (rate ? ` — ${rate}` : "")
+                        + (item.status === "disabled" ? " (soon)" : item.degraded ? " (provider issue)" : "")}
+                    </option>
+                  );
+                })}
+              </select>
+              <p className="rail-model-desc">{modelB?.description ?? "Both sides run the same prompt at the same time."}</p>
+              {modelB ? (
+                <div className="rail-model-badges">
+                  <span>{modelB.badge || (isVideo ? "video" : "image")}</span>
+                  <span>{modelB.reference_image_limit ?? 0} refs</span>
+                  {tierBadge(modelB) ? <span className={tierBadge(modelB)!.className}>{tierBadge(modelB)!.label}</span> : null}
+                </div>
+              ) : null}
+              {modelB?.degraded ? (
+                <p className="model-degraded-note">{modelB.degraded_note ?? "This model is failing upstream."}</p>
+              ) : null}
+            </div>
+            {compareCostLabel ? <p className="rail-model-price"><strong>{compareCostLabel}</strong></p> : null}
+            {fieldErrors.compare ? <p className="field-error" role="alert">{fieldErrors.compare}</p> : null}
+          </section>
+        ) : null}
+
+        {isCompare && pendingAdjustments.length ? (
+          <section className="rail-block rail-adjustments">
+            <p className="rail-label">Settings to adjust</p>
+            {pendingAdjustments.map((entry) => (
+              <div className="rail-adjust-side" key={entry.side}>
+                <p className="rail-adjust-title">Side {entry.side} · {entry.modelLabel}</p>
+                <ul>
+                  {entry.items.map((item) => (
+                    <li key={`${entry.side}-${item.field}`}>
+                      <strong>{item.label}:</strong> {item.from} → {item.to}
+                      <span>{item.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+            <label className="rail-adjust-approve">
+              <input
+                type="checkbox"
+                checked={compareApproved}
+                onChange={(event) => onCompareApprovedChange?.(event.target.checked)}
+              />
+              Use the closest supported settings for both sides
+            </label>
+          </section>
+        ) : null}
+
+
 
         {aspects.length ? (
           <section className="rail-block">

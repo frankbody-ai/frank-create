@@ -231,7 +231,9 @@ export interface StudioFieldErrors {
   size?: string;
   count?: string;
   references?: string;
+  compare?: string;
 }
+
 
 export function validateStudioSettings(
   model: StudioModel | undefined | null,
@@ -352,4 +354,222 @@ export function makeLocalId(prefix: string) {
     return `${prefix}_${window.crypto.randomUUID().replace(/-/g, "")}`;
   }
   return `${prefix}_${Date.now()}`;
+}
+
+/* ---------------------------------------------------------------- *
+ * Side-by-side: resolve shared settings against one model's limits
+ * ---------------------------------------------------------------- */
+
+export interface StudioAdjustment {
+  field: "aspect_ratio" | "image_size" | "video_resolution" | "duration" | "references";
+  label: string;
+  from: string;
+  to: string;
+  message: string;
+}
+
+function ratioValue(aspect: string): number | null {
+  const parts = /^(\d+(?:\.\d+)?)[:x](\d+(?:\.\d+)?)$/i.exec(aspect.trim());
+  if (!parts) return null;
+  const w = Number(parts[1]);
+  const h = Number(parts[2]);
+  return h > 0 ? w / h : null;
+}
+
+/** Nearest supported aspect ratio by numeric closeness, falling back to the first option. */
+export function closestAspect(target: string, allowed: string[]): string {
+  if (!allowed.length) return target;
+  if (allowed.includes(target)) return target;
+  const wanted = ratioValue(target);
+  if (wanted == null) return allowed[0];
+  let best = allowed[0];
+  let bestDelta = Number.POSITIVE_INFINITY;
+  for (const option of allowed) {
+    const value = ratioValue(option);
+    if (value == null) continue;
+    const delta = Math.abs(Math.log(value / wanted));
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      best = option;
+    }
+  }
+  return best;
+}
+
+function resolutionRank(value: string): number {
+  const digits = /(\d+)\s*p/i.exec(value);
+  if (digits) return Number(digits[1]);
+  if (/^(\d+)k$/i.test(value)) return Number(/^(\d+)k$/i.exec(value)![1]) * 1000;
+  return 0;
+}
+
+function closestByRank(target: string, allowed: string[]): string {
+  if (!allowed.length) return target;
+  if (allowed.includes(target)) return target;
+  const wanted = resolutionRank(target);
+  if (!wanted) return allowed[allowed.length - 1];
+  return allowed.reduce((best, option) =>
+    Math.abs(resolutionRank(option) - wanted) < Math.abs(resolutionRank(best) - wanted) ? option : best
+  , allowed[0]);
+}
+
+function closestNumber(target: number, allowed: number[]): number {
+  if (!allowed.length) return target;
+  if (allowed.includes(target)) return target;
+  return allowed.reduce((best, option) =>
+    Math.abs(option - target) < Math.abs(best - target) ? option : best
+  , allowed[0]);
+}
+
+export interface ResolvedForModel {
+  settings: StudioSettings;
+  adjustments: StudioAdjustment[];
+  /** How many of the selected references this model can actually accept. */
+  referenceLimit: number;
+}
+
+/**
+ * Snap shared studio settings to what a single model accepts, reporting every
+ * change so the UI can ask the user to approve it before running.
+ */
+export function resolveForModel(
+  model: StudioModel,
+  settings: StudioSettings,
+  options: { referenceCount?: number } = {}
+): ResolvedForModel {
+  const adjustments: StudioAdjustment[] = [];
+  const name = model.short_label ?? model.label;
+  const video = isVideoModel(model);
+  const next: StudioSettings = { ...settings, count: 1 };
+
+  const aspects = model.allowed_aspect_ratios ?? [];
+  if (aspects.length) {
+    const aspect = closestAspect(settings.aspect_ratio, aspects);
+    if (aspect !== settings.aspect_ratio) {
+      adjustments.push({
+        field: "aspect_ratio",
+        label: "Aspect ratio",
+        from: settings.aspect_ratio,
+        to: aspect,
+        message: `${name} doesn't support ${settings.aspect_ratio} — closest match is ${aspect}.`
+      });
+    }
+    next.aspect_ratio = aspect;
+  }
+
+  if (video) {
+    const resolutions = model.allowed_resolutions ?? [];
+    if (resolutions.length) {
+      const current = settings.video_resolution ?? resolutions[resolutions.length - 1];
+      const resolution = closestByRank(current, resolutions);
+      if (settings.video_resolution && resolution !== settings.video_resolution) {
+        adjustments.push({
+          field: "video_resolution",
+          label: "Quality",
+          from: settings.video_resolution,
+          to: resolution,
+          message: `${name} doesn't render ${settings.video_resolution} — closest match is ${resolution}.`
+        });
+      }
+      next.video_resolution = resolution;
+    } else {
+      next.video_resolution = undefined;
+    }
+
+    const durations = model.allowed_durations ?? [];
+    if (durations.length) {
+      const current = settings.duration ?? durations[0];
+      const duration = closestNumber(current, durations);
+      if (settings.duration && duration !== settings.duration) {
+        adjustments.push({
+          field: "duration",
+          label: "Duration",
+          from: `${settings.duration}s`,
+          to: `${duration}s`,
+          message: `${name} can't run ${settings.duration}s clips — closest match is ${duration}s.`
+        });
+      }
+      next.duration = duration;
+    } else {
+      next.duration = undefined;
+    }
+    next.image_size = "";
+  } else {
+    const sizes = model.allowed_image_sizes ?? [];
+    if (sizes.length) {
+      const forAspect = filterSizesForAspect(sizes, next.aspect_ratio);
+      const current = settings.image_size || forAspect[forAspect.length - 1];
+      const size = forAspect.includes(current) ? current : closestByRank(current, forAspect);
+      if (settings.image_size && size !== settings.image_size) {
+        adjustments.push({
+          field: "image_size",
+          label: "Quality",
+          from: settings.image_size,
+          to: size,
+          message: `${name} doesn't offer ${settings.image_size} — closest match is ${size}.`
+        });
+      }
+      next.image_size = size;
+    } else {
+      next.image_size = "";
+    }
+    next.duration = undefined;
+    next.video_resolution = undefined;
+  }
+
+  const referenceCount = options.referenceCount ?? 0;
+  const referenceLimit = model.reference_image_limit ?? 0;
+  if (referenceCount > referenceLimit) {
+    adjustments.push({
+      field: "references",
+      label: "References",
+      from: `${referenceCount} refs`,
+      to: `${referenceLimit} refs`,
+      message: referenceLimit === 0
+        ? `${name} takes no reference images — they'll be dropped for this side.`
+        : `${name} accepts ${referenceLimit} reference image${referenceLimit === 1 ? "" : "s"} — only the first ${referenceLimit} will be sent.`
+    });
+  }
+
+  return { settings: next, adjustments, referenceLimit };
+}
+
+export interface CompareMeta {
+  group?: string;
+  side?: "A" | "B";
+}
+
+/** Read the side-by-side markers a compare run wrote into a turn's settings JSON. */
+export function parseCompareMeta(settingsJson?: string | null): CompareMeta {
+  if (!settingsJson) return {};
+  try {
+    const parsed = JSON.parse(settingsJson) as StudioSettings;
+    const group = typeof parsed?.compare_group === "string" ? parsed.compare_group : undefined;
+    const side = parsed?.compare_side === "A" || parsed?.compare_side === "B" ? parsed.compare_side : undefined;
+    return { group, side };
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Collapse a turn list into rows: comparison pairs become one two-item row,
+ * everything else stays a single-item row. Input order is preserved.
+ */
+export function groupCompareRows<T extends { id: string; settings_json?: string | null }>(turns: T[]): T[][] {
+  const rows: T[][] = [];
+  const seenGroups = new Set<string>();
+  for (const turn of turns) {
+    const { group } = parseCompareMeta(turn.settings_json);
+    if (!group) {
+      rows.push([turn]);
+      continue;
+    }
+    if (seenGroups.has(group)) continue;
+    seenGroups.add(group);
+    const members = turns.filter((item) => parseCompareMeta(item.settings_json).group === group);
+    members.sort((a, b) => (parseCompareMeta(a.settings_json).side ?? "A").localeCompare(parseCompareMeta(b.settings_json).side ?? "A"));
+    rows.push(members);
+  }
+  return rows;
 }

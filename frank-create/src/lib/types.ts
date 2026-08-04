@@ -695,7 +695,12 @@ export interface StudioSettings {
   duration?: number;
   /** Video-only: provider resolution enum value. */
   video_resolution?: string;
+  /** Side-by-side: id shared by the two turns of one comparison run. */
+  compare_group?: string;
+  /** Side-by-side: which half of the comparison this turn is. */
+  compare_side?: "A" | "B";
 }
+
 
 export interface TurnRequest {
   session_id?: string;

@@ -113,8 +113,14 @@ import {
   maxCountForModel,
   modelsForMedia,
   normalizeVideoSettings,
-  isVideoModel
+  isVideoModel,
+  resolveForModel,
+  groupCompareRows,
+  parseCompareMeta,
+  estimateVideoCost
 } from "./lib/studio";
+import type { StudioFieldErrors } from "./lib/studio";
+
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { StudioRail } from "./components/StudioRail";
 import { PresetCreator } from "./components/PresetCreator";
@@ -454,7 +460,11 @@ export default function App() {
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
   const [settingsRailOpen, setSettingsRailOpen] = useState(true);
-  const [mediaKind, setMediaKind] = useState<"image" | "video">("image");
+  const [mediaKind, setMediaKind] = useState<"image" | "video" | "compare">("image");
+  const [compareMedia, setCompareMedia] = useState<"image" | "video">("image");
+  const [compareModelBId, setCompareModelBId] = useState<string>("");
+  const [compareApproved, setCompareApproved] = useState(false);
+
   const [refineBusy, setRefineBusy] = useState(false);
   useEffect(() => {
     if (videoStartedAt == null) return;
@@ -621,15 +631,51 @@ export default function App() {
     [modelOptions.allowedImageSizes, settings.aspect_ratio]
   );
   const modelHasSizes = (modelOptions.allowedImageSizes?.length ?? 0) > 0;
-  const mediaModels = useMemo(() => modelsForMedia(config.models, mediaKind), [config.models, mediaKind]);
+  // In side-by-side mode the model pool follows the compare sub-media toggle.
+  const effectiveMedia: "image" | "video" = mediaKind === "compare" ? compareMedia : mediaKind;
+  const mediaModels = useMemo(() => modelsForMedia(config.models, effectiveMedia), [config.models, effectiveMedia]);
+  const compareModelB = useMemo(
+    () => config.models.find((model) => model.id === compareModelBId) ?? null,
+    [config.models, compareModelBId]
+  );
 
-  function switchMediaKind(kind: "image" | "video") {
+  function pickModelForMedia(kind: "image" | "video", exceptId?: string) {
+    const pool = modelsForMedia(config.models, kind).filter(
+      (model) => model.status !== "disabled" && model.id !== exceptId
+    );
+    return pool.find((model) => model.status === "ready" && !model.degraded) ?? pool[0] ?? null;
+  }
+
+  function switchMediaKind(kind: "image" | "video" | "compare") {
     setMediaKind(kind);
-    const pool = modelsForMedia(config.models, kind).filter((model) => model.status !== "disabled");
-    const next = pool.find((model) => model.status === "ready" && !model.degraded) ?? pool[0];
+    setCompareApproved(false);
+    const media = kind === "compare" ? compareMedia : kind;
+    const next = pickModelForMedia(media);
     if (next && next.id !== selectedModelId) setSelectedModelId(next.id);
+    if (kind === "compare") {
+      const primaryId = next?.id ?? selectedModelId;
+      const second = pickModelForMedia(media, primaryId);
+      setCompareModelBId((current) => {
+        const stillValid = current && modelsForMedia(config.models, media).some((m) => m.id === current) && current !== primaryId;
+        return stillValid ? current : second?.id ?? "";
+      });
+      setSettings((current) => ({ ...current, count: 1 }));
+      setStatusText("Side-by-side — two models, one brief, one output each.");
+      return;
+    }
     setStatusText(kind === "video" ? "Video mode — pick a source frame and brief the motion." : "Image mode.");
   }
+
+  function switchCompareMedia(media: "image" | "video") {
+    setCompareMedia(media);
+    setCompareApproved(false);
+    const primary = pickModelForMedia(media);
+    if (primary && primary.id !== selectedModelId) setSelectedModelId(primary.id);
+    const second = pickModelForMedia(media, primary?.id ?? selectedModelId);
+    setCompareModelBId(second?.id ?? "");
+    setStatusText(media === "video" ? "Comparing two video models." : "Comparing two image models.");
+  }
+
 
   function resetStudioSettings() {
     const model = config.models.find((item) => item.id === selectedModelId);
@@ -758,10 +804,46 @@ export default function App() {
   const selectedReferenceIdSet = useMemo(() => new Set(selectedReferenceIds), [selectedReferenceIds]);
   const selectedReferenceAssets = referenceAssets.filter((asset) => selectedReferenceIdSet.has(asset.id));
 
-  const fieldErrors = useMemo(
+  const baseFieldErrors = useMemo(
     () => validateStudioSettings(modelOptions.model, settings, { referenceCount: selectedReferenceAssets.length }),
     [modelOptions.model, settings, selectedReferenceAssets.length]
   );
+  // Side-by-side: resolve the shared settings against each model and surface
+  // every snap so the user can approve it before we spend two calls.
+  const compareResolved = useMemo(() => {
+    if (mediaKind !== "compare" || !modelOptions.model || !compareModelB) return null;
+    const referenceCount = selectedReferenceAssets.length;
+    return {
+      a: resolveForModel(modelOptions.model, settings, { referenceCount }),
+      b: resolveForModel(compareModelB, settings, { referenceCount })
+    };
+  }, [mediaKind, modelOptions.model, compareModelB, settings, selectedReferenceAssets.length]);
+  const compareAdjustments = useMemo(() => {
+    if (!compareResolved) return [];
+    return [
+      { side: "A" as const, modelLabel: modelOptions.model?.short_label ?? modelOptions.model?.label ?? "Model A", items: compareResolved.a.adjustments },
+      { side: "B" as const, modelLabel: compareModelB?.short_label ?? compareModelB?.label ?? "Model B", items: compareResolved.b.adjustments }
+    ];
+  }, [compareResolved, modelOptions.model, compareModelB]);
+  const compareNeedsApproval = compareAdjustments.some((entry) => entry.items.length > 0);
+  const fieldErrors = useMemo(() => {
+    if (mediaKind !== "compare") return baseFieldErrors;
+    // In compare mode each model gets snapped settings, so per-field validation
+    // against model A alone would block valid runs — only gate on real blockers.
+    const errors: StudioFieldErrors = {};
+    if (!compareModelB) errors.compare = "Pick a second model to compare against.";
+    else if (compareModelB.id === modelOptions.model?.id) errors.compare = "Pick two different models.";
+    else if (compareNeedsApproval && !compareApproved) errors.compare = "Approve the adjusted settings to continue.";
+    return errors;
+  }, [mediaKind, baseFieldErrors, compareModelB, modelOptions.model?.id, compareNeedsApproval, compareApproved]);
+  const compareCostLabel = useMemo(() => {
+    if (mediaKind !== "compare" || compareMedia !== "video" || !compareResolved) return null;
+    const a = estimateVideoCost(modelOptions.model, compareResolved.a.settings);
+    const b = estimateVideoCost(compareModelB, compareResolved.b.settings);
+    if (!a && !b) return null;
+    return `A ${a ?? "—"} · B ${b ?? "—"}`;
+  }, [mediaKind, compareMedia, compareResolved, modelOptions.model, compareModelB]);
+
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
   const firstOutputAsset = outputAssets[0] ?? null;
   const displayOutputAssets =
@@ -775,13 +857,16 @@ export default function App() {
   const favoriteCount = outputAssets.filter((asset) => asset.favorite).length;
   const promptMode = editSourceAsset ? (maskAsset ? "masked_edit" : "edit") : "generate";
   const primaryActionLabel =
-    mediaKind === "video"
-      ? "Generate video"
-      : promptMode === "masked_edit"
-        ? "Edit"
-        : promptMode === "edit"
+    mediaKind === "compare"
+      ? "Generate both"
+      : mediaKind === "video"
+        ? "Generate video"
+        : promptMode === "masked_edit"
           ? "Edit"
-          : "Generate";
+          : promptMode === "edit"
+            ? "Edit"
+            : "Generate";
+
   const selectedExportPresets = useMemo(
     () => (selectedAsset ? exportPresetsForAsset(config.exportPresets, selectedAsset) : []),
     [config.exportPresets, selectedAsset]
@@ -1961,10 +2046,16 @@ export default function App() {
       return;
     }
 
+    if (mediaKind === "compare") {
+      await handleCompareGenerate();
+      return;
+    }
+
     if (mediaKind === "video" || isVideoModel(selectedModel)) {
       await handleVideoGenerate();
       return;
     }
+
 
     if (promptMode === "edit" && !selectedModel.capabilities.edit) {
       setStatusText(`${selectedModel.short_label ?? selectedModel.label} cannot edit images yet.`);
@@ -2355,6 +2446,153 @@ export default function App() {
       setBusy(false);
     }
   }
+
+  /**
+   * Side-by-side: fire two provider calls with the same brief — one per model —
+   * each with settings snapped to what that model accepts, and tag both turns
+   * with a shared compare group so the timeline renders them as one A/B row.
+   */
+  async function handleCompareGenerate() {
+    if (!activeSession || !prompt.trim()) {
+      setStatusText("Give the studio a prompt first.");
+      return;
+    }
+    const modelA = selectedModel;
+    const modelB = compareModelB;
+    if (!modelA || !modelB || modelA.id === modelB.id) {
+      setStatusText("Pick two different models to compare.");
+      return;
+    }
+    if (connection !== "online") {
+      setStatusText("Side-by-side needs the cloud backend.");
+      return;
+    }
+    if (compareNeedsApproval && !compareApproved) {
+      setStatusText("Approve the adjusted settings first — some values aren't supported by both models.");
+      return;
+    }
+
+    const referenceCount = selectedReferenceAssets.length;
+    const generationReferenceUrls = selectedReferenceAssets
+      .map(referenceUrlForGeneration)
+      .filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u));
+    if (referenceCount && !generationReferenceUrls.length) {
+      setStatusText("Reference images are still uploading. Try again in a moment.");
+      return;
+    }
+
+    const groupId = makeLocalId("cmp");
+    const sides: Array<{ side: "A" | "B"; model: StudioModel }> = [
+      { side: "A", model: modelA },
+      { side: "B", model: modelB }
+    ];
+
+    const inflight: InflightGen[] = sides.map(({ side, model }) => ({
+      id: makeLocalId("gen"),
+      modelId: model.id,
+      modelLabel: `Side ${side} · ${modelName(config, model.id)}`,
+      prompt,
+      aspect: settings.aspect_ratio,
+      count: 1,
+    }));
+    setInflightGens((current) => [...current, ...inflight]);
+    setBusy(true);
+    setGenPhase("running");
+    setGenError(null);
+    setGenErrorOpen(false);
+    setStatusText(`Running ${modelName(config, modelA.id)} vs ${modelName(config, modelB.id)}...`);
+
+    const runSide = async ({ side, model }: { side: "A" | "B"; model: StudioModel }) => {
+      const resolved = resolveForModel(model, settings, { referenceCount });
+      const sideSettings: StudioSettings = {
+        ...resolved.settings,
+        count: 1,
+        compare_group: groupId,
+        compare_side: side
+      };
+      const sideReferenceAssets = selectedReferenceAssets.slice(0, resolved.referenceLimit);
+      const sideReferenceUrls = generationReferenceUrls.slice(0, resolved.referenceLimit);
+
+      if (compareMedia === "video") {
+        const sourceAsset =
+          sideReferenceAssets.find((asset) => asset.media_type !== "video") ??
+          (selectedAsset && selectedAsset.media_type !== "video" ? selectedAsset : undefined) ??
+          outputAssets.find((asset) => asset.media_type !== "video");
+        if (model.requires_source_image && !sourceAsset) {
+          throw new Error(`${model.short_label ?? model.label} needs a source frame.`);
+        }
+        return createVideoStoryboard({
+          session_id: activeSession.id,
+          model: model.id,
+          prompt,
+          settings: sideSettings,
+          source_asset_id: sourceAsset?.id,
+          reference_asset_ids: sideReferenceAssets.map((asset) => asset.id)
+        });
+      }
+
+      const request = buildTurnRequest({
+        sessionId: activeSession.id,
+        modelId: model.id,
+        prompt,
+        promptMode: "generate",
+        frankBodyMode,
+        presetKey: selectedPresetKey ?? undefined,
+        settings: sideSettings,
+        referenceAssetIds: sideReferenceAssets.map((asset) => asset.id),
+        referenceImageUrls: sideReferenceUrls
+      });
+      return createInferenceTurn(request);
+    };
+
+    try {
+      const results = await Promise.allSettled(sides.map(runSide));
+      const newTurns: StudioTurn[] = [];
+      const newAssets: Asset[] = [];
+      const failures: string[] = [];
+
+      results.forEach((result, index) => {
+        const { side, model } = sides[index];
+        const label = modelName(config, model.id);
+        if (result.status === "rejected") {
+          failures.push(`Side ${side} (${label}): ${result.reason instanceof Error ? result.reason.message : "failed"}`);
+          return;
+        }
+        const value = result.value;
+        if (value.turn) newTurns.push(value.turn);
+        if (value.assets?.length) newAssets.push(...value.assets);
+        if (value.status === "failed" || value.status === "blocked") {
+          failures.push(`Side ${side} (${label}): ${value.error?.message ?? value.status}`);
+        }
+      });
+
+      if (newTurns.length) setTurns((current) => [...current, ...newTurns]);
+      if (newAssets.length) {
+        setAssets((current) => [...newAssets, ...current]);
+        setSelectedAsset(newAssets[0]);
+        setSelectedReferenceIds([]);
+      }
+
+      if (failures.length) {
+        setGenPhase("failed");
+        setGenError({ message: failures.join(" · "), retryable: true });
+        setStatusText(failures.join(" · "));
+      } else {
+        setGenPhase("completed");
+        setStatusText(`Side-by-side ready — ${modelName(config, modelA.id)} vs ${modelName(config, modelB.id)}.`);
+      }
+    } catch (error) {
+      setGenPhase("failed");
+      setStatusText(error instanceof Error ? error.message : "Side-by-side run failed.");
+    } finally {
+      const ids = new Set(inflight.map((entry) => entry.id));
+      setInflightGens((current) => current.filter((entry) => !ids.has(entry.id)));
+      setBusy(false);
+      void reconcileSessionAssets();
+    }
+  }
+
+
 
 
   async function changeAssetStatus(asset: Asset, approval_status: Asset["approval_status"]) {
@@ -3172,7 +3410,19 @@ export default function App() {
           referenceCount={selectedReferenceAssets.length}
           onReset={resetStudioSettings}
           onClose={() => setSettingsRailOpen(false)}
+          compareMedia={compareMedia}
+          onCompareMediaChange={switchCompareMedia}
+          compareModelBId={compareModelBId}
+          onCompareModelBChange={(id) => {
+            setCompareModelBId(id);
+            setCompareApproved(false);
+          }}
+          compareAdjustments={compareAdjustments}
+          compareApproved={compareApproved}
+          onCompareApprovedChange={setCompareApproved}
+          compareCostLabel={compareCostLabel}
         />
+
       ) : null}
 
       {studioMode === "prompt-generator" ? (
@@ -3266,10 +3516,24 @@ export default function App() {
           }) : null}
 
           {turns.length ? (
-            [...turns].reverse().map((turn, idx) => {
+            groupCompareRows([...turns].reverse()).map((row, rowIdx) => (
+            <div
+              key={`row-${row[0].id}`}
+              className={row.length > 1 ? "compare-run" : "turn-row"}
+            >
+              {row.length > 1 ? (
+                <p className="compare-run-title">
+                  Side-by-side · {modelName(config, row[0].model)} vs {modelName(config, row[1].model)}
+                </p>
+              ) : null}
+              <div className={row.length > 1 ? "compare-run-grid" : "turn-row-single"}>
+              {row.map((turn) => {
+              const idx = rowIdx;
+              const compareSide = parseCompareMeta(turn.settings_json).side;
               const createdMs = turn.created_at ? new Date(turn.created_at).getTime() : 0;
               const isFresh = idx === 0 && createdMs && Date.now() - createdMs < 30_000;
               const shortId = turn.id.slice(0, 8);
+
               const timeLabel = turn.created_at ? new Date(turn.created_at).toLocaleString() : "";
               return (
               <article
@@ -3347,7 +3611,11 @@ export default function App() {
                 <div className="turn-copy">
                   <span className={`status-dot ${turn.status}`} />
                   <div>
-                    <p className="eyebrow">{turnKindLabel(turn)}</p>
+                    <p className="eyebrow">
+                      {compareSide ? <span className="compare-side-badge">Side {compareSide}</span> : null}
+                      {turnKindLabel(turn)}
+                    </p>
+
                     <h3>{modelName(config, turn.model)}</h3>
                     <p>{turn.prompt}</p>
                     <div className="turn-meta">
@@ -3436,7 +3704,11 @@ export default function App() {
                 />
               </article>
               );
-            })
+            })}
+              </div>
+            </div>
+            ))
+
           ) : (
             <div className="empty-thread">
               <ImageIcon size={38} />
