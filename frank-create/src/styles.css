@@ -7649,41 +7649,69 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* ---- Studio rail (image + video) ---- */
-.rail-media-toggle {
+.rail-header {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+.rail-media-toggle {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
   padding: 4px;
   border-radius: 999px;
   background: #FFEFEA;
 }
 .rail-media-toggle button {
-  flex: 1;
+  min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   height: 32px;
+  padding: 0 6px;
   border: 0;
   border-radius: 999px;
   background: transparent;
   color: #3F2A2D;
   font-family: var(--font-display, "Pitch", monospace);
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   cursor: pointer;
+}
+.rail-media-toggle button > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rail-media-toggle button svg {
+  flex: 0 0 auto;
 }
 .rail-media-toggle button.active {
   background: #3F2A2D;
   color: #FFFFFF;
 }
-.rail-media-toggle .rail-close {
+.rail-collapse {
   flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
-  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(63, 42, 45, 0.16);
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: #3F2A2D;
+  cursor: pointer;
 }
+.rail-collapse:hover {
+  background: #FFEFEA;
+}
+
 .rail-scroll {
   display: flex;
   flex-direction: column;
