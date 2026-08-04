@@ -78,7 +78,6 @@ import {
   listSessions,
   listTurns,
   prepareLocalEngineFolders,
-  improvePresetPrompt,
   preflightProvider,
   reloadProviderEnv,
   remixPrompt,
