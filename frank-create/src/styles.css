@@ -7781,6 +7781,8 @@ input:focus, textarea:focus, select:focus {
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
+  min-width: 0;
+  overflow: hidden;
   min-height: 74px;
   padding: 8px 4px;
   border: 1px solid rgba(63, 42, 45, 0.16);
