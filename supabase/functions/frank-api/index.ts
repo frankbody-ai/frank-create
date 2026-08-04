@@ -416,7 +416,9 @@ async function handleVideo(body: any, userId: string) {
       duration: Number(reqSettings.duration ?? 5),
       resolution: reqSettings.video_resolution || reqSettings.image_size,
       image: sourceUrls[0],
+      last_frame: sourceUrls[1],
     });
+
     videoUrl = await runReplicatePrediction(slug, input, key, 300_000);
   } catch (err) {
     const mapped = mapReplicateError(err);
