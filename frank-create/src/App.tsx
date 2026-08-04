@@ -3,6 +3,7 @@ import {
   Box,
   CheckCircle2,
   ChevronLeft,
+  SlidersHorizontal,
   ChevronRight,
   Clipboard,
   Cpu,
