@@ -625,15 +625,51 @@ export default function App() {
     [modelOptions.allowedImageSizes, settings.aspect_ratio]
   );
   const modelHasSizes = (modelOptions.allowedImageSizes?.length ?? 0) > 0;
-  const mediaModels = useMemo(() => modelsForMedia(config.models, mediaKind), [config.models, mediaKind]);
+  // In side-by-side mode the model pool follows the compare sub-media toggle.
+  const effectiveMedia: "image" | "video" = mediaKind === "compare" ? compareMedia : mediaKind;
+  const mediaModels = useMemo(() => modelsForMedia(config.models, effectiveMedia), [config.models, effectiveMedia]);
+  const compareModelB = useMemo(
+    () => config.models.find((model) => model.id === compareModelBId) ?? null,
+    [config.models, compareModelBId]
+  );
 
-  function switchMediaKind(kind: "image" | "video") {
+  function pickModelForMedia(kind: "image" | "video", exceptId?: string) {
+    const pool = modelsForMedia(config.models, kind).filter(
+      (model) => model.status !== "disabled" && model.id !== exceptId
+    );
+    return pool.find((model) => model.status === "ready" && !model.degraded) ?? pool[0] ?? null;
+  }
+
+  function switchMediaKind(kind: "image" | "video" | "compare") {
     setMediaKind(kind);
-    const pool = modelsForMedia(config.models, kind).filter((model) => model.status !== "disabled");
-    const next = pool.find((model) => model.status === "ready" && !model.degraded) ?? pool[0];
+    setCompareApproved(false);
+    const media = kind === "compare" ? compareMedia : kind;
+    const next = pickModelForMedia(media);
     if (next && next.id !== selectedModelId) setSelectedModelId(next.id);
+    if (kind === "compare") {
+      const primaryId = next?.id ?? selectedModelId;
+      const second = pickModelForMedia(media, primaryId);
+      setCompareModelBId((current) => {
+        const stillValid = current && modelsForMedia(config.models, media).some((m) => m.id === current) && current !== primaryId;
+        return stillValid ? current : second?.id ?? "";
+      });
+      setSettings((current) => ({ ...current, count: 1 }));
+      setStatusText("Side-by-side — two models, one brief, one output each.");
+      return;
+    }
     setStatusText(kind === "video" ? "Video mode — pick a source frame and brief the motion." : "Image mode.");
   }
+
+  function switchCompareMedia(media: "image" | "video") {
+    setCompareMedia(media);
+    setCompareApproved(false);
+    const primary = pickModelForMedia(media);
+    if (primary && primary.id !== selectedModelId) setSelectedModelId(primary.id);
+    const second = pickModelForMedia(media, primary?.id ?? selectedModelId);
+    setCompareModelBId(second?.id ?? "");
+    setStatusText(media === "video" ? "Comparing two video models." : "Comparing two image models.");
+  }
+
 
   function resetStudioSettings() {
     const model = config.models.find((item) => item.id === selectedModelId);
