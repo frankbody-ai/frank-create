@@ -3,6 +3,7 @@ import {
   Box,
   CheckCircle2,
   ChevronLeft,
+  SlidersHorizontal,
   ChevronRight,
   Clipboard,
   Cpu,
@@ -78,6 +79,7 @@ import {
   listSessions,
   listTurns,
   prepareLocalEngineFolders,
+  improvePresetPrompt,
   preflightProvider,
   reloadProviderEnv,
   remixPrompt,
@@ -447,6 +449,8 @@ export default function App() {
   // Set by "Switch model and retry": once the picker has re-rendered on the new
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
+  const [settingsRailOpen, setSettingsRailOpen] = useState(true);
+  const [refineBusy, setRefineBusy] = useState(false);
   useEffect(() => {
     if (videoStartedAt == null) return;
     const iv = setInterval(() => setVideoNowTick(Date.now()), 1000);
@@ -781,6 +785,7 @@ export default function App() {
   function showImageStudio() {
     setStudioMode("image-studio");
     setReviewFilter("all");
+    setSettingsRailOpen(true);
     setStatusText("Image Studio is open.");
   }
 
@@ -1885,6 +1890,34 @@ export default function App() {
     setStatusText(`${variant.label} direction loaded.`);
   }
 
+  async function handleRefinePrompt() {
+    const seedPrompt = prompt.trim();
+    if (!seedPrompt) {
+      setStatusText("Write a brief before refining it.");
+      return;
+    }
+    setRefineBusy(true);
+    try {
+      const result = await improvePresetPrompt({
+        prompt: seedPrompt,
+        label: activePreset?.label,
+        description: selectedModel?.short_label ?? selectedModel?.label
+      });
+      if (result.prompt?.trim()) {
+        setPrompt(result.prompt.trim());
+        setStatusText("Prompt refined.");
+      } else {
+        setStatusText("Refine came back empty — brief unchanged.");
+      }
+    } catch (error) {
+      setStatusText(error instanceof Error ? error.message : "Refine Prompt needs another look.");
+    } finally {
+      setRefineBusy(false);
+    }
+  }
+
+
+
   async function handleGenerate(event?: FormEvent) {
     event?.preventDefault();
     if (!activeSession || !selectedModel || !prompt.trim()) {
@@ -2861,7 +2894,7 @@ export default function App() {
 
   return (
     <div
-      className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${advancedOpen ? "advanced-open" : ""}`}
+      className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${advancedOpen ? "advanced-open" : ""} ${studioMode !== "preset-creator" && settingsRailOpen ? "settings-rail-open" : ""}`}
       data-provider-audit={providerAuditMode ? "open" : undefined}
     >
       {desktopNotice ? (
@@ -3140,6 +3173,135 @@ export default function App() {
           </button>
         </nav>
       </aside>
+
+      {studioMode !== "preset-creator" && settingsRailOpen ? (
+        <aside className="studio-settings-rail" aria-label="Output settings">
+          <div className="settings-rail-head">
+            <span>
+              <strong>Setup</strong>
+              <small>model, ratio, quality, preset.</small>
+            </span>
+            <button
+              className="mini-button"
+              type="button"
+              onClick={() => setSettingsRailOpen(false)}
+              aria-label="Close setup menu"
+            >
+              <ChevronLeft size={14} />
+            </button>
+          </div>
+
+          <div className="composer-settings" aria-label="Output settings">
+            <div className="setting-row">
+              <label>
+                Model
+                <select
+                  value={selectedModelId}
+                  onChange={(event) => setSelectedModelId(event.target.value)}
+                >
+                  {config.models.map((model) => (
+                    <option key={model.id} value={model.id} disabled={model.status === "disabled"}>
+                      {(model.short_label ?? model.label)
+                        + (model.status === "disabled" ? " (soon)" : model.degraded ? " (provider issue)" : "")}
+                    </option>
+                  ))}
+                </select>
+                {selectedModel?.degraded ? (
+                  <span className="model-degraded-note" title={selectedModel.degraded_note}>
+                    {selectedModel.degraded_note ?? "This model is currently failing upstream."}
+                  </span>
+                ) : null}
+              </label>
+              <label>
+                Aspect
+                <select
+                  value={settings.aspect_ratio}
+                  onChange={(event) => handleAspectChange(event.target.value)}
+                  aria-invalid={fieldErrors.aspect ? true : undefined}
+                  data-studio-invalid={fieldErrors.aspect ? "true" : undefined}
+                >
+                  {modelOptions.allowedAspectRatios.map((ratio) => (
+                    <option key={ratio}>{ratio}</option>
+                  ))}
+                </select>
+                {fieldErrors.aspect ? <p className="field-error" role="alert">{fieldErrors.aspect}</p> : null}
+              </label>
+              {modelHasSizes ? (
+                <label>
+                  Quality
+                  <select
+                    value={settings.image_size}
+                    onChange={(event) => setSettings((current) => ({ ...current, image_size: event.target.value }))}
+                    aria-invalid={fieldErrors.size ? true : undefined}
+                    data-studio-invalid={fieldErrors.size ? "true" : undefined}
+                  >
+                    {allowedSizesForAspect.map((size) => (
+                      <option key={size}>{size}</option>
+                    ))}
+                  </select>
+                  {fieldErrors.size ? <p className="field-error" role="alert">{fieldErrors.size}</p> : null}
+                </label>
+              ) : (
+                <label>
+                  Quality
+                  <span className="field-hint">Auto from aspect</span>
+                </label>
+              )}
+              <label>
+                Count
+                <input
+                  min={1}
+                  max={maxCountForModel(selectedModel)}
+                  type="number"
+                  value={settings.count}
+                  onChange={(event) => setSettings((current) => ({ ...current, count: Number(event.target.value) }))}
+                  aria-invalid={fieldErrors.count ? true : undefined}
+                  data-studio-invalid={fieldErrors.count ? "true" : undefined}
+                />
+                {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
+              </label>
+              <label>
+                Preset
+                <select
+                  value={selectedPresetKey ?? ""}
+                  onChange={(event) => attachPreset(event.target.value || null)}
+                >
+                  <option value="">— None —</option>
+                  {promptPresets.map((preset) => (
+                    <option key={preset.key} value={preset.key}>{preset.label}</option>
+                  ))}
+                </select>
+                <span className="field-hint">Appended as an editable paragraph to your brief.</span>
+              </label>
+            </div>
+            <AspectPreview aspect={settings.aspect_ratio} size={modelHasSizes ? settings.image_size : undefined} label={selectedModel?.short_label ?? selectedModel?.label} count={settings.count} />
+            {fieldErrors.references ? (
+              <p className="field-error" role="alert">{fieldErrors.references}</p>
+            ) : null}
+            {hasStudioFieldErrors(fieldErrors) ? (
+              <p className="field-error" role="alert">
+                Fix incompatible settings for {selectedModel?.short_label ?? selectedModel?.label ?? "this model"} before generating.
+              </p>
+            ) : null}
+            {(() => {
+              const warns = preflightModel(selectedModel, settings, { referenceCount: referenceAssets.length });
+              return warns.length ? (
+                <div className="preflight-warnings" role="status" aria-live="polite">
+                  <strong>Preflight check</strong>
+                  <ul>{warns.map((w, i) => <li key={i}>{w}</li>)}</ul>
+                </div>
+              ) : null;
+            })()}
+            <div className="capability-strip">
+              <span>{modelOptions.resolutionBadge}</span>
+              <span>{modelOptions.canEdit ? "Edits" : "Generate only"}</span>
+              <span>{modelOptions.referenceLimit} refs</span>
+            </div>
+          </div>
+        </aside>
+      ) : null}
+
+
 
 
 
@@ -3458,113 +3620,7 @@ export default function App() {
             placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Cmd/Ctrl+Enter to generate. Paste or drop an image to attach as reference."
           />
 
-          <div className="composer-settings" aria-label="Output settings">
-            <div className="setting-row">
-              <label>
-                Model
-                <select
-                  value={selectedModelId}
-                  onChange={(event) => setSelectedModelId(event.target.value)}
-                >
-                  {config.models.map((model) => (
-                    <option key={model.id} value={model.id} disabled={model.status === "disabled"}>
-                      {(model.short_label ?? model.label)
-                        + (model.status === "disabled" ? " (soon)" : model.degraded ? " (provider issue)" : "")}
-                    </option>
-                  ))}
-                </select>
-                {selectedModel?.degraded ? (
-                  <span className="model-degraded-note" title={selectedModel.degraded_note}>
-                    {selectedModel.degraded_note ?? "This model is currently failing upstream."}
-                  </span>
-                ) : null}
-              </label>
-              <label>
-                Aspect
-                <select
-                  value={settings.aspect_ratio}
-                  onChange={(event) => handleAspectChange(event.target.value)}
-                  aria-invalid={fieldErrors.aspect ? true : undefined}
-                  data-studio-invalid={fieldErrors.aspect ? "true" : undefined}
-                >
-                  {modelOptions.allowedAspectRatios.map((ratio) => (
-                    <option key={ratio}>{ratio}</option>
-                  ))}
-                </select>
-                {fieldErrors.aspect ? <p className="field-error" role="alert">{fieldErrors.aspect}</p> : null}
-              </label>
-              {modelHasSizes ? (
-                <label>
-                  Quality
-                  <select
-                    value={settings.image_size}
-                    onChange={(event) => setSettings((current) => ({ ...current, image_size: event.target.value }))}
-                    aria-invalid={fieldErrors.size ? true : undefined}
-                    data-studio-invalid={fieldErrors.size ? "true" : undefined}
-                  >
-                    {allowedSizesForAspect.map((size) => (
-                      <option key={size}>{size}</option>
-                    ))}
-                  </select>
-                  {fieldErrors.size ? <p className="field-error" role="alert">{fieldErrors.size}</p> : null}
-                </label>
-              ) : (
-                <label>
-                  Quality
-                  <span className="field-hint">Auto from aspect</span>
-                </label>
-              )}
-              <label>
-                Count
-                <input
-                  min={1}
-                  max={maxCountForModel(selectedModel)}
-                  type="number"
-                  value={settings.count}
-                  onChange={(event) => setSettings((current) => ({ ...current, count: Number(event.target.value) }))}
-                  aria-invalid={fieldErrors.count ? true : undefined}
-                  data-studio-invalid={fieldErrors.count ? "true" : undefined}
-                />
-                {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
-              </label>
-              <label>
-                Preset
-                <select
-                  value={selectedPresetKey ?? ""}
-                  onChange={(event) => attachPreset(event.target.value || null)}
-                >
-                  <option value="">— None —</option>
-                  {promptPresets.map((preset) => (
-                    <option key={preset.key} value={preset.key}>{preset.label}</option>
-                  ))}
-                </select>
-                <span className="field-hint">Appended as an editable paragraph to your brief.</span>
-              </label>
-            </div>
-            <AspectPreview aspect={settings.aspect_ratio} size={modelHasSizes ? settings.image_size : undefined} label={selectedModel?.short_label ?? selectedModel?.label} count={settings.count} />
-            {fieldErrors.references ? (
-              <p className="field-error" role="alert">{fieldErrors.references}</p>
-            ) : null}
-            {hasStudioFieldErrors(fieldErrors) ? (
-              <p className="field-error" role="alert">
-                Fix incompatible settings for {selectedModel?.short_label ?? selectedModel?.label ?? "this model"} before generating.
-              </p>
-            ) : null}
-            {(() => {
-              const warns = preflightModel(selectedModel, settings, { referenceCount: referenceAssets.length });
-              return warns.length ? (
-                <div className="preflight-warnings" role="status" aria-live="polite">
-                  <strong>Preflight check</strong>
-                  <ul>{warns.map((w, i) => <li key={i}>{w}</li>)}</ul>
-                </div>
-              ) : null;
-            })()}
-            <div className="capability-strip">
-              <span>{modelOptions.resolutionBadge}</span>
-              <span>{modelOptions.canEdit ? "Edits" : "Generate only"}</span>
-              <span>{modelOptions.referenceLimit} refs</span>
-            </div>
-          </div>
+
 
 
 
@@ -3642,10 +3698,21 @@ export default function App() {
                 <XCircle size={14} />
               </button>
             ) : null}
+            {!settingsRailOpen ? (
+              <button className="secondary-button" type="button" onClick={() => setSettingsRailOpen(true)}>
+                <SlidersHorizontal size={16} />
+                Setup
+              </button>
+            ) : null}
             <button className="secondary-button remix-button" type="button" onClick={handlePromptRemix} disabled={remixBusy}>
               {remixBusy ? <RefreshCw className="spin" size={16} /> : <Sparkles size={16} />}
               Brief remix
             </button>
+            <button className="secondary-button remix-button" type="button" onClick={handleRefinePrompt} disabled={refineBusy || !prompt.trim()}>
+              {refineBusy ? <RefreshCw className="spin" size={16} /> : <Wand2 size={16} />}
+              Refine Prompt
+            </button>
+
             <button
               className="primary-button"
               type="submit"
