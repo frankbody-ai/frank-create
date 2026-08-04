@@ -6508,22 +6508,21 @@ input:focus, textarea:focus, select:focus {
 }
 
 /* ==== Enhancer ==== */
-.enhancer-panel {
-  grid-column: 1 / -1;
+.enhancer-view {
   display: flex;
   flex-direction: column;
   gap: 20px;
   padding: 20px 24px 48px;
   overflow-y: auto;
 }
-.enhancer-panel .panel-head {
+.enhancer-view .panel-head {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
   flex-wrap: wrap;
 }
-.enhancer-panel .panel-sub {
+.enhancer-view .panel-sub {
   margin: 4px 0 0;
   color: rgba(63, 42, 45, 0.7);
   font-size: 12px;

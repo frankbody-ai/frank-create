@@ -170,7 +170,7 @@ export default function Enhancer({
   }
 
   return (
-    <section className="panel enhancer-panel">
+    <main className="conversation-column enhancer-view">
       <header className="panel-head">
         <div>
           <h2>Enhancer</h2>
@@ -453,6 +453,6 @@ export default function Enhancer({
           <p className="empty-note">Nothing enhanced yet in this session.</p>
         )}
       </div>
-    </section>
+    </main>
   );
 }
