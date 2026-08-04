@@ -131,7 +131,7 @@ export function normalizeStudioSettingsForModel(settings: StudioSettings, model:
 }
 
 export function isVideoModel(model: StudioModel | undefined | null): boolean {
-  return model?.media === "video" || (!!model?.capabilities.video && model?.media !== "image");
+  return model?.media === "video";
 }
 
 export function modelsForMedia(models: StudioModel[], media: "image" | "video"): StudioModel[] {
