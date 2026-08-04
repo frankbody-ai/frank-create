@@ -85,7 +85,7 @@ describe("studio helpers", () => {
     );
     expect(fallbackConfig.models.find((model) => model.id === "reve-2-1")?.provider_model).toBe("reve/reve-2.1");
     expect(fallbackConfig.models.find((model) => model.id === "seedream-5-pro")?.allowed_image_sizes).toEqual(["1K", "2K"]);
-    expect(fallbackConfig.models.find((model) => model.id === "mai-image-2-5")?.status).toBe("coming_soon");
+    expect(fallbackConfig.models.find((model) => model.id === "mai-image-2-5")?.status).toBe("disabled");
     expect(fallbackConfig.tasks.find((task) => task.key === "prompt-remix")?.providers).toContain("google");
   });
 

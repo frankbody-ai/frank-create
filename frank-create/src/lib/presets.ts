@@ -17,49 +17,49 @@ export const fallbackConfig: FrankConfig = {
       key: "product-shot-lab",
       label: "Product Shot Lab",
       description: "Upload product/reference images, generate variants, approve, and export.",
-      providers: ["local", "google", "replicate", "openai"]
+      providers: ["google", "replicate", "openai"]
     },
     {
       key: "background-remove",
       label: "Background sweep",
       description: "Transparent PNGs and clean product isolation.",
-      providers: ["local", "openai"]
+      providers: ["openai"]
     },
     {
       key: "background-replace",
       label: "Background glow-up",
       description: "Frank-branded lifestyle and campaign backdrops.",
-      providers: ["local", "google", "openai"]
+      providers: ["google", "openai"]
     },
     {
       key: "product-cleanup",
       label: "Product polish",
       description: "Retouch labels, dust, shadows, and product edges.",
-      providers: ["local", "openai"]
+      providers: ["openai"]
     },
     {
       key: "campaign-variants",
       label: "Campaign remix",
       description: "Creative rounds from one approved product direction.",
-      providers: ["local", "google", "openai", "replicate"]
+      providers: ["google", "openai", "replicate"]
     },
     {
       key: "aspect-crops",
       label: "Crop the goods",
       description: "PDP, email, feed, story, and paid-social crops.",
-      providers: ["local"]
+      providers: ["google", "replicate"]
     },
     {
       key: "upscale-enhance",
       label: "Make it bigger",
       description: "High-res masters with product detail intact.",
-      providers: ["local", "openai"]
+      providers: ["openai"]
     },
     {
       key: "prompt-remix",
       label: "Brief remix",
       description: "Sharper directions before another creative round.",
-      providers: ["local", "openai", "google"]
+      providers: ["openai", "google"]
     }
   ],
   providers: [
