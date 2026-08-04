@@ -43,8 +43,16 @@ export interface StudioModel {
   max_resolution_label: string;
   description?: string;
   capabilities: StudioCapabilities;
+  /** "image" (default) or "video" — drives which rail the model appears in. */
+  media?: "image" | "video";
   allowed_aspect_ratios: string[];
   allowed_image_sizes: string[];
+  /** Video-only: clip lengths in seconds the provider accepts. */
+  allowed_durations?: number[];
+  /** Video-only: provider resolution enum, e.g. ["720p", "1080p"]. */
+  allowed_resolutions?: string[];
+  /** Video-only: model cannot run text-to-video, a source frame is required. */
+  requires_source_image?: boolean;
   reference_image_limit: number;
   max_count?: number;
   cost_label: string;
@@ -670,6 +678,10 @@ export interface StudioSettings {
   count: number;
   /** Gemini "Nano Banana Pro" thinking budget (tokens). 0 = off, 1000 = low, 5000 = high. */
   thinking_budget?: number;
+  /** Video-only: clip length in seconds. */
+  duration?: number;
+  /** Video-only: provider resolution enum value. */
+  video_resolution?: string;
 }
 
 export interface TurnRequest {

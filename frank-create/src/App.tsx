@@ -9,7 +9,6 @@ import {
   Cpu,
   Download,
   ExternalLink,
-  Film,
   GitBranch,
   Heart,
   ImageIcon,
@@ -111,9 +110,13 @@ import {
   validateStudioSettings,
   hasStudioFieldErrors,
   preflightModel,
-  maxCountForModel
+  maxCountForModel,
+  modelsForMedia,
+  normalizeVideoSettings,
+  isVideoModel
 } from "./lib/studio";
 import { FeedbackWidget } from "./components/FeedbackWidget";
+import { StudioRail } from "./components/StudioRail";
 import { PresetCreator } from "./components/PresetCreator";
 
 import type {
@@ -450,6 +453,7 @@ export default function App() {
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
   const [settingsRailOpen, setSettingsRailOpen] = useState(true);
+  const [mediaKind, setMediaKind] = useState<"image" | "video">("image");
   const [refineBusy, setRefineBusy] = useState(false);
   useEffect(() => {
     if (videoStartedAt == null) return;
@@ -616,6 +620,26 @@ export default function App() {
     [modelOptions.allowedImageSizes, settings.aspect_ratio]
   );
   const modelHasSizes = (modelOptions.allowedImageSizes?.length ?? 0) > 0;
+  const mediaModels = useMemo(() => modelsForMedia(config.models, mediaKind), [config.models, mediaKind]);
+
+  function switchMediaKind(kind: "image" | "video") {
+    setMediaKind(kind);
+    const pool = modelsForMedia(config.models, kind).filter((model) => model.status !== "disabled");
+    const next = pool.find((model) => model.status === "ready" && !model.degraded) ?? pool[0];
+    if (next && next.id !== selectedModelId) setSelectedModelId(next.id);
+    setStatusText(kind === "video" ? "Video mode — pick a source frame and brief the motion." : "Image mode.");
+  }
+
+  function resetStudioSettings() {
+    const model = config.models.find((item) => item.id === selectedModelId);
+    if (!model) return;
+    const base = defaultStudioSettings(model);
+    setSettings(isVideoModel(model)
+      ? normalizeVideoSettings(base, model)
+      : normalizeStudioSettingsForModel(base, model));
+    setStatusText("Settings reset to defaults.");
+  }
+
   const handleAspectChange = (nextAspect: string) => {
     setSettings((current) => {
       const sizes = filterSizesForAspect(modelOptions.allowedImageSizes, nextAspect);
@@ -635,6 +659,10 @@ export default function App() {
   useEffect(() => {
     const model = config.models.find((m) => m.id === selectedModelId);
     if (!model) return;
+    if (isVideoModel(model)) {
+      setSettings((current) => normalizeVideoSettings(current, model));
+      return;
+    }
     setSettings((current) => {
       const nextAspect = model.allowed_aspect_ratios.includes(current.aspect_ratio)
         ? current.aspect_ratio
@@ -746,8 +774,8 @@ export default function App() {
   const favoriteCount = outputAssets.filter((asset) => asset.favorite).length;
   const promptMode = editSourceAsset ? (maskAsset ? "masked_edit" : "edit") : "generate";
   const primaryActionLabel =
-    studioMode === "video-lab"
-      ? "Generate"
+    mediaKind === "video"
+      ? "Generate video"
       : promptMode === "masked_edit"
         ? "Edit"
         : promptMode === "edit"
@@ -786,7 +814,7 @@ export default function App() {
     setStudioMode("image-studio");
     setReviewFilter("all");
     setSettingsRailOpen(true);
-    setStatusText("Image Studio is open.");
+    setStatusText("Studio is open.");
   }
 
   function showPresetCreator() {
@@ -860,12 +888,12 @@ export default function App() {
   }
 
   async function handleNewSession() {
-    const nextMode = studioMode === "video-lab" ? "video" : "image";
+    const nextMode = mediaKind === "video" ? "video" : "image";
     const sessionSubject =
       activeBrief?.product_name?.trim() || briefDraft.productName.trim() || activeProject?.name.trim();
     const sessionSubjectLabel = sessionSubject || activeBrief?.title || "this campaign";
     const sessionName = sessionSubject
-      ? `${sessionSubject} ${nextMode === "video" ? "Video Lab" : "Image Studio"}`
+      ? `${sessionSubject} ${nextMode === "video" ? "Motion" : "Studio"}`
       : nextMode === "video"
         ? "New video session"
         : "New image session";
@@ -1032,7 +1060,7 @@ export default function App() {
       return;
     }
 
-    const kind = studioMode === "video-lab" ? "video" : promptMode;
+    const kind = mediaKind === "video" ? "video" : promptMode;
     const videoSourceAsset =
       selectedAsset && selectedAsset.kind !== "reference" && selectedAsset.media_type !== "video"
         ? selectedAsset
@@ -1925,7 +1953,7 @@ export default function App() {
       return;
     }
 
-    if (studioMode === "video-lab") {
+    if (mediaKind === "video" || isVideoModel(selectedModel)) {
       await handleVideoGenerate();
       return;
     }
@@ -2243,55 +2271,45 @@ export default function App() {
 
   async function handleVideoGenerate() {
     if (!activeSession || !prompt.trim()) {
-      setStatusText("Give Video Lab a motion brief first.");
+      setStatusText("Brief the motion first.");
       return;
     }
 
     if (connection !== "online") {
-      setStatusText("Start Comfy/Frank backend to make the motion board.");
+      setStatusText("Backend is offline — video needs the cloud provider.");
       return;
     }
 
+    const videoModel = isVideoModel(selectedModel)
+      ? selectedModel
+      : mediaModels.find((model) => model.status === "ready") ?? selectedModel;
+
+    // Source frame: an explicitly selected reference wins, then the picked
+    // thread asset, then the newest still in the session.
     const sourceAsset =
-      selectedAsset && selectedAsset.kind !== "reference" && selectedAsset.media_type !== "video"
-        ? selectedAsset
-        : outputAssets.find((asset) => asset.approval_status === "approved" && asset.media_type !== "video") ??
-          outputAssets.find((asset) => asset.media_type !== "video");
-    const localVideoModel = config.models.find((model) => model.id === "frank-local-comfy");
-    const videoModel =
-      selectedModel && selectedModel.provider !== "local" && selectedModel.capabilities.video
-        ? selectedModel
-        : localVideoModel ?? selectedModel;
+      selectedReferenceAssets.find((asset) => asset.media_type !== "video") ??
+      (selectedAsset && selectedAsset.media_type !== "video" ? selectedAsset : undefined) ??
+      outputAssets.find((asset) => asset.media_type !== "video");
 
-    const missingKeyMessage = modelMissingKeyAction(videoModel);
-    if (missingKeyMessage) {
-      setStatusText(missingKeyMessage);
+    if (videoModel?.requires_source_image && !sourceAsset) {
+      setStatusText(`${videoModel.short_label ?? videoModel.label} needs a source frame. Pick a reference or an image from the thread.`);
       return;
     }
 
-    const referenceLimitMessage = modelReferenceLimitAction(videoModel, selectedReferenceAssets.length);
-    if (referenceLimitMessage) {
-      setStatusText(referenceLimitMessage);
-      return;
-    }
-
-    if (videoModel?.provider !== "local" && !sourceAsset) {
-      setStatusText("Choose an image before making live motion.");
-      return;
-    }
+    const videoSettings = videoModel ? normalizeVideoSettings(settings, videoModel) : settings;
 
     const ctrl = new AbortController();
     videoAbortRef.current = ctrl;
     setBusy(true);
     setVideoStartedAt(Date.now());
-    setStatusText("Video Lab is making the motion board...");
+    setStatusText(`Rendering ${videoSettings.duration ?? ""}s clip with ${videoModel?.short_label ?? "the video model"}...`);
 
     try {
       const result = await createVideoStoryboard({
         session_id: activeSession.id,
         model: videoModel?.id,
         prompt,
-        settings,
+        settings: videoSettings,
         source_asset_id: sourceAsset?.id,
         reference_asset_ids: selectedReferenceAssets.map((asset) => asset.id)
       }, { signal: ctrl.signal });
@@ -2301,7 +2319,7 @@ export default function App() {
         return;
       }
       if (result.status === "failed") {
-        setStatusText(result.error?.message ?? "Video Lab returned no motion asset.");
+        setStatusText(result.error?.message ?? "The video model returned no clip.");
         return;
       }
       if (result.assets?.length) {
@@ -2310,12 +2328,12 @@ export default function App() {
         setStatusText("Motion board is on the wall.");
         return;
       }
-      setStatusText("Video Lab returned no motion asset.");
+      setStatusText("The video model returned no clip.");
     } catch (error) {
       if (ctrl.signal.aborted) {
         setStatusText("Video generation canceled.");
       } else {
-        const msg = error instanceof Error ? error.message : "Video Lab needs another look.";
+        const msg = error instanceof Error ? error.message : "Video generation needs another look.";
         if (/desktop|video_not_supported|ComfyUI/i.test(msg)) {
           setDesktopNotice("Video generation requires the desktop ComfyUI install. This action isn't available in the cloud preview.");
           setStatusText("Video generation is desktop-only. See the notice at the top for details.");
@@ -2967,11 +2985,11 @@ export default function App() {
           <button
             className={`sidebar-nav-button ${studioMode === "image-studio" && reviewFilter === "all" ? "active" : ""}`}
             type="button"
-            aria-label="Open Image Studio"
+            aria-label="Open Studio"
             onClick={showImageStudio}
           >
             <Wand2 size={16} />
-            Image Studio
+            Studio
           </button>
           <button
             className="sidebar-nav-button is-muted"
@@ -2992,18 +3010,6 @@ export default function App() {
           >
             <Sparkles size={16} />
             Preset Creator
-          </button>
-
-          <button
-            className="sidebar-nav-button is-muted"
-            type="button"
-            aria-label="Video Lab (coming soon)"
-            title="Video Lab is paused — waiting on Cliff's feedback to refine it."
-            disabled
-          >
-            <Film size={16} />
-            <span style={{ flex: 1 }}>Video Lab</span>
-            <span className="sidebar-soon-tag">Soon</span>
           </button>
 
           <p className="sidebar-section-label">Review</p>
@@ -3149,135 +3155,24 @@ export default function App() {
       </aside>
 
       {studioMode !== "preset-creator" && settingsRailOpen ? (
-        <aside className="studio-settings-rail" aria-label="Output settings">
-          <div className="settings-rail-head">
-            <span>
-              <strong>Setup</strong>
-              <small>model, ratio, quality, preset.</small>
-            </span>
-            <button
-              className="mini-button"
-              type="button"
-              onClick={() => setSettingsRailOpen(false)}
-              aria-label="Close setup menu"
-            >
-              <ChevronLeft size={14} />
-            </button>
-          </div>
-
-          <div className="composer-settings" aria-label="Output settings">
-            <div className="setting-row">
-              <label>
-                Model
-                <select
-                  value={selectedModelId}
-                  onChange={(event) => setSelectedModelId(event.target.value)}
-                >
-                  {config.models.map((model) => (
-                    <option key={model.id} value={model.id} disabled={model.status === "disabled"}>
-                      {(model.short_label ?? model.label)
-                        + (model.status === "disabled" ? " (soon)" : model.degraded ? " (provider issue)" : "")}
-                    </option>
-                  ))}
-                </select>
-                {selectedModel?.degraded ? (
-                  <span className="model-degraded-note" title={selectedModel.degraded_note}>
-                    {selectedModel.degraded_note ?? "This model is currently failing upstream."}
-                  </span>
-                ) : null}
-              </label>
-              <label>
-                Aspect
-                <select
-                  value={settings.aspect_ratio}
-                  onChange={(event) => handleAspectChange(event.target.value)}
-                  aria-invalid={fieldErrors.aspect ? true : undefined}
-                  data-studio-invalid={fieldErrors.aspect ? "true" : undefined}
-                >
-                  {modelOptions.allowedAspectRatios.map((ratio) => (
-                    <option key={ratio}>{ratio}</option>
-                  ))}
-                </select>
-                {fieldErrors.aspect ? <p className="field-error" role="alert">{fieldErrors.aspect}</p> : null}
-              </label>
-              {modelHasSizes ? (
-                <label>
-                  Quality
-                  <select
-                    value={settings.image_size}
-                    onChange={(event) => setSettings((current) => ({ ...current, image_size: event.target.value }))}
-                    aria-invalid={fieldErrors.size ? true : undefined}
-                    data-studio-invalid={fieldErrors.size ? "true" : undefined}
-                  >
-                    {allowedSizesForAspect.map((size) => (
-                      <option key={size}>{size}</option>
-                    ))}
-                  </select>
-                  {fieldErrors.size ? <p className="field-error" role="alert">{fieldErrors.size}</p> : null}
-                </label>
-              ) : (
-                <label>
-                  Quality
-                  <span className="field-hint">Auto from aspect</span>
-                </label>
-              )}
-              <label>
-                Count
-                <input
-                  min={1}
-                  max={maxCountForModel(selectedModel)}
-                  type="number"
-                  value={settings.count}
-                  onChange={(event) => setSettings((current) => ({ ...current, count: Number(event.target.value) }))}
-                  aria-invalid={fieldErrors.count ? true : undefined}
-                  data-studio-invalid={fieldErrors.count ? "true" : undefined}
-                />
-                {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
-              </label>
-              <label>
-                Preset
-                <select
-                  value={selectedPresetKey ?? ""}
-                  onChange={(event) => attachPreset(event.target.value || null)}
-                >
-                  <option value="">— None —</option>
-                  {promptPresets.map((preset) => (
-                    <option key={preset.key} value={preset.key}>{preset.label}</option>
-                  ))}
-                </select>
-                <span className="field-hint">Appended as an editable paragraph to your brief.</span>
-              </label>
-            </div>
-            <AspectPreview aspect={settings.aspect_ratio} size={modelHasSizes ? settings.image_size : undefined} label={selectedModel?.short_label ?? selectedModel?.label} count={settings.count} />
-            {fieldErrors.references ? (
-              <p className="field-error" role="alert">{fieldErrors.references}</p>
-            ) : null}
-            {hasStudioFieldErrors(fieldErrors) ? (
-              <p className="field-error" role="alert">
-                Fix incompatible settings for {selectedModel?.short_label ?? selectedModel?.label ?? "this model"} before generating.
-              </p>
-            ) : null}
-            {(() => {
-              const warns = preflightModel(selectedModel, settings, { referenceCount: referenceAssets.length });
-              return warns.length ? (
-                <div className="preflight-warnings" role="status" aria-live="polite">
-                  <strong>Preflight check</strong>
-                  <ul>{warns.map((w, i) => <li key={i}>{w}</li>)}</ul>
-                </div>
-              ) : null;
-            })()}
-            <div className="capability-strip">
-              <span>{modelOptions.resolutionBadge}</span>
-              <span>{modelOptions.canEdit ? "Edits" : "Generate only"}</span>
-              <span>{modelOptions.referenceLimit} refs</span>
-            </div>
-          </div>
-        </aside>
+        <StudioRail
+          mediaKind={mediaKind}
+          onMediaKindChange={switchMediaKind}
+          models={mediaModels}
+          selectedModelId={selectedModelId}
+          onModelChange={setSelectedModelId}
+          settings={settings}
+          onSettingsChange={(patch) => setSettings((current) => ({ ...current, ...patch }))}
+          onAspectChange={handleAspectChange}
+          presets={promptPresets}
+          selectedPresetKey={selectedPresetKey}
+          onPresetChange={(key) => attachPreset(key)}
+          fieldErrors={fieldErrors}
+          referenceCount={selectedReferenceAssets.length}
+          onReset={resetStudioSettings}
+          onClose={() => setSettingsRailOpen(false)}
+        />
       ) : null}
-
-
-
-
 
       {studioMode === "preset-creator" ? (
         <PresetCreator

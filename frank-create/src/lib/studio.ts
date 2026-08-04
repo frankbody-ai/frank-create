@@ -130,6 +130,35 @@ export function normalizeStudioSettingsForModel(settings: StudioSettings, model:
   };
 }
 
+export function isVideoModel(model: StudioModel | undefined | null): boolean {
+  return model?.media === "video";
+}
+
+export function modelsForMedia(models: StudioModel[], media: "image" | "video"): StudioModel[] {
+  return models.filter((model) => (media === "video" ? isVideoModel(model) : !isVideoModel(model)));
+}
+
+export function normalizeVideoSettings(settings: StudioSettings, model: StudioModel): StudioSettings {
+  const durations = model.allowed_durations ?? [];
+  const resolutions = model.allowed_resolutions ?? [];
+  const aspects = model.allowed_aspect_ratios ?? [];
+  return {
+    ...settings,
+    count: 1,
+    aspect_ratio: aspects.length
+      ? (aspects.includes(settings.aspect_ratio) ? settings.aspect_ratio : aspects[0])
+      : settings.aspect_ratio,
+    duration: durations.length
+      ? (settings.duration && durations.includes(settings.duration) ? settings.duration : durations[0])
+      : undefined,
+    video_resolution: resolutions.length
+      ? (settings.video_resolution && resolutions.includes(settings.video_resolution)
+        ? settings.video_resolution
+        : resolutions[resolutions.length - 1])
+      : undefined
+  };
+}
+
 export function maxCountForModel(model: StudioModel | undefined | null): number {
   const value = Number(model?.max_count);
   return Number.isFinite(value) && value > 0 ? Math.trunc(value) : 4;

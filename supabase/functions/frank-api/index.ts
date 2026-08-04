@@ -262,6 +262,190 @@ const REPLICATE_MAP: Record<string, string> = {
   "seedream-5-pro": "bytedance/seedream-5-pro",
 };
 
+const VIDEO_REPLICATE_MAP: Record<string, string> = {
+  "kling-2-5-turbo-pro": "kwaivgi/kling-v2.5-turbo-pro",
+  "hailuo-02": "minimax/hailuo-02",
+  "seedance-1-pro": "bytedance/seedance-1-pro",
+  "veo-3-fast": "google/veo-3-fast",
+  "wan-2-5-i2v": "wan-video/wan-2.5-i2v",
+};
+
+function buildVideoInput(
+  slug: string,
+  prompt: string,
+  opts: { aspect_ratio?: string; duration?: number; resolution?: string; image?: string },
+): Record<string, unknown> {
+  const input: Record<string, unknown> = { prompt };
+  const duration = Number(opts.duration);
+  if (slug === "kwaivgi/kling-v2.5-turbo-pro") {
+    const allowed = new Set(["16:9", "9:16", "1:1"]);
+    input.duration = [5, 10].includes(duration) ? duration : 5;
+    if (opts.image) input.start_image = opts.image;
+    else input.aspect_ratio = opts.aspect_ratio && allowed.has(opts.aspect_ratio) ? opts.aspect_ratio : "16:9";
+    return input;
+  }
+  if (slug === "minimax/hailuo-02") {
+    input.duration = [6, 10].includes(duration) ? duration : 6;
+    const res = new Set(["512p", "768p", "1080p"]);
+    input.resolution = opts.resolution && res.has(opts.resolution) ? opts.resolution : "1080p";
+    if (opts.image) input.first_frame_image = opts.image;
+    return input;
+  }
+  if (slug === "bytedance/seedance-1-pro") {
+    const allowed = new Set(["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "9:21"]);
+    const res = new Set(["480p", "720p", "1080p"]);
+    input.duration = [5, 10].includes(duration) ? duration : 5;
+    input.resolution = opts.resolution && res.has(opts.resolution) ? opts.resolution : "1080p";
+    if (opts.image) input.image = opts.image;
+    else input.aspect_ratio = opts.aspect_ratio && allowed.has(opts.aspect_ratio) ? opts.aspect_ratio : "16:9";
+    return input;
+  }
+  if (slug === "google/veo-3-fast") {
+    const allowed = new Set(["16:9", "9:16"]);
+    const res = new Set(["720p", "1080p"]);
+    input.duration = [4, 6, 8].includes(duration) ? duration : 8;
+    input.resolution = opts.resolution && res.has(opts.resolution) ? opts.resolution : "1080p";
+    input.aspect_ratio = opts.aspect_ratio && allowed.has(opts.aspect_ratio) ? opts.aspect_ratio : "16:9";
+    if (opts.image) input.image = opts.image;
+    return input;
+  }
+  if (slug === "wan-video/wan-2.5-i2v") {
+    const res = new Set(["480p", "720p", "1080p"]);
+    input.duration = [5, 10].includes(duration) ? duration : 5;
+    input.resolution = opts.resolution && res.has(opts.resolution) ? opts.resolution : "1080p";
+    if (opts.image) input.image = opts.image;
+    return input;
+  }
+  return input;
+}
+
+async function handleVideo(body: any, userId: string) {
+  const sb = supabase();
+  let sessionId: string = body.session_id;
+  if (!sessionId) sessionId = (await getOrCreateDefaultSession(userId)).id;
+
+  const prompt: string = body.prompt || "";
+  if (!prompt.trim()) throw new Error("Prompt is required");
+
+  const modelId: string = body.model || "kling-2-5-turbo-pro";
+  const slug = VIDEO_REPLICATE_MAP[modelId];
+  if (!slug) {
+    return {
+      turn: null, status: "failed" as const,
+      error: { code: "model_unavailable", message: `${modelId} is not a supported video model.` },
+    };
+  }
+  const key = getReplicateGatewayKey();
+  if (!key) {
+    return {
+      turn: null, status: "blocked" as const,
+      error: { code: "missing_key", env_vars: ["REPLICATE_API_KEY"], message: "Replicate is not connected yet." },
+    };
+  }
+
+  const reqSettings: any = body.settings || {};
+  const turnId = crypto.randomUUID();
+  const settingsSnapshot: any = {
+    kind: "video",
+    model: modelId,
+    settings: reqSettings,
+    preset_key: body.preset_key ?? null,
+    reference_asset_ids: body.reference_asset_ids || [],
+    status: "running",
+  };
+  const msgIns = await sb.from("messages").insert({
+    id: turnId,
+    user_id: userId,
+    session_id: sessionId,
+    role: "user",
+    message_type: "video",
+    prompt_text: prompt,
+    settings_snapshot_json: settingsSnapshot,
+  }).select("seq").single();
+  if (msgIns.error) throw msgIns.error;
+  const nextSeq = (msgIns.data as any)?.seq ?? 0;
+
+  const sourceIds: string[] = [
+    ...(body.source_asset_id ? [body.source_asset_id] : []),
+    ...((body.reference_asset_ids as string[]) || []),
+  ];
+  const sourceUrls = await loadReferenceDataUrls(sourceIds, userId);
+
+  const failTurn = (code: string, message: string) => {
+    const snapshot = { ...settingsSnapshot, status: "failed", error: message, error_code: code };
+    return sb.from("messages").update({ settings_snapshot_json: snapshot }).eq("id", turnId).then(() => ({
+      turn: rowToTurn({
+        id: turnId, session_id: sessionId, role: "user", message_type: "video",
+        prompt_text: prompt, settings_snapshot_json: snapshot, seq: nextSeq, created_at: nowIso(),
+      }),
+      status: "failed" as const,
+      error: { code, message },
+    }));
+  };
+
+  let videoUrl: string | undefined;
+  try {
+    const input = buildVideoInput(slug, prompt, {
+      aspect_ratio: reqSettings.aspect_ratio,
+      duration: Number(reqSettings.duration ?? 5),
+      resolution: reqSettings.video_resolution || reqSettings.image_size,
+      image: sourceUrls[0],
+    });
+    videoUrl = await runReplicatePrediction(slug, input, key, 300_000);
+  } catch (err) {
+    const mapped = mapReplicateError(err);
+    return await failTurn(mapped.code, mapped.message);
+  }
+  if (!videoUrl) return await failTurn("empty_output", "The video model returned no clip.");
+
+  const res = await fetch(videoUrl);
+  if (!res.ok) return await failTurn("download_failed", `Could not download the clip (${res.status}).`);
+  const mime = (res.headers.get("content-type") || "video/mp4").split(";")[0];
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  const assetId = crypto.randomUUID();
+  const storagePath = `${sessionId}/${assetId}.mp4`;
+  const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, { contentType: mime, upsert: false });
+  if (up.error) return await failTurn("storage_failed", up.error.message);
+
+  const assetIns = await sb.from("assets").insert({
+    id: assetId,
+    user_id: userId,
+    session_id: sessionId,
+    message_id: turnId,
+    storage_path: storagePath,
+    asset_type: "generated",
+    prompt_snapshot: prompt,
+    model_key: modelId,
+    metadata_json: {
+      media_type: "video",
+      mime,
+      title: prompt.slice(0, 80) || "Generated clip",
+      aspect_ratio: reqSettings.aspect_ratio,
+      duration: reqSettings.duration ?? null,
+      resolution: reqSettings.video_resolution ?? null,
+    },
+  }).select().single();
+  if (assetIns.error) return await failTurn("db_failed", assetIns.error.message);
+
+  const completedSnapshot = {
+    ...settingsSnapshot,
+    status: "complete",
+    output_asset_ids: [assetId],
+    requested_count: 1,
+  };
+  await sb.from("messages").update({ settings_snapshot_json: completedSnapshot }).eq("id", turnId);
+
+  return {
+    turn: rowToTurn({
+      id: turnId, session_id: sessionId, role: "user", message_type: "video",
+      prompt_text: prompt, settings_snapshot_json: completedSnapshot, seq: nextSeq, created_at: nowIso(),
+    }),
+    status: "complete" as const,
+    assets: [rowToAsset(assetIns.data, await signed(storagePath))],
+    providerPayload: { provider: "replicate", model: slug },
+  };
+}
+
 const OPENAI_SIZES = new Set(["1024x1024", "1536x1024", "1024x1536", "auto"]);
 function openaiSizeFromAspect(ar?: string): string {
   switch (ar) {
@@ -651,7 +835,15 @@ async function runReplicate(
   body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
   key: string,
 ): Promise<string | undefined> {
-  const input = buildReplicateInput(slug, prompt, body);
+  return runReplicatePrediction(slug, buildReplicateInput(slug, prompt, body), key);
+}
+
+async function runReplicatePrediction(
+  slug: string,
+  input: Record<string, unknown>,
+  key: string,
+  maxMs = 180_000,
+): Promise<string | undefined> {
   const replicateGateway = "https://connector-gateway.lovable.dev/replicate/v1";
   const replicateHeaders = {
     "Authorization": `Bearer ${LOVABLE_API_KEY}`,
@@ -701,7 +893,7 @@ async function runReplicate(
   const started = Date.now();
   let transientPollFails = 0;
   while (!["succeeded", "failed", "canceled"].includes(prediction.status)) {
-    if (Date.now() - started > 180_000) throw new ProviderRunError("Replicate timed out after 3 minutes.", "timeout", true, undefined, undefined, prediction?.id);
+    if (Date.now() - started > maxMs) throw new ProviderRunError(`Replicate timed out after ${Math.round(maxMs / 1000)}s.`, "timeout", true, undefined, undefined, prediction?.id);
     await delay(2000);
     const predictionId = prediction?.id;
     if (!predictionId) throw new ProviderRunError("Replicate did not return a prediction ID.", "provider_error", true);
@@ -1345,10 +1537,9 @@ Deno.serve(async (req) => {
     }
 
     if (path === "/videos" && method === "POST") {
-      return json({
-        turn: null, status: "blocked",
-        error: { code: "video_not_supported", message: "Video generation requires the desktop ComfyUI install." },
-      }, 501);
+      const body = await readJson(req);
+      const result = await handleVideo(body, userId);
+      return json(result, result.status === "blocked" ? 200 : 200);
     }
 
     // ---- Exports / handoff / review board ----
