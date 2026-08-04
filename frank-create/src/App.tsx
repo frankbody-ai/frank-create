@@ -3124,6 +3124,18 @@ export default function App() {
           <div className="sidebar-nav-account" title={userEmail ?? ""}>
             {userEmail ?? "—"}
           </div>
+          {isAdmin && (
+            <a
+              className="sidebar-nav-button admin-sidebar-link"
+              href="#/admin"
+              aria-label="Open Admin portal"
+              data-tour-id="admin-entry"
+              data-tour-active={tourActive("admin-entry")}
+            >
+              <Sparkles size={16} />
+              Admin portal
+            </a>
+          )}
           <button
             type="button"
             className="sidebar-nav-button"
