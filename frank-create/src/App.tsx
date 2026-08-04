@@ -148,7 +148,7 @@ import type {
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
 import frankBodyLogo from "./assets/FrankBody_Logo.svg";
-import designStudioLogo from "./assets/Design_Studio_1.svg";
+import designStudioLogo from "./assets/Design_Studio.svg";
 
 
 type WalkthroughTarget =
