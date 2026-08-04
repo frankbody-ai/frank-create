@@ -3193,11 +3193,7 @@ export default function App() {
         <div className="sidebar-brand-block">
           <img src={frankCreateLogo} alt="frank create" className="sidebar-brand-logo" />
           <img src={designStudioLogo} alt="Design Studio" className="sidebar-studio-logo" />
-
         </div>
-
-
-
 
         <nav className="sidebar-nav" aria-label="Frank Create navigation">
           <p className="sidebar-section-label">Create</p>
