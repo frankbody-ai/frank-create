@@ -7637,16 +7637,29 @@ input:focus, textarea:focus, select:focus {
 @media (max-width: 1180px) {
   .studio-shell.guided-studio.settings-rail-open {
     grid-template-columns: 256px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
   }
-  .studio-settings-rail {
+  .studio-shell.guided-studio.settings-rail-open .studio-sidebar,
+  .studio-shell.guided-studio.settings-rail-open .sidebar {
+    grid-row: 1 / span 2;
+  }
+  .studio-shell.guided-studio.settings-rail-open .studio-settings-rail {
     grid-column: 2;
+    grid-row: 1;
     height: auto;
     max-height: 46vh;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 1px solid rgba(63, 42, 45, 0.08);
   }
   .studio-shell.guided-studio.settings-rail-open .conversation-column {
     grid-column: 2;
+    grid-row: 2;
+    height: auto;
+    min-height: 0;
   }
 }
+
 
 /* ---- Studio rail (image + video) ---- */
 .rail-header {
