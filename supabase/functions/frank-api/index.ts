@@ -1828,13 +1828,30 @@ Deno.serve(async (req) => {
     }
 
     if (path === "/prompt-agent" && method === "POST") {
-      const body = await readJson(req) as { messages?: { role?: string; content?: string }[]; skill?: string };
+      const body = await readJson(req) as { messages?: { role?: string; content?: string; images?: string[] }[]; skill?: string };
       const incoming = Array.isArray(body?.messages) ? body.messages : [];
       const history = incoming
-        .filter((m) => m && typeof m.content === "string" && m.content.trim())
+        .filter((m) => m && (typeof m.content === "string" && m.content.trim() || Array.isArray(m.images) && m.images.length))
         .slice(-20)
-        .map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: String(m.content).trim() }));
+        .map((m) => {
+          const role = m.role === "assistant" ? "assistant" : "user";
+          const text = String(m.content ?? "").trim();
+          const images = (Array.isArray(m.images) ? m.images : [])
+            .filter((u) => typeof u === "string" && /^(https?:|data:image\/)/.test(u))
+            .slice(0, 6);
+          if (role === "user" && images.length) {
+            return {
+              role,
+              content: [
+                { type: "text", text: text || "Use these reference images as visual context for the prompt." },
+                ...images.map((url) => ({ type: "image_url", image_url: { url } })),
+              ],
+            };
+          }
+          return { role, content: text };
+        });
       if (!history.length) return json({ error: { code: "invalid", message: "messages are required" } }, 400);
+
 
       const skill = String(body?.skill || "brief-to-prompt");
       const SKILLS: Record<string, string> = {
