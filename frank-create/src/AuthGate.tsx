@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS, hardSignOut } from "./lib/supabaseClient";
 import { lovable } from "./lib/lovableAuth";
-import frankCreateLogo from "./assets/frank-create.png";
+import frankBodyLogo from "./assets/FrankBody_Logo.svg";
 import designStudioLogo from "./assets/Design_Studio_1.svg";
 
 
