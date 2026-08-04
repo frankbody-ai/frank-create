@@ -391,7 +391,7 @@ async function handleVideo(body: any, userId: string) {
       resolution: reqSettings.video_resolution || reqSettings.image_size,
       image: sourceUrls[0],
     });
-    videoUrl = await runReplicatePrediction(slug, input, key);
+    videoUrl = await runReplicatePrediction(slug, input, key, 300_000);
   } catch (err) {
     const mapped = mapReplicateError(err);
     return await failTurn(mapped.code, mapped.message);
@@ -835,7 +835,15 @@ async function runReplicate(
   body: { aspect_ratio?: string; size?: string; reference_images?: string[] },
   key: string,
 ): Promise<string | undefined> {
-  const input = buildReplicateInput(slug, prompt, body);
+  return runReplicatePrediction(slug, buildReplicateInput(slug, prompt, body), key);
+}
+
+async function runReplicatePrediction(
+  slug: string,
+  input: Record<string, unknown>,
+  key: string,
+  maxMs = 180_000,
+): Promise<string | undefined> {
   const replicateGateway = "https://connector-gateway.lovable.dev/replicate/v1";
   const replicateHeaders = {
     "Authorization": `Bearer ${LOVABLE_API_KEY}`,
@@ -885,7 +893,7 @@ async function runReplicate(
   const started = Date.now();
   let transientPollFails = 0;
   while (!["succeeded", "failed", "canceled"].includes(prediction.status)) {
-    if (Date.now() - started > 180_000) throw new ProviderRunError("Replicate timed out after 3 minutes.", "timeout", true, undefined, undefined, prediction?.id);
+    if (Date.now() - started > maxMs) throw new ProviderRunError(`Replicate timed out after ${Math.round(maxMs / 1000)}s.`, "timeout", true, undefined, undefined, prediction?.id);
     await delay(2000);
     const predictionId = prediction?.id;
     if (!predictionId) throw new ProviderRunError("Replicate did not return a prediction ID.", "provider_error", true);
