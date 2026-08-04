@@ -2238,7 +2238,7 @@ export default function App() {
       finishInflight();
       setBusy(false);
       // Never carry references over into the next run.
-      setSelectedReferenceIds([]);
+      clearReferenceDock();
       // The request can time out while the server keeps finishing the round
       // (e.g. 4 images). Re-read the session so every produced image lands.
       void reconcileSessionAssets();
@@ -2351,7 +2351,7 @@ export default function App() {
       videoAbortRef.current = null;
       setVideoStartedAt(null);
       setBusy(false);
-      setSelectedReferenceIds([]);
+      clearReferenceDock();
     }
   }
 
@@ -2496,7 +2496,7 @@ export default function App() {
       const ids = new Set(inflight.map((entry) => entry.id));
       setInflightGens((current) => current.filter((entry) => !ids.has(entry.id)));
       setBusy(false);
-      setSelectedReferenceIds([]);
+      clearReferenceDock();
       void reconcileSessionAssets();
     }
   }
