@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Send, Sparkles, Copy, Wand2, RotateCcw, Loader2 } from "lucide-react";
+import { Send, Sparkles, Copy, Wand2, RotateCcw, Loader2, ImagePlus, X } from "lucide-react";
 import { promptAgentChat } from "../lib/api";
 
 interface Props {
@@ -7,7 +7,18 @@ interface Props {
   onStatus?: (msg: string) => void;
 }
 
-type ChatMessage = { role: "user" | "assistant"; content: string };
+type ChatMessage = { role: "user" | "assistant"; content: string; images?: string[] };
+
+const MAX_ATTACHMENTS = 6;
+
+function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Could not read that image."));
+    reader.readAsDataURL(file);
+  });
+}
 
 const SKILLS = [
   { key: "brief-to-prompt", label: "Brief → prompt", hint: "One production-ready image prompt from a rough brief." },
@@ -35,6 +46,8 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -46,12 +59,34 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, busy]);
 
+  async function addFiles(files: FileList | File[] | null) {
+    if (!files) return;
+    const images = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (!images.length) return;
+    const room = MAX_ATTACHMENTS - attachments.length;
+    if (room <= 0) {
+      setError(`You can attach up to ${MAX_ATTACHMENTS} reference images.`);
+      return;
+    }
+    try {
+      const urls = await Promise.all(images.slice(0, room).map(fileToDataUrl));
+      setAttachments((prev) => [...prev, ...urls].slice(0, MAX_ATTACHMENTS));
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not read that image.");
+    }
+  }
+
   async function send(text: string) {
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
-    const next: ChatMessage[] = [...messages, { role: "user", content: trimmed }];
+    if ((!trimmed && !attachments.length) || busy) return;
+    const next: ChatMessage[] = [
+      ...messages,
+      { role: "user", content: trimmed, images: attachments.length ? attachments : undefined },
+    ];
     setMessages(next);
     setInput("");
+    setAttachments([]);
     setBusy(true);
     setError(null);
     try {
@@ -93,6 +128,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
             className="pc-secondary-btn"
             onClick={() => {
               setMessages([]);
+              setAttachments([]);
               setError(null);
               inputRef.current?.focus();
             }}
@@ -135,7 +171,14 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               return (
                 <div key={index} className={`prompt-agent-msg ${message.role}`}>
                   <p className="prompt-agent-msg-role">{message.role === "user" ? "You" : "Agent"}</p>
-                  <div className="prompt-agent-msg-body">{message.content}</div>
+                  {message.images?.length ? (
+                    <div className="prompt-agent-msg-refs">
+                      {message.images.map((src, i) => (
+                        <img key={i} src={src} alt={`Reference ${i + 1}`} />
+                      ))}
+                    </div>
+                  ) : null}
+                  {message.content ? <div className="prompt-agent-msg-body">{message.content}</div> : null}
                   {prompts.map((value, i) => (
                     <div className="prompt-agent-actions" key={i}>
                       <button type="button" className="pc-primary-btn" onClick={() => onUsePrompt?.(value)}>
@@ -169,12 +212,42 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
             void send(input);
           }}
         >
+          {attachments.length ? (
+            <div className="prompt-agent-attachments">
+              {attachments.map((src, index) => (
+                <div className="prompt-agent-attachment" key={index}>
+                  <img src={src} alt={`Attached reference ${index + 1}`} />
+                  <button
+                    type="button"
+                    aria-label="Remove reference image"
+                    onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== index))}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
           <textarea
             ref={inputRef}
             value={input}
             rows={3}
-            placeholder="Brief the agent…"
+            placeholder="Brief the agent… (paste or drop reference images here)"
             onChange={(event) => setInput(event.target.value)}
+            onPaste={(event) => {
+              const files = Array.from(event.clipboardData?.files ?? []);
+              if (files.length) {
+                event.preventDefault();
+                void addFiles(files);
+              }
+            }}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              if (event.dataTransfer?.files?.length) {
+                event.preventDefault();
+                void addFiles(event.dataTransfer.files);
+              }
+            }}
             onKeyDown={(event) => {
               if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
                 event.preventDefault();
@@ -182,9 +255,35 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               }
             }}
           />
-          <button type="submit" className="pc-primary-btn" disabled={busy || !input.trim()}>
-            <Send size={14} /> Send
-          </button>
+          <div className="prompt-agent-composer-actions">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onChange={(event) => {
+                void addFiles(event.target.files);
+                event.target.value = "";
+              }}
+            />
+            <button
+              type="button"
+              className="pc-secondary-btn"
+              onClick={() => fileRef.current?.click()}
+              disabled={busy || attachments.length >= MAX_ATTACHMENTS}
+              title="Attach reference images (or paste / drop them in the box)"
+            >
+              <ImagePlus size={14} /> Reference image
+            </button>
+            <button
+              type="submit"
+              className="pc-primary-btn"
+              disabled={busy || (!input.trim() && !attachments.length)}
+            >
+              <Send size={14} /> Send
+            </button>
+          </div>
         </form>
       </section>
     </main>
