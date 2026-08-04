@@ -5476,7 +5476,7 @@ input:focus, textarea:focus, select:focus {
   .studio-shell.guided-studio { grid-template-columns: 64px minmax(0, 1fr); }
   .guided-header.app-sidebar { width: 64px; }
   .sidebar-brand-block { padding: 14px 8px 10px; }
-  .sidebar-app-tagline, .sidebar-app-copy, .sidebar-studio-logo { display: none; }
+  .sidebar-app-tagline, .sidebar-app-copy, .sidebar-studio-block { display: none; }
   .sidebar-brand-mark span { font-size: 11px; padding: 5px 0; }
   .sidebar-section-label { visibility: hidden; height: 8px; padding: 0; }
   .sidebar-nav-button { justify-content: center; padding: 12px 0; margin: 0 6px; }
@@ -5485,7 +5485,8 @@ input:focus, textarea:focus, select:focus {
 
 /* Brand logo image (replaces the wordmark capsules) */
 .sidebar-brand-logo { display: block; width: 100%; height: auto; margin: 0; }
-.sidebar-studio-logo { display: block; width: 100%; height: auto; margin: 8px 0 0; }
+.sidebar-studio-block { padding: 14px 18px 4px; }
+.sidebar-studio-block .sidebar-studio-logo { display: block; width: 100%; height: auto; margin: 0; }
 .frank-auth-logo { display: block; width: 220px; max-width: 100%; height: auto; margin: 0 auto 8px; }
 
 /* ============= Sidebar bottom sections — blend with top nav (§) ============= */
