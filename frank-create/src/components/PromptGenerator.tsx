@@ -119,7 +119,8 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
           <p className="eyebrow">Agent</p>
           <h2>Prompt Generator</h2>
           <p className="studio-topbar-copy">
-            A prompt-engineering agent with Frank Body craft skills. Runs on GPT-5.6 Sol via Lovable AI.
+            Craft Image Prompts skill is always on — every message is worked through the reference-led
+            blueprint. Runs on GPT-5.6 Sol via Lovable AI.
           </p>
         </div>
         <div className="studio-topbar-right">
