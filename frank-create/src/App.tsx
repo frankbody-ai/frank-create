@@ -3410,7 +3410,19 @@ export default function App() {
           referenceCount={selectedReferenceAssets.length}
           onReset={resetStudioSettings}
           onClose={() => setSettingsRailOpen(false)}
+          compareMedia={compareMedia}
+          onCompareMediaChange={switchCompareMedia}
+          compareModelBId={compareModelBId}
+          onCompareModelBChange={(id) => {
+            setCompareModelBId(id);
+            setCompareApproved(false);
+          }}
+          compareAdjustments={compareAdjustments}
+          compareApproved={compareApproved}
+          onCompareApprovedChange={setCompareApproved}
+          compareCostLabel={compareCostLabel}
         />
+
       ) : null}
 
       {studioMode === "prompt-generator" ? (
