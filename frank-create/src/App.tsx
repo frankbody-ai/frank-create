@@ -454,7 +454,11 @@ export default function App() {
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
   const [settingsRailOpen, setSettingsRailOpen] = useState(true);
-  const [mediaKind, setMediaKind] = useState<"image" | "video">("image");
+  const [mediaKind, setMediaKind] = useState<"image" | "video" | "compare">("image");
+  const [compareMedia, setCompareMedia] = useState<"image" | "video">("image");
+  const [compareModelBId, setCompareModelBId] = useState<string>("");
+  const [compareApproved, setCompareApproved] = useState(false);
+
   const [refineBusy, setRefineBusy] = useState(false);
   useEffect(() => {
     if (videoStartedAt == null) return;
