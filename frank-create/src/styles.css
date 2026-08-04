@@ -1,66 +1,37 @@
 @font-face {
-  font-family: "Michroma";
-  src: url("/__l5e/assets-v1/0d640801-7ad6-4550-a73b-a3657756a3bb/Michroma-Regular.ttf") format("truetype");
+  font-family: "Jura";
+  src: url("/__l5e/assets-v1/93646841-132b-4dff-a3cd-fe65c4ce063e/Jura-Regular.ttf") format("truetype");
   font-display: swap;
   font-style: normal;
   font-weight: 400;
 }
 
 @font-face {
-  font-family: "Michroma";
-  src: url("/__l5e/assets-v1/0d640801-7ad6-4550-a73b-a3657756a3bb/Michroma-Regular.ttf") format("truetype");
+  font-family: "Jura";
+  src: url("/__l5e/assets-v1/61f418ad-8848-4b41-ba75-3caee5610a7c/Jura-Medium.ttf") format("truetype");
   font-display: swap;
   font-style: normal;
   font-weight: 500;
 }
 
 @font-face {
-  font-family: "Michroma";
-  src: url("/__l5e/assets-v1/0d640801-7ad6-4550-a73b-a3657756a3bb/Michroma-Regular.ttf") format("truetype");
+  font-family: "Jura";
+  src: url("/__l5e/assets-v1/fb759b57-83cc-4236-8398-2bc698653550/Jura-SemiBold.ttf") format("truetype");
   font-display: swap;
   font-style: normal;
   font-weight: 600;
 }
 
 @font-face {
-  font-family: "Michroma";
-  src: url("/__l5e/assets-v1/0d640801-7ad6-4550-a73b-a3657756a3bb/Michroma-Regular.ttf") format("truetype");
+  font-family: "Jura";
+  src: url("/__l5e/assets-v1/7c51a3b8-c96b-48e7-94e6-d2e4a967bbc4/Jura-Bold.ttf") format("truetype");
   font-display: swap;
   font-style: normal;
   font-weight: 700;
 }
 
-@font-face {
-  font-family: "Audiowide";
-  src: url("/__l5e/assets-v1/35881708-d34e-4f18-ad73-c2c68b375847/Audiowide-Regular.ttf") format("truetype");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 400;
-}
+/* Typography token: Jura for all headings and body text */
 
-@font-face {
-  font-family: "Audiowide";
-  src: url("/__l5e/assets-v1/35881708-d34e-4f18-ad73-c2c68b375847/Audiowide-Regular.ttf") format("truetype");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 500;
-}
-
-@font-face {
-  font-family: "Audiowide";
-  src: url("/__l5e/assets-v1/35881708-d34e-4f18-ad73-c2c68b375847/Audiowide-Regular.ttf") format("truetype");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 600;
-}
-
-@font-face {
-  font-family: "Audiowide";
-  src: url("/__l5e/assets-v1/35881708-d34e-4f18-ad73-c2c68b375847/Audiowide-Regular.ttf") format("truetype");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 700;
-}
 
 :root {
   color-scheme: light;
