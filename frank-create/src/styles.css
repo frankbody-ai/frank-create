@@ -4001,7 +4001,7 @@ body {
 }
 
 .inspector-drawer-toolbar strong {
-  font-family: var(--font-display, "Pitch", serif);
+  font-family: var(--font-display, "Michroma", serif);
   font-size: 1.05rem;
   color: var(--frank-ink, #3F2A2D);
   display: block;
@@ -5128,7 +5128,7 @@ body { font-family: var(--font-body); font-weight: 300; }
 ::-webkit-scrollbar-thumb { background: var(--frank-pink-soft); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--frank-ink); }
 
-/* Headings — Pitch semibold, uppercase, .2em tracking (§3) */
+/* Headings — Michroma regular, uppercase, .2em tracking (§3) */
 h1, h2, h3, h4 {
   font-family: var(--font-display);
   font-weight: 600;
@@ -5333,7 +5333,7 @@ input:focus, textarea:focus, select:focus {
 /* Kill any red error tone — critical is ink (§6.16) */
 [class*="error"], .error-text, .error-message { color: var(--frank-ink); }
 
-/* Numbers / money / IDs in Pitch (§3) */
+/* Numbers / money / IDs in Michroma (§3) */
 .num, .money, .id, [data-num] {
   font-family: var(--font-display);
   font-weight: 600;
@@ -6019,7 +6019,7 @@ input:focus, textarea:focus, select:focus {
 
 .settings-rail-head strong {
   display: block;
-  font-family: var(--font-display, "Pitch", monospace);
+  font-family: var(--font-display, "Michroma", monospace);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -6169,7 +6169,7 @@ input:focus, textarea:focus, select:focus {
   border-radius: 999px;
   background: transparent;
   color: #3F2A2D;
-  font-family: var(--font-display, "Pitch", monospace);
+  font-family: var(--font-display, "Michroma", monospace);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -6217,7 +6217,7 @@ input:focus, textarea:focus, select:focus {
 }
 .rail-label {
   margin: 0;
-  font-family: var(--font-display, "Pitch", monospace);
+  font-family: var(--font-display, "Michroma", monospace);
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -6368,7 +6368,7 @@ input:focus, textarea:focus, select:focus {
   border-radius: 999px;
   background: transparent;
   color: #3F2A2D;
-  font-family: var(--font-display, "Pitch", monospace);
+  font-family: var(--font-display, "Michroma", monospace);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.14em;
