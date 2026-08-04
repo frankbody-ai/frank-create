@@ -119,7 +119,7 @@ export async function improvePresetPrompt(payload: { prompt: string; label?: str
 }
 
 export async function promptAgentChat(payload: {
-  messages: { role: "user" | "assistant"; content: string }[];
+  messages: { role: "user" | "assistant"; content: string; images?: string[] }[];
   skill?: string;
 }) {
   return fetchJson<{ reply: string; model: string; skill: string }>("/prompt-agent", {
