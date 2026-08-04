@@ -447,6 +447,8 @@ export default function App() {
   // Set by "Switch model and retry": once the picker has re-rendered on the new
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
+  const [settingsRailOpen, setSettingsRailOpen] = useState(true);
+  const [refineBusy, setRefineBusy] = useState(false);
   useEffect(() => {
     if (videoStartedAt == null) return;
     const iv = setInterval(() => setVideoNowTick(Date.now()), 1000);
