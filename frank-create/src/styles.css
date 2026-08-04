@@ -1,50 +1,30 @@
 @font-face {
-  font-family: "Pitch";
-  src:
-    url("./assets/fonts/Pitch-Semibold.woff2") format("woff2"),
-    url("./assets/fonts/Pitch-Semibold.woff") format("woff");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 600;
-}
-
-@font-face {
-  font-family: "Founders Grotesk Text";
-  src:
-    url("./assets/fonts/FoundersGroteskText-Light.woff2") format("woff2"),
-    url("./assets/fonts/FoundersGroteskText-Light.woff") format("woff");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 300;
-}
-
-@font-face {
-  font-family: "Founders Grotesk Text";
-  src: url("./assets/fonts/FoundersGroteskText-Regular.otf") format("opentype");
+  font-family: "Michroma";
+  src: url("/__l5e/assets-v1/0d640801-7ad6-4550-a73b-a3657756a3bb/Michroma-Regular.ttf") format("truetype");
   font-display: swap;
   font-style: normal;
   font-weight: 400;
 }
 
 @font-face {
-  font-family: "Founders Grotesk Text";
-  src: url("./assets/fonts/FoundersGroteskText-Medium.otf") format("opentype");
+  font-family: "Michroma";
+  src: url("/__l5e/assets-v1/0d640801-7ad6-4550-a73b-a3657756a3bb/Michroma-Regular.ttf") format("truetype");
   font-display: swap;
   font-style: normal;
   font-weight: 500;
 }
 
 @font-face {
-  font-family: "Founders Grotesk Text";
-  src: url("./assets/fonts/FoundersGroteskText-Semibold.otf") format("opentype");
+  font-family: "Michroma";
+  src: url("/__l5e/assets-v1/0d640801-7ad6-4550-a73b-a3657756a3bb/Michroma-Regular.ttf") format("truetype");
   font-display: swap;
   font-style: normal;
   font-weight: 600;
 }
 
 @font-face {
-  font-family: "Founders Grotesk Text";
-  src: url("./assets/fonts/FoundersGroteskText-Bold.otf") format("opentype");
+  font-family: "Michroma";
+  src: url("/__l5e/assets-v1/0d640801-7ad6-4550-a73b-a3657756a3bb/Michroma-Regular.ttf") format("truetype");
   font-display: swap;
   font-style: normal;
   font-weight: 700;
