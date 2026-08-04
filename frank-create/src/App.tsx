@@ -633,7 +633,7 @@ export default function App() {
   function resetStudioSettings() {
     const model = config.models.find((item) => item.id === selectedModelId);
     if (!model) return;
-    const base = defaultStudioSettings();
+    const base = defaultStudioSettings(model);
     setSettings(isVideoModel(model)
       ? normalizeVideoSettings(base, model)
       : normalizeStudioSettingsForModel(base, model));
