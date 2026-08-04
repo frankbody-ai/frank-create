@@ -2893,7 +2893,7 @@ export default function App() {
 
   return (
     <div
-      className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${advancedOpen ? "advanced-open" : ""}`}
+      className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${advancedOpen ? "advanced-open" : ""} ${studioMode !== "preset-creator" && settingsRailOpen ? "settings-rail-open" : ""}`}
       data-provider-audit={providerAuditMode ? "open" : undefined}
     >
       {desktopNotice ? (
