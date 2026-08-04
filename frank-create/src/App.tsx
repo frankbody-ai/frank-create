@@ -154,7 +154,7 @@ import type {
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
-import frankCreateLogo from "./assets/frank-create.png";
+import frankBodyLogo from "./assets/FrankBody_Logo.svg";
 import designStudioLogo from "./assets/Design_Studio_1.svg";
 
 
@@ -3191,7 +3191,7 @@ export default function App() {
 
       <aside className="guided-header app-sidebar" data-tour-id="app-header" data-tour-active={tourActive("app-header")}>
         <div className="sidebar-brand-block">
-          <img src={frankCreateLogo} alt="frank create" className="sidebar-brand-logo" />
+          <img src={frankBodyLogo} alt="frank body" className="sidebar-brand-logo" />
           <img src={designStudioLogo} alt="Design Studio" className="sidebar-studio-logo" />
         </div>
 
