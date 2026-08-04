@@ -3096,12 +3096,12 @@ export default function App() {
           <button
             className={`sidebar-nav-button ${studioMode === "enhancer" ? "active" : ""}`}
             type="button"
-            aria-label="Open Enhancer"
+            aria-label="Open UPSCALER"
             title="Upscale stills and clips with Recraft, Topaz, and Crystal"
             onClick={showEnhancer}
           >
             <Sparkles size={16} />
-            Enhancer
+            UPSCALER
           </button>
           <button
             className={`sidebar-nav-button ${studioMode === "preset-creator" ? "active" : ""}`}
