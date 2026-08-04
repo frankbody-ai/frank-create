@@ -5141,9 +5141,9 @@ input[aria-invalid="true"] {
   --pink-soft: #FFD0C6;
   --coffee: #3F2A2D;
   --font-heading: "Michroma", Arial, sans-serif;
-  --font-brand: "Michroma", Arial, sans-serif;
-  --font-display: "Michroma", Arial, sans-serif;
-  --font-body: "Michroma", Arial, sans-serif;
+  --font-brand: "Audiowide", Arial, sans-serif;
+  --font-display: "Audiowide", Arial, sans-serif;
+  --font-body: "Audiowide", Arial, sans-serif;
   color: var(--frank-ink);
   background: var(--frank-blush);
 }
@@ -5160,8 +5160,14 @@ body { font-family: var(--font-body); font-weight: 300; }
 ::-webkit-scrollbar-thumb { background: var(--frank-pink-soft); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--frank-ink); }
 
-/* Headings — Michroma regular, uppercase, .2em tracking (§3) */
-h1, h2, h3, h4 {
+/* Headings — h1/h2 in Michroma; h3/h4 and body in Audiowide (§3) */
+h1, h2 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: var(--frank-ink);
+}
+
+h3, h4 {
   font-family: var(--font-display);
   font-weight: 600;
   color: var(--frank-ink);
