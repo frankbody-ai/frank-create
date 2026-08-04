@@ -1,8 +1,9 @@
 import { ChevronLeft, Film, Image as ImageIcon, RotateCcw } from "lucide-react";
 import type { PromptPreset, StudioModel, StudioSettings } from "../lib/types";
-import { filterSizesForAspect, maxCountForModel } from "../lib/studio";
+import { estimateVideoCost, filterSizesForAspect, maxCountForModel, modelRateLabel } from "../lib/studio";
 import type { StudioFieldErrors } from "../lib/studio";
 import { AspectPreview } from "./AspectPreview";
+
 
 export interface StudioRailProps {
   mediaKind: "image" | "video";
