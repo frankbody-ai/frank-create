@@ -530,7 +530,7 @@ export default function App() {
         setActiveSession(nextSession);
         setTurns(turnResult.turns);
         setAssets(assetResult.assets);
-        setSelectedReferenceIds(referenceIdsFromAssets(assetResult.assets));
+        setSelectedReferenceIds([]);
         setExports(filterExportsForAssets(exportResult.exports, assetResult.assets));
         setProviderEnvStatus(providerEnvResult);
         setActivationChecklist(activationChecklistResult);
@@ -1052,7 +1052,7 @@ export default function App() {
     ]);
     setTurns(turnResult.turns);
     setAssets(assetResult.assets);
-    setSelectedReferenceIds(referenceIdsFromAssets(assetResult.assets));
+    setSelectedReferenceIds([]);
     setExports(filterExportsForAssets(exportResult.exports, assetResult.assets));
     setActiveProject(projectForSession ?? null);
     setProjectName(projectForSession?.name ?? "Frank Body Campaign");
@@ -1215,7 +1215,7 @@ export default function App() {
       setBriefDraft(briefToDraft(result.brief));
       setTurns([result.turn]);
       setAssets(seededAssets);
-      setSelectedReferenceIds(referenceIdsFromAssets(seededAssets));
+      setSelectedReferenceIds([]);
       setExports([]);
       setSelectedAsset(firstReviewableAsset(seededOutputs));
       setLightboxAsset(null);
@@ -2221,6 +2221,8 @@ export default function App() {
     } finally {
       finishInflight();
       setBusy(false);
+      // Never carry references over into the next run.
+      setSelectedReferenceIds([]);
       // The request can time out while the server keeps finishing the round
       // (e.g. 4 images). Re-read the session so every produced image lands.
       void reconcileSessionAssets();
@@ -2333,6 +2335,7 @@ export default function App() {
       videoAbortRef.current = null;
       setVideoStartedAt(null);
       setBusy(false);
+      setSelectedReferenceIds([]);
     }
   }
 
@@ -2477,6 +2480,7 @@ export default function App() {
       const ids = new Set(inflight.map((entry) => entry.id));
       setInflightGens((current) => current.filter((entry) => !ids.has(entry.id)));
       setBusy(false);
+      setSelectedReferenceIds([]);
       void reconcileSessionAssets();
     }
   }
@@ -6019,10 +6023,6 @@ function joinWithOr(values: string[]) {
   }
 
   return `${values.slice(0, -1).join(", ")} or ${values[values.length - 1]}`;
-}
-
-function referenceIdsFromAssets(assets: Asset[]) {
-  return assets.filter((asset) => asset.kind === "reference").map((asset) => asset.id);
 }
 
 function referenceUrlForGeneration(asset: Asset) {
