@@ -1,66 +1,37 @@
 @font-face {
-  font-family: "Michroma";
-  src: url("/__l5e/assets-v1/0d640801-7ad6-4550-a73b-a3657756a3bb/Michroma-Regular.ttf") format("truetype");
+  font-family: "Jura";
+  src: url("/__l5e/assets-v1/93646841-132b-4dff-a3cd-fe65c4ce063e/Jura-Regular.ttf") format("truetype");
   font-display: swap;
   font-style: normal;
   font-weight: 400;
 }
 
 @font-face {
-  font-family: "Michroma";
-  src: url("/__l5e/assets-v1/0d640801-7ad6-4550-a73b-a3657756a3bb/Michroma-Regular.ttf") format("truetype");
+  font-family: "Jura";
+  src: url("/__l5e/assets-v1/61f418ad-8848-4b41-ba75-3caee5610a7c/Jura-Medium.ttf") format("truetype");
   font-display: swap;
   font-style: normal;
   font-weight: 500;
 }
 
 @font-face {
-  font-family: "Michroma";
-  src: url("/__l5e/assets-v1/0d640801-7ad6-4550-a73b-a3657756a3bb/Michroma-Regular.ttf") format("truetype");
+  font-family: "Jura";
+  src: url("/__l5e/assets-v1/fb759b57-83cc-4236-8398-2bc698653550/Jura-SemiBold.ttf") format("truetype");
   font-display: swap;
   font-style: normal;
   font-weight: 600;
 }
 
 @font-face {
-  font-family: "Michroma";
-  src: url("/__l5e/assets-v1/0d640801-7ad6-4550-a73b-a3657756a3bb/Michroma-Regular.ttf") format("truetype");
+  font-family: "Jura";
+  src: url("/__l5e/assets-v1/7c51a3b8-c96b-48e7-94e6-d2e4a967bbc4/Jura-Bold.ttf") format("truetype");
   font-display: swap;
   font-style: normal;
   font-weight: 700;
 }
 
-@font-face {
-  font-family: "Audiowide";
-  src: url("/__l5e/assets-v1/35881708-d34e-4f18-ad73-c2c68b375847/Audiowide-Regular.ttf") format("truetype");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 400;
-}
+/* Typography token: Jura for all headings and body text */
 
-@font-face {
-  font-family: "Audiowide";
-  src: url("/__l5e/assets-v1/35881708-d34e-4f18-ad73-c2c68b375847/Audiowide-Regular.ttf") format("truetype");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 500;
-}
-
-@font-face {
-  font-family: "Audiowide";
-  src: url("/__l5e/assets-v1/35881708-d34e-4f18-ad73-c2c68b375847/Audiowide-Regular.ttf") format("truetype");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 600;
-}
-
-@font-face {
-  font-family: "Audiowide";
-  src: url("/__l5e/assets-v1/35881708-d34e-4f18-ad73-c2c68b375847/Audiowide-Regular.ttf") format("truetype");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 700;
-}
 
 :root {
   color-scheme: light;
@@ -89,11 +60,12 @@
   --cream: #FFEFEA;
   --line: rgba(63, 42, 45, 0.16);
   --shadow: 0 18px 48px rgba(63, 42, 45, 0.1);
-  --font-heading: "Michroma", Arial, sans-serif;
-  --font-body: "Audiowide", Arial, sans-serif;
-  --font-brand: "Audiowide", Arial, sans-serif;
-  --font-display: "Audiowide", Arial, sans-serif;
-  --font-mono: "Audiowide", "Courier New", monospace;
+  --font-heading: "Jura", Arial, sans-serif;
+  --font-body: "Jura", Arial, sans-serif;
+  --font-brand: "Jura", Arial, sans-serif;
+  --font-display: "Jura", Arial, sans-serif;
+  --font-mono: "Jura", "Courier New", monospace;
+
   --frankhub-pink: #ffb6a5;
   --frankhub-dark: #3f2a2d;
   --frankhub-accent: #ffd0c6;
@@ -4036,7 +4008,7 @@ body {
 }
 
 .inspector-drawer-toolbar strong {
-  font-family: var(--font-display, "Michroma", serif);
+  font-family: var(--font-display, "Jura", serif);
   font-size: 1.05rem;
   color: var(--frank-ink, #3F2A2D);
   display: block;
@@ -5143,10 +5115,11 @@ input[aria-invalid="true"] {
   --pink: #FFB6A5;
   --pink-soft: #FFD0C6;
   --coffee: #3F2A2D;
-  --font-heading: "Michroma", Arial, sans-serif;
-  --font-brand: "Audiowide", Arial, sans-serif;
-  --font-display: "Audiowide", Arial, sans-serif;
-  --font-body: "Audiowide", Arial, sans-serif;
+  --font-heading: "Jura", Arial, sans-serif;
+  --font-brand: "Jura", Arial, sans-serif;
+  --font-display: "Jura", Arial, sans-serif;
+  --font-body: "Jura", Arial, sans-serif;
+
   color: var(--frank-ink);
   background: var(--frank-blush);
 }
@@ -5163,7 +5136,7 @@ body { font-family: var(--font-body); font-weight: 300; }
 ::-webkit-scrollbar-thumb { background: var(--frank-pink-soft); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--frank-ink); }
 
-/* Headings — h1/h2 in Michroma; h3/h4 and body in Audiowide (§3) */
+/* Headings — h1/h2 in Jura; h3/h4 and body in Jura (§3) */
 h1, h2 {
   font-family: var(--font-heading);
   font-weight: 600;
@@ -5374,7 +5347,7 @@ input:focus, textarea:focus, select:focus {
 /* Kill any red error tone — critical is ink (§6.16) */
 [class*="error"], .error-text, .error-message { color: var(--frank-ink); }
 
-/* Numbers / money / IDs in Michroma (§3) */
+/* Numbers / money / IDs in Jura (§3) */
 .num, .money, .id, [data-num] {
   font-family: var(--font-display);
   font-weight: 600;
@@ -6060,7 +6033,8 @@ input:focus, textarea:focus, select:focus {
 
 .settings-rail-head strong {
   display: block;
-  font-family: var(--font-display, "Michroma", monospace);
+  font-family: var(--font-display, "Jura", monospace);
+
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -6210,7 +6184,8 @@ input:focus, textarea:focus, select:focus {
   border-radius: 999px;
   background: transparent;
   color: #3F2A2D;
-  font-family: var(--font-display, "Michroma", monospace);
+  font-family: var(--font-display, "Jura", monospace);
+
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -6258,7 +6233,8 @@ input:focus, textarea:focus, select:focus {
 }
 .rail-label {
   margin: 0;
-  font-family: var(--font-display, "Michroma", monospace);
+  font-family: var(--font-display, "Jura", monospace);
+
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -6409,7 +6385,7 @@ input:focus, textarea:focus, select:focus {
   border-radius: 999px;
   background: transparent;
   color: #3F2A2D;
-  font-family: var(--font-display, "Michroma", monospace);
+  font-family: var(--font-display, "Jura", monospace);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.14em;
