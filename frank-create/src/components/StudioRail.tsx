@@ -85,42 +85,51 @@ export function StudioRail(props: StudioRailProps) {
 
   return (
     <aside className="studio-settings-rail" aria-label="Studio settings">
-      <div className="rail-media-toggle" role="tablist" aria-label="Output media">
+      <div className="rail-header">
+        <div className="rail-media-toggle" role="tablist" aria-label="Output media">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mediaKind === "image"}
+            className={mediaKind === "image" ? "active" : ""}
+            onClick={() => onMediaKindChange("image")}
+          >
+            <ImageIcon size={13} />
+            <span>Image</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mediaKind === "video"}
+            className={mediaKind === "video" ? "active" : ""}
+            onClick={() => onMediaKindChange("video")}
+          >
+            <Film size={13} />
+            <span>Video</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={isCompare}
+            className={isCompare ? "active" : ""}
+            onClick={() => onMediaKindChange("compare")}
+            title="Run two models on the same brief and compare the results"
+          >
+            <Columns2 size={13} />
+            <span>Compare</span>
+          </button>
+        </div>
         <button
+          className="rail-collapse"
           type="button"
-          role="tab"
-          aria-selected={mediaKind === "image"}
-          className={mediaKind === "image" ? "active" : ""}
-          onClick={() => onMediaKindChange("image")}
+          onClick={onClose}
+          aria-label="Collapse studio settings"
+          title="Collapse settings"
         >
-          <ImageIcon size={14} />
-          Image
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mediaKind === "video"}
-          className={mediaKind === "video" ? "active" : ""}
-          onClick={() => onMediaKindChange("video")}
-        >
-          <Film size={14} />
-          Video
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={isCompare}
-          className={isCompare ? "active" : ""}
-          onClick={() => onMediaKindChange("compare")}
-          title="Run two models on the same brief and compare the results"
-        >
-          <Columns2 size={14} />
-          Side&#8209;by&#8209;side
-        </button>
-        <button className="rail-close" type="button" onClick={onClose} aria-label="Close studio settings">
           <ChevronLeft size={14} />
         </button>
       </div>
+
 
 
       <div className="rail-scroll">
