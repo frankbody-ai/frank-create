@@ -75,18 +75,18 @@ export const fallbackConfig: FrankConfig = {
       short_label: "Local Comfy",
       provider: "local",
       provider_model: "frank-local-comfy",
-      status: "ready",
-      badge: "Ready",
+      status: "disabled",
+      badge: "SOON",
       max_resolution_label: "4K",
       description:
-        "Local Comfy-backed product variants, edits, masked retouch demos, crops, export prep, and storyboard motion without API keys.",
+        "Local Comfy-backed product variants, edits, masked retouch demos, crops, export prep, and storyboard motion without API keys. Disabled until local GPU setup is ready.",
       capabilities: { generation: true, edit: true, masked_edit: true, video: true },
       allowed_aspect_ratios: ["1:1", "4:5", "3:4", "16:9", "9:16", "3:2", "2:3"],
       allowed_image_sizes: ["1K", "2K", "4K"],
       reference_image_limit: 8,
       max_count: 4,
       cost_label: "local",
-      configured: true,
+      configured: false,
       missing_env_vars: []
     },
     {
