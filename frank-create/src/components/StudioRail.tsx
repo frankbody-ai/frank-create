@@ -1,13 +1,20 @@
-import { ChevronLeft, Film, Image as ImageIcon, RotateCcw } from "lucide-react";
+import { ChevronLeft, Columns2, Film, Image as ImageIcon, RotateCcw } from "lucide-react";
 import type { PromptPreset, StudioModel, StudioSettings } from "../lib/types";
 import { estimateVideoCost, filterSizesForAspect, maxCountForModel, modelRateLabel } from "../lib/studio";
-import type { StudioFieldErrors } from "../lib/studio";
+import type { StudioAdjustment, StudioFieldErrors } from "../lib/studio";
 import { AspectPreview } from "./AspectPreview";
 
+export type StudioMediaKind = "image" | "video" | "compare";
+
+export interface CompareSideAdjustments {
+  side: "A" | "B";
+  modelLabel: string;
+  items: StudioAdjustment[];
+}
 
 export interface StudioRailProps {
-  mediaKind: "image" | "video";
-  onMediaKindChange: (kind: "image" | "video") => void;
+  mediaKind: StudioMediaKind;
+  onMediaKindChange: (kind: StudioMediaKind) => void;
   models: StudioModel[];
   selectedModelId: string;
   onModelChange: (id: string) => void;
@@ -21,6 +28,16 @@ export interface StudioRailProps {
   referenceCount: number;
   onReset: () => void;
   onClose: () => void;
+  /** Side-by-side: media the comparison runs on. */
+  compareMedia?: "image" | "video";
+  onCompareMediaChange?: (media: "image" | "video") => void;
+  /** Side-by-side: second model. */
+  compareModelBId?: string;
+  onCompareModelBChange?: (id: string) => void;
+  compareAdjustments?: CompareSideAdjustments[];
+  compareApproved?: boolean;
+  onCompareApprovedChange?: (approved: boolean) => void;
+  compareCostLabel?: string | null;
 }
 
 function ratioBoxStyle(aspect: string) {
@@ -43,21 +60,27 @@ export function StudioRail(props: StudioRailProps) {
   const {
     mediaKind, onMediaKindChange, models, selectedModelId, onModelChange,
     settings, onSettingsChange, onAspectChange, presets, selectedPresetKey,
-    onPresetChange, fieldErrors, referenceCount, onReset, onClose
+    onPresetChange, fieldErrors, referenceCount, onReset, onClose,
+    compareMedia = "image", onCompareMediaChange, compareModelBId, onCompareModelBChange,
+    compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel
   } = props;
 
+  const isCompare = mediaKind === "compare";
   const model = models.find((item) => item.id === selectedModelId) ?? models[0];
-  const isVideo = mediaKind === "video";
+  const modelB = models.find((item) => item.id === compareModelBId) ?? null;
+  const isVideo = mediaKind === "video" || (isCompare && compareMedia === "video");
   const aspects = model?.allowed_aspect_ratios ?? [];
   const durations = model?.allowed_durations ?? [];
   const resolutions = model?.allowed_resolutions ?? [];
   const sizes = model?.allowed_image_sizes?.length
     ? filterSizesForAspect(model.allowed_image_sizes, settings.aspect_ratio)
     : [];
-  const countCap = isVideo ? 1 : maxCountForModel(model);
+  const countCap = isVideo || isCompare ? 1 : maxCountForModel(model);
   const counts = Array.from({ length: Math.min(countCap, 10) }, (_, index) => index + 1);
   const costEstimate = isVideo ? estimateVideoCost(model, settings) : null;
   const badge = isVideo ? tierBadge(model) : null;
+  const pendingAdjustments = compareAdjustments.filter((entry) => entry.items.length);
+
 
 
   return (
