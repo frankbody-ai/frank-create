@@ -58,8 +58,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   return (
     <div className="frank-auth-wrap">
       <div className="frank-auth-card">
-        <img src={frankBodyLogo} alt="frank body" className="frank-auth-logo" />
-        <img src={designStudioLogo} alt="Design Studio" className="frank-auth-studio-logo" />
+        <img src={designStudioLogo} alt="Design Studio" className="frank-auth-logo" />
+        <img src={frankBodyLogo} alt="frank body" className="frank-auth-studio-logo" />
         <h1 className="frank-auth-title">Hey babe.</h1>
         <p className="frank-auth-sub">
           sign in with your frank body or autosolutions google account.
