@@ -774,8 +774,8 @@ export default function App() {
   const favoriteCount = outputAssets.filter((asset) => asset.favorite).length;
   const promptMode = editSourceAsset ? (maskAsset ? "masked_edit" : "edit") : "generate";
   const primaryActionLabel =
-    studioMode === "video-lab"
-      ? "Generate"
+    mediaKind === "video"
+      ? "Generate video"
       : promptMode === "masked_edit"
         ? "Edit"
         : promptMode === "edit"
@@ -888,12 +888,12 @@ export default function App() {
   }
 
   async function handleNewSession() {
-    const nextMode = studioMode === "video-lab" ? "video" : "image";
+    const nextMode = mediaKind === "video" ? "video" : "image";
     const sessionSubject =
       activeBrief?.product_name?.trim() || briefDraft.productName.trim() || activeProject?.name.trim();
     const sessionSubjectLabel = sessionSubject || activeBrief?.title || "this campaign";
     const sessionName = sessionSubject
-      ? `${sessionSubject} ${nextMode === "video" ? "Video Lab" : "Image Studio"}`
+      ? `${sessionSubject} ${nextMode === "video" ? "Motion" : "Studio"}`
       : nextMode === "video"
         ? "New video session"
         : "New image session";
@@ -1060,7 +1060,7 @@ export default function App() {
       return;
     }
 
-    const kind = studioMode === "video-lab" ? "video" : promptMode;
+    const kind = mediaKind === "video" ? "video" : promptMode;
     const videoSourceAsset =
       selectedAsset && selectedAsset.kind !== "reference" && selectedAsset.media_type !== "video"
         ? selectedAsset
