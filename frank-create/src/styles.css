@@ -7568,3 +7568,79 @@ input:focus, textarea:focus, select:focus {
   background: rgba(220, 60, 60, 0.1); color: #a01a1a;
   font-size: 12px;
 }
+
+/* ---- Secondary setup rail (Image Studio) ---- */
+.studio-shell.guided-studio.settings-rail-open {
+  grid-template-columns: 256px 300px minmax(0, 1fr);
+}
+
+.studio-shell.guided-studio.settings-rail-open .conversation-column {
+  grid-column: 3;
+}
+
+.studio-settings-rail {
+  grid-column: 2;
+  grid-row: 1;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 20px 18px 28px;
+  background: #FFFFFF;
+  border-left: 1px solid rgba(63, 42, 45, 0.08);
+  border-right: 1px solid rgba(63, 42, 45, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #3F2A2D;
+}
+
+.settings-rail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.settings-rail-head strong {
+  display: block;
+  font-family: var(--font-display, "Pitch", monospace);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+.settings-rail-head small {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.studio-settings-rail .composer-settings {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.studio-settings-rail .setting-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 1180px) {
+  .studio-shell.guided-studio.settings-rail-open {
+    grid-template-columns: 256px minmax(0, 1fr);
+  }
+  .studio-settings-rail {
+    grid-column: 2;
+    height: auto;
+    max-height: 46vh;
+  }
+  .studio-shell.guided-studio.settings-rail-open .conversation-column {
+    grid-column: 2;
+  }
+}
