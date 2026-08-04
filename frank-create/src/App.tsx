@@ -204,7 +204,7 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   {
     title: "Reference dock",
-    detail: "Upload up to 14 reference images. Click any thumbnail to include or exclude it from the next round — a blue outline means it's being used.",
+    detail: "Upload as many reference images as the selected model accepts; the 5 most recent stay in the dock after a run. Click any thumbnail to include or exclude it from the next round — a blue outline means it's being used.",
     points: [
       "Multimodal models read selected refs as visual guidance.",
       "Refs persist per session so you can iterate across rounds.",
@@ -784,12 +784,14 @@ export default function App() {
   const selectedReferenceIdSet = useMemo(() => new Set(selectedReferenceIds), [selectedReferenceIds]);
   const selectedReferenceAssets = referenceAssets.filter((asset) => selectedReferenceIdSet.has(asset.id));
 
-  // Wipe the reference dock after a run finishes so nothing carries over.
+  // After a run: drop every reference from the next round's selection and keep
+  // only the 5 most recent thumbnails in the dock as reusable history.
   function clearReferenceDock() {
     setSelectedReferenceIds([]);
     setAssets((current) => {
-      const ids = current.filter((asset) => asset.kind === "reference").map((asset) => asset.id);
-      if (ids.length) setRetiredReferenceIds((prev) => Array.from(new Set([...prev, ...ids])));
+      const refs = current.filter((asset) => asset.kind === "reference");
+      const stale = refs.slice(REFERENCE_HISTORY_KEEP).map((asset) => asset.id);
+      if (stale.length) setRetiredReferenceIds((prev) => Array.from(new Set([...prev, ...stale])));
       return current;
     });
   }
@@ -3688,7 +3690,7 @@ export default function App() {
             </label>
             <div className="reference-dock" aria-label="Reference images">
 
-              {referenceAssets.slice(0, 14).map((asset) => {
+              {referenceAssets.map((asset) => {
                 const isSelected = selectedReferenceIdSet.has(asset.id);
                 return (
                   <button
@@ -3707,8 +3709,8 @@ export default function App() {
               {referenceAssets.length ? (
                 <span className="reference-selection-count">
                   {selectedReferenceAssets.length
-                    ? `${selectedReferenceAssets.length}/${Math.min(referenceAssets.length, 14)} in use`
-                    : `${Math.min(referenceAssets.length, 14)} loaded · prompt-only`}
+                    ? `${selectedReferenceAssets.length}/${referenceAssets.length} in use`
+                    : `${referenceAssets.length} loaded · prompt-only`}
                 </span>
               ) : (
                 <span className="reference-selection-count reference-selection-count--empty">
