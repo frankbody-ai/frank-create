@@ -353,7 +353,7 @@ async function handleVideo(body: any, userId: string) {
   const prompt: string = body.prompt || "";
   if (!prompt.trim()) throw new Error("Prompt is required");
 
-  const modelId: string = body.model || "kling-2-5-turbo-pro";
+  const modelId: string = body.model || "grok-imagine-video";
   const slug = VIDEO_REPLICATE_MAP[modelId];
   if (!slug) {
     return {
