@@ -2335,6 +2335,7 @@ export default function App() {
       videoAbortRef.current = null;
       setVideoStartedAt(null);
       setBusy(false);
+      setSelectedReferenceIds([]);
     }
   }
 
