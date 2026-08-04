@@ -78,7 +78,6 @@ import {
   listSessions,
   listTurns,
   prepareLocalEngineFolders,
-  improvePresetPrompt,
   preflightProvider,
   reloadProviderEnv,
   remixPrompt,
@@ -465,7 +464,6 @@ export default function App() {
   const [compareModelBId, setCompareModelBId] = useState<string>("");
   const [compareApproved, setCompareApproved] = useState(false);
 
-  const [refineBusy, setRefineBusy] = useState(false);
   useEffect(() => {
     if (videoStartedAt == null) return;
     const iv = setInterval(() => setVideoNowTick(Date.now()), 1000);
@@ -2011,31 +2009,6 @@ export default function App() {
     setStatusText(`${variant.label} direction loaded.`);
   }
 
-  async function handleRefinePrompt() {
-    const seedPrompt = prompt.trim();
-    if (!seedPrompt) {
-      setStatusText("Write a brief before refining it.");
-      return;
-    }
-    setRefineBusy(true);
-    try {
-      const result = await improvePresetPrompt({
-        prompt: seedPrompt,
-        label: activePreset?.label,
-        description: selectedModel?.short_label ?? selectedModel?.label
-      });
-      if (result.prompt?.trim()) {
-        setPrompt(result.prompt.trim());
-        setStatusText("Prompt refined.");
-      } else {
-        setStatusText("Refine came back empty — brief unchanged.");
-      }
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Refine Prompt needs another look.");
-    } finally {
-      setRefineBusy(false);
-    }
-  }
 
 
 
@@ -3858,10 +3831,6 @@ export default function App() {
             <button className="secondary-button remix-button" type="button" onClick={handlePromptRemix} disabled={remixBusy}>
               {remixBusy ? <RefreshCw className="spin" size={16} /> : <Sparkles size={16} />}
               Brief remix
-            </button>
-            <button className="secondary-button remix-button" type="button" onClick={handleRefinePrompt} disabled={refineBusy || !prompt.trim()}>
-              {refineBusy ? <RefreshCw className="spin" size={16} /> : <Wand2 size={16} />}
-              Refine Prompt
             </button>
 
             <button
