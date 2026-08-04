@@ -5136,7 +5136,7 @@ body { font-family: var(--font-body); font-weight: 300; }
 ::-webkit-scrollbar-thumb { background: var(--frank-pink-soft); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--frank-ink); }
 
-/* Headings — h1/h2 in Michroma; h3/h4 and body in Audiowide (§3) */
+/* Headings — h1/h2 in Jura; h3/h4 and body in Jura (§3) */
 h1, h2 {
   font-family: var(--font-heading);
   font-weight: 600;
@@ -5347,7 +5347,7 @@ input:focus, textarea:focus, select:focus {
 /* Kill any red error tone — critical is ink (§6.16) */
 [class*="error"], .error-text, .error-message { color: var(--frank-ink); }
 
-/* Numbers / money / IDs in Michroma (§3) */
+/* Numbers / money / IDs in Jura (§3) */
 .num, .money, .id, [data-num] {
   font-family: var(--font-display);
   font-weight: 600;
