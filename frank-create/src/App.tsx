@@ -3697,10 +3697,21 @@ export default function App() {
                 <XCircle size={14} />
               </button>
             ) : null}
+            {!settingsRailOpen ? (
+              <button className="secondary-button" type="button" onClick={() => setSettingsRailOpen(true)}>
+                <SlidersHorizontal size={16} />
+                Setup
+              </button>
+            ) : null}
             <button className="secondary-button remix-button" type="button" onClick={handlePromptRemix} disabled={remixBusy}>
               {remixBusy ? <RefreshCw className="spin" size={16} /> : <Sparkles size={16} />}
               Brief remix
             </button>
+            <button className="secondary-button remix-button" type="button" onClick={handleRefinePrompt} disabled={refineBusy || !prompt.trim()}>
+              {refineBusy ? <RefreshCw className="spin" size={16} /> : <Wand2 size={16} />}
+              Refine Prompt
+            </button>
+
             <button
               className="primary-button"
               type="submit"
