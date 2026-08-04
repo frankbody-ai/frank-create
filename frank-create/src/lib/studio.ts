@@ -231,7 +231,9 @@ export interface StudioFieldErrors {
   size?: string;
   count?: string;
   references?: string;
+  compare?: string;
 }
+
 
 export function validateStudioSettings(
   model: StudioModel | undefined | null,
