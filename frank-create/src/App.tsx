@@ -3700,7 +3700,11 @@ export default function App() {
                 />
               </article>
               );
-            })
+            })}
+              </div>
+            </div>
+            ))
+
           ) : (
             <div className="empty-thread">
               <ImageIcon size={38} />
