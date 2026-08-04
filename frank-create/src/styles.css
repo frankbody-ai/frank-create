@@ -7155,8 +7155,11 @@ input:focus, textarea:focus, select:focus {
 
 /* ============= Sidebar repair — clean frank left rail footer ============= */
 @media (min-width: 1024px) {
-  .studio-shell.guided-studio {
+  .studio-shell.guided-studio:not(.settings-rail-open) {
     grid-template-columns: 256px minmax(0, 1fr) !important;
+  }
+  .studio-shell.guided-studio.settings-rail-open {
+    grid-template-columns: 256px 300px minmax(0, 1fr) !important;
   }
 }
 
