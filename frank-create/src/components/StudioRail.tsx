@@ -56,6 +56,9 @@ export function StudioRail(props: StudioRailProps) {
     : [];
   const countCap = isVideo ? 1 : maxCountForModel(model);
   const counts = Array.from({ length: Math.min(countCap, 10) }, (_, index) => index + 1);
+  const costEstimate = isVideo ? estimateVideoCost(model, settings) : null;
+  const badge = isVideo ? tierBadge(model) : null;
+
 
   return (
     <aside className="studio-settings-rail" aria-label="Studio settings">
