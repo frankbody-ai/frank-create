@@ -5890,6 +5890,11 @@ input:focus, textarea:focus, select:focus {
   white-space: nowrap;
 }
 
+.sidebar-bottom-divider {
+  margin: 10px 16px 6px;
+  border-top: 2px solid rgba(63, 42, 45, 0.1);
+}
+
 /* ==== Preset Creator ==== */
 .preset-creator-view { padding-bottom: 48px; }
 .preset-creator-grid {
