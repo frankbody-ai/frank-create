@@ -3027,34 +3027,8 @@ export default function App() {
             Exports
           </button>
 
-          <p className="sidebar-section-label">Configure</p>
-          <button
-            className={`sidebar-nav-button ${inspectorTab === "brand" ? "active" : ""}`}
-            type="button"
-            aria-label="Open Brand Kit"
-            onClick={showBrandPanel}
-          >
-            <Sparkles size={16} />
-            Brand Kit
-          </button>
-          {isLovablePreview ? null : (
-            <button
-              className="sidebar-nav-button"
-              type="button"
-              aria-label="Open Raw Comfy (disabled)"
-              disabled
-              title="ComfyUI integration is disabled"
-              style={{ opacity: 0.4, cursor: "not-allowed" }}
-            >
-              <GitBranch size={16} />
-              Raw Comfy
-            </button>
-          )}
 
-          <button className="sidebar-nav-button" type="button" onClick={startWalkthrough}>
-            <MessageSquareText size={16} />
-            Demo Walkthrough
-          </button>
+
           {isAdmin && (
             <>
               <p className="sidebar-section-label">Admin</p>
