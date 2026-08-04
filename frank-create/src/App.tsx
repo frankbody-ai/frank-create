@@ -3035,9 +3035,7 @@ export default function App() {
 
 
 
-          {isAdmin && (
-            <>
-              <p className="sidebar-section-label">Admin</p>
+          <p className="sidebar-section-label">Sessions</p>
               <a
                 className="sidebar-nav-button admin-sidebar-link"
                 href="#/admin"
