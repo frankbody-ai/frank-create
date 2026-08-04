@@ -5115,10 +5115,11 @@ input[aria-invalid="true"] {
   --pink: #FFB6A5;
   --pink-soft: #FFD0C6;
   --coffee: #3F2A2D;
-  --font-heading: "Michroma", Arial, sans-serif;
-  --font-brand: "Audiowide", Arial, sans-serif;
-  --font-display: "Audiowide", Arial, sans-serif;
-  --font-body: "Audiowide", Arial, sans-serif;
+  --font-heading: "Jura", Arial, sans-serif;
+  --font-brand: "Jura", Arial, sans-serif;
+  --font-display: "Jura", Arial, sans-serif;
+  --font-body: "Jura", Arial, sans-serif;
+
   color: var(--frank-ink);
   background: var(--frank-blush);
 }
