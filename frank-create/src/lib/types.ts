@@ -136,48 +136,6 @@ export interface BrandContextReceiptResult {
   latest_json_url?: string;
 }
 
-export interface LocalEngineStatus {
-  active_engine: string;
-  diffusion_ready: boolean;
-  checkpoint_count: number;
-  checkpoints: string[];
-  ignored_checkpoints?: Array<{
-    name: string;
-    path?: string;
-    size_bytes?: number;
-    reason?: string;
-  }>;
-  minimum_checkpoint_mb?: number;
-  checkpoint_dir?: string;
-  model_root?: string;
-  setup_readme?: string;
-  setup_steps?: string[];
-  recommended_checkpoints?: Array<{
-    label: string;
-    use: string;
-    folder: string;
-  }>;
-  note: string;
-}
-
-export interface WorkflowBlueprint {
-  key: string;
-  label: string;
-  use: string;
-  node_types: string[];
-  workflow_json: Record<string, unknown>;
-}
-
-export interface WorkflowBlueprintsResponse {
-  status: "ready" | "warning" | "fail";
-  product: string;
-  checkpoint_name: string;
-  source_placeholder?: string;
-  mask_placeholder?: string;
-  note: string;
-  blueprints: WorkflowBlueprint[];
-}
-
 export interface FrankConfig {
   tasks: FrankTask[];
   providers: FrankProvider[];
@@ -185,7 +143,6 @@ export interface FrankConfig {
   models: StudioModel[];
   backlogModels: StudioModel[];
   promptPresets: PromptPreset[];
-  localEngine: LocalEngineStatus;
   voice: {
     appTitle: string;
     labTitle: string;
@@ -193,7 +150,6 @@ export interface FrankConfig {
     emptyState: string;
     approved: string;
   };
-  advancedGraphUrl: string;
 }
 
 export interface ProviderReadiness {

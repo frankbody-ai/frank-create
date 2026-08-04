@@ -10,7 +10,6 @@ import type {
   DemoReadinessPackResult,
   ExportRecord,
   FrankConfig,
-  LocalEngineStatus,
   ProviderAdapterAudit,
   ProviderEnvStatus,
   ProviderReadiness,
@@ -22,23 +21,11 @@ import type {
   StudioSession,
   StudioTurn,
   TurnRequest,
-  UploadedImage,
-  VideoRequest,
-  WorkflowBlueprintsResponse
+  VideoRequest
 } from "./types";
 
-// In Lovable preview/production the SPA has no same-origin /api server.
-// Route every Frank Create call to the `frank-api` Supabase Edge Function.
-// Dev fallback: when running locally with the Vite plugin (frankApi.ts),
-// VITE_FRANK_API_BASE can be set to "/api/frank" via a local .env.
-const frankBase =
-  (import.meta.env?.VITE_FRANK_API_BASE as string | undefined) ||
-  "https://amwfmlqvaranonhyvqbj.supabase.co/functions/v1/frank-api";
-
-// True when the app is running against the Lovable Cloud backend (not the local
-// Python ComfyUI server). Used to hide UI affordances that only work on desktop.
-export const isLovablePreview = !frankBase.startsWith("/");
-
+// The SPA talks to the `frank-api` Lovable Cloud function for everything.
+const frankBase = "https://amwfmlqvaranonhyvqbj.supabase.co/functions/v1/frank-api";
 
 export async function fetchHealth() {
   return fetchJson<{ ok: boolean; product: string; store: string }>("/health");
@@ -52,15 +39,6 @@ export async function fetchModels() {
   return fetchJson<Pick<FrankConfig, "models" | "backlogModels" | "promptPresets">>("/models");
 }
 
-export async function prepareLocalEngineFolders() {
-  return fetchJson<{ created_dirs: string[]; readme_path: string; localEngine: LocalEngineStatus }>("/local-engine/setup", {
-    method: "POST"
-  });
-}
-
-export async function fetchWorkflowBlueprints() {
-  return fetchJson<WorkflowBlueprintsResponse>("/local-engine/workflow-blueprints");
-}
 
 export async function fetchProviderStatus() {
   return fetchJson<ProviderReadiness>("/provider-status");
@@ -419,7 +397,7 @@ export async function createInferenceTurn(payload: TurnRequest) {
     status: "queued" | "running" | "blocked" | "failed" | "complete";
     assets?: Asset[];
     providerPayload?: Record<string, unknown>;
-    localEngine?: "comfy" | "fallback" | "frank_renderer";
+    localEngine?: "fallback" | "frank_renderer";
     fallbackReason?: string;
     error?: { code: string; env_vars?: string[]; message?: string; retryable?: boolean; status?: number; raw?: string; request_id?: string };
   }>("/inference/turn", {
@@ -537,9 +515,8 @@ export function assetWorkflowReceiptUrl(assetId: string) {
   return `${frankBase}/assets/${encodeURIComponent(assetId)}/workflow`;
 }
 
-export function comfyCanvasAssetUrl(assetId: string) {
-  return `/comfy/?frankAssetId=${encodeURIComponent(assetId)}`;
-}
+
+
 
 async function authHeader(): Promise<Record<string, string>> {
   try {
@@ -552,28 +529,8 @@ async function authHeader(): Promise<Record<string, string>> {
   }
 }
 
-export async function uploadImage(file: File): Promise<UploadedImage> {
-  if (isLovablePreview) {
-    throw new Error("Uploading images requires the desktop ComfyUI install.");
-  }
-  const body = new FormData();
-  body.append("image", file);
-  body.append("type", "input");
-  body.append("subfolder", "frank_create");
-  body.append("overwrite", "true");
 
-  const response = await fetch("/api/upload/image", {
-    method: "POST",
-    headers: { ...(await authHeader()) },
-    body
-  });
 
-  if (!response.ok) {
-    throw new Error(`Upload failed (${response.status})`);
-  }
-
-  return (await response.json()) as UploadedImage;
-}
 
 /**
  * Upload a reference image to the private `studio-images` bucket and return a
@@ -612,35 +569,6 @@ export async function uploadReferenceToStorage(
   return { url: signed.signedUrl, path };
 }
 
-export async function queuePrompt(prompt: Record<string, unknown>, clientId = makeClientId()) {
-  if (isLovablePreview) {
-    throw new Error("Direct ComfyUI prompt queueing requires the desktop install.");
-  }
-  const response = await fetch("/api/prompt", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(await authHeader()) },
-    body: JSON.stringify({ client_id: clientId, prompt })
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `Prompt queue failed (${response.status})`);
-  }
-
-  return (await response.json()) as { prompt_id: string; number: number; node_errors?: Record<string, unknown> };
-}
-
-export async function fetchPromptHistory(promptId: string) {
-  const response = await fetch(`/api/history/${encodeURIComponent(promptId)}`, {
-    headers: { ...(await authHeader()) },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Prompt history unavailable (${response.status})`);
-  }
-
-  return (await response.json()) as unknown;
-}
 
 async function fetchJson<T>(path: string, init: RequestInit = {}) {
   const response = await fetch(`${frankBase}${path}`, {
@@ -674,9 +602,3 @@ function apiErrorMessage(text: string, status: number) {
   }
 }
 
-function makeClientId() {
-  if ("crypto" in window && "randomUUID" in window.crypto) {
-    return `frank-create-${window.crypto.randomUUID()}`;
-  }
-  return `frank-create-${Date.now()}`;
-}

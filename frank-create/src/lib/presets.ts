@@ -17,78 +17,57 @@ export const fallbackConfig: FrankConfig = {
       key: "product-shot-lab",
       label: "Product Shot Lab",
       description: "Upload product/reference images, generate variants, approve, and export.",
-      providers: ["local", "google", "replicate", "openai"]
+      providers: ["google", "replicate", "openai"]
     },
     {
       key: "background-remove",
       label: "Background sweep",
       description: "Transparent PNGs and clean product isolation.",
-      providers: ["local", "openai"]
+      providers: ["openai"]
     },
     {
       key: "background-replace",
       label: "Background glow-up",
       description: "Frank-branded lifestyle and campaign backdrops.",
-      providers: ["local", "google", "openai"]
+      providers: ["google", "openai"]
     },
     {
       key: "product-cleanup",
       label: "Product polish",
       description: "Retouch labels, dust, shadows, and product edges.",
-      providers: ["local", "openai"]
+      providers: ["openai"]
     },
     {
       key: "campaign-variants",
       label: "Campaign remix",
       description: "Creative rounds from one approved product direction.",
-      providers: ["local", "google", "openai", "replicate"]
+      providers: ["google", "openai", "replicate"]
     },
     {
       key: "aspect-crops",
       label: "Crop the goods",
       description: "PDP, email, feed, story, and paid-social crops.",
-      providers: ["local"]
+      providers: ["google", "replicate"]
     },
     {
       key: "upscale-enhance",
       label: "Make it bigger",
       description: "High-res masters with product detail intact.",
-      providers: ["local", "openai"]
+      providers: ["openai"]
     },
     {
       key: "prompt-remix",
       label: "Brief remix",
       description: "Sharper directions before another creative round.",
-      providers: ["local", "openai", "google"]
+      providers: ["openai", "google"]
     }
   ],
   providers: [
-    { key: "local", label: "Local RTX", type: "local", status: "ready" },
     { key: "google", label: "Gemini / Nano Banana", type: "api", status: "curated" },
     { key: "replicate", label: "Replicate", type: "api", status: "curated" },
     { key: "openai", label: "OpenAI image/edit", type: "api", status: "curated" }
   ],
   models: [
-    {
-      id: "frank-local-comfy",
-      label: "Frank Local Comfy Studio",
-      short_label: "Local Comfy",
-      provider: "local",
-      provider_model: "frank-local-comfy",
-      status: "disabled",
-      badge: "SOON",
-      max_resolution_label: "4K",
-      description:
-        "Local Comfy-backed product variants, edits, masked retouch demos, crops, export prep, and storyboard motion without API keys. Disabled until local GPU setup is ready.",
-      capabilities: { generation: true, edit: true, masked_edit: true, video: true },
-      allowed_aspect_ratios: ["1:1", "4:5", "3:4", "16:9", "9:16", "3:2", "2:3"],
-      allowed_image_sizes: ["1K", "2K", "4K"],
-      reference_image_limit: 8,
-      max_count: 4,
-      cost_label: "local",
-      configured: false,
-      missing_env_vars: []
-    },
     {
       id: "google-nb-pro",
       label: "Gemini 3 Pro Image / Nano Banana Pro",
@@ -447,44 +426,13 @@ export const fallbackConfig: FrankConfig = {
     { key: "high-res-master", label: "High-res master", size: "source/upscaled", format: "PNG/TIFF", media_types: ["image"] },
     { key: "video-storyboard", label: "Motion storyboard", size: "source loop", format: "GIF + JSON", media_types: ["video"] }
   ],
-  localEngine: {
-    active_engine: "frank_renderer",
-    diffusion_ready: false,
-    checkpoint_count: 0,
-    checkpoints: [],
-    ignored_checkpoints: [],
-    minimum_checkpoint_mb: 100,
-    checkpoint_dir: "models\\checkpoints",
-    model_root: "models",
-    setup_readme: "models\\FRANK_CREATE_MODELS_README.txt",
-    setup_steps: [
-      "Put a full SDXL-style .safetensors checkpoint in models\\checkpoints for Local Comfy txt2img, reference/edit img2img, and masked inpaint workflows.",
-      "Files smaller than 100 MB are treated as incomplete downloads/placeholders.",
-      "Use the raw Comfy canvas for FLUX or custom loader workflows until a curated FLUX app workflow is added.",
-      "Run Demo Doctor again after adding model files."
-    ],
-    recommended_checkpoints: [
-      {
-        label: "SDXL 1.0 Base or an approved SDXL product checkpoint",
-        use: "Best first local checkpoint for campaign/image rounds, reference-guided edits, and masked retouching through built-in Comfy txt2img/img2img/inpaint workflows.",
-        folder: "models\\checkpoints"
-      },
-      {
-        label: "Frank-approved SDXL LoRA",
-        use: "Later brand-tuning layer for open models after the image set and rights are approved.",
-        folder: "models\\loras"
-      }
-    ],
-    note: "No diffusion checkpoint detected. Local Comfy uses the Frank renderer until a checkpoint is installed."
-  },
   voice: {
     appTitle: "The Art Dept.",
     labTitle: "Frank Body Image Studio",
     primaryAction: "Generate",
     emptyState: "Waiting for the brief...",
     approved: "Approved. Hot."
-  },
-  advancedGraphUrl: "/comfy/"
+  }
 };
 
 export const defaultBrief = {

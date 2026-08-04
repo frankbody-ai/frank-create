@@ -12,7 +12,6 @@ const corsHeaders = {
 // Map studio model id -> Lovable AI Gateway model string.
 // Kept only for the local placeholder — every user-visible model now runs on Replicate.
 const MODEL_MAP: Record<string, string> = {
-  "frank-local-comfy": "google/gemini-2.5-flash-image",
 };
 
 // Replicate model routing: studio model id -> Replicate owner/name.
@@ -58,7 +57,6 @@ Deno.serve(async (req) => {
 
   const modelId = body.modelId ?? "";
   const MAX_COUNT_BY_MODEL: Record<string, number> = {
-    "frank-local-comfy": 4,
     "google-nb-pro": 4,
     "google-nb-2": 4,
     "openai-gpt-image-2": 10,

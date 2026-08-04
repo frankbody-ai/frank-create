@@ -252,7 +252,6 @@ async function lovableChat(messages: any[], model = "google/gemini-3-flash-previ
 
 const MODEL_MAP: Record<string, string> = {
   // Kept only for the local placeholder — every visible model runs on Replicate.
-  "frank-local-comfy": "google/gemini-2.5-flash-image",
 };
 
 const REPLICATE_MAP: Record<string, string> = {
@@ -666,7 +665,6 @@ async function handleInference(body: any, userId: string) {
   const nextSeq = (msgIns.data as any)?.seq ?? 0;
 
   const MAX_COUNT_BY_MODEL: Record<string, number> = {
-    "frank-local-comfy": 4,
     "google-nb-pro": 4,
     "google-nb-2": 4,
     "openai-gpt-image-2": 10,
@@ -1369,7 +1367,7 @@ Deno.serve(async (req) => {
     if (path.startsWith("/briefs")) return json({ briefs: [] });
     if (path.startsWith("/runs")) return json({ runs: [] });
     if (path === "/local-engine/workflow-blueprints") {
-      return json({ blueprints: [], filePath: "cloud:blueprints", note: "Local ComfyUI blueprints require the desktop install." });
+      return json({ blueprints: [], filePath: "cloud:blueprints", note: "Workflow blueprints are not used by the cloud studio." });
     }
     if (path === "/local-engine/setup" && method === "POST") {
       return json({
