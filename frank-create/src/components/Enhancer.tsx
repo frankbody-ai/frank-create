@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createEnhancement, createReference, uploadReferenceToStorage } from "../lib/api";
 import { upscaleModelsForMedia } from "../lib/studio";
+import BeforeAfterSlider from "./BeforeAfterSlider";
 import type { Asset, EnhanceSettings, StudioModel } from "../lib/types";
 
 type MediaKind = "image" | "video";
@@ -48,6 +49,9 @@ export default function Enhancer({
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string>("");
   const [results, setResults] = useState<Asset[]>([]);
+  // Enhanced asset id -> the source image it came from, for the compare slider.
+  const [sourceByResult, setSourceByResult] = useState<Record<string, string>>({});
+  const [compareOff, setCompareOff] = useState<Record<string, boolean>>({});
   const abortRef = useRef<AbortController | null>(null);
 
   const roster = useMemo(() => upscaleModelsForMedia(models, media), [models, media]);
@@ -143,6 +147,14 @@ export default function Enhancer({
         { signal: controller.signal }
       );
       if (response.status === "complete" && response.assets?.length) {
+        const sourcePreview = source.preview_url || source.remote_url || "";
+        if (sourcePreview) {
+          setSourceByResult((current) => {
+            const next = { ...current };
+            for (const asset of response.assets!) next[asset.id] = sourcePreview;
+            return next;
+          });
+        }
         setResults((current) => [...response.assets!, ...current]);
         onAssetsCreated(response.assets);
         onStatus(`Enhanced ${media} is ready.`);
@@ -426,10 +438,20 @@ export default function Enhancer({
           <div className="enhancer-result-grid">
             {results.map((asset) => {
               const preview = asset.preview_url || asset.remote_url || "";
+              const beforeSrc = sourceByResult[asset.id] || "";
+              const isImage = asset.media_type !== "video";
+              const canCompare = isImage && Boolean(beforeSrc && preview) && !compareOff[asset.id];
               return (
                 <figure key={asset.id} className="enhancer-result">
                   {asset.media_type === "video" ? (
                     <video src={preview} controls playsInline preload="metadata" />
+                  ) : canCompare ? (
+                    <BeforeAfterSlider
+                      beforeSrc={beforeSrc}
+                      afterSrc={preview}
+                      alt={asset.title || "Enhanced asset"}
+                      onExpand={() => onExpandAsset?.(asset)}
+                    />
                   ) : (
                     <img
                       src={preview}
@@ -439,6 +461,17 @@ export default function Enhancer({
                   )}
                   <figcaption>
                     <span>{asset.title || "Enhanced"}</span>
+                    {isImage && beforeSrc ? (
+                      <button
+                        type="button"
+                        className="link-button"
+                        onClick={() =>
+                          setCompareOff((current) => ({ ...current, [asset.id]: !current[asset.id] }))
+                        }
+                      >
+                        {compareOff[asset.id] ? "Compare" : "Enhanced only"}
+                      </button>
+                    ) : null}
                     {preview ? (
                       <a href={preview} target="_blank" rel="noreferrer" download>
                         Download
