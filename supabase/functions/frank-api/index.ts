@@ -234,18 +234,21 @@ function rowToSession(row: any): any {
 }
 
 async function lovableChat(messages: any[], model = "google/gemini-3-flash-preview") {
+  const body: Record<string, unknown> = { model, messages };
+  if (model.startsWith("openai/gpt-5.6")) body.reasoning_effort = "none";
   const r = await fetch(`${LOVABLE_BASE}/chat/completions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model, messages }),
+    body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error(`Lovable chat ${r.status}: ${await r.text()}`);
   const j: any = await r.json();
   return j.choices?.[0]?.message?.content || "";
 }
+
 
 const MODEL_MAP: Record<string, string> = {
   // Kept only for the local placeholder — every visible model runs on Replicate.
