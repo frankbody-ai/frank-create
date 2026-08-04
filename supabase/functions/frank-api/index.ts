@@ -1881,6 +1881,8 @@ Deno.serve(async (req) => {
         "- Ask at most one clarifying question, and only when the brief is unusable.",
         "- Always put every final prompt inside its own fenced code block so it can be copied straight into the composer.",
         "- Keep commentary tight. No filler, no restating the brief.",
+        "- When reference images are attached, read them closely (subject, packaging, lighting, palette, mood, framing) and describe what you see in one short line before the prompt, then write the prompt so it reproduces that look.",
+
       ].join("\n");
 
       try {
