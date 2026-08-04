@@ -2447,6 +2447,153 @@ export default function App() {
     }
   }
 
+  /**
+   * Side-by-side: fire two provider calls with the same brief — one per model —
+   * each with settings snapped to what that model accepts, and tag both turns
+   * with a shared compare group so the timeline renders them as one A/B row.
+   */
+  async function handleCompareGenerate() {
+    if (!activeSession || !prompt.trim()) {
+      setStatusText("Give the studio a prompt first.");
+      return;
+    }
+    const modelA = selectedModel;
+    const modelB = compareModelB;
+    if (!modelA || !modelB || modelA.id === modelB.id) {
+      setStatusText("Pick two different models to compare.");
+      return;
+    }
+    if (connection !== "online") {
+      setStatusText("Side-by-side needs the cloud backend.");
+      return;
+    }
+    if (compareNeedsApproval && !compareApproved) {
+      setStatusText("Approve the adjusted settings first — some values aren't supported by both models.");
+      return;
+    }
+
+    const referenceCount = selectedReferenceAssets.length;
+    const generationReferenceUrls = selectedReferenceAssets
+      .map(referenceUrlForGeneration)
+      .filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u));
+    if (referenceCount && !generationReferenceUrls.length) {
+      setStatusText("Reference images are still uploading. Try again in a moment.");
+      return;
+    }
+
+    const groupId = makeLocalId("cmp");
+    const sides: Array<{ side: "A" | "B"; model: StudioModel }> = [
+      { side: "A", model: modelA },
+      { side: "B", model: modelB }
+    ];
+
+    const inflight: InflightGen[] = sides.map(({ side, model }) => ({
+      id: makeLocalId("gen"),
+      modelId: model.id,
+      modelLabel: `Side ${side} · ${modelName(config, model.id)}`,
+      prompt,
+      aspect: settings.aspect_ratio,
+      count: 1,
+    }));
+    setInflightGens((current) => [...current, ...inflight]);
+    setBusy(true);
+    setGenPhase("running");
+    setGenError(null);
+    setGenErrorOpen(false);
+    setStatusText(`Running ${modelName(config, modelA.id)} vs ${modelName(config, modelB.id)}...`);
+
+    const runSide = async ({ side, model }: { side: "A" | "B"; model: StudioModel }) => {
+      const resolved = resolveForModel(model, settings, { referenceCount });
+      const sideSettings: StudioSettings = {
+        ...resolved.settings,
+        count: 1,
+        compare_group: groupId,
+        compare_side: side
+      };
+      const sideReferenceAssets = selectedReferenceAssets.slice(0, resolved.referenceLimit);
+      const sideReferenceUrls = generationReferenceUrls.slice(0, resolved.referenceLimit);
+
+      if (compareMedia === "video") {
+        const sourceAsset =
+          sideReferenceAssets.find((asset) => asset.media_type !== "video") ??
+          (selectedAsset && selectedAsset.media_type !== "video" ? selectedAsset : undefined) ??
+          outputAssets.find((asset) => asset.media_type !== "video");
+        if (model.requires_source_image && !sourceAsset) {
+          throw new Error(`${model.short_label ?? model.label} needs a source frame.`);
+        }
+        return createVideoStoryboard({
+          session_id: activeSession.id,
+          model: model.id,
+          prompt,
+          settings: sideSettings,
+          source_asset_id: sourceAsset?.id,
+          reference_asset_ids: sideReferenceAssets.map((asset) => asset.id)
+        });
+      }
+
+      const request = buildTurnRequest({
+        sessionId: activeSession.id,
+        modelId: model.id,
+        prompt,
+        promptMode: "generate",
+        frankBodyMode,
+        presetKey: selectedPresetKey ?? undefined,
+        settings: sideSettings,
+        referenceAssetIds: sideReferenceAssets.map((asset) => asset.id),
+        referenceImageUrls: sideReferenceUrls
+      });
+      return createInferenceTurn(request);
+    };
+
+    try {
+      const results = await Promise.allSettled(sides.map(runSide));
+      const newTurns: StudioTurn[] = [];
+      const newAssets: Asset[] = [];
+      const failures: string[] = [];
+
+      results.forEach((result, index) => {
+        const { side, model } = sides[index];
+        const label = modelName(config, model.id);
+        if (result.status === "rejected") {
+          failures.push(`Side ${side} (${label}): ${result.reason instanceof Error ? result.reason.message : "failed"}`);
+          return;
+        }
+        const value = result.value;
+        if (value.turn) newTurns.push(value.turn);
+        if (value.assets?.length) newAssets.push(...value.assets);
+        if (value.status === "failed" || value.status === "blocked") {
+          failures.push(`Side ${side} (${label}): ${value.error?.message ?? value.status}`);
+        }
+      });
+
+      if (newTurns.length) setTurns((current) => [...current, ...newTurns]);
+      if (newAssets.length) {
+        setAssets((current) => [...newAssets, ...current]);
+        setSelectedAsset(newAssets[0]);
+        setSelectedReferenceIds([]);
+      }
+
+      if (failures.length) {
+        setGenPhase("failed");
+        setGenError({ message: failures.join(" · "), retryable: true });
+        setStatusText(failures.join(" · "));
+      } else {
+        setGenPhase("completed");
+        setStatusText(`Side-by-side ready — ${modelName(config, modelA.id)} vs ${modelName(config, modelB.id)}.`);
+      }
+    } catch (error) {
+      setGenPhase("failed");
+      setStatusText(error instanceof Error ? error.message : "Side-by-side run failed.");
+    } finally {
+      const ids = new Set(inflight.map((entry) => entry.id));
+      setInflightGens((current) => current.filter((entry) => !ids.has(entry.id)));
+      setBusy(false);
+      void reconcileSessionAssets();
+    }
+  }
+
+
+
 
   async function changeAssetStatus(asset: Asset, approval_status: Asset["approval_status"]) {
     const optimistic = { ...asset, approval_status };
