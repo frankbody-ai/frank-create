@@ -3067,12 +3067,12 @@ export default function App() {
 
       <aside className="guided-header app-sidebar" data-tour-id="app-header" data-tour-active={tourActive("app-header")}>
         <div className="sidebar-brand-block">
-          <img src={designStudioLogo} alt="Design Studio" className="sidebar-studio-logo" />
+          <img src={designStudioLogo} alt="Design Studio" className="sidebar-brand-logo" />
         </div>
 
         <nav className="sidebar-nav" aria-label="Frank Create navigation">
           <div className="sidebar-studio-block">
-            <img src={frankBodyLogo} alt="frank body" className="sidebar-brand-logo" />
+            <img src={frankBodyLogo} alt="frank body" className="sidebar-studio-logo" />
           </div>
           <p className="sidebar-section-label">Create</p>
           <button
