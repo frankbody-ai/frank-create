@@ -1201,25 +1201,84 @@ function withReferenceIdentityLock(prompt: string, referenceCount: number): stri
   ].join("\n");
 }
 
+const REMIX_SHARED_INSTRUCTION = [
+  "Rewrite the existing image-generation brief according to the selected creative direction.",
+  "Preserve all explicit requirements from the original brief, including:",
+  "- Product identity, quantity, packaging, colours and proportions",
+  "- People, setting, props and actions",
+  "- Composition requirements that do not conflict with the selected remix",
+  "- Aspect ratio and output format",
+  "- Any instructions specifying what must not be changed",
+  "Only adjust the photography, framing, lighting, composition and visual atmosphere. Add useful photographic detail where needed, but do not invent new products, branding, text, people or major scene elements.",
+  "Return one cohesive image-generation brief. Do not mention the remix process or provide explanations.",
+].join("\n");
+
+const REMIX_DIRECTIVES: Array<{ key: string; label: string; directive: string }> = [
+  {
+    key: "close_up",
+    label: "CLOSE-UP",
+    directive: [
+      "Transform the original brief into intimate close-up photography.",
+      "Move the camera closer and use tight, intentional cropping to emphasize the most important subject. Highlight tactile details such as skin, packaging, product texture, water, material finishes and product interaction. Use a close-focusing 85–100mm lens aesthetic, shallow depth of field, selective focus and refined background separation.",
+      "Keep essential product branding and defining features visible and accurate. If a person is present, focus on expressive details such as the face, hands, skin or interaction with the product. If the scene is product-only, create a detailed, sensory product composition.",
+      "Preserve the original concept, environment and required elements while making the result feel intimate, dimensional and visually immersive.",
+    ].join("\n"),
+  },
+  {
+    key: "editorial_campaign",
+    label: "EDITORIAL CAMPAIGN",
+    directive: [
+      "Transform the original brief into premium editorial campaign photography.",
+      "Elevate the scene through deliberate art direction, confident composition, sophisticated styling and polished professional lighting. Create a strong visual hierarchy with a clear hero subject, considered negative space and an intentional relationship between the subject, products and environment.",
+      "The result should feel distinctive, aspirational and suitable for a major Frank Body advertising campaign. Use refined beauty photography, dimensional lighting, controlled colour, premium texture and a polished commercial finish without making the image feel generic or overly corporate.",
+      "Preserve the original concept, products, people, setting and actions while increasing the production value and campaign impact.",
+    ].join("\n"),
+  },
+  {
+    key: "candid",
+    label: "CANDID",
+    directive: [
+      "Transform the original brief into candid lifestyle photography.",
+      "Make the scene feel spontaneous, natural and captured in the middle of a real moment. Use relaxed body language, authentic expressions, natural movement, observational framing and slight compositional imperfection. Apply a 35–50mm lifestyle-photography aesthetic with believable environmental light, realistic skin texture and subtle depth of field.",
+      "If a person is present, show an unposed interaction with the product or environment. If the scene is product-only, arrange the products as though they have been naturally placed or recently used, while maintaining an intentional and visually appealing composition.",
+      "Preserve the original concept, products, setting and actions while giving the image an energetic, relatable and effortlessly authentic Frank Body feeling.",
+    ].join("\n"),
+  },
+];
+
 async function handleRemix(body: any) {
   const prompt = String(body.prompt || "").trim();
   if (!prompt) return { variants: [] };
-  const content = await lovableChat([
-    {
-      role: "system",
-      content:
-        'Rewrite the user\'s image prompt as 3 distinct, vivid variants. Return ONLY a JSON array of objects: [{"key":"a","label":"Bold","prompt":"..."}].',
-    },
-    { role: "user", content: prompt },
-  ]);
-  try {
-    const match = content.match(/\[[\s\S]*\]/);
-    const variants = JSON.parse(match ? match[0] : content);
-    return { variants };
-  } catch {
-    return { variants: [{ key: "a", label: "Variant A", prompt: content.slice(0, 280) }] };
-  }
+
+  const results = await Promise.all(
+    REMIX_DIRECTIVES.map(async (entry) => {
+      try {
+        const content = await lovableChat([
+          {
+            role: "system",
+            content: [
+              REMIX_SHARED_INSTRUCTION,
+              "",
+              "SELECTED CREATIVE DIRECTION:",
+              entry.directive,
+              "",
+              "Return ONLY the rewritten brief as plain prose. No titles, labels, quotes or markdown.",
+            ].join("\n"),
+          },
+          { role: "user", content: `ORIGINAL BRIEF:\n${prompt}` },
+        ]);
+        const rewritten = String(content || "").trim();
+        if (!rewritten) return null;
+        return { key: entry.key, label: entry.label, prompt: rewritten };
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  return { variants: results.filter(Boolean) };
 }
+
 
 async function readJson(req: Request): Promise<any> {
   try { return await req.json(); } catch { return {}; }

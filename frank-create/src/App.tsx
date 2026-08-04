@@ -3859,10 +3859,6 @@ export default function App() {
               {remixBusy ? <RefreshCw className="spin" size={16} /> : <Sparkles size={16} />}
               Brief remix
             </button>
-            <button className="secondary-button remix-button" type="button" onClick={handleRefinePrompt} disabled={refineBusy || !prompt.trim()}>
-              {refineBusy ? <RefreshCw className="spin" size={16} /> : <Wand2 size={16} />}
-              Refine Prompt
-            </button>
 
             <button
               className="primary-button"
