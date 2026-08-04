@@ -783,6 +783,7 @@ export default function App() {
   function showImageStudio() {
     setStudioMode("image-studio");
     setReviewFilter("all");
+    setSettingsRailOpen(true);
     setStatusText("Image Studio is open.");
   }
 
