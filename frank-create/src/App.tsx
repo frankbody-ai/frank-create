@@ -2480,6 +2480,7 @@ export default function App() {
       const ids = new Set(inflight.map((entry) => entry.id));
       setInflightGens((current) => current.filter((entry) => !ids.has(entry.id)));
       setBusy(false);
+      setSelectedReferenceIds([]);
       void reconcileSessionAssets();
     }
   }
