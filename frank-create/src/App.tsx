@@ -2271,55 +2271,45 @@ export default function App() {
 
   async function handleVideoGenerate() {
     if (!activeSession || !prompt.trim()) {
-      setStatusText("Give Video Lab a motion brief first.");
+      setStatusText("Brief the motion first.");
       return;
     }
 
     if (connection !== "online") {
-      setStatusText("Start Comfy/Frank backend to make the motion board.");
+      setStatusText("Backend is offline — video needs the cloud provider.");
       return;
     }
 
+    const videoModel = isVideoModel(selectedModel)
+      ? selectedModel
+      : mediaModels.find((model) => model.status === "ready") ?? selectedModel;
+
+    // Source frame: an explicitly selected reference wins, then the picked
+    // thread asset, then the newest still in the session.
     const sourceAsset =
-      selectedAsset && selectedAsset.kind !== "reference" && selectedAsset.media_type !== "video"
-        ? selectedAsset
-        : outputAssets.find((asset) => asset.approval_status === "approved" && asset.media_type !== "video") ??
-          outputAssets.find((asset) => asset.media_type !== "video");
-    const localVideoModel = config.models.find((model) => model.id === "frank-local-comfy");
-    const videoModel =
-      selectedModel && selectedModel.provider !== "local" && selectedModel.capabilities.video
-        ? selectedModel
-        : localVideoModel ?? selectedModel;
+      selectedReferenceAssets.find((asset) => asset.media_type !== "video") ??
+      (selectedAsset && selectedAsset.media_type !== "video" ? selectedAsset : undefined) ??
+      outputAssets.find((asset) => asset.media_type !== "video");
 
-    const missingKeyMessage = modelMissingKeyAction(videoModel);
-    if (missingKeyMessage) {
-      setStatusText(missingKeyMessage);
+    if (videoModel?.requires_source_image && !sourceAsset) {
+      setStatusText(`${videoModel.short_label ?? videoModel.label} needs a source frame. Pick a reference or an image from the thread.`);
       return;
     }
 
-    const referenceLimitMessage = modelReferenceLimitAction(videoModel, selectedReferenceAssets.length);
-    if (referenceLimitMessage) {
-      setStatusText(referenceLimitMessage);
-      return;
-    }
-
-    if (videoModel?.provider !== "local" && !sourceAsset) {
-      setStatusText("Choose an image before making live motion.");
-      return;
-    }
+    const videoSettings = videoModel ? normalizeVideoSettings(settings, videoModel) : settings;
 
     const ctrl = new AbortController();
     videoAbortRef.current = ctrl;
     setBusy(true);
     setVideoStartedAt(Date.now());
-    setStatusText("Video Lab is making the motion board...");
+    setStatusText(`Rendering ${videoSettings.duration ?? ""}s clip with ${videoModel?.short_label ?? "the video model"}...`);
 
     try {
       const result = await createVideoStoryboard({
         session_id: activeSession.id,
         model: videoModel?.id,
         prompt,
-        settings,
+        settings: videoSettings,
         source_asset_id: sourceAsset?.id,
         reference_asset_ids: selectedReferenceAssets.map((asset) => asset.id)
       }, { signal: ctrl.signal });
@@ -2329,7 +2319,7 @@ export default function App() {
         return;
       }
       if (result.status === "failed") {
-        setStatusText(result.error?.message ?? "Video Lab returned no motion asset.");
+        setStatusText(result.error?.message ?? "The video model returned no clip.");
         return;
       }
       if (result.assets?.length) {
@@ -2338,12 +2328,12 @@ export default function App() {
         setStatusText("Motion board is on the wall.");
         return;
       }
-      setStatusText("Video Lab returned no motion asset.");
+      setStatusText("The video model returned no clip.");
     } catch (error) {
       if (ctrl.signal.aborted) {
         setStatusText("Video generation canceled.");
       } else {
-        const msg = error instanceof Error ? error.message : "Video Lab needs another look.";
+        const msg = error instanceof Error ? error.message : "Video generation needs another look.";
         if (/desktop|video_not_supported|ComfyUI/i.test(msg)) {
           setDesktopNotice("Video generation requires the desktop ComfyUI install. This action isn't available in the cloud preview.");
           setStatusText("Video generation is desktop-only. See the notice at the top for details.");
