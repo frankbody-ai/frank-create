@@ -7820,3 +7820,46 @@ input:focus, textarea:focus, select:focus {
 .rail-reset:hover {
   background: #FFEFEA;
 }
+
+/* ==== Prompt Generator agent ==== */
+.prompt-agent-view { padding-bottom: 24px; }
+.prompt-agent-shell {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 8px 24px 24px; min-height: 0; flex: 1;
+}
+.prompt-agent-skills { display: flex; flex-wrap: wrap; gap: 8px; }
+.prompt-agent-skill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: 999px;
+  border: 1px solid rgba(63,42,45,0.18); background: #fff;
+  color: #3F2A2D; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.prompt-agent-skill:hover { background: #FFEFEA; }
+.prompt-agent-skill.active { background: #3F2A2D; color: #FFEFEA; border-color: #3F2A2D; }
+.prompt-agent-skill-hint { margin: 0; font-size: 12px; color: rgba(63,42,45,0.65); }
+.prompt-agent-thread {
+  flex: 1; min-height: 240px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 12px;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(63,42,45,0.10); border-radius: 14px; padding: 16px;
+}
+.prompt-agent-msg { display: flex; flex-direction: column; gap: 6px; max-width: 760px; }
+.prompt-agent-msg.user { align-self: flex-end; align-items: flex-end; }
+.prompt-agent-msg-role {
+  margin: 0; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: rgba(63,42,45,0.55);
+}
+.prompt-agent-msg-body {
+  white-space: pre-wrap; font-size: 13px; line-height: 1.55; color: #3F2A2D;
+  background: #fff; border: 1px solid rgba(63,42,45,0.10);
+  border-radius: 12px; padding: 12px 14px;
+}
+.prompt-agent-msg.user .prompt-agent-msg-body { background: #3F2A2D; color: #FFEFEA; border-color: #3F2A2D; }
+.prompt-agent-typing { display: inline-flex; align-items: center; gap: 8px; color: rgba(63,42,45,0.7); }
+.prompt-agent-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.prompt-agent-error { margin: 0; font-size: 12px; color: #b3261e; }
+.prompt-agent-composer { display: flex; gap: 8px; align-items: flex-end; }
+.prompt-agent-composer textarea {
+  flex: 1; resize: vertical; font: inherit; font-size: 13px; color: #3F2A2D;
+  padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(63,42,45,0.18); background: #fff;
+}

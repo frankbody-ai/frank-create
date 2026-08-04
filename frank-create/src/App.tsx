@@ -118,6 +118,7 @@ import {
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { StudioRail } from "./components/StudioRail";
 import { PresetCreator } from "./components/PresetCreator";
+import { PromptGenerator } from "./components/PromptGenerator";
 
 import type {
   ActivationChecklist,
@@ -365,7 +366,7 @@ export default function App() {
     await hardSignOut();
     window.location.replace("/");
   };
-  const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator">(() =>
+  const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator" | "prompt-generator">(() =>
     initialStudioMode()
   );
   const advancedOpen = false;
@@ -821,6 +822,13 @@ export default function App() {
     setStudioMode("preset-creator");
     setInspectorOpen(false);
     setStatusText("Preset Creator is open.");
+  }
+
+  function showPromptGenerator() {
+    setStudioMode("prompt-generator");
+    setInspectorOpen(false);
+    setSettingsRailOpen(false);
+    setStatusText("Prompt Generator is open.");
   }
 
   function showProductShotLab() {
@@ -2912,7 +2920,7 @@ export default function App() {
 
   return (
     <div
-      className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${advancedOpen ? "advanced-open" : ""} ${studioMode !== "preset-creator" && settingsRailOpen ? "settings-rail-open" : ""}`}
+      className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${advancedOpen ? "advanced-open" : ""} ${studioMode !== "preset-creator" && studioMode !== "prompt-generator" && settingsRailOpen ? "settings-rail-open" : ""}`}
       data-provider-audit={providerAuditMode ? "open" : undefined}
     >
       {desktopNotice ? (
@@ -2992,15 +3000,14 @@ export default function App() {
             Studio
           </button>
           <button
-            className="sidebar-nav-button is-muted"
+            className={`sidebar-nav-button ${studioMode === "prompt-generator" ? "active" : ""}`}
             type="button"
-            aria-label="Product Shot Lab (coming soon)"
-            title="Product Shot Lab is paused — waiting on Cliff's feedback to refine it."
-            disabled
+            aria-label="Open Prompt Generator"
+            title="Prompt-engineering agent running on GPT-5.6 Sol"
+            onClick={showPromptGenerator}
           >
             <Layers3 size={16} />
-            <span style={{ flex: 1 }}>Product Shot Lab</span>
-            <span className="sidebar-soon-tag">Soon</span>
+            Prompt Generator
           </button>
           <button
             className={`sidebar-nav-button ${studioMode === "preset-creator" ? "active" : ""}`}
@@ -3148,7 +3155,7 @@ export default function App() {
         </nav>
       </aside>
 
-      {studioMode !== "preset-creator" && settingsRailOpen ? (
+      {studioMode !== "preset-creator" && studioMode !== "prompt-generator" && settingsRailOpen ? (
         <StudioRail
           mediaKind={mediaKind}
           onMediaKindChange={switchMediaKind}
@@ -3168,7 +3175,16 @@ export default function App() {
         />
       ) : null}
 
-      {studioMode === "preset-creator" ? (
+      {studioMode === "prompt-generator" ? (
+        <PromptGenerator
+          onStatus={setStatusText}
+          onUsePrompt={(value) => {
+            setPrompt(value);
+            showImageStudio();
+            setStatusText("Prompt loaded into the Studio composer.");
+          }}
+        />
+      ) : studioMode === "preset-creator" ? (
         <PresetCreator
           builtinPresets={config.promptPresets}
           customPresets={customPresets}
@@ -5498,13 +5514,14 @@ function initialSurface() {
   return window.location.pathname === "/graph" ? "graph" : "studio";
 }
 
-function initialStudioMode(): "image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator" {
+function initialStudioMode(): "image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator" | "prompt-generator" {
   if (typeof window === "undefined") {
     return "image-studio";
   }
 
   const mode = new URLSearchParams(window.location.search).get("mode");
   if (mode === "preset-creator") return "preset-creator";
+  if (mode === "prompt-generator") return "prompt-generator";
   return mode === "product-shot-lab" || mode === "video-lab" || mode === "approved-hot" ? mode : "image-studio";
 }
 
