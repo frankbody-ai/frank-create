@@ -5485,7 +5485,8 @@ input:focus, textarea:focus, select:focus {
 
 /* Brand logo image (replaces the wordmark capsules) */
 .sidebar-brand-logo { display: block; width: 100%; height: auto; margin: 0; }
-.sidebar-studio-logo { display: block; width: 100%; height: auto; margin: 8px 0 0; }
+.sidebar-studio-block { padding: 14px 18px 4px; }
+.sidebar-studio-block .sidebar-studio-logo { display: block; width: 100%; height: auto; margin: 0; }
 .frank-auth-logo { display: block; width: 220px; max-width: 100%; height: auto; margin: 0 auto 8px; }
 
 /* ============= Sidebar bottom sections — blend with top nav (§) ============= */
