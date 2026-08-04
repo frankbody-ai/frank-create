@@ -530,7 +530,7 @@ export default function App() {
         setActiveSession(nextSession);
         setTurns(turnResult.turns);
         setAssets(assetResult.assets);
-        setSelectedReferenceIds(referenceIdsFromAssets(assetResult.assets));
+        setSelectedReferenceIds([]);
         setExports(filterExportsForAssets(exportResult.exports, assetResult.assets));
         setProviderEnvStatus(providerEnvResult);
         setActivationChecklist(activationChecklistResult);
@@ -1052,7 +1052,7 @@ export default function App() {
     ]);
     setTurns(turnResult.turns);
     setAssets(assetResult.assets);
-    setSelectedReferenceIds(referenceIdsFromAssets(assetResult.assets));
+    setSelectedReferenceIds([]);
     setExports(filterExportsForAssets(exportResult.exports, assetResult.assets));
     setActiveProject(projectForSession ?? null);
     setProjectName(projectForSession?.name ?? "Frank Body Campaign");
@@ -1215,7 +1215,7 @@ export default function App() {
       setBriefDraft(briefToDraft(result.brief));
       setTurns([result.turn]);
       setAssets(seededAssets);
-      setSelectedReferenceIds(referenceIdsFromAssets(seededAssets));
+      setSelectedReferenceIds([]);
       setExports([]);
       setSelectedAsset(firstReviewableAsset(seededOutputs));
       setLightboxAsset(null);
@@ -6019,10 +6019,6 @@ function joinWithOr(values: string[]) {
   }
 
   return `${values.slice(0, -1).join(", ")} or ${values[values.length - 1]}`;
-}
-
-function referenceIdsFromAssets(assets: Asset[]) {
-  return assets.filter((asset) => asset.kind === "reference").map((asset) => asset.id);
 }
 
 function referenceUrlForGeneration(asset: Asset) {
