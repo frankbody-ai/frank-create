@@ -124,8 +124,27 @@ export function StudioRail(props: StudioRailProps) {
 
 
       <div className="rail-scroll">
+        {isCompare ? (
+          <section className="rail-block">
+            <p className="rail-label">Compare on</p>
+            <div className="rail-chips">
+              {(["image", "video"] as const).map((kind) => (
+                <button
+                  key={kind}
+                  type="button"
+                  className={`rail-chip${compareMedia === kind ? " active" : ""}`}
+                  onClick={() => onCompareMediaChange?.(kind)}
+                >
+                  {kind === "image" ? "Images" : "Videos"}
+                </button>
+              ))}
+            </div>
+            <p className="rail-hint">One output per side, same brief and settings — a clean A/B.</p>
+          </section>
+        ) : null}
         <section className="rail-block">
-          <p className="rail-label">Model</p>
+          <p className="rail-label">{isCompare ? "Model A" : "Model"}</p>
+
           <div className="rail-model-card">
             <select
               aria-label="Model"
