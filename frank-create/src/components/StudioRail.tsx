@@ -97,22 +97,35 @@ export function StudioRail(props: StudioRailProps) {
               value={model?.id ?? ""}
               onChange={(event) => onModelChange(event.target.value)}
             >
-              {models.map((item) => (
-                <option key={item.id} value={item.id} disabled={item.status === "disabled"}>
-                  {(item.short_label ?? item.label)
-                    + (item.status === "disabled" ? " (soon)" : item.degraded ? " (provider issue)" : "")}
-                </option>
-              ))}
+              {models.map((item) => {
+                const rate = modelRateLabel(item);
+                return (
+                  <option key={item.id} value={item.id} disabled={item.status === "disabled"}>
+                    {(item.short_label ?? item.label)
+                      + (rate ? ` — ${rate}` : "")
+                      + (item.price_tier === "cheapest" ? " · cheapest" : item.price_tier === "premium" ? " · premium" : "")
+                      + (item.status === "disabled" ? " (soon)" : item.degraded ? " (provider issue)" : "")}
+                  </option>
+                );
+              })}
             </select>
             <p className="rail-model-desc">{model?.description ?? ""}</p>
             <div className="rail-model-badges">
               <span>{model?.badge || (isVideo ? "video" : "image")}</span>
               <span>{model?.reference_image_limit ?? 0} refs</span>
               {isVideo ? <span>{durations.length ? `${durations[0]}–${durations[durations.length - 1]}s` : "auto"}</span> : null}
+              {badge ? <span className={badge.className}>{badge.label}</span> : null}
             </div>
+            {costEstimate ? (
+              <p className="rail-model-price">
+                <strong>{costEstimate}</strong>
+                {modelRateLabel(model) ? <span> · {modelRateLabel(model)}</span> : null}
+              </p>
+            ) : null}
             {model?.degraded ? (
               <p className="model-degraded-note">{model.degraded_note ?? "This model is failing upstream."}</p>
             ) : null}
+
           </div>
         </section>
 
