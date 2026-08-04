@@ -113,8 +113,14 @@ import {
   maxCountForModel,
   modelsForMedia,
   normalizeVideoSettings,
-  isVideoModel
+  isVideoModel,
+  resolveForModel,
+  groupCompareRows,
+  parseCompareMeta,
+  estimateVideoCost
 } from "./lib/studio";
+import type { StudioFieldErrors } from "./lib/studio";
+
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { StudioRail } from "./components/StudioRail";
 import { PresetCreator } from "./components/PresetCreator";
