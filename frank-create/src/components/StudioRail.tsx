@@ -141,7 +141,9 @@ export function StudioRail(props: StudioRailProps) {
                   onClick={() => onAspectChange(aspect)}
                 >
                   <span className="rail-tile-box" style={ratioBoxStyle(aspect)} aria-hidden="true" />
-                  <span className="rail-tile-label">{aspect}</span>
+                  <span className="rail-tile-label" title={aspect}>
+                    {aspect === "match_input_image" ? "match input" : aspect === "adaptive" ? "adaptive" : aspect}
+                  </span>
                 </button>
               ))}
             </div>
