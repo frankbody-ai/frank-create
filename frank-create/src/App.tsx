@@ -620,6 +620,26 @@ export default function App() {
     [modelOptions.allowedImageSizes, settings.aspect_ratio]
   );
   const modelHasSizes = (modelOptions.allowedImageSizes?.length ?? 0) > 0;
+  const mediaModels = useMemo(() => modelsForMedia(config.models, mediaKind), [config.models, mediaKind]);
+
+  function switchMediaKind(kind: "image" | "video") {
+    setMediaKind(kind);
+    const pool = modelsForMedia(config.models, kind).filter((model) => model.status !== "disabled");
+    const next = pool.find((model) => model.status === "ready" && !model.degraded) ?? pool[0];
+    if (next && next.id !== selectedModelId) setSelectedModelId(next.id);
+    setStatusText(kind === "video" ? "Video mode — pick a source frame and brief the motion." : "Image mode.");
+  }
+
+  function resetStudioSettings() {
+    const model = config.models.find((item) => item.id === selectedModelId);
+    if (!model) return;
+    const base = defaultStudioSettings();
+    setSettings(isVideoModel(model)
+      ? normalizeVideoSettings(base, model)
+      : normalizeStudioSettingsForModel(base, model));
+    setStatusText("Settings reset to defaults.");
+  }
+
   const handleAspectChange = (nextAspect: string) => {
     setSettings((current) => {
       const sizes = filterSizesForAspect(modelOptions.allowedImageSizes, nextAspect);
@@ -639,6 +659,10 @@ export default function App() {
   useEffect(() => {
     const model = config.models.find((m) => m.id === selectedModelId);
     if (!model) return;
+    if (isVideoModel(model)) {
+      setSettings((current) => normalizeVideoSettings(current, model));
+      return;
+    }
     setSettings((current) => {
       const nextAspect = model.allowed_aspect_ratios.includes(current.aspect_ratio)
         ? current.aspect_ratio
@@ -1929,7 +1953,7 @@ export default function App() {
       return;
     }
 
-    if (studioMode === "video-lab") {
+    if (mediaKind === "video" || isVideoModel(selectedModel)) {
       await handleVideoGenerate();
       return;
     }
