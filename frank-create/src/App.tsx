@@ -3516,10 +3516,24 @@ export default function App() {
           }) : null}
 
           {turns.length ? (
-            [...turns].reverse().map((turn, idx) => {
+            groupCompareRows([...turns].reverse()).map((row, rowIdx) => (
+            <div
+              key={`row-${row[0].id}`}
+              className={row.length > 1 ? "compare-run" : "turn-row"}
+            >
+              {row.length > 1 ? (
+                <p className="compare-run-title">
+                  Side-by-side · {modelName(config, row[0].model)} vs {modelName(config, row[1].model)}
+                </p>
+              ) : null}
+              <div className={row.length > 1 ? "compare-run-grid" : "turn-row-single"}>
+              {row.map((turn) => {
+              const idx = rowIdx;
+              const compareSide = parseCompareMeta(turn.settings_json).side;
               const createdMs = turn.created_at ? new Date(turn.created_at).getTime() : 0;
               const isFresh = idx === 0 && createdMs && Date.now() - createdMs < 30_000;
               const shortId = turn.id.slice(0, 8);
+
               const timeLabel = turn.created_at ? new Date(turn.created_at).toLocaleString() : "";
               return (
               <article
