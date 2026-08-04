@@ -30,6 +30,38 @@
   font-weight: 700;
 }
 
+@font-face {
+  font-family: "Audiowide";
+  src: url("/__l5e/assets-v1/35881708-d34e-4f18-ad73-c2c68b375847/Audiowide-Regular.ttf") format("truetype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "Audiowide";
+  src: url("/__l5e/assets-v1/35881708-d34e-4f18-ad73-c2c68b375847/Audiowide-Regular.ttf") format("truetype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: "Audiowide";
+  src: url("/__l5e/assets-v1/35881708-d34e-4f18-ad73-c2c68b375847/Audiowide-Regular.ttf") format("truetype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 600;
+}
+
+@font-face {
+  font-family: "Audiowide";
+  src: url("/__l5e/assets-v1/35881708-d34e-4f18-ad73-c2c68b375847/Audiowide-Regular.ttf") format("truetype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 700;
+}
+
 :root {
   color-scheme: light;
   font-family: var(--font-body);
