@@ -5947,6 +5947,7 @@ function providerUnlockPriority(model: StudioModel) {
     "google-nb-pro": 1,
     "google-nb-2": 1,
     "openai-gpt-image-2": 2,
+    "riverflow-2-pro": 2,
     "reve-2-1": 3,
     "mai-image-2-5": 3,
     "seedream-5-pro": 3

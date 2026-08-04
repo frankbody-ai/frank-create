@@ -70,6 +70,7 @@ describe("studio helpers", () => {
       "google-nb-2",
       "openai-gpt-image-2",
       "reve-2-1",
+      "riverflow-2-pro",
       "mai-image-2-5",
       "seedream-5-pro",
       "grok-imagine-video",

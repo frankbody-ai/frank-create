@@ -19,12 +19,13 @@ export function withReferenceIdentityLock(prompt: string, referenceCount: number
 }
 
 // Every supported slug + which reference field it must land in on Replicate.
-export const REFERENCE_FIELD_BY_SLUG: Record<string, "reference_images" | "image_input" | "input_images"> = {
+export const REFERENCE_FIELD_BY_SLUG: Record<string, "reference_images" | "image_input" | "input_images" | "init_images"> = {
   "reve/reve-2.1": "reference_images",
   "bytedance/seedream-5-pro": "image_input",
   "google/nano-banana-pro": "image_input",
   "google/nano-banana-2": "image_input",
   "openai/gpt-image-2": "input_images",
+  "sourceful/riverflow-2.0-pro": "init_images",
 };
 
 export function buildReplicateInput(
@@ -47,6 +48,22 @@ export function buildReplicateInput(
     if (refs.length) input.reference_images = refs.slice(0, 8);
     return input;
   }
+
+  if (slug === "sourceful/riverflow-2.0-pro") {
+    const RIVER_AR = new Set(["auto", "21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"]);
+    const ar = body.aspect_ratio && RIVER_AR.has(body.aspect_ratio) ? body.aspect_ratio : "auto";
+    const resolution = body.size === "4K" ? "4K" : body.size === "2K" ? "2K" : "1K";
+    const input: Record<string, unknown> = {
+      instruction: lockedPrompt,
+      aspect_ratio: ar,
+      resolution,
+      output_format: "png",
+    };
+    if (refs.length) input.init_images = refs.slice(0, 10);
+    return input;
+  }
+
+
 
   if (slug === "bytedance/seedream-5-pro") {
     const SEEDREAM_AR = new Set([

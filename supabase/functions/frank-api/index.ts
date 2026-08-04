@@ -261,6 +261,7 @@ const REPLICATE_MAP: Record<string, string> = {
   "nano-banana-2": "google/nano-banana-2",
   "openai-gpt-image-2": "openai/gpt-image-2",
   "reve-2-1": "reve/reve-2.1",
+  "riverflow-2-pro": "sourceful/riverflow-2.0-pro",
   "seedream-5-pro": "bytedance/seedream-5-pro",
 };
 
@@ -1128,6 +1129,19 @@ function buildReplicateInput(
     const aspect = body.aspect_ratio && allowed.has(body.aspect_ratio) ? body.aspect_ratio : "auto";
     const input: Record<string, unknown> = { prompt, aspect_ratio: aspect };
     if (refs.length) input.reference_images = refs.slice(0, 8);
+    return input;
+  }
+  if (slug === "sourceful/riverflow-2.0-pro") {
+    const allowed = new Set(["auto", "21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"]);
+    const aspect = body.aspect_ratio && allowed.has(body.aspect_ratio) ? body.aspect_ratio : "auto";
+    const resolution = body.size === "4K" ? "4K" : body.size === "2K" ? "2K" : "1K";
+    const input: Record<string, unknown> = {
+      instruction: prompt,
+      aspect_ratio: aspect,
+      resolution,
+      output_format: "png",
+    };
+    if (refs.length) input.init_images = refs.slice(0, 10);
     return input;
   }
   if (slug === "bytedance/seedream-5-pro") {
