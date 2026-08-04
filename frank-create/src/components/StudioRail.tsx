@@ -32,6 +32,13 @@ function ratioBoxStyle(aspect: string) {
   return { width: `${width}px`, height: `${height}px` };
 }
 
+function tierBadge(model: StudioModel | undefined) {
+  if (model?.price_tier === "cheapest") return { label: "Cheapest", className: "rail-price-tag cheapest" };
+  if (model?.price_tier === "premium") return { label: "Most expensive", className: "rail-price-tag premium" };
+  return null;
+}
+
+
 export function StudioRail(props: StudioRailProps) {
   const {
     mediaKind, onMediaKindChange, models, selectedModelId, onModelChange,
