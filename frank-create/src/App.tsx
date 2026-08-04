@@ -2011,31 +2011,6 @@ export default function App() {
     setStatusText(`${variant.label} direction loaded.`);
   }
 
-  async function handleRefinePrompt() {
-    const seedPrompt = prompt.trim();
-    if (!seedPrompt) {
-      setStatusText("Write a brief before refining it.");
-      return;
-    }
-    setRefineBusy(true);
-    try {
-      const result = await improvePresetPrompt({
-        prompt: seedPrompt,
-        label: activePreset?.label,
-        description: selectedModel?.short_label ?? selectedModel?.label
-      });
-      if (result.prompt?.trim()) {
-        setPrompt(result.prompt.trim());
-        setStatusText("Prompt refined.");
-      } else {
-        setStatusText("Refine came back empty — brief unchanged.");
-      }
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Refine Prompt needs another look.");
-    } finally {
-      setRefineBusy(false);
-    }
-  }
 
 
 
