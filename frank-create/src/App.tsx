@@ -119,6 +119,7 @@ import { FeedbackWidget } from "./components/FeedbackWidget";
 import { StudioRail } from "./components/StudioRail";
 import { PresetCreator } from "./components/PresetCreator";
 import { PromptGenerator } from "./components/PromptGenerator";
+import Enhancer from "./components/Enhancer";
 
 import type {
   ActivationChecklist,
