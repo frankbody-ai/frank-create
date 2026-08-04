@@ -139,6 +139,17 @@ export async function improvePresetPrompt(payload: { prompt: string; label?: str
   });
 }
 
+export async function promptAgentChat(payload: {
+  messages: { role: "user" | "assistant"; content: string }[];
+  skill?: string;
+}) {
+  return fetchJson<{ reply: string; model: string; skill: string }>("/prompt-agent", {
+    method: "POST",
+    body: JSON.stringify(payload)
+  });
+}
+
+
 export async function fetchBrandKit() {
   return fetchJson<{ brandKit: BrandKit; filePath: string }>("/brand-kit");
 }
