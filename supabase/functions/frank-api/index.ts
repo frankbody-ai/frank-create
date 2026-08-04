@@ -1539,6 +1539,60 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (path === "/prompt-agent" && method === "POST") {
+      const body = await readJson(req) as { messages?: { role?: string; content?: string }[]; skill?: string };
+      const incoming = Array.isArray(body?.messages) ? body.messages : [];
+      const history = incoming
+        .filter((m) => m && typeof m.content === "string" && m.content.trim())
+        .slice(-20)
+        .map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: String(m.content).trim() }));
+      if (!history.length) return json({ error: { code: "invalid", message: "messages are required" } }, 400);
+
+      const skill = String(body?.skill || "brief-to-prompt");
+      const SKILLS: Record<string, string> = {
+        "brief-to-prompt":
+          "SKILL — Brief to prompt: turn a rough brief into one production-ready image prompt. Structure: subject → composition/framing → lighting → lens/camera → surface/materials → mood → post-processing. Output the final prompt in a fenced code block, then 2-3 short notes.",
+        "variations":
+          "SKILL — Variations: produce 3-5 distinct prompt variants of the same idea (different framing, lighting, or set dressing). Each variant in its own fenced code block with a one-line label above it.",
+        "product-shot":
+          "SKILL — Product shot: studio/e-comm product photography prompts. Nail surface behaviour (glass, gel, cream, foil), reflections, shadow quality, background sweep, and clean commercial framing. Output the prompt in a fenced code block.",
+        "lifestyle":
+          "SKILL — Lifestyle & model: on-body, in-bathroom, or editorial lifestyle scenes. Direct talent, wardrobe, skin finish, environment, time-of-day light, and candid energy. Output the prompt in a fenced code block.",
+        "video-prompt":
+          "SKILL — Video prompt: image-to-video or text-to-video direction. Specify camera move, subject action, pacing for the chosen duration, and keep it to one continuous shot. Output the prompt in a fenced code block.",
+        "critique":
+          "SKILL — Critique & fix: diagnose why a prompt underperformed and return a corrected prompt. List the likely failure causes first, then the fixed prompt in a fenced code block.",
+      };
+      const skillBrief = SKILLS[skill] ?? SKILLS["brief-to-prompt"];
+
+      const system = [
+        "You are the Frank Create Prompt Generator agent — a senior creative director and prompt engineer for Frank Body (body-care brand: coffee scrubs, glossy skin, warm editorial realism, cheeky director-ready tone).",
+        "You write prompts for the models available in this app: Nano Banana Pro/2, GPT-image-2, Reve 2.1, Seedream 5 Pro (images) and Kling 2.5, Hailuo 02, Seedance 1 Pro, Veo 3 Fast, Wan 2.5 (video).",
+        skillBrief,
+        "Rules:",
+        "- Never set aspect ratio, resolution, seed, or model inside the prompt text — those are chosen in the Studio rail.",
+        "- Be specific and visual: concrete nouns, materials, textures, colour temperature, lens mm, aperture, angle.",
+        "- Prefer positive directives; add a short 'avoid:' clause only when needed.",
+        "- Ask at most one clarifying question, and only when the brief is unusable.",
+        "- Always put every final prompt inside its own fenced code block so it can be copied straight into the composer.",
+        "- Keep commentary tight. No filler, no restating the brief.",
+      ].join("\n");
+
+      try {
+        const reply = await lovableChat(
+          [{ role: "system", content: system }, ...history],
+          "openai/gpt-5.6-sol",
+        );
+        const cleaned = String(reply || "").trim();
+        if (!cleaned) return json({ error: { code: "empty", message: "AI returned no content" } }, 502);
+        return json({ reply: cleaned, model: "openai/gpt-5.6-sol", skill });
+      } catch (err) {
+        return json({ error: { code: "ai_error", message: errMessage(err) } }, 502);
+      }
+    }
+
+
+
     if (path === "/videos" && method === "POST") {
       const body = await readJson(req);
       const result = await handleVideo(body, userId);
