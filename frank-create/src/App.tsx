@@ -3611,7 +3611,11 @@ export default function App() {
                 <div className="turn-copy">
                   <span className={`status-dot ${turn.status}`} />
                   <div>
-                    <p className="eyebrow">{turnKindLabel(turn)}</p>
+                    <p className="eyebrow">
+                      {compareSide ? <span className="compare-side-badge">Side {compareSide}</span> : null}
+                      {turnKindLabel(turn)}
+                    </p>
+
                     <h3>{modelName(config, turn.model)}</h3>
                     <p>{turn.prompt}</p>
                     <div className="turn-meta">
