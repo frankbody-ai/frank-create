@@ -47,7 +47,13 @@ function Router() {
     };
   }, []);
 
-  if (route.isHealth) return <HealthPage />;
+  if (route.isHealth)
+    return (
+      <>
+        <HealthPage />
+        <FeedbackWidget />
+      </>
+    );
   if (route.isCliff) return <AuthGate><CliffAccessPage /><FeedbackWidget /></AuthGate>;
   if (route.isAdmin)
     return <AuthGate><AdminPortal /><FeedbackWidget /></AuthGate>;
