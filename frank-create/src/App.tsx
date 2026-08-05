@@ -4528,6 +4528,34 @@ export default function App() {
         </div>
       ) : null}
 
+      {referencePreviewAsset ? (
+        <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setReferencePreviewAsset(null)}>
+          <div className="lightbox-inner reference-preview-inner" onClick={(event) => event.stopPropagation()}>
+            <button className="lightbox-close" type="button" onClick={() => setReferencePreviewAsset(null)} aria-label="Close reference preview">
+              <XCircle size={18} />
+            </button>
+            {referencePreviewAsset.preview_url ? (
+              <img src={referencePreviewAsset.preview_url} alt={referencePreviewAsset.title} />
+            ) : (
+              <div className="reference-preview-placeholder"><Paperclip size={48} /></div>
+            )}
+            <div className="lightbox-actions reference-preview-actions">
+              <button
+                type="button"
+                className="reference-preview-remove"
+                onClick={() => {
+                  removeReferenceFromDock(referencePreviewAsset);
+                  setReferencePreviewAsset(null);
+                }}
+              >
+                <X size={16} />
+                Remove reference
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {maskPainterAsset ? (
         <MaskPainterDialog
           asset={maskPainterAsset}
