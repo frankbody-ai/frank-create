@@ -937,7 +937,7 @@ h3 {
 .turn-card-body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 240px;
-  gap: 18px;
+  gap: 36px;
   align-items: start;
 }
 
@@ -951,7 +951,7 @@ h3 {
   grid-column: 2;
   grid-row: 1;
   min-width: 0;
-  padding-right: 62px;
+  padding-right: 0;
 }
 
 .turn-side .turn-copy p:not(.eyebrow) {
