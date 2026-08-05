@@ -3700,10 +3700,13 @@ export default function App() {
                   assets={displayOutputAssets.filter((asset) => asset.turn_id === turn.id)}
                   onSelect={inspectAsset}
                   emptyLabel={studioMode === "approved-hot" ? "No approved picks in this round" : turnEmptyLabel(turn)}
+                  pending={studioMode !== "approved-hot" && turn.status !== "failed" && turn.status !== "blocked" && turn.status !== "complete" && turn.status !== "completed"}
+                  pendingCount={typeof turn.count === "number" ? turn.count : 1}
                   selectedAssetId={selectedAsset?.id}
                   onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
                   onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
                 />
+
               </article>
               );
             })}
@@ -5269,6 +5272,8 @@ function isPlayableVideoAsset(asset: Asset) {
 function OutputStrip({
   assets,
   emptyLabel = "Waiting for provider output",
+  pending = false,
+  pendingCount = 1,
   selectedAssetId,
   onSelect,
   onQuickApprove,
@@ -5276,11 +5281,27 @@ function OutputStrip({
 }: {
   assets: Asset[];
   emptyLabel?: string;
+  pending?: boolean;
+  pendingCount?: number;
   selectedAssetId?: string;
   onSelect: (asset: Asset) => void;
   onQuickApprove?: (asset: Asset) => void;
   onQuickReject?: (asset: Asset) => void;
 }) {
+  if (!assets.length && pending) {
+    return (
+      <div className="output-grid">
+        {Array.from({ length: Math.max(1, Math.min(4, pendingCount)) }).map((_, index) => (
+          <div className="output-skeleton" key={`pending-${index}`}>
+            <span className="output-skeleton-shimmer" aria-hidden="true" />
+            <span className="output-skeleton-spinner" aria-hidden="true" />
+            {index === 0 ? <span className="output-skeleton-label">{emptyLabel}</span> : null}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   if (!assets.length) {
     return (
       <div className="output-placeholder">
@@ -5289,6 +5310,7 @@ function OutputStrip({
       </div>
     );
   }
+
 
   return (
     <div className="output-grid">
