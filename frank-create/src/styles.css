@@ -6951,3 +6951,95 @@ input:focus, textarea:focus, select:focus {
   grid-column: 1;
   grid-row: 2;
 }
+
+/* ---- Video frame slots (first / last frame) ---- */
+.frame-slots-block .frame-slots {
+  display: flex;
+  gap: 8px;
+}
+.frame-slot {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.frame-slot-well {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: 1px dashed rgba(63, 42, 45, 0.35);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: #3f2a2d;
+}
+.frame-slot-well img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.frame-slot.armed .frame-slot-well {
+  outline: 2px solid #ffb6a5;
+  outline-offset: 1px;
+  border-style: solid;
+}
+.frame-slot.filled .frame-slot-well {
+  border-style: solid;
+}
+.frame-slot.disabled .frame-slot-well {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.frame-slot-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  text-align: center;
+  padding: 4px;
+  opacity: 0.7;
+}
+.frame-slot-label {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.frame-slot-clear {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: none;
+  background: #3f2a2d;
+  color: #ffefea;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.output-tile-frames {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+}
+.output-tile-frames button {
+  flex: 1 1 0;
+  border: 1px solid rgba(63, 42, 45, 0.25);
+  background: #fff;
+  color: #3f2a2d;
+  border-radius: 999px;
+  font-size: 10px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+.output-tile-frames button:hover {
+  background: #ffefea;
+}
