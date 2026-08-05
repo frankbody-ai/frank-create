@@ -3991,6 +3991,20 @@ body {
   gap: 16px;
 }
 
+/* Centred content band so the studio never runs edge to edge. */
+.studio-shell.guided-studio .conversation-column > * {
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+}
+
+@media (min-width: 1500px) {
+  .studio-shell.guided-studio .conversation-column {
+    padding-inline: 56px;
+  }
+}
+
+
 .studio-shell.guided-studio .studio-topbar {
   order: 1;
   padding-bottom: 14px;
