@@ -3575,7 +3575,10 @@ export default function App() {
                   </button>
 
                 </div>
+                <div className="turn-card-body">
+                <div className="turn-side">
                 <div className="turn-copy">
+
                   <span className={`status-dot ${turn.status}`} />
                   <div>
                     <p className="eyebrow">
