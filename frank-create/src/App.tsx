@@ -1828,20 +1828,30 @@ export default function App() {
     }
   }
 
-  function handlePromptDragOver(event: React.DragEvent<HTMLTextAreaElement>) {
+  function handlePromptDragOver(event: React.DragEvent<HTMLElement>) {
     event.preventDefault();
     event.stopPropagation();
     if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
   }
 
-  async function handlePromptDrop(event: React.DragEvent<HTMLTextAreaElement>) {
+  async function handlePromptDrop(event: React.DragEvent<HTMLElement>) {
     event.preventDefault();
     event.stopPropagation();
     const files = Array.from(event.dataTransfer?.files ?? []).filter((f) => f.type.startsWith("image/"));
     if (files.length) {
       await addReferenceFiles(files);
+      return;
+    }
+    const droppedId = event.dataTransfer?.getData("application/x-frank-asset") || "";
+    if (droppedId) {
+      const dropped = assets.find((item) => item.id === droppedId);
+      if (dropped) {
+        await useAssetAsReference(dropped);
+      }
+      return;
     }
   }
+
 
   async function saveMaskFile(file: File, sourceAsset: Asset) {
     if (!activeSession) {
