@@ -2161,6 +2161,7 @@ export default function App() {
         generateAbortRef.current = null;
         finishInflight();
         setBusy(false);
+        clearReferenceDock();
       }
 
       return;
