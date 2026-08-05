@@ -2400,7 +2400,9 @@ export default function App() {
         }
       }
     } finally {
+      finishVideoInflight();
       videoAbortRef.current = null;
+
       setVideoStartedAt(null);
       setBusy(false);
       clearReferenceDock();
