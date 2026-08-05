@@ -1729,16 +1729,10 @@ export default function App() {
     setPrompt((current) => (current.trim() ? current : brief.prompt ?? ""));
   }
 
-  function toggleReferenceForRound(asset: Asset) {
-    setSelectedAsset(asset);
-    setSelectedReferenceIds((current) => {
-      if (current.includes(asset.id)) {
-        setStatusText(`${asset.title} skipped for the next round.`);
-        return current.filter((id) => id !== asset.id);
-      }
-      setStatusText(`${asset.title} added to the next round.`);
-      return [...current, asset.id];
-    });
+  function removeReferenceFromDock(asset: Asset) {
+    setSelectedReferenceIds((current) => current.filter((id) => id !== asset.id));
+    setRetiredReferenceIds((prev) => Array.from(new Set([...prev, asset.id])));
+    setStatusText(`${asset.title} removed from references.`);
   }
 
   async function handleReferenceUpload(event: ChangeEvent<HTMLInputElement>) {
