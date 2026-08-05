@@ -2492,6 +2492,8 @@ export default function App() {
     setGenError(null);
     setGenErrorOpen(false);
     setStatusText(`Running ${modelName(config, modelA.id)} vs ${modelName(config, modelB.id)}...`);
+    const compareFirstFrame = videoFirstFrame;
+    const compareLastFrame = videoLastFrame;
     clearReferenceDock();
 
     const runSide = async ({ side, model }: { side: "A" | "B"; model: StudioModel }) => {
