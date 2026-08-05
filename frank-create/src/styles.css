@@ -4052,9 +4052,14 @@ body {
 }
 
 .studio-shell.guided-studio .output-grid {
-  grid-template-columns: repeat(4, minmax(108px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
 }
+
+.studio-shell.guided-studio .turn-visual .output-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
 
 .studio-shell.guided-studio .output-grid button {
   border: 1px solid rgba(63, 42, 45, 0.08);
