@@ -6648,7 +6648,13 @@ input:focus, textarea:focus, select:focus {
   align-items: flex-start;
   gap: 16px;
   flex-wrap: wrap;
+  /* keep the Image/Video toggle clear of the fixed Feedback button */
+  padding-right: 180px;
 }
+@media (max-width: 900px) {
+  .enhancer-view .panel-head { padding-right: 0; padding-top: 44px; }
+}
+
 .enhancer-view .panel-sub {
   margin: 4px 0 0;
   color: rgba(63, 42, 45, 0.7);
