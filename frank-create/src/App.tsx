@@ -3449,6 +3449,8 @@ export default function App() {
             const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
             return (
               <article key={gen.id} className="turn-card turn-card-pending" aria-live="polite" aria-busy="true">
+                <div className="turn-card-body">
+                <div className="turn-side">
                 <div className="turn-copy">
                   <span className="status-dot pending" />
                   <div>
@@ -3462,7 +3464,9 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-                <div className="pending-strip" style={{ display: "grid", gridTemplateColumns: `repeat(${gen.count}, minmax(0, 1fr))`, gap: 12, marginTop: 12 }}>
+                </div>
+                <div className="turn-visual">
+                <div className="pending-strip" style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(gen.count, 3)}, minmax(0, 1fr))`, gap: 12 }}>
                   {Array.from({ length: gen.count }).map((_, i) => (
                     <div
                       key={i}
@@ -3478,6 +3482,9 @@ export default function App() {
                     </div>
                   ))}
                 </div>
+                </div>
+                </div>
+
               </article>
             );
           }) : null}
@@ -3575,7 +3582,10 @@ export default function App() {
                   </button>
 
                 </div>
+                <div className="turn-card-body">
+                <div className="turn-side">
                 <div className="turn-copy">
+
                   <span className={`status-dot ${turn.status}`} />
                   <div>
                     <p className="eyebrow">
@@ -3659,8 +3669,11 @@ export default function App() {
                         );
                       })()}
                     </div>
-                  </div>
                 </div>
+                </div>
+                </div>
+                <div className="turn-visual">
+
                 <OutputStrip
                   assets={displayOutputAssets.filter((asset) => asset.turn_id === turn.id)}
                   onSelect={inspectAsset}
@@ -3672,6 +3685,9 @@ export default function App() {
                   onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
                   onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
                 />
+                </div>
+                </div>
+
 
               </article>
               );
