@@ -719,5 +719,7 @@ export interface VideoRequest {
   prompt: string;
   settings: StudioSettings;
   source_asset_id?: string;
+  /** Video-only: explicit end frame; only sent for models whose schema accepts it. */
+  last_frame_asset_id?: string;
   reference_asset_ids: string[];
 }
