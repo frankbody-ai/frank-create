@@ -2582,9 +2582,11 @@ export default function App() {
 
     const existingReference = assets.find((item) => item.kind === "reference" && item.source_asset_id === asset.id);
     if (existingReference) {
-      setStatusText(`${asset.title} is ready as a selected reference.`);
+      setRetiredReferenceIds((prev) => prev.filter((id) => id !== existingReference.id));
+      setStatusText(`${asset.title} added to references.`);
       return;
     }
+
 
     const referencePayload = {
       session_id: activeSession.id,
