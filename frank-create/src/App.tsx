@@ -3685,27 +3685,23 @@ export default function App() {
             </label>
             <div className="reference-dock" aria-label="Reference images">
 
-              {referenceAssets.map((asset) => {
-                const isSelected = selectedReferenceIdSet.has(asset.id);
-                return (
+              {referenceAssets.map((asset) => (
+                <div key={asset.id} className="reference-thumb" title={asset.title}>
+                  {asset.preview_url ? <img src={asset.preview_url} alt={asset.title} /> : <Paperclip size={15} />}
                   <button
                     type="button"
-                    key={asset.id}
-                    className={isSelected ? "selected" : ""}
-                    aria-pressed={isSelected}
-                    title={`${isSelected ? "Using" : "Skipping"} ${asset.title}`}
-                    onClick={() => toggleReferenceForRound(asset)}
+                    className="reference-remove"
+                    aria-label={`Remove ${asset.title}`}
+                    title={`Remove ${asset.title}`}
+                    onClick={() => removeReferenceFromDock(asset)}
                   >
-                    {asset.preview_url ? <img src={asset.preview_url} alt={asset.title} /> : <Paperclip size={15} />}
-                    {isSelected ? <span className="ref-check" aria-hidden="true">✓</span> : null}
+                    <X size={12} />
                   </button>
-                );
-              })}
+                </div>
+              ))}
               {referenceAssets.length ? (
                 <span className="reference-selection-count">
-                  {selectedReferenceAssets.length
-                    ? `${selectedReferenceAssets.length}/${referenceAssets.length} in use`
-                    : `${referenceAssets.length} loaded · prompt-only`}
+                  {referenceAssets.length} loaded · used in next run
                 </span>
               ) : (
                 <span className="reference-selection-count reference-selection-count--empty">
