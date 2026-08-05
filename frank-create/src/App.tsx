@@ -381,6 +381,8 @@ export default function App() {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [lightboxAsset, setLightboxAsset] = useState<Asset | null>(null);
   const [referencePreviewAsset, setReferencePreviewAsset] = useState<Asset | null>(null);
+  const [referenceDropActive, setReferenceDropActive] = useState(false);
+
   const [compareBaseAsset, setCompareBaseAsset] = useState<Asset | null>(null);
   const [compareTargetAsset, setCompareTargetAsset] = useState<Asset | null>(null);
   const [editSourceAsset, setEditSourceAsset] = useState<Asset | null>(null);
@@ -1828,20 +1830,30 @@ export default function App() {
     }
   }
 
-  function handlePromptDragOver(event: React.DragEvent<HTMLTextAreaElement>) {
+  function handlePromptDragOver(event: React.DragEvent<HTMLElement>) {
     event.preventDefault();
     event.stopPropagation();
     if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
   }
 
-  async function handlePromptDrop(event: React.DragEvent<HTMLTextAreaElement>) {
+  async function handlePromptDrop(event: React.DragEvent<HTMLElement>) {
     event.preventDefault();
     event.stopPropagation();
     const files = Array.from(event.dataTransfer?.files ?? []).filter((f) => f.type.startsWith("image/"));
     if (files.length) {
       await addReferenceFiles(files);
+      return;
+    }
+    const droppedId = event.dataTransfer?.getData("application/x-frank-asset") || "";
+    if (droppedId) {
+      const dropped = assets.find((item) => item.id === droppedId);
+      if (dropped) {
+        await useAssetAsReference(dropped);
+      }
+      return;
     }
   }
+
 
   async function saveMaskFile(file: File, sourceAsset: Asset) {
     if (!activeSession) {
@@ -2572,9 +2584,11 @@ export default function App() {
 
     const existingReference = assets.find((item) => item.kind === "reference" && item.source_asset_id === asset.id);
     if (existingReference) {
-      setStatusText(`${asset.title} is ready as a selected reference.`);
+      setRetiredReferenceIds((prev) => prev.filter((id) => id !== existingReference.id));
+      setStatusText(`${asset.title} added to references.`);
       return;
     }
+
 
     const referencePayload = {
       session_id: activeSession.id,
@@ -3656,10 +3670,24 @@ export default function App() {
             </div>
           ) : null}
 
-          <div className="composer-actions" data-tour-id="reference-dock" data-tour-active={tourActive("reference-dock")}>
+          <div
+            className={`composer-actions${referenceDropActive ? " reference-drop-active" : ""}`}
+            data-tour-id="reference-dock"
+            data-tour-active={tourActive("reference-dock")}
+            onDragOver={(event) => {
+              handlePromptDragOver(event);
+              setReferenceDropActive(true);
+            }}
+            onDragLeave={() => setReferenceDropActive(false)}
+            onDrop={(event) => {
+              setReferenceDropActive(false);
+              void handlePromptDrop(event);
+            }}
+          >
             <label className={`upload-button reference-upload${referenceAssets.length ? " has-refs" : ""}`}>
               <Upload size={16} />
               Add references
+
               {referenceAssets.length ? (
                 <span className="reference-count-badge" aria-label={`${referenceAssets.length} references loaded`}>
                   <Paperclip size={11} />
@@ -5152,8 +5180,15 @@ function OutputStrip({
           <div
             className={`output-tile${selectedAssetId === asset.id ? " selected" : ""} status-${status}`}
             key={asset.id}
+            draggable
+            onDragStart={(event) => {
+              event.dataTransfer.setData("application/x-frank-asset", asset.id);
+              event.dataTransfer.effectAllowed = "copy";
+            }}
+            title={`${asset.title} — drag onto "Add references" to reuse`}
             style={ratio ? ({ ["--asset-aspect" as string]: ratio } as React.CSSProperties) : undefined}
           >
+
             <button
               type="button"
               className="output-tile-select"
