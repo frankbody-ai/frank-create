@@ -181,7 +181,10 @@ interface WalkthroughAnchor {
   placement: "above" | "below";
 }
 
-// How many reference thumbnails stay in the dock after a run completes.
+// Local record of references the user removed (or that a run consumed), so a
+// page refresh never brings them back into the dock.
+const RETIRED_REFERENCES_KEY = "frank.retiredReferenceIds";
+
 
 
 const WALKTHROUGH_STEPS: WalkthroughStep[] = [
@@ -390,8 +393,25 @@ export default function App() {
   const [maskPainterAsset, setMaskPainterAsset] = useState<Asset | null>(null);
   const [sessionCancelTarget, setSessionCancelTarget] = useState<StudioSession | null>(null);
   // References consumed by a finished run: hidden from the dock so they never
-  // carry over (and stay hidden when the session reconciles from the server).
-  const [retiredReferenceIds, setRetiredReferenceIds] = useState<string[]>([]);
+  // carry over. Persisted in localStorage so a refresh cannot resurrect them
+  // even if the backend delete failed (offline / network error).
+  const [retiredReferenceIds, setRetiredReferenceIds] = useState<string[]>(() => {
+    try {
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem(RETIRED_REFERENCES_KEY) : null;
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(RETIRED_REFERENCES_KEY, JSON.stringify(retiredReferenceIds.slice(-400)));
+    } catch {
+      /* ignore */
+    }
+  }, [retiredReferenceIds]);
+
   const [assetNotesDraft, setAssetNotesDraft] = useState("");
   const [providerReadiness, setProviderReadiness] = useState<ProviderReadiness | null>(null);
   const [activationChecklist, setActivationChecklist] = useState<ActivationChecklist | null>(null);
@@ -789,13 +809,29 @@ export default function App() {
   const selectedReferenceAssets = referenceAssets;
 
   // After a run: retire every reference so the dock is empty for the next run.
-  function clearReferenceDock() {
-    if (referenceAssets.length) {
-      setRetiredReferenceIds((prev) =>
-        Array.from(new Set([...prev, ...referenceAssets.map((asset) => asset.id)]))
+  // Durably retire references: mark them locally (survives refresh) and delete
+  // the backing records so the server never hands them back on reload.
+  function retireReferences(targets: Asset[]) {
+    if (!targets.length) {
+      return;
+    }
+    const ids = targets.map((asset) => asset.id);
+    const idSet = new Set(ids);
+    setRetiredReferenceIds((prev) => Array.from(new Set([...prev, ...ids])));
+    setAssets((current) => current.filter((asset) => !idSet.has(asset.id)));
+    if (connection === "online") {
+      void Promise.all(
+        targets
+          .filter((asset) => /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(asset.id))
+          .map((asset) => deleteAsset(asset.id).catch(() => undefined))
       );
     }
   }
+
+  function clearReferenceDock() {
+    retireReferences(referenceAssets);
+  }
+
 
   const baseFieldErrors = useMemo(
     () => validateStudioSettings(modelOptions.model, settings, { referenceCount: selectedReferenceAssets.length }),
@@ -1725,7 +1761,7 @@ export default function App() {
   }
 
   function removeReferenceFromDock(asset: Asset) {
-    setRetiredReferenceIds((prev) => Array.from(new Set([...prev, asset.id])));
+    retireReferences([asset]);
     setStatusText(`${asset.title} removed from references.`);
   }
 
