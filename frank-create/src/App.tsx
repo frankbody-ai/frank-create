@@ -533,6 +533,7 @@ export default function App() {
         }
         setSessions(nextSessions);
         setActiveSession(nextSession);
+        setActiveReferenceIds([]);
         setTurns(turnResult.turns);
         setAssets(assetResult.assets);
         setExports(filterExportsForAssets(exportResult.exports, assetResult.assets));
@@ -1014,6 +1015,7 @@ export default function App() {
       const created = await createSession(sessionPayload);
       setSessions((current) => [created.session, ...current]);
       setActiveSession(created.session);
+      setActiveReferenceIds([]);
       setTurns([]);
       setAssets([]);
       setExports([]);
@@ -1034,6 +1036,7 @@ export default function App() {
     const localSession = { ...makeLocalSession(), ...sessionPayload };
     setSessions((current) => [localSession, ...current]);
     setActiveSession(localSession);
+    setActiveReferenceIds([]);
     setTurns([]);
     setAssets([]);
     setExports([]);
@@ -1063,6 +1066,8 @@ export default function App() {
 
   async function selectSession(session: StudioSession) {
     setActiveSession(session);
+    setActiveReferenceIds([]);
+    setReferencePreviewAsset(null);
     setSelectedAsset(null);
     setHandoffProofText("");
     clearEditSource();
@@ -1104,6 +1109,7 @@ export default function App() {
     setSessions(remaining);
     const next = chooseLaunchSession(remaining) ?? null;
     setActiveSession(next);
+    setActiveReferenceIds([]);
     setTurns([]);
     setAssets([]);
     setExports([]);
