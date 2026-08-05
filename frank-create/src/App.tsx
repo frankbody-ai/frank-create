@@ -212,7 +212,7 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     detail: "Upload as many reference images as the selected model accepts. All loaded references are used for the next generation. Click the X on a thumbnail to remove it from the dock.",
     points: [
       "Multimodal models read selected refs as visual guidance.",
-      "Refs persist per session so you can iterate across rounds.",
+      "Refs are consumed once and the dock clears as soon as you generate.",
       "Any generated pick can be reused as a reference from the review desk."
     ],
     target: "reference-dock"
