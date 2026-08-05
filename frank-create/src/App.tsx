@@ -822,7 +822,7 @@ export default function App() {
     if (connection === "online") {
       void Promise.all(
         targets
-          .filter((asset) => !asset.id.startsWith("local-"))
+          .filter((asset) => /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(asset.id))
           .map((asset) => deleteAsset(asset.id).catch(() => undefined))
       );
     }
@@ -1761,7 +1761,7 @@ export default function App() {
   }
 
   function removeReferenceFromDock(asset: Asset) {
-    setRetiredReferenceIds((prev) => Array.from(new Set([...prev, asset.id])));
+    retireReferences([asset]);
     setStatusText(`${asset.title} removed from references.`);
   }
 
