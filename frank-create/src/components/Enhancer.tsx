@@ -198,7 +198,7 @@ export default function Enhancer({
               className={`pill-toggle${media === kind ? " is-active" : ""}`}
               onClick={() => setMedia(kind)}
             >
-              {kind === "image" ? "Image" : "Video"}
+              {kind === "image" ? "Image upscaler" : "Video upscaler"}
             </button>
           ))}
         </div>
