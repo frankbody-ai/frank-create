@@ -207,7 +207,7 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   {
     title: "Reference dock",
-    detail: "Upload as many reference images as the selected model accepts; the 5 most recent stay in the dock after a run. Click any thumbnail to include or exclude it from the next round — a blue outline means it's being used.",
+    detail: "Upload as many reference images as the selected model accepts. All loaded references are used for the next generation. Click the X on a thumbnail to remove it from the dock.",
     points: [
       "Multimodal models read selected refs as visual guidance.",
       "Refs persist per session so you can iterate across rounds.",
