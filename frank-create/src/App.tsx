@@ -3700,8 +3700,9 @@ export default function App() {
                   assets={displayOutputAssets.filter((asset) => asset.turn_id === turn.id)}
                   onSelect={inspectAsset}
                   emptyLabel={studioMode === "approved-hot" ? "No approved picks in this round" : turnEmptyLabel(turn)}
-                  pending={studioMode !== "approved-hot" && turn.status !== "failed" && turn.status !== "blocked" && turn.status !== "complete" && turn.status !== "completed"}
-                  pendingCount={typeof turn.count === "number" ? turn.count : 1}
+                  pending={studioMode !== "approved-hot" && (turn.status === "queued" || turn.status === "running")}
+                  pendingCount={1}
+
                   selectedAssetId={selectedAsset?.id}
                   onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
                   onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
