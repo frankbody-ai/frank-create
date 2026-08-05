@@ -180,12 +180,6 @@ interface WalkthroughAnchor {
   placement: "above" | "below";
 }
 
-// Local record of references the user removed (or that a run consumed), so a
-// page refresh never brings them back into the dock.
-const RETIRED_REFERENCES_KEY = "frank.retiredReferenceIds";
-
-
-
 const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
     title: "Sessions and sidebar",
@@ -391,25 +385,9 @@ export default function App() {
   const [maskAsset, setMaskAsset] = useState<Asset | null>(null);
   const [maskPainterAsset, setMaskPainterAsset] = useState<Asset | null>(null);
   const [sessionCancelTarget, setSessionCancelTarget] = useState<StudioSession | null>(null);
-  // References consumed by a finished run: hidden from the dock so they never
-  // carry over. Persisted in localStorage so a refresh cannot resurrect them
-  // even if the backend delete failed (offline / network error).
-  const [retiredReferenceIds, setRetiredReferenceIds] = useState<string[]>(() => {
-    try {
-      const raw = typeof window !== "undefined" ? window.localStorage.getItem(RETIRED_REFERENCES_KEY) : null;
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
-    } catch {
-      return [];
-    }
-  });
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(RETIRED_REFERENCES_KEY, JSON.stringify(retiredReferenceIds.slice(-400)));
-    } catch {
-      /* ignore */
-    }
-  }, [retiredReferenceIds]);
+  // Explicit composer-only attachments. Historical reference assets remain
+  // saved for run provenance but are never hydrated into a new run.
+  const [activeReferenceIds, setActiveReferenceIds] = useState<string[]>([]);
 
   const [assetNotesDraft, setAssetNotesDraft] = useState("");
   const [providerReadiness, setProviderReadiness] = useState<ProviderReadiness | null>(null);
@@ -799,37 +777,24 @@ export default function App() {
     setAssetNotesDraft(selectedAsset?.notes ?? "");
   }, [selectedAsset?.id]);
 
-  const retiredReferenceIdSet = useMemo(() => new Set(retiredReferenceIds), [retiredReferenceIds]);
+  const activeReferenceIdSet = useMemo(() => new Set(activeReferenceIds), [activeReferenceIds]);
   const referenceAssets = assets.filter(
-    (asset) => asset.kind === "reference" && !retiredReferenceIdSet.has(asset.id)
+    (asset) => asset.kind === "reference" && activeReferenceIdSet.has(asset.id)
   );
   // All loaded references are used for the next generation; the only way to
   // exclude one is to remove it from the dock with the X button.
   const selectedReferenceAssets = referenceAssets;
 
-  // After a run: retire every reference so the dock is empty for the next run.
-  // Durably retire references: mark them locally (survives refresh) and delete
-  // the backing records so the server never hands them back on reload.
-  function retireReferences(targets: Asset[], deleteRemote = true) {
+  function detachReferences(targets: Asset[], deleteRemote = false) {
     if (!targets.length) {
       return;
     }
     const ids = targets.map((asset) => asset.id);
     const idSet = new Set(ids);
-    setRetiredReferenceIds((prev) => {
-      const next = Array.from(new Set([...prev, ...ids])).slice(-400);
-      try {
-        // Persist synchronously so a refresh during an active generation cannot
-        // restore references that were already consumed by the Generate click.
-        window.localStorage.setItem(RETIRED_REFERENCES_KEY, JSON.stringify(next));
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
-    setAssets((current) => current.filter((asset) => !idSet.has(asset.id)));
+    setActiveReferenceIds((current) => current.filter((id) => !idSet.has(id)));
     setReferencePreviewAsset((current) => (current && idSet.has(current.id) ? null : current));
     if (deleteRemote && connection === "online") {
+      setAssets((current) => current.filter((asset) => !idSet.has(asset.id)));
       void Promise.all(
         targets
           .filter((asset) => /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(asset.id))
@@ -838,19 +803,9 @@ export default function App() {
     }
   }
 
-  function clearReferenceDock(deleteRemote = true) {
-    retireReferences(referenceAssets, deleteRemote);
-  }
-
-  function deleteConsumedReferences(targets: Asset[]) {
-    if (connection !== "online" || !targets.length) {
-      return;
-    }
-    void Promise.all(
-      targets
-        .filter((asset) => /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(asset.id))
-        .map((asset) => deleteAsset(asset.id).catch(() => undefined))
-    );
+  function clearReferenceDock() {
+    setActiveReferenceIds([]);
+    setReferencePreviewAsset(null);
   }
 
 
@@ -1782,7 +1737,7 @@ export default function App() {
   }
 
   function removeReferenceFromDock(asset: Asset) {
-    retireReferences([asset]);
+    detachReferences([asset], true);
     setStatusText(`${asset.title} removed from references.`);
   }
 
@@ -1856,6 +1811,7 @@ export default function App() {
 
     if (createdAssets.length) {
       setAssets((current) => [...createdAssets, ...current]);
+      setActiveReferenceIds((current) => Array.from(new Set([...current, ...createdAssets.map((asset) => asset.id)])));
     }
     if (failedUploads.length && createdAssets.length) {
       setStatusText(`${createdAssets.length} reference${createdAssets.length === 1 ? "" : "s"} locked. ${failedUploads.length} upload${failedUploads.length === 1 ? "" : "s"} failed.`);
@@ -2088,10 +2044,9 @@ export default function App() {
       maskAssetId: promptMode === "masked_edit" ? maskAsset?.id : undefined
     });
 
-    const consumedReferences = [...selectedReferenceAssets];
     // The request owns the snapshot above. Empty the visible dock immediately,
     // before waiting for the provider, so the next run always starts clean.
-    clearReferenceDock(false);
+    clearReferenceDock();
 
     if (connection !== "online") {
       // Auto-name the session from the first prompt if it still has the default name.
@@ -2225,7 +2180,6 @@ export default function App() {
         generateAbortRef.current = null;
         finishInflight();
         setBusy(false);
-        deleteConsumedReferences(consumedReferences);
       }
 
       return;
@@ -2298,7 +2252,6 @@ export default function App() {
     } finally {
       finishInflight();
       setBusy(false);
-      deleteConsumedReferences(consumedReferences);
       // The request can time out while the server keeps finishing the round
       // (e.g. 4 images). Re-read the session so every produced image lands.
       void reconcileSessionAssets();
@@ -2363,8 +2316,7 @@ export default function App() {
     }
 
     const videoSettings = videoModel ? normalizeVideoSettings(settings, videoModel) : settings;
-    const consumedReferences = [...selectedReferenceAssets];
-    clearReferenceDock(false);
+    clearReferenceDock();
 
     const ctrl = new AbortController();
     videoAbortRef.current = ctrl;
@@ -2433,7 +2385,6 @@ export default function App() {
 
       setVideoStartedAt(null);
       setBusy(false);
-      deleteConsumedReferences(consumedReferences);
     }
   }
 
@@ -2491,8 +2442,7 @@ export default function App() {
     setGenError(null);
     setGenErrorOpen(false);
     setStatusText(`Running ${modelName(config, modelA.id)} vs ${modelName(config, modelB.id)}...`);
-    const consumedReferences = [...selectedReferenceAssets];
-    clearReferenceDock(false);
+    clearReferenceDock();
 
     const runSide = async ({ side, model }: { side: "A" | "B"; model: StudioModel }) => {
       const resolved = resolveForModel(model, settings, { referenceCount });
@@ -2579,7 +2529,6 @@ export default function App() {
       const ids = new Set(inflight.map((entry) => entry.id));
       setInflightGens((current) => current.filter((entry) => !ids.has(entry.id)));
       setBusy(false);
-      deleteConsumedReferences(consumedReferences);
       void reconcileSessionAssets();
     }
   }
@@ -2669,7 +2618,7 @@ export default function App() {
 
     const existingReference = assets.find((item) => item.kind === "reference" && item.source_asset_id === asset.id);
     if (existingReference) {
-      setRetiredReferenceIds((prev) => prev.filter((id) => id !== existingReference.id));
+      setActiveReferenceIds((current) => Array.from(new Set([...current, existingReference.id])));
       setStatusText(`${asset.title} added to references.`);
       return;
     }
@@ -2704,6 +2653,7 @@ export default function App() {
             } as Asset);
 
       setAssets((current) => [reference, ...current]);
+      setActiveReferenceIds((current) => Array.from(new Set([...current, reference.id])));
       setStatusText(`${asset.title} is ready as a selected reference.`);
     } catch (error) {
       setStatusText(error instanceof Error ? error.message : "Could not turn this pick into a reference.");
