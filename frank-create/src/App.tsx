@@ -181,7 +181,10 @@ interface WalkthroughAnchor {
   placement: "above" | "below";
 }
 
-// How many reference thumbnails stay in the dock after a run completes.
+// Local record of references the user removed (or that a run consumed), so a
+// page refresh never brings them back into the dock.
+const RETIRED_REFERENCES_KEY = "frank.retiredReferenceIds";
+
 
 
 const WALKTHROUGH_STEPS: WalkthroughStep[] = [
