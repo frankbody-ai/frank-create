@@ -5169,7 +5169,8 @@ h3, h4 {
   align-items: stretch;
   gap: 8px;
   padding: 18px 16px 14px;
-  border-bottom: 2px solid rgba(63, 42, 45, 0.1);
+  background: #000000;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
 }
 
 /* Wordmark capsules fill the sidebar width (starter §5 rule) */
