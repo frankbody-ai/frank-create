@@ -182,7 +182,7 @@ interface WalkthroughAnchor {
 }
 
 // How many reference thumbnails stay in the dock after a run completes.
-const REFERENCE_HISTORY_KEEP = 5;
+
 
 const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   {
@@ -207,7 +207,7 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   },
   {
     title: "Reference dock",
-    detail: "Upload as many reference images as the selected model accepts; the 5 most recent stay in the dock after a run. Click any thumbnail to include or exclude it from the next round — a blue outline means it's being used.",
+    detail: "Upload as many reference images as the selected model accepts. All loaded references are used for the next generation. Click the X on a thumbnail to remove it from the dock.",
     points: [
       "Multimodal models read selected refs as visual guidance.",
       "Refs persist per session so you can iterate across rounds.",
@@ -386,7 +386,6 @@ export default function App() {
   const [maskAsset, setMaskAsset] = useState<Asset | null>(null);
   const [maskPainterAsset, setMaskPainterAsset] = useState<Asset | null>(null);
   const [sessionCancelTarget, setSessionCancelTarget] = useState<StudioSession | null>(null);
-  const [selectedReferenceIds, setSelectedReferenceIds] = useState<string[]>([]);
   // References consumed by a finished run: hidden from the dock so they never
   // carry over (and stay hidden when the session reconciles from the server).
   const [retiredReferenceIds, setRetiredReferenceIds] = useState<string[]>([]);
@@ -536,7 +535,6 @@ export default function App() {
         setActiveSession(nextSession);
         setTurns(turnResult.turns);
         setAssets(assetResult.assets);
-        setSelectedReferenceIds([]);
         setExports(filterExportsForAssets(exportResult.exports, assetResult.assets));
         setProviderEnvStatus(providerEnvResult);
         setActivationChecklist(activationChecklistResult);
@@ -556,7 +554,6 @@ export default function App() {
       setActiveSession(localSession);
       setConnection("offline");
       setExports([]);
-      setSelectedReferenceIds([]);
       const persisted = loadLocalAssets();
       if (persisted.length) {
         setAssets(persisted);
@@ -784,19 +781,17 @@ export default function App() {
   const referenceAssets = assets.filter(
     (asset) => asset.kind === "reference" && !retiredReferenceIdSet.has(asset.id)
   );
-  const selectedReferenceIdSet = useMemo(() => new Set(selectedReferenceIds), [selectedReferenceIds]);
-  const selectedReferenceAssets = referenceAssets.filter((asset) => selectedReferenceIdSet.has(asset.id));
+  // All loaded references are used for the next generation; the only way to
+  // exclude one is to remove it from the dock with the X button.
+  const selectedReferenceAssets = referenceAssets;
 
-  // After a run: drop every reference from the next round's selection and keep
-  // only the 5 most recent thumbnails in the dock as reusable history.
+  // After a run: retire every reference so the dock is empty for the next run.
   function clearReferenceDock() {
-    setSelectedReferenceIds([]);
-    setAssets((current) => {
-      const refs = current.filter((asset) => asset.kind === "reference");
-      const stale = refs.slice(REFERENCE_HISTORY_KEEP).map((asset) => asset.id);
-      if (stale.length) setRetiredReferenceIds((prev) => Array.from(new Set([...prev, ...stale])));
-      return current;
-    });
+    if (referenceAssets.length) {
+      setRetiredReferenceIds((prev) =>
+        Array.from(new Set([...prev, ...referenceAssets.map((asset) => asset.id)]))
+      );
+    }
   }
 
   const baseFieldErrors = useMemo(
@@ -1006,7 +1001,6 @@ export default function App() {
       setActiveSession(created.session);
       setTurns([]);
       setAssets([]);
-      setSelectedReferenceIds([]);
       setExports([]);
       setSelectedAsset(null);
       setHandoffProofText("");
@@ -1027,7 +1021,6 @@ export default function App() {
     setActiveSession(localSession);
     setTurns([]);
     setAssets([]);
-    setSelectedReferenceIds([]);
     setExports([]);
     setSelectedAsset(null);
     setHandoffProofText("");
@@ -1073,7 +1066,6 @@ export default function App() {
     ]);
     setTurns(turnResult.turns);
     setAssets(assetResult.assets);
-    setSelectedReferenceIds([]);
     setExports(filterExportsForAssets(exportResult.exports, assetResult.assets));
     setActiveProject(projectForSession ?? null);
     setProjectName(projectForSession?.name ?? "Frank Body Campaign");
@@ -1099,7 +1091,6 @@ export default function App() {
     setActiveSession(next);
     setTurns([]);
     setAssets([]);
-    setSelectedReferenceIds([]);
     setExports([]);
     setSelectedAsset(null);
     clearEditSource();
@@ -1236,7 +1227,6 @@ export default function App() {
       setBriefDraft(briefToDraft(result.brief));
       setTurns([result.turn]);
       setAssets(seededAssets);
-      setSelectedReferenceIds([]);
       setExports([]);
       setSelectedAsset(firstReviewableAsset(seededOutputs));
       setLightboxAsset(null);
@@ -1731,16 +1721,9 @@ export default function App() {
     setPrompt((current) => (current.trim() ? current : brief.prompt ?? ""));
   }
 
-  function toggleReferenceForRound(asset: Asset) {
-    setSelectedAsset(asset);
-    setSelectedReferenceIds((current) => {
-      if (current.includes(asset.id)) {
-        setStatusText(`${asset.title} skipped for the next round.`);
-        return current.filter((id) => id !== asset.id);
-      }
-      setStatusText(`${asset.title} added to the next round.`);
-      return [...current, asset.id];
-    });
+  function removeReferenceFromDock(asset: Asset) {
+    setRetiredReferenceIds((prev) => Array.from(new Set([...prev, asset.id])));
+    setStatusText(`${asset.title} removed from references.`);
   }
 
   async function handleReferenceUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -1813,7 +1796,6 @@ export default function App() {
 
     if (createdAssets.length) {
       setAssets((current) => [...createdAssets, ...current]);
-      setSelectedReferenceIds((current) => Array.from(new Set([...createdAssets.map((asset) => asset.id), ...current])));
     }
     if (failedUploads.length && createdAssets.length) {
       setStatusText(`${createdAssets.length} reference${createdAssets.length === 1 ? "" : "s"} locked. ${failedUploads.length} upload${failedUploads.length === 1 ? "" : "s"} failed.`);
@@ -2118,7 +2100,6 @@ export default function App() {
         setTurns((current) => [...current, turn]);
         setAssets((current) => [...newAssets, ...current]);
         setSelectedAsset(newAssets[0]);
-        setSelectedReferenceIds([]);
         setStatusText(`Generated ${newAssets.length} pick${newAssets.length === 1 ? "" : "s"} via Lovable AI.`);
         setRetrySafePayload(null);
         setGenPhase("completed");
@@ -2169,6 +2150,7 @@ export default function App() {
         generateAbortRef.current = null;
         finishInflight();
         setBusy(false);
+        clearReferenceDock();
       }
 
       return;
@@ -2220,7 +2202,6 @@ export default function App() {
         if (result.status === "complete" && result.assets?.length) {
           setAssets((current) => [...result.assets!, ...current]);
           setSelectedAsset(result.assets[0]);
-          setSelectedReferenceIds([]);
           if (promptMode !== "generate") {
             setEditSourceAsset(null);
             setMaskAsset(null);
@@ -2483,7 +2464,6 @@ export default function App() {
       if (newAssets.length) {
         setAssets((current) => [...newAssets, ...current]);
         setSelectedAsset(newAssets[0]);
-        setSelectedReferenceIds([]);
       }
 
       if (failures.length) {
@@ -2591,7 +2571,6 @@ export default function App() {
 
     const existingReference = assets.find((item) => item.kind === "reference" && item.source_asset_id === asset.id);
     if (existingReference) {
-      setSelectedReferenceIds((current) => Array.from(new Set([existingReference.id, ...current])));
       setStatusText(`${asset.title} is ready as a selected reference.`);
       return;
     }
@@ -2625,7 +2604,6 @@ export default function App() {
             } as Asset);
 
       setAssets((current) => [reference, ...current]);
-      setSelectedReferenceIds((current) => Array.from(new Set([reference.id, ...current])));
       setStatusText(`${asset.title} is ready as a selected reference.`);
     } catch (error) {
       setStatusText(error instanceof Error ? error.message : "Could not turn this pick into a reference.");
@@ -2641,7 +2619,6 @@ export default function App() {
       setTurns((current) => current.filter((t) => t.id !== turn.id));
       setAssets((current) => current.filter((a) => !turnAssetIds.has(a.id)));
       setExports((current) => current.filter((r) => !turnAssetIds.has(r.asset_id)));
-      setSelectedReferenceIds((current) => current.filter((id) => !turnAssetIds.has(id)));
       setSelectedAsset((current) => (current && turnAssetIds.has(current.id) ? null : current));
       if (lightboxAsset && turnAssetIds.has(lightboxAsset.id)) setLightboxAsset(null);
       if (editSourceAsset && turnAssetIds.has(editSourceAsset.id)) {
@@ -2684,7 +2661,6 @@ export default function App() {
       }
       setAssets((current) => current.filter((item) => item.id !== asset.id));
       setExports((current) => current.filter((record) => record.asset_id !== asset.id));
-      setSelectedReferenceIds((current) => current.filter((id) => id !== asset.id));
       setSelectedAsset((current) => {
         if (current?.id !== asset.id) {
           return current;
@@ -3693,27 +3669,23 @@ export default function App() {
             </label>
             <div className="reference-dock" aria-label="Reference images">
 
-              {referenceAssets.map((asset) => {
-                const isSelected = selectedReferenceIdSet.has(asset.id);
-                return (
+              {referenceAssets.map((asset) => (
+                <div key={asset.id} className="reference-thumb" title={asset.title}>
+                  {asset.preview_url ? <img src={asset.preview_url} alt={asset.title} /> : <Paperclip size={15} />}
                   <button
                     type="button"
-                    key={asset.id}
-                    className={isSelected ? "selected" : ""}
-                    aria-pressed={isSelected}
-                    title={`${isSelected ? "Using" : "Skipping"} ${asset.title}`}
-                    onClick={() => toggleReferenceForRound(asset)}
+                    className="reference-remove"
+                    aria-label={`Remove ${asset.title}`}
+                    title={`Remove ${asset.title}`}
+                    onClick={() => removeReferenceFromDock(asset)}
                   >
-                    {asset.preview_url ? <img src={asset.preview_url} alt={asset.title} /> : <Paperclip size={15} />}
-                    {isSelected ? <span className="ref-check" aria-hidden="true">✓</span> : null}
+                    <X size={12} />
                   </button>
-                );
-              })}
+                </div>
+              ))}
               {referenceAssets.length ? (
                 <span className="reference-selection-count">
-                  {selectedReferenceAssets.length
-                    ? `${selectedReferenceAssets.length}/${referenceAssets.length} in use`
-                    : `${referenceAssets.length} loaded · prompt-only`}
+                  {referenceAssets.length} loaded · used in next run
                 </span>
               ) : (
                 <span className="reference-selection-count reference-selection-count--empty">
