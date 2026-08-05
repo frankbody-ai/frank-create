@@ -5180,8 +5180,15 @@ function OutputStrip({
           <div
             className={`output-tile${selectedAssetId === asset.id ? " selected" : ""} status-${status}`}
             key={asset.id}
+            draggable
+            onDragStart={(event) => {
+              event.dataTransfer.setData("application/x-frank-asset", asset.id);
+              event.dataTransfer.effectAllowed = "copy";
+            }}
+            title={`${asset.title} — drag onto "Add references" to reuse`}
             style={ratio ? ({ ["--asset-aspect" as string]: ratio } as React.CSSProperties) : undefined}
           >
+
             <button
               type="button"
               className="output-tile-select"
