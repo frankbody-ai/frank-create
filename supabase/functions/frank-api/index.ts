@@ -391,11 +391,18 @@ async function handleVideo(body: any, userId: string) {
   if (msgIns.error) throw msgIns.error;
   const nextSeq = (msgIns.data as any)?.seq ?? 0;
 
+  // Frames are explicit: source_asset_id is the first frame, last_frame_asset_id
+  // the optional end frame (only honoured by schemas that accept one).
+  const firstFrameId: string | undefined = body.source_asset_id || undefined;
+  const lastFrameId: string | undefined = body.last_frame_asset_id || undefined;
   const sourceIds: string[] = [
-    ...(body.source_asset_id ? [body.source_asset_id] : []),
+    ...(firstFrameId ? [firstFrameId] : []),
+    ...(lastFrameId ? [lastFrameId] : []),
     ...((body.reference_asset_ids as string[]) || []),
   ];
   const sourceUrls = await loadReferenceDataUrls(sourceIds, userId);
+  const firstFrameUrl = firstFrameId ? sourceUrls[0] : undefined;
+  const lastFrameUrl = firstFrameId && lastFrameId ? sourceUrls[1] : undefined;
 
   const failTurn = (code: string, message: string) => {
     const snapshot = { ...settingsSnapshot, status: "failed", error: message, error_code: code };
@@ -415,8 +422,8 @@ async function handleVideo(body: any, userId: string) {
       aspect_ratio: reqSettings.aspect_ratio,
       duration: Number(reqSettings.duration ?? 5),
       resolution: reqSettings.video_resolution || reqSettings.image_size,
-      image: sourceUrls[0],
-      last_frame: sourceUrls[1],
+      image: firstFrameUrl,
+      last_frame: lastFrameUrl,
     });
 
     videoUrl = await runReplicatePrediction(slug, input, key, 300_000);
