@@ -2344,6 +2344,24 @@ export default function App() {
     setVideoStartedAt(Date.now());
     setStatusText(`Rendering ${videoSettings.duration ?? ""}s clip with ${videoModel?.short_label ?? "the video model"}...`);
 
+    // Show the run in the thread immediately, in a loading state, until the
+    // clip lands (or the run fails / is canceled).
+    const inflightId = makeLocalId("gen");
+    setInflightGens((current) => [
+      ...current,
+      {
+        id: inflightId,
+        modelId: videoModel?.id ?? "video",
+        modelLabel: videoModel ? modelName(config, videoModel.id) : "Video model",
+        prompt,
+        aspect: videoSettings.aspect_ratio,
+        count: 1,
+      },
+    ]);
+    const finishVideoInflight = () =>
+      setInflightGens((current) => current.filter((g) => g.id !== inflightId));
+
+
     try {
       const result = await createVideoStoryboard({
         session_id: activeSession.id,
