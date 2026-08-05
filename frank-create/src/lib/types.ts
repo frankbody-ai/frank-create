@@ -80,6 +80,8 @@ export interface StudioModel {
   allowed_resolutions?: string[];
   /** Video-only: model cannot run text-to-video, a source frame is required. */
   requires_source_image?: boolean;
+  /** Video-only: provider schema accepts a last/end frame alongside the first frame. */
+  supports_last_frame?: boolean;
   /** Upscale-only: which controls this model's Replicate schema exposes. */
   upscale_controls?: UpscaleControl[];
   /** Upscale-only: enums straight from the provider schema. */
