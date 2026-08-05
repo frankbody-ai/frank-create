@@ -1278,6 +1278,40 @@ select:focus {
   cursor: pointer;
 }
 
+.reference-preview-inner {
+  max-width: min(720px, 94vw);
+}
+
+.reference-preview-inner img,
+.reference-preview-inner video {
+  max-width: min(720px, 94vw);
+  max-height: 72vh;
+}
+
+.reference-preview-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+}
+
+.reference-preview-actions {
+  margin-top: 6px;
+}
+
+.reference-preview-remove {
+  background: var(--cherry) !important;
+  color: var(--white) !important;
+  border-color: var(--cherry) !important;
+}
+
+.reference-preview-remove:hover {
+  filter: brightness(1.1);
+}
+
 .reference-upload {
   position: relative;
 }
