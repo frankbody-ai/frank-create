@@ -3671,14 +3671,30 @@ export default function App() {
             <div className="reference-dock" aria-label="Reference images">
 
               {referenceAssets.map((asset) => (
-                <div key={asset.id} className="reference-thumb" title={asset.title}>
+                <div
+                  key={asset.id}
+                  className="reference-thumb"
+                  title={asset.title}
+                  onClick={() => setReferencePreviewAsset(asset)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setReferencePreviewAsset(asset);
+                    }
+                  }}
+                >
                   {asset.preview_url ? <img src={asset.preview_url} alt={asset.title} /> : <Paperclip size={15} />}
                   <button
                     type="button"
                     className="reference-remove"
                     aria-label={`Remove ${asset.title}`}
                     title={`Remove ${asset.title}`}
-                    onClick={() => removeReferenceFromDock(asset)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removeReferenceFromDock(asset);
+                    }}
                   >
                     <X size={12} />
                   </button>
