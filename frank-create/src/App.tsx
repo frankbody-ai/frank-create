@@ -3670,10 +3670,24 @@ export default function App() {
             </div>
           ) : null}
 
-          <div className="composer-actions" data-tour-id="reference-dock" data-tour-active={tourActive("reference-dock")}>
+          <div
+            className={`composer-actions${referenceDropActive ? " reference-drop-active" : ""}`}
+            data-tour-id="reference-dock"
+            data-tour-active={tourActive("reference-dock")}
+            onDragOver={(event) => {
+              handlePromptDragOver(event);
+              setReferenceDropActive(true);
+            }}
+            onDragLeave={() => setReferenceDropActive(false)}
+            onDrop={(event) => {
+              setReferenceDropActive(false);
+              void handlePromptDrop(event);
+            }}
+          >
             <label className={`upload-button reference-upload${referenceAssets.length ? " has-refs" : ""}`}>
               <Upload size={16} />
               Add references
+
               {referenceAssets.length ? (
                 <span className="reference-count-badge" aria-label={`${referenceAssets.length} references loaded`}>
                   <Paperclip size={11} />
