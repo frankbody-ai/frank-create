@@ -809,13 +809,29 @@ export default function App() {
   const selectedReferenceAssets = referenceAssets;
 
   // After a run: retire every reference so the dock is empty for the next run.
-  function clearReferenceDock() {
-    if (referenceAssets.length) {
-      setRetiredReferenceIds((prev) =>
-        Array.from(new Set([...prev, ...referenceAssets.map((asset) => asset.id)]))
+  // Durably retire references: mark them locally (survives refresh) and delete
+  // the backing records so the server never hands them back on reload.
+  function retireReferences(targets: Asset[]) {
+    if (!targets.length) {
+      return;
+    }
+    const ids = targets.map((asset) => asset.id);
+    const idSet = new Set(ids);
+    setRetiredReferenceIds((prev) => Array.from(new Set([...prev, ...ids])));
+    setAssets((current) => current.filter((asset) => !idSet.has(asset.id)));
+    if (connection === "online") {
+      void Promise.all(
+        targets
+          .filter((asset) => !asset.id.startsWith("local-"))
+          .map((asset) => deleteAsset(asset.id).catch(() => undefined))
       );
     }
   }
+
+  function clearReferenceDock() {
+    retireReferences(referenceAssets);
+  }
+
 
   const baseFieldErrors = useMemo(
     () => validateStudioSettings(modelOptions.model, settings, { referenceCount: selectedReferenceAssets.length }),
