@@ -787,16 +787,14 @@ export default function App() {
   const selectedReferenceIdSet = useMemo(() => new Set(selectedReferenceIds), [selectedReferenceIds]);
   const selectedReferenceAssets = referenceAssets.filter((asset) => selectedReferenceIdSet.has(asset.id));
 
-  // After a run: drop every reference from the next round's selection and keep
-  // only the 5 most recent thumbnails in the dock as reusable history.
+  // After a run: retire every reference so the dock is empty for the next run.
   function clearReferenceDock() {
     setSelectedReferenceIds([]);
-    setAssets((current) => {
-      const refs = current.filter((asset) => asset.kind === "reference");
-      const stale = refs.slice(REFERENCE_HISTORY_KEEP).map((asset) => asset.id);
-      if (stale.length) setRetiredReferenceIds((prev) => Array.from(new Set([...prev, ...stale])));
-      return current;
-    });
+    if (referenceAssets.length) {
+      setRetiredReferenceIds((prev) =>
+        Array.from(new Set([...prev, ...referenceAssets.map((asset) => asset.id)]))
+      );
+    }
   }
 
   const baseFieldErrors = useMemo(
