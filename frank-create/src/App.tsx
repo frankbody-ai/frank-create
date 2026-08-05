@@ -41,7 +41,6 @@ import {
 
 import {
   fetchActivationChecklist,
-  assetDownloadUrl,
   assetWorkflowReceiptUrl,
   createAsset,
   createAssetChannelSet,
@@ -4090,7 +4089,7 @@ export default function App() {
                 ) : null}
               </div>
               <div className="review-export-list" data-tour-id="export-controls" data-tour-active={tourActive("export-controls")}>
-                <button className="secondary-button" type="button" onClick={() => openStudioLink(assetDownloadUrl(selectedAsset.id), "Selected asset")}>
+                <button className="secondary-button" type="button" onClick={() => void downloadAssetFile(selectedAsset)}>
                   <Download size={16} />
                   Download original
                 </button>
@@ -4565,7 +4564,7 @@ export default function App() {
                 <Sparkles size={16} />
                 Edit this
               </button>
-              <button type="button" onClick={() => openStudioLink(assetDownloadUrl(lightboxAsset.id), "Lightbox asset")}>
+              <button type="button" onClick={() => void downloadAssetFile(lightboxAsset)}>
                 <Download size={16} />
                 Save
               </button>
