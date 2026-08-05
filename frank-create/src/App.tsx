@@ -381,6 +381,8 @@ export default function App() {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [lightboxAsset, setLightboxAsset] = useState<Asset | null>(null);
   const [referencePreviewAsset, setReferencePreviewAsset] = useState<Asset | null>(null);
+  const [referenceDropActive, setReferenceDropActive] = useState(false);
+
   const [compareBaseAsset, setCompareBaseAsset] = useState<Asset | null>(null);
   const [compareTargetAsset, setCompareTargetAsset] = useState<Asset | null>(null);
   const [editSourceAsset, setEditSourceAsset] = useState<Asset | null>(null);
