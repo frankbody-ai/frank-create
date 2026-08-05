@@ -814,6 +814,15 @@ export default function App() {
     }
   }
 
+  const videoFirstFrame = useMemo(
+    () => assets.find((asset) => asset.id === videoFirstFrameId) ?? null,
+    [assets, videoFirstFrameId]
+  );
+  const videoLastFrame = useMemo(
+    () => assets.find((asset) => asset.id === videoLastFrameId) ?? null,
+    [assets, videoLastFrameId]
+  );
+
   function clearReferenceDock() {
     setActiveReferenceIds([]);
     setReferencePreviewAsset(null);
@@ -2497,10 +2506,8 @@ export default function App() {
       const sideReferenceUrls = generationReferenceUrls.slice(0, resolved.referenceLimit);
 
       if (compareMedia === "video") {
-        const sourceAsset =
-          sideReferenceAssets.find((asset) => asset.media_type !== "video") ??
-          (selectedAsset && selectedAsset.media_type !== "video" ? selectedAsset : undefined) ??
-          outputAssets.find((asset) => asset.media_type !== "video");
+        const sourceAsset = compareFirstFrame ?? undefined;
+        const lastFrameAsset = model.supports_last_frame && sourceAsset ? (compareLastFrame ?? undefined) : undefined;
         if (model.requires_source_image && !sourceAsset) {
           throw new Error(`${model.short_label ?? model.label} needs a source frame.`);
         }
@@ -2510,6 +2517,7 @@ export default function App() {
           prompt,
           settings: sideSettings,
           source_asset_id: sourceAsset?.id,
+          last_frame_asset_id: lastFrameAsset?.id,
           reference_asset_ids: sideReferenceAssets.map((asset) => asset.id)
         });
       }
