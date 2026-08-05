@@ -3638,7 +3638,8 @@ body {
 
 .sidebar-brand-block {
   padding: 18px 18px 14px;
-  border-bottom: 2px solid rgba(63, 42, 45, 0.1);
+  background: #000000;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
 }
 
 .sidebar-brand-mark {
