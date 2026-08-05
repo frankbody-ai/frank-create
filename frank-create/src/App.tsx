@@ -3671,7 +3671,9 @@ export default function App() {
                     </div>
                 </div>
                 </div>
+                </div>
                 <div className="turn-visual">
+
                 <OutputStrip
                   assets={displayOutputAssets.filter((asset) => asset.turn_id === turn.id)}
                   onSelect={inspectAsset}
