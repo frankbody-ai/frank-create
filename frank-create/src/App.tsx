@@ -390,8 +390,25 @@ export default function App() {
   const [maskPainterAsset, setMaskPainterAsset] = useState<Asset | null>(null);
   const [sessionCancelTarget, setSessionCancelTarget] = useState<StudioSession | null>(null);
   // References consumed by a finished run: hidden from the dock so they never
-  // carry over (and stay hidden when the session reconciles from the server).
-  const [retiredReferenceIds, setRetiredReferenceIds] = useState<string[]>([]);
+  // carry over. Persisted in localStorage so a refresh cannot resurrect them
+  // even if the backend delete failed (offline / network error).
+  const [retiredReferenceIds, setRetiredReferenceIds] = useState<string[]>(() => {
+    try {
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem(RETIRED_REFERENCES_KEY) : null;
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === "string") : [];
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(RETIRED_REFERENCES_KEY, JSON.stringify(retiredReferenceIds.slice(-400)));
+    } catch {
+      /* ignore */
+    }
+  }, [retiredReferenceIds]);
+
   const [assetNotesDraft, setAssetNotesDraft] = useState("");
   const [providerReadiness, setProviderReadiness] = useState<ProviderReadiness | null>(null);
   const [activationChecklist, setActivationChecklist] = useState<ActivationChecklist | null>(null);
