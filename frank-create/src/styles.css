@@ -1227,55 +1227,51 @@ select:focus {
   display: none;
 }
 
-.reference-dock button {
+.reference-thumb {
   width: 42px;
   height: 42px;
   padding: 0;
   overflow: hidden;
-  opacity: 0.48;
   position: relative;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  flex: 0 0 auto;
 }
 
-.reference-dock button.selected {
-  border-color: var(--cherry);
-  box-shadow:
-    inset 0 0 0 2px var(--cherry),
-    0 8px 16px rgba(196, 17, 47, 0.16);
-  opacity: 1;
-}
-
-.reference-dock button.selected::after {
-  content: "";
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--cherry);
-  box-shadow: 0 0 0 2px var(--white);
-}
-
-.reference-dock img {
+.reference-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.reference-dock button .ref-check {
+.reference-remove {
   position: absolute;
-  top: 3px;
-  right: 3px;
+  top: -5px;
+  right: -5px;
   width: 16px;
   height: 16px;
+  padding: 0;
+  border: none;
   border-radius: 999px;
-  background: var(--pink, #ff6f91);
-  color: var(--white, #fff);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 16px;
-  text-align: center;
-  box-shadow: 0 0 0 2px var(--white, #fff);
+  background: var(--cherry);
+  color: var(--white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px var(--white);
+  opacity: 0;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.reference-thumb:hover .reference-remove,
+.reference-remove:focus-visible {
+  opacity: 1;
+}
+
+.reference-remove:hover {
+  transform: scale(1.1);
 }
 
 .reference-upload {
