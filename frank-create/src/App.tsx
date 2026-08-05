@@ -3659,8 +3659,9 @@ export default function App() {
                         );
                       })()}
                     </div>
-                  </div>
                 </div>
+                </div>
+                <div className="turn-visual">
                 <OutputStrip
                   assets={displayOutputAssets.filter((asset) => asset.turn_id === turn.id)}
                   onSelect={inspectAsset}
@@ -3672,6 +3673,9 @@ export default function App() {
                   onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
                   onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
                 />
+                </div>
+                </div>
+
 
               </article>
               );
