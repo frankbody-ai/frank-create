@@ -5158,7 +5158,7 @@ h3, h4 {
 
 /* Sidebar — invariant 256px white slab, ink/10 right border */
 .guided-header.app-sidebar {
-  background: #fff !important;
+  background: #FFD0C6 !important;
   border-right: 2px solid rgba(63, 42, 45, 0.1) !important;
   box-shadow: none;
 }
