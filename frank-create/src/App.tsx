@@ -2767,6 +2767,40 @@ export default function App() {
     }
   }
 
+  // Save the file itself. The backend has no /assets/:id/download route, and
+  // opening the signed storage URL in a tab just previews it, so fetch the
+  // bytes and hand the browser a real download.
+  async function downloadAssetFile(asset: Asset) {
+    const source = asset.remote_url || asset.preview_url;
+    if (!source) {
+      setStatusText("This pick has no file to save yet.");
+      return;
+    }
+    setStatusText("Preparing download…");
+    try {
+      const res = await fetch(source);
+      if (!res.ok) {
+        throw new Error(`status ${res.status}`);
+      }
+      const blob = await res.blob();
+      const fromPath = (asset.file_path || source.split("?")[0] || "").match(/\.([a-z0-9]{3,4})$/i);
+      const ext = fromPath?.[1] ?? (asset.media_type === "video" ? "mp4" : "png");
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${safeFileStem(asset.title || asset.id)}.${ext.toLowerCase()}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      setStatusText("Saved to your downloads.");
+    } catch {
+      openStudioLink(source, "Original file", "Opening the file in a new tab — use right-click → Save.");
+    }
+  }
+
+
+
   async function exportAsset(asset: Asset, preset: ExportPreset) {
     if (connection !== "online") {
       setStatusText("Connect to the studio backend to export this pick.");
