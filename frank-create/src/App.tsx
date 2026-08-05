@@ -380,6 +380,7 @@ export default function App() {
   const [settings, setSettings] = useState<StudioSettings>(defaultStudioSettings(fallbackConfig.models[0]));
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [lightboxAsset, setLightboxAsset] = useState<Asset | null>(null);
+  const [referencePreviewAsset, setReferencePreviewAsset] = useState<Asset | null>(null);
   const [compareBaseAsset, setCompareBaseAsset] = useState<Asset | null>(null);
   const [compareTargetAsset, setCompareTargetAsset] = useState<Asset | null>(null);
   const [editSourceAsset, setEditSourceAsset] = useState<Asset | null>(null);
@@ -3670,14 +3671,30 @@ export default function App() {
             <div className="reference-dock" aria-label="Reference images">
 
               {referenceAssets.map((asset) => (
-                <div key={asset.id} className="reference-thumb" title={asset.title}>
+                <div
+                  key={asset.id}
+                  className="reference-thumb"
+                  title={asset.title}
+                  onClick={() => setReferencePreviewAsset(asset)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setReferencePreviewAsset(asset);
+                    }
+                  }}
+                >
                   {asset.preview_url ? <img src={asset.preview_url} alt={asset.title} /> : <Paperclip size={15} />}
                   <button
                     type="button"
                     className="reference-remove"
                     aria-label={`Remove ${asset.title}`}
                     title={`Remove ${asset.title}`}
-                    onClick={() => removeReferenceFromDock(asset)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removeReferenceFromDock(asset);
+                    }}
                   >
                     <X size={12} />
                   </button>
@@ -4506,6 +4523,34 @@ export default function App() {
                   Rejected
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {referencePreviewAsset ? (
+        <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setReferencePreviewAsset(null)}>
+          <div className="lightbox-inner reference-preview-inner" onClick={(event) => event.stopPropagation()}>
+            <button className="lightbox-close" type="button" onClick={() => setReferencePreviewAsset(null)} aria-label="Close reference preview">
+              <XCircle size={18} />
+            </button>
+            {referencePreviewAsset.preview_url ? (
+              <img src={referencePreviewAsset.preview_url} alt={referencePreviewAsset.title} />
+            ) : (
+              <div className="reference-preview-placeholder"><Paperclip size={48} /></div>
+            )}
+            <div className="lightbox-actions reference-preview-actions">
+              <button
+                type="button"
+                className="reference-preview-remove"
+                onClick={() => {
+                  removeReferenceFromDock(referencePreviewAsset);
+                  setReferencePreviewAsset(null);
+                }}
+              >
+                <X size={16} />
+                Remove reference
+              </button>
             </div>
           </div>
         </div>
