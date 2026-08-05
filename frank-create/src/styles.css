@@ -3985,24 +3985,37 @@ body {
   height: 100vh;
   min-height: 0;
   overflow-y: auto;
-  padding: 20px 28px 32px;
+  padding: 20px 40px 36px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-/* Centred content band so the studio never runs edge to edge. */
+/* Centred content band with fixed side gutters so the studio never runs edge to edge. */
 .studio-shell.guided-studio .conversation-column > * {
   width: 100%;
-  max-width: 1180px;
+  max-width: 1080px;
   margin-inline: auto;
 }
 
 @media (min-width: 1500px) {
   .studio-shell.guided-studio .conversation-column {
-    padding-inline: 56px;
+    padding-inline: 64px;
   }
 }
+
+@media (max-width: 1180px) {
+  .studio-shell.guided-studio .conversation-column {
+    padding-inline: 24px;
+  }
+}
+
+@media (max-width: 860px) {
+  .studio-shell.guided-studio .conversation-column {
+    padding-inline: 16px;
+  }
+}
+
 
 
 .studio-shell.guided-studio .studio-topbar {
