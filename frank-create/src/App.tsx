@@ -3736,6 +3736,12 @@ export default function App() {
                   selectedAssetId={selectedAsset?.id}
                   onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
                   onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
+                  onUseAsFrame={
+                    mediaKind === "video" || (mediaKind === "compare" && compareMedia === "video")
+                      ? (asset, slot) => assignFrameSlot(slot, asset.id)
+                      : undefined
+                  }
+                  canUseLastFrame={Boolean(selectedModel?.supports_last_frame) && Boolean(videoFirstFrameId)}
                 />
                 </div>
                 </div>
@@ -5311,7 +5317,9 @@ function OutputStrip({
   selectedAssetId,
   onSelect,
   onQuickApprove,
-  onQuickReject
+  onQuickReject,
+  onUseAsFrame,
+  canUseLastFrame = false
 }: {
   assets: Asset[];
   emptyLabel?: string;
@@ -5321,6 +5329,8 @@ function OutputStrip({
   onSelect: (asset: Asset) => void;
   onQuickApprove?: (asset: Asset) => void;
   onQuickReject?: (asset: Asset) => void;
+  onUseAsFrame?: (asset: Asset, slot: "first" | "last") => void;
+  canUseLastFrame?: boolean;
 }) {
   if (!assets.length && pending) {
     return (
@@ -5395,6 +5405,18 @@ function OutputStrip({
                     title="Reject"
                   >
                     <XCircle size={14} />
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+            {onUseAsFrame && asset.media_type !== "video" && asset.kind !== "mask" ? (
+              <div className="output-tile-frames" onClick={(e) => e.stopPropagation()}>
+                <button type="button" onClick={() => onUseAsFrame(asset, "first")} title="Use as first frame">
+                  first frame
+                </button>
+                {canUseLastFrame ? (
+                  <button type="button" onClick={() => onUseAsFrame(asset, "last")} title="Use as last frame">
+                    last frame
                   </button>
                 ) : null}
               </div>
