@@ -783,12 +783,12 @@ export default function App() {
   const referenceAssets = assets.filter(
     (asset) => asset.kind === "reference" && !retiredReferenceIdSet.has(asset.id)
   );
-  const selectedReferenceIdSet = useMemo(() => new Set(selectedReferenceIds), [selectedReferenceIds]);
-  const selectedReferenceAssets = referenceAssets.filter((asset) => selectedReferenceIdSet.has(asset.id));
+  // All loaded references are used for the next generation; the only way to
+  // exclude one is to remove it from the dock with the X button.
+  const selectedReferenceAssets = referenceAssets;
 
   // After a run: retire every reference so the dock is empty for the next run.
   function clearReferenceDock() {
-    setSelectedReferenceIds([]);
     if (referenceAssets.length) {
       setRetiredReferenceIds((prev) =>
         Array.from(new Set([...prev, ...referenceAssets.map((asset) => asset.id)]))
