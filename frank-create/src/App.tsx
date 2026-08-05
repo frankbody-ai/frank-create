@@ -380,6 +380,7 @@ export default function App() {
   const [settings, setSettings] = useState<StudioSettings>(defaultStudioSettings(fallbackConfig.models[0]));
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [lightboxAsset, setLightboxAsset] = useState<Asset | null>(null);
+  const [referencePreviewAsset, setReferencePreviewAsset] = useState<Asset | null>(null);
   const [compareBaseAsset, setCompareBaseAsset] = useState<Asset | null>(null);
   const [compareTargetAsset, setCompareTargetAsset] = useState<Asset | null>(null);
   const [editSourceAsset, setEditSourceAsset] = useState<Asset | null>(null);

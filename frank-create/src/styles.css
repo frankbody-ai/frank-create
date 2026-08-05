@@ -1247,8 +1247,8 @@ select:focus {
 
 .reference-remove {
   position: absolute;
-  top: -5px;
-  right: -5px;
+  top: 3px;
+  right: 3px;
   width: 16px;
   height: 16px;
   padding: 0;
@@ -1272,6 +1272,10 @@ select:focus {
 
 .reference-remove:hover {
   transform: scale(1.1);
+}
+
+.reference-thumb {
+  cursor: pointer;
 }
 
 .reference-upload {
