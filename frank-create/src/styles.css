@@ -933,6 +933,60 @@ h3 {
   gap: 14px;
 }
 
+/* Leonardo-style run card: images on the left, run data on the right. */
+.turn-card-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 18px;
+  align-items: start;
+}
+
+.turn-card-body > .turn-visual {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.turn-card-body > .turn-side {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  padding-right: 62px;
+}
+
+.turn-side .turn-copy p:not(.eyebrow) {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.turn-side .turn-copy p:not(.eyebrow):hover,
+.turn-side .turn-copy p:not(.eyebrow):focus {
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+@media (max-width: 1240px) {
+  .turn-card-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .turn-card-body > .turn-side {
+    grid-column: 1;
+    grid-row: 1;
+    padding-right: 0;
+  }
+  .turn-card-body > .turn-visual {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .turn-side .turn-copy p:not(.eyebrow) {
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+}
+
+
 .turn-card-fresh {
   animation: turn-fresh-glow 2.4s ease-out 1;
   box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.45), 0 8px 24px rgba(34, 197, 94, 0.18);
