@@ -386,7 +386,6 @@ export default function App() {
   const [maskAsset, setMaskAsset] = useState<Asset | null>(null);
   const [maskPainterAsset, setMaskPainterAsset] = useState<Asset | null>(null);
   const [sessionCancelTarget, setSessionCancelTarget] = useState<StudioSession | null>(null);
-  const [selectedReferenceIds, setSelectedReferenceIds] = useState<string[]>([]);
   // References consumed by a finished run: hidden from the dock so they never
   // carry over (and stay hidden when the session reconciles from the server).
   const [retiredReferenceIds, setRetiredReferenceIds] = useState<string[]>([]);
