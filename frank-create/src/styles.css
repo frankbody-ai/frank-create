@@ -6937,3 +6937,17 @@ input:focus, textarea:focus, select:focus {
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Side-by-side cards are half width — stack their data above the images. */
+.compare-run-grid .turn-card-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+.compare-run-grid .turn-card-body > .turn-side {
+  grid-column: 1;
+  grid-row: 1;
+  padding-right: 0;
+}
+.compare-run-grid .turn-card-body > .turn-visual {
+  grid-column: 1;
+  grid-row: 2;
+}
