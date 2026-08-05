@@ -212,7 +212,7 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     detail: "Upload as many reference images as the selected model accepts. All loaded references are used for the next generation. Click the X on a thumbnail to remove it from the dock.",
     points: [
       "Multimodal models read selected refs as visual guidance.",
-      "Refs persist per session so you can iterate across rounds.",
+      "Refs are consumed once and the dock clears as soon as you generate.",
       "Any generated pick can be reused as a reference from the review desk."
     ],
     target: "reference-dock"
@@ -810,15 +810,26 @@ export default function App() {
   // After a run: retire every reference so the dock is empty for the next run.
   // Durably retire references: mark them locally (survives refresh) and delete
   // the backing records so the server never hands them back on reload.
-  function retireReferences(targets: Asset[]) {
+  function retireReferences(targets: Asset[], deleteRemote = true) {
     if (!targets.length) {
       return;
     }
     const ids = targets.map((asset) => asset.id);
     const idSet = new Set(ids);
-    setRetiredReferenceIds((prev) => Array.from(new Set([...prev, ...ids])));
+    setRetiredReferenceIds((prev) => {
+      const next = Array.from(new Set([...prev, ...ids])).slice(-400);
+      try {
+        // Persist synchronously so a refresh during an active generation cannot
+        // restore references that were already consumed by the Generate click.
+        window.localStorage.setItem(RETIRED_REFERENCES_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
     setAssets((current) => current.filter((asset) => !idSet.has(asset.id)));
-    if (connection === "online") {
+    setReferencePreviewAsset((current) => (current && idSet.has(current.id) ? null : current));
+    if (deleteRemote && connection === "online") {
       void Promise.all(
         targets
           .filter((asset) => /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(asset.id))
@@ -827,8 +838,19 @@ export default function App() {
     }
   }
 
-  function clearReferenceDock() {
-    retireReferences(referenceAssets);
+  function clearReferenceDock(deleteRemote = true) {
+    retireReferences(referenceAssets, deleteRemote);
+  }
+
+  function deleteConsumedReferences(targets: Asset[]) {
+    if (connection !== "online" || !targets.length) {
+      return;
+    }
+    void Promise.all(
+      targets
+        .filter((asset) => /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(asset.id))
+        .map((asset) => deleteAsset(asset.id).catch(() => undefined))
+    );
   }
 
 
@@ -2066,6 +2088,11 @@ export default function App() {
       maskAssetId: promptMode === "masked_edit" ? maskAsset?.id : undefined
     });
 
+    const consumedReferences = [...selectedReferenceAssets];
+    // The request owns the snapshot above. Empty the visible dock immediately,
+    // before waiting for the provider, so the next run always starts clean.
+    clearReferenceDock(false);
+
     if (connection !== "online") {
       // Auto-name the session from the first prompt if it still has the default name.
       if (activeSession && (!activeSession.name || /^(new session|launch image studio|untitled)/i.test(activeSession.name)) && turns.length === 0) {
@@ -2198,7 +2225,7 @@ export default function App() {
         generateAbortRef.current = null;
         finishInflight();
         setBusy(false);
-        clearReferenceDock();
+        deleteConsumedReferences(consumedReferences);
       }
 
       return;
@@ -2271,8 +2298,7 @@ export default function App() {
     } finally {
       finishInflight();
       setBusy(false);
-      // Never carry references over into the next run.
-      clearReferenceDock();
+      deleteConsumedReferences(consumedReferences);
       // The request can time out while the server keeps finishing the round
       // (e.g. 4 images). Re-read the session so every produced image lands.
       void reconcileSessionAssets();
@@ -2337,6 +2363,8 @@ export default function App() {
     }
 
     const videoSettings = videoModel ? normalizeVideoSettings(settings, videoModel) : settings;
+    const consumedReferences = [...selectedReferenceAssets];
+    clearReferenceDock(false);
 
     const ctrl = new AbortController();
     videoAbortRef.current = ctrl;
@@ -2405,7 +2433,7 @@ export default function App() {
 
       setVideoStartedAt(null);
       setBusy(false);
-      clearReferenceDock();
+      deleteConsumedReferences(consumedReferences);
     }
   }
 
@@ -2463,6 +2491,8 @@ export default function App() {
     setGenError(null);
     setGenErrorOpen(false);
     setStatusText(`Running ${modelName(config, modelA.id)} vs ${modelName(config, modelB.id)}...`);
+    const consumedReferences = [...selectedReferenceAssets];
+    clearReferenceDock(false);
 
     const runSide = async ({ side, model }: { side: "A" | "B"; model: StudioModel }) => {
       const resolved = resolveForModel(model, settings, { referenceCount });
@@ -2549,7 +2579,7 @@ export default function App() {
       const ids = new Set(inflight.map((entry) => entry.id));
       setInflightGens((current) => current.filter((entry) => !ids.has(entry.id)));
       setBusy(false);
-      clearReferenceDock();
+      deleteConsumedReferences(consumedReferences);
       void reconcileSessionAssets();
     }
   }
