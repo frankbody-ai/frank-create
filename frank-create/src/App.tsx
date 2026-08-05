@@ -1729,7 +1729,6 @@ export default function App() {
   }
 
   function removeReferenceFromDock(asset: Asset) {
-    setSelectedReferenceIds((current) => current.filter((id) => id !== asset.id));
     setRetiredReferenceIds((prev) => Array.from(new Set([...prev, asset.id])));
     setStatusText(`${asset.title} removed from references.`);
   }
