@@ -3108,6 +3108,9 @@ export default function App() {
       className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${studioMode !== "preset-creator" && studioMode !== "prompt-generator" && studioMode !== "enhancer" && settingsRailOpen ? "settings-rail-open" : ""}`}
       data-provider-audit={providerAuditMode ? "open" : undefined}
     >
+      {studioMode === "preset-creator" || studioMode === "prompt-generator" || studioMode === "enhancer" ? (
+        <FeedbackWidget />
+      ) : null}
       {desktopNotice ? (
         <div
           role="status"
