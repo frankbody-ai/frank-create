@@ -8,12 +8,16 @@ function currentPagePath(): string {
 }
 
 function currentRouteName(): string {
-  const hash = window.location.hash.replace(/^#/, "");
-  if (hash.startsWith("/review/")) return "review";
-  if (hash === "/health") return "health";
-  if (hash === "/cliff-access") return "cliff-access";
-  if (hash === "/admin/feedback") return "admin.feedback";
-  return "app";
+  const hash = window.location.hash.replace(/^#/, "").split("?")[0] || "";
+  const path = hash || window.location.pathname.replace(/\/$/, "") || "/";
+  if (path.startsWith("/review/")) return "review";
+  if (path === "/health") return "health";
+  if (path === "/cliff-access") return "cliff-access";
+  if (path === "/admin/feedback") return "admin.feedback";
+  if (path === "/admin") return "admin";
+  const view =
+    typeof document !== "undefined" ? document.body.dataset.feedbackView : undefined;
+  return view ? `app.${view}` : "app";
 }
 
 async function fileToBase64(file: File): Promise<string> {
