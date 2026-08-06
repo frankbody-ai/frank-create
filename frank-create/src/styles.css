@@ -6977,16 +6977,16 @@ body {
 }
 
 
-/* both planes transparent — the rail reads deeper only because the
-   blob sits under it. The hairline is the only edge. */
+/* Brand rule: the rail is a white surface on the blush page, separated by a
+   2px ink hairline and a soft shadow. */
 .guided-header.app-sidebar {
-  background: transparent;
+  background: #FFFFFF;
   border: 0;
-  border-right: 1px solid var(--muted-15);
-  box-shadow: none;
+  border-right: 2px solid rgba(48, 48, 48, 0.1);
+  box-shadow: 2px 0 18px rgba(48, 48, 48, 0.05);
   backdrop-filter: none;
   width: 216px;
-  padding: 16px 0 0;
+  padding: 14px 0 0;
 }
 
 .studio-shell.guided-studio {
@@ -7045,8 +7045,8 @@ body {
   content: "";
   display: block;
   margin: 10px -16px 0;
-  height: 1px;
-  background: var(--muted-15);
+  height: 2px;
+  background: rgba(48, 48, 48, 0.1);
 }
 
 
@@ -7061,28 +7061,28 @@ body {
 
 .sidebar-section-label {
   flex-shrink: 0;
-  margin: 4px 0 0;
-  padding: 3px 8px 2px;
-  font-family: var(--font-mono);
-  font-size: var(--text-caption);
-  font-weight: var(--weight-light);
-  letter-spacing: var(--tracking-label);
+  margin: 12px 0 4px;
+  padding: 0 12px;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #000000;
+  color: rgba(48, 48, 48, 0.4);
 }
 
 .sidebar-nav-button {
   flex-shrink: 0;
-  min-height: 34px;
-  height: 34px;
+  min-height: 32px;
+  height: 32px;
   padding: 0 12px;
   border-radius: var(--radius-pill);
   gap: 10px;
-  font-family: var(--font-display);
-  font-size: var(--text-body);
-  font-weight: 400;
-  letter-spacing: 0;
-  text-transform: none;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--ink);
   background: transparent;
   box-shadow: none;
@@ -7096,17 +7096,17 @@ body {
 }
 
 .sidebar-nav-button:hover {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(249, 192, 185, 0.4);
   color: var(--ink);
   box-shadow: none;
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .sidebar-nav-button.active {
   background: var(--ink);
   color: var(--text-on-ink);
   box-shadow: none;
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .sidebar-nav-button:disabled,
@@ -7148,13 +7148,24 @@ body {
 .sidebar-nav-sub,
 .sidebar-session-row {
   border-radius: var(--radius-pill);
-  font-family: var(--font-display);
-  font-size: var(--text-caption);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--ink);
+}
+.sidebar-nav-sub:hover,
+.sidebar-session-row:hover {
+  background: rgba(249, 192, 185, 0.4);
 }
 
 .sidebar-bottom-divider {
   margin-top: auto;
+  height: 2px;
+  background: rgba(48, 48, 48, 0.1);
+  margin-left: -6px;
+  margin-right: -6px;
 }
 
 .sidebar-nav-account {
@@ -7711,26 +7722,26 @@ body {
 .guided-header.app-sidebar .sidebar-signout,
 .guided-header.app-sidebar .sidebar-session-card .compact-action.secondary-button,
 .guided-header.app-sidebar .sidebar-session-card .sidebar-new-session {
-  min-height: 34px;
-  height: 34px;
+  min-height: 32px;
+  height: 32px;
   padding: 0 12px;
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
   box-shadow: none;
   color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--text-body);
-  font-weight: 400;
-  letter-spacing: 0;
-  text-transform: none;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .guided-header.app-sidebar .admin-sidebar-link:hover,
 .guided-header.app-sidebar .sidebar-signout:hover,
 .guided-header.app-sidebar .sidebar-session-card .compact-action.secondary-button:hover,
 .guided-header.app-sidebar .sidebar-session-card .sidebar-new-session:hover {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(249, 192, 185, 0.4);
   color: var(--ink);
 }
 
