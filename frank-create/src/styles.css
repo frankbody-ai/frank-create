@@ -7722,26 +7722,26 @@ body {
 .guided-header.app-sidebar .sidebar-signout,
 .guided-header.app-sidebar .sidebar-session-card .compact-action.secondary-button,
 .guided-header.app-sidebar .sidebar-session-card .sidebar-new-session {
-  min-height: 34px;
-  height: 34px;
+  min-height: 32px;
+  height: 32px;
   padding: 0 12px;
   border: 0;
   border-radius: var(--radius-pill);
   background: transparent;
   box-shadow: none;
   color: var(--ink);
-  font-family: var(--font-display);
-  font-size: var(--text-body);
-  font-weight: 400;
-  letter-spacing: 0;
-  text-transform: none;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .guided-header.app-sidebar .admin-sidebar-link:hover,
 .guided-header.app-sidebar .sidebar-signout:hover,
 .guided-header.app-sidebar .sidebar-session-card .compact-action.secondary-button:hover,
 .guided-header.app-sidebar .sidebar-session-card .sidebar-new-session:hover {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(249, 192, 185, 0.4);
   color: var(--ink);
 }
 
