@@ -377,8 +377,6 @@ export default function App() {
   }, [studioMode]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
-  const [inspectorTab, setInspectorTab] = useState<"review" | "settings" | "brand" | "export">("review");
-  const [inspectorOpen, setInspectorOpen] = useState(false);
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
   const [walkthroughStep, setWalkthroughStep] = useState(0);
   const [walkthroughAnchor, setWalkthroughAnchor] = useState<WalkthroughAnchor | null>(null);
@@ -489,7 +487,6 @@ export default function App() {
       }
 
       setSettingsOpen(false);
-      setInspectorOpen(false);
     }
 
     window.addEventListener("keydown", handleDrawerKeyDown);
@@ -771,14 +768,12 @@ export default function App() {
     setEditSourceAsset(asset);
     setMaskAsset(null);
     setMaskPainterAsset(null);
-    setInspectorTab("review");
   }
 
   function startMaskPainter(asset: Asset) {
     setEditSourceAsset(asset);
     setMaskAsset(null);
     setMaskPainterAsset(asset);
-    setInspectorTab("review");
   }
 
   useEffect(() => {
@@ -945,8 +940,6 @@ export default function App() {
     () => (selectedAsset ? selectedAssetReviewMetadata(selectedAsset, assets, config, turns) : null),
     [assets, config, selectedAsset, turns]
   );
-  const recentExports = useMemo(() => filterExportsForAssets(exports, assets).slice(0, 6), [exports, assets]);
-  const showHandoffPanel = Boolean(selectedAsset) || approvedCount > 0 || recentExports.length > 0;
   const cliffGuideSteps = useMemo(
     () => buildCliffGuideSteps(outputAssets, referenceAssets, approvedCount, approvedMotionCount),
     [approvedCount, approvedMotionCount, outputAssets, referenceAssets]
@@ -971,20 +964,17 @@ export default function App() {
 
   function showPresetCreator() {
     setStudioMode("preset-creator");
-    setInspectorOpen(false);
     setStatusText("Preset Creator is open.");
   }
 
   function showEnhancer() {
     setStudioMode("enhancer");
-    setInspectorOpen(false);
     setSettingsRailOpen(false);
     setStatusText("Enhancer is open.");
   }
 
   function showPromptGenerator() {
     setStudioMode("prompt-generator");
-    setInspectorOpen(false);
     setSettingsRailOpen(false);
     setStatusText("Prompt Generator is open.");
   }
@@ -1022,30 +1012,12 @@ export default function App() {
     setStudioMode("approved-hot");
     setReviewFilter("approved");
     setSelectedAsset(firstApproved);
-    setInspectorTab("review");
-    setInspectorOpen(true);
     setLightboxAsset(null);
     clearCompare();
     setStatusText(firstApproved ? "approved only. hot." : "no approved images yet.");
   }
 
-  function showExportsPanel() {
-    setInspectorTab("export");
-    setInspectorOpen(true);
-    setStatusText(showHandoffPanel ? "export desk is open." : "approve a pick to unlock exports.");
-  }
-
-  function showBrandPanel() {
-    setInspectorTab("brand");
-    setInspectorOpen(true);
-    setStatusText("brand kit is open.");
-    requestAnimationFrame(() => {
-      document.querySelector(".brand-kit-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }
-
   function showModelSettings() {
-    setInspectorTab("review");
     setSettingsOpen(true);
     setStatusText("Model settings are open.");
     requestAnimationFrame(() => {
@@ -1769,7 +1741,6 @@ export default function App() {
         return;
       }
       setSelectedAsset(asset);
-      setInspectorTab("review");
       setCompareTargetAsset(asset);
       setLightboxAsset(null);
       setStatusText("Compare the picks side by side.");
@@ -1777,8 +1748,6 @@ export default function App() {
     }
 
     setSelectedAsset(asset);
-    setInspectorTab("review");
-    setInspectorOpen(true);
     setLightboxAsset(asset);
   }
 
@@ -3145,15 +3114,12 @@ export default function App() {
     }
     if (activeWalkthroughStep.openSettings) {
       setSettingsOpen(true);
-      setInspectorTab("settings");
     }
     if (activeWalkthroughStep.selectOutput && !selectedAsset && firstOutputAsset) {
       setSelectedAsset(firstOutputAsset);
-      setInspectorTab("review");
       setLightboxAsset(null);
     }
     if (activeWalkthroughStep.target === "review-panel" || activeWalkthroughStep.target === "export-controls") {
-      setInspectorTab("review");
     }
   }, [
     activeWalkthroughStep.openSettings,
@@ -3237,7 +3203,7 @@ export default function App() {
   }, []);
 
   const statusReadyLink = parseReadyStatusLink(statusText);
-  const modelSettingsExpanded = settingsOpen || inspectorTab === "settings";
+  const modelSettingsExpanded = settingsOpen;
 
   return (
     <div
@@ -3415,15 +3381,6 @@ export default function App() {
             <CheckCircle2 size={16} />
             Approved
             <span className="sidebar-badge">{approvedCount}</span>
-          </button>
-          <button
-            className={`sidebar-nav-button ${inspectorTab === "export" ? "active" : ""}`}
-            type="button"
-            aria-label="Open exports"
-            onClick={showExportsPanel}
-          >
-            <Download size={16} />
-            Exports
           </button>
 
           <button
@@ -4145,40 +4102,6 @@ export default function App() {
             </button>
           </div>
         </form>
-      </main>
-      )}
-
-      {inspectorOpen ? (
-        <button
-          type="button"
-          className="inspector-scrim"
-          aria-label="Close inspector"
-          onClick={() => setInspectorOpen(false)}
-        />
-      ) : null}
-      <aside
-        className={`context-panel inspector-drawer ${inspectorOpen ? "open" : ""}`}
-        aria-label="Review and settings"
-        aria-hidden={!inspectorOpen}
-      >
-        <div className="inspector-drawer-toolbar">
-          <span>
-            <strong>Inspector</strong>
-            <small>review picks, brand kit, presets.</small>
-          </span>
-          <button
-            className="mini-button drawer-close-button"
-            type="button"
-            onClick={() => setInspectorOpen(false)}
-          >
-            <XCircle size={14} />
-            close
-          </button>
-        </div>
-
-
-
-
         <section
           className="context-section selected-output inspector-panel active"
           data-tour-id="review-panel"
@@ -4405,272 +4328,6 @@ export default function App() {
           )}
         </section>
 
-        {showHandoffPanel ? (
-          <section
-            className="context-section handoff-section inspector-panel active"
-            data-tour-id="export-controls"
-            data-tour-active={tourActive("export-controls")}
-          >
-            <div className="section-title">
-              <p className="eyebrow">Export</p>
-              <h3>Cliff Pack</h3>
-            </div>
-            <p>
-              Package approved images, motion boards, notes, prompts, settings, references, sync-ready metadata, and {imageExportPresetCount}{" "}
-              channel-ready exports per approved image into one ZIP.
-            </p>
-            <div className="handoff-stats" aria-label="Handoff package status">
-              <span>
-                <strong>{approvedCount}</strong>
-                approved
-              </span>
-              {approvedMotionCount ? (
-                <span>
-                  <strong>{approvedMotionCount}</strong>
-                  motion
-                </span>
-              ) : null}
-              <span>
-                <strong>{referenceAssets.length}</strong>
-                refs
-              </span>
-            </div>
-            <p className="handoff-proof">{handoffProofText || `${imageExportPresetCount} channel-ready exports per approved image`}</p>
-            <button
-              className="secondary-button handoff-button"
-              type="button"
-              onClick={exportSessionHandoff}
-              disabled={!activeSession || approvedCount === 0 || handoffBusy}
-              title={approvedCount === 0 ? "Approve at least one asset to export" : undefined}
-            >
-              {handoffBusy ? <RefreshCw className="spin" size={16} /> : <Download size={16} />}
-              Export Cliff Pack
-            </button>
-            <button
-              className="secondary-button handoff-button"
-              type="button"
-              onClick={openSessionReviewBoard}
-              disabled={!activeSession || approvedCount === 0}
-            >
-              <ImageIcon size={16} />
-              Open review board
-            </button>
-            <button
-              className="secondary-button handoff-button"
-              type="button"
-              onClick={openSessionSyncManifest}
-              disabled={!activeSession}
-            >
-              <GitBranch size={16} />
-              Open sync manifest
-            </button>
-          </section>
-        ) : null}
-
-        {recentExports.length ? (
-          <section className="context-section recent-exports-section inspector-panel active">
-            <div className="section-title">
-              <p className="eyebrow">Handoff trail</p>
-              <h3>Recent exports</h3>
-            </div>
-            <div className="recent-export-list">
-              {recentExports.map((record) => (
-                <button key={record.id} type="button" onClick={() => openStudioLink(record.download_url || exportDownloadUrl(record.id), "Export pack")}>
-                  <span>
-                    <strong>{exportRecordLabel(record, config.exportPresets)}</strong>
-                    <small>{exportRecordMeta(record, assets)}</small>
-                  </span>
-                  <Download size={15} />
-                </button>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        <section className="context-section brand-kit-section inspector-panel active">
-          <div className="section-title">
-            <p className="eyebrow">Brand guidance</p>
-            <h3>Brand Kit</h3>
-          </div>
-          <label className="brand-kit-field">
-            <span>Style guidance</span>
-            <textarea
-              aria-label="Inspector Frank Brand Kit style guidance"
-              value={brandKitDraft.style_guidance}
-              onChange={(event) => setBrandKitDraft((current) => ({ ...current, style_guidance: event.target.value }))}
-            />
-          </label>
-          <label className="brand-kit-field">
-            <span>Negative guardrails</span>
-            <textarea
-              aria-label="Inspector Frank Brand Kit negative prompt"
-              value={brandKitDraft.negative_prompt}
-              onChange={(event) => setBrandKitDraft((current) => ({ ...current, negative_prompt: event.target.value }))}
-            />
-          </label>
-          <label className="brand-kit-field">
-            <span>Reference notes</span>
-            <textarea
-              aria-label="Inspector Frank Brand Kit reference notes"
-              value={brandKitDraft.reference_notes}
-              onChange={(event) => setBrandKitDraft((current) => ({ ...current, reference_notes: event.target.value }))}
-            />
-          </label>
-          <div className="brand-kit-actions">
-            <small>{brandKit.updated_at ? `Updated ${new Date(brandKit.updated_at).toLocaleString()}` : "Local guidance ready"}</small>
-            <button
-              className="mini-button provider-check-button"
-              type="button"
-              aria-label="Save inspector Brand Kit"
-              onClick={saveBrandKit}
-              disabled={brandKitBusy}
-            >
-              {brandKitBusy ? <RefreshCw className="spin" size={14} /> : <CheckCircle2 size={14} />}
-              Save Brand Kit
-            </button>
-            <button
-              className="mini-button provider-check-button"
-              type="button"
-              aria-label="Save inspector context brief"
-              onClick={saveBrandContextBrief}
-              disabled={connection !== "online" || brandContextBusy}
-            >
-              {brandContextBusy ? <RefreshCw className="spin" size={14} /> : <Download size={14} />}
-              Save context brief
-            </button>
-          </div>
-          {brandContextPath ? (
-            <div className="demo-evidence-actions brand-context-actions">
-              <small className="demo-evidence-path">Inspector brand context: {brandContextPath}</small>
-              {brandContextUrl ? (
-                <button
-                  className="mini-button provider-check-button"
-                  type="button"
-                  aria-label="Open inspector context brief"
-                  onClick={() => openStudioLink(brandContextUrl, "Brand context")}
-                >
-                  <ExternalLink size={14} />
-                  Open context brief
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-        </section>
-
-        <section className="context-section preset-library-section inspector-panel active" aria-label="Prompt preset library">
-          <div className="section-title">
-            <p className="eyebrow">Library</p>
-            <h3>Prompt presets</h3>
-          </div>
-          <p className="section-help">Click a preset to load its prompt. Selected presets are appended to your brief.</p>
-          <div className="preset-library-list">
-            {promptPresets.map((preset) => {
-              const isActive = selectedPresetKey === preset.key;
-              const isCustom = customPresetKeys.has(preset.key);
-              return (
-                <div
-                  key={preset.key}
-                  className={`preset-library-card ${isActive ? "selected" : ""}`}
-                  role="button"
-                  tabIndex={0}
-                  aria-pressed={isActive}
-                  onClick={() => {
-                    if (selectedPresetKey === preset.key) {
-                      attachPreset(null);
-                      setStatusText(`Removed preset: ${preset.label}`);
-                    } else {
-                      attachPreset(preset.key);
-                      setStatusText(`Loaded preset: ${preset.label}`);
-                    }
-                  }}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }}
-                >
-                  <span className="preset-library-card-head">
-                    <strong>{preset.label}</strong>
-                    {isActive ? <em>Active</em> : null}
-                    {isCustom ? (
-                      <button
-                        type="button"
-                        className="preset-remove-btn"
-                        aria-label={`Remove ${preset.label}`}
-                        title="Remove preset"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCustomPresets((current) => current.filter((p) => p.key !== preset.key));
-                          if (selectedPresetKey === preset.key) {
-                            attachPreset(null);
-                          }
-                          setStatusText(`Removed preset: ${preset.label}`);
-                        }}
-                      >
-                        ×
-                      </button>
-                    ) : null}
-                  </span>
-                  <small>{preset.prompt}</small>
-                </div>
-              );
-            })}
-            {newPresetOpen ? (
-              <form
-                className="preset-library-card preset-new-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const label = newPresetLabel.trim();
-                  const promptText = newPresetPrompt.trim();
-                  if (!label || !promptText) {
-                    setStatusText("Preset needs a label and prompt.");
-                    return;
-                  }
-                  const slug = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "preset";
-                  const key = `custom-${slug}-${Math.random().toString(36).slice(2, 6)}`;
-                  const next: PromptPreset = { key, label, description: "Custom preset", prompt: promptText };
-                  setCustomPresets((current) => [...current, next]);
-                  setSelectedPresetKey(key);
-                  setPrompt((current) => current.trim() ? `${current.trim()}\n\n${promptText}` : promptText);
-                  setNewPresetLabel("");
-                  setNewPresetPrompt("");
-                  setNewPresetOpen(false);
-                  setStatusText(`Added preset: ${label}`);
-                }}
-              >
-                <input
-                  type="text"
-                  placeholder="Preset label"
-                  value={newPresetLabel}
-                  onChange={(e) => setNewPresetLabel(e.target.value)}
-                  autoFocus
-                />
-                <textarea
-                  placeholder="Prompt text"
-                  value={newPresetPrompt}
-                  onChange={(e) => setNewPresetPrompt(e.target.value)}
-                  rows={3}
-                />
-                <div className="preset-new-actions">
-                  <button type="submit" className="preset-new-save">Save</button>
-                  <button
-                    type="button"
-                    className="preset-new-cancel"
-                    onClick={() => { setNewPresetOpen(false); setNewPresetLabel(""); setNewPresetPrompt(""); }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <button
-                type="button"
-                className="preset-library-card preset-add-card"
-                onClick={() => setNewPresetOpen(true)}
-              >
-                <Plus size={14} />
-                <span>New preset</span>
-              </button>
-            )}
-          </div>
-        </section>
-
         <div className="status-strip">
           <div className={`gen-progress phase-${genPhase}`} role="status" aria-live="polite">
             {(["queued", "running", genPhase === "failed" ? "failed" : "completed"] as const).map((step, i) => {
@@ -4798,7 +4455,9 @@ export default function App() {
             ) : null}
           </div>
         ) : null}
-      </aside>
+      </main>
+      )}
+
 
 
       {walkthroughOpen ? (
