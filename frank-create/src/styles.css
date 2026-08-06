@@ -6917,12 +6917,13 @@ body {
 .sidebar-brand-block {
   flex-shrink: 0;
   margin: 0;
-  padding: 14px 10px 0;
+  padding: 16px 10px;
   border: 0;
   background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
 }
 
 .sidebar-brand-block::after {
@@ -6958,7 +6959,7 @@ body {
   height: 1px;
   border: 0;
   background: #000000;
-  margin: 20px -12px 0;
+  margin: 0 -12px;
 }
 
 .sidebar-bottom-divider {
