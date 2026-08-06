@@ -3249,7 +3249,6 @@ export default function App() {
           />
         </div>
         <div className="os-topbar-right">
-          <img className="os-tenant-mark" src={frankBodyLogo} alt="frank body" />
           <span className="os-topbar-bell" aria-hidden="true">
             <Bell size={16} />
           </span>
