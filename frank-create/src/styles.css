@@ -7050,8 +7050,8 @@ body {
   content: "";
   display: block;
   margin: 10px -16px 0;
-  height: 2px;
-  background: rgba(48, 48, 48, 0.1);
+  height: 1px;
+  background: rgba(48, 48, 48, 0.08);
 }
 
 
