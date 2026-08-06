@@ -1469,6 +1469,23 @@ function extractProviderMessage(raw: string): string {
 
 function classifyReplicateModelError(raw: string, status: string): ProviderRunError {
   const text = raw.toLowerCase();
+  // Replicate infrastructure faults, not prompt/param faults. "Director" is
+  // Replicate's internal scheduler; E9243/E6716 and friends fail before the
+  // model ever sees the input, so the only correct response is a retry.
+  if (
+    text.includes("e9243") ||
+    text.includes("e6716") ||
+    text.includes("director:") ||
+    text.includes("unexpected error handling prediction")
+  ) {
+    return new ProviderRunError(
+      "Replicate hit an internal error before running the model (E9243). Nothing is wrong with the prompt — retry the run.",
+      "provider_unavailable",
+      true,
+      undefined,
+      raw,
+    );
+  }
   // Generic upstream model outage: Replicate relays the vendor's opaque
   // "ModelError ... (E001)" when the hosted model itself is unhealthy. This
   // fails within a second, before inference, regardless of prompt or params.
@@ -1484,7 +1501,10 @@ function classifyReplicateModelError(raw: string, status: string): ProviderRunEr
   if (text.includes("nsfw") || text.includes("safety") || text.includes("content policy") || text.includes("flagged")) {
     return new ProviderRunError("The provider blocked this prompt for safety/policy reasons. Rewrite and try again.", "content_filtered", false, undefined, raw);
   }
-  if (text.includes("invalid") || text.includes("must be") || text.includes("expected") || text.includes("required")) {
+  // Guard the param heuristics with word boundaries — a bare "expected"
+  // substring also matches "unexpected", which is an infra fault, not a
+  // parameter problem.
+  if (/\binvalid\b/.test(text) || /\bmust be\b/.test(text) || /(^|[^n])\bexpected\b/.test(text) || /\brequired\b/.test(text)) {
     return new ProviderRunError(`Model rejected input parameters: ${raw.slice(0, 200)}`, "invalid_params", false, undefined, raw);
   }
   if (text.includes("timeout") || text.includes("timed out")) {
@@ -1495,6 +1515,7 @@ function classifyReplicateModelError(raw: string, status: string): ProviderRunEr
   }
   return new ProviderRunError(`Replicate ${status}: ${raw.slice(0, 240)}`, "model_error", true, undefined, raw);
 }
+
 
 function extractReplicateUrl(output: unknown): string | undefined {
   if (!output) return undefined;
