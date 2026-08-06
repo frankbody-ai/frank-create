@@ -7920,8 +7920,8 @@ body {
   align-items: baseline;
   gap: 5px;
   font-family: var(--font-display);
-  font-size: 13px;
-  line-height: 16px;
+  font-size: 16px;
+  line-height: 20px;
   letter-spacing: 0.01em;
   text-transform: none;
 }
@@ -7937,8 +7937,8 @@ body {
 }
 
 .guided-header.app-sidebar .sidebar-brand-block {
-  padding: 12px 14px 0;
-  margin-bottom: 6px;
+  padding: 18px 14px 0;
+  margin-bottom: 8px;
 }
 
 .guided-header.app-sidebar .sidebar-brand-block::after {
@@ -8093,18 +8093,18 @@ body {
 
 .os-topbar-logo {
   width: 216px;
-  margin-left: -20px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0 18px;
+  justify-content: flex-start;
+  padding: 0 14px;
 }
 
 .os-topbar-logo img {
-  width: 100%;
+  width: auto;
   height: auto;
-  max-height: 44px;
+  max-width: 100%;
+  max-height: 30px;
   object-fit: contain;
   display: block;
 }
