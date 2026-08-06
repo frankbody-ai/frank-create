@@ -5513,13 +5513,6 @@ input:focus, textarea:focus, select:focus {
 }
 .frank-auth-wordmark span:first-child { border-radius: 6px 0 0 6px; }
 .frank-auth-wordmark span:last-child { border-left: 0; border-radius: 0 6px 6px 0; }
-.frank-auth-studio-logo {
-  display: block;
-  width: 220px;
-  max-width: 100%;
-  height: auto;
-  margin: 8px auto 24px;
-}
 .frank-auth-title {
   margin: 0 0 8px;
   font-family: var(--font-display);
@@ -5590,7 +5583,7 @@ input:focus, textarea:focus, select:focus {
   .studio-shell.guided-studio { grid-template-columns: 64px minmax(0, 1fr); }
   .guided-header.app-sidebar { width: 64px; }
   .sidebar-brand-block { padding: 14px 8px 10px; }
-  .sidebar-app-tagline, .sidebar-app-copy, .sidebar-studio-block { display: none; }
+  .sidebar-app-tagline, .sidebar-app-copy { display: none; }
   .sidebar-brand-mark span { font-size: 11px; padding: 5px 0; }
   .sidebar-section-label { visibility: hidden; height: 8px; padding: 0; }
   .sidebar-nav-button { justify-content: center; padding: 12px 0; margin: 0 6px; }
@@ -5599,8 +5592,6 @@ input:focus, textarea:focus, select:focus {
 
 /* Brand logo image (replaces the wordmark capsules) */
 .sidebar-brand-logo { display: block; width: 100%; height: auto; margin: 0; }
-.sidebar-studio-block { padding: 14px 18px; }
-.sidebar-studio-block .sidebar-studio-logo { display: block; width: 100%; height: auto; margin: 0; }
 .frank-auth-logo { display: block; width: 220px; max-width: 100%; height: auto; margin: 0 auto 8px; }
 
 /* ============= Sidebar bottom sections — blend with top nav ============= */
@@ -7083,13 +7074,6 @@ body {
   padding: 0 16px 0;
 }
 
-.sidebar-brand-logo,
-.sidebar-studio-logo {
-  max-height: 44px;
-  width: auto;
-  object-fit: contain;
-  display: block;
-}
 
 .sidebar-lockup {
   display: flex;
@@ -7111,10 +7095,6 @@ body {
   color: var(--muted);
 }
 
-.sidebar-bottom-divider,
-.sidebar-studio-block {
-  border: 0;
-}
 
 .sidebar-brand-block {
   margin-bottom: 10px;
@@ -7128,10 +7108,6 @@ body {
   background: var(--muted-15);
 }
 
-.sidebar-studio-block {
-  padding: 0 16px 6px;
-  background: transparent;
-}
 
 .sidebar-nav {
   flex: 1 0 auto;
@@ -7933,11 +7909,6 @@ body {
   width: auto;
 }
 
-.sidebar-studio-logo {
-  max-height: 22px;
-  width: auto;
-  opacity: 0.9;
-}
 
 /* ---- accent discipline ------------------------------------- */
 
