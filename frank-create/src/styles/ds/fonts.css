@@ -2,45 +2,22 @@
    Google Sans — the interface voice: headings, buttons, tabs, nav, menus,
    labels. Roboto — all reading copy at weight 300+, and the label role
    (uppercase eyebrows, counts, timestamps) with tabular figures.
-   Both ship as variable fonts served from the project CDN, one roman and one
-   italic file each. No third face, no Google Fonts CDN. */
+   Both ship as the variable roman files from the design system export,
+   bundled with the app so dev, preview and production render identically.
+   No third face, no Google Fonts CDN. */
 
 @font-face {
   font-family: "Google Sans";
-  src:
-    url("/__l5e/assets-v1/d79c1c7a-c6c1-4b3e-8d7e-43dbdff93900/GoogleSans-Variable.ttf") format("truetype-variations"),
-    url("/__l5e/assets-v1/d79c1c7a-c6c1-4b3e-8d7e-43dbdff93900/GoogleSans-Variable.ttf") format("truetype");
+  src: url("../../assets/fonts/GoogleSans-Variable.ttf") format("truetype-variations");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "Google Sans";
-  src:
-    url("/__l5e/assets-v1/b53b2297-6be9-48b4-a15c-9e6d3ccf9ea5/GoogleSans-Variable-Italic.ttf") format("truetype-variations"),
-    url("/__l5e/assets-v1/b53b2297-6be9-48b4-a15c-9e6d3ccf9ea5/GoogleSans-Variable-Italic.ttf") format("truetype");
-  font-weight: 400 700;
-  font-style: italic;
-  font-display: swap;
-}
-
-@font-face {
   font-family: "Roboto";
-  src:
-    url("/__l5e/assets-v1/b03b91f9-d840-4194-a517-58a66eb66e08/Roboto-Variable.ttf") format("truetype-variations"),
-    url("/__l5e/assets-v1/b03b91f9-d840-4194-a517-58a66eb66e08/Roboto-Variable.ttf") format("truetype");
+  src: url("../../assets/fonts/Roboto-Variable.ttf") format("truetype-variations");
   font-weight: 100 900;
   font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Roboto";
-  src:
-    url("/__l5e/assets-v1/cd2714c5-1dac-42e3-b200-da9858ddf6ef/Roboto-Variable-Italic.ttf") format("truetype-variations"),
-    url("/__l5e/assets-v1/cd2714c5-1dac-42e3-b200-da9858ddf6ef/Roboto-Variable-Italic.ttf") format("truetype");
-  font-weight: 100 900;
-  font-style: italic;
   font-display: swap;
 }
