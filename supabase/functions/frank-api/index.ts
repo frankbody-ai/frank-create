@@ -2048,7 +2048,74 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (path === "/prompt-agent/config" && method === "GET") {
+      const cfg = await loadPromptAgentConfig(supabase());
+      return json({
+        config: {
+          persona: cfg.persona,
+          craftMethod: cfg.craftMethod,
+          blueprint: cfg.blueprint,
+          rules: cfg.rules,
+          skills: cfg.skills,
+          updatedAt: cfg.updatedAt,
+        },
+        defaults: {
+          persona: DEFAULT_CONFIG.persona,
+          craftMethod: DEFAULT_CONFIG.craftMethod,
+          blueprint: DEFAULT_CONFIG.blueprint,
+          rules: DEFAULT_CONFIG.rules,
+          skills: DEFAULT_CONFIG.skills,
+        },
+      });
+    }
+
+    if (path === "/prompt-agent/config" && method === "PUT") {
+      const isAdmin = await supabase().rpc("has_role", { _user_id: userId, _role: "admin" });
+      if (isAdmin.error || isAdmin.data !== true) {
+        return json({ error: { code: "forbidden", message: "Admin role required" } }, 403);
+      }
+      const body = await readJson(req) as {
+        persona?: string; craftMethod?: string; blueprint?: string; rules?: string;
+        skills?: { key?: string; label?: string; hint?: string; instruction?: string; sort_order?: number; is_active?: boolean }[];
+      };
+      const up = await supabase().from("prompt_agent_config").upsert({
+        id: 1,
+        persona: String(body.persona ?? "").trim(),
+        craft_method: String(body.craftMethod ?? "").trim(),
+        blueprint: String(body.blueprint ?? "").trim(),
+        rules: String(body.rules ?? "").trim(),
+        updated_by: userId,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "id" });
+      if (up.error) return json({ error: { code: "save_failed", message: up.error.message } }, 400);
+
+      if (Array.isArray(body.skills)) {
+        const rows = body.skills
+          .filter((s) => s && String(s.key ?? "").trim())
+          .map((s, i) => ({
+            key: String(s.key).trim(),
+            label: String(s.label ?? "").trim() || String(s.key).trim(),
+            hint: String(s.hint ?? "").trim(),
+            instruction: String(s.instruction ?? "").trim(),
+            sort_order: typeof s.sort_order === "number" ? s.sort_order : i,
+            is_active: s.is_active !== false,
+          }));
+        const keys = rows.map((r) => r.key);
+        if (rows.length) {
+          const ups = await supabase().from("prompt_agent_skills").upsert(rows, { onConflict: "key" });
+          if (ups.error) return json({ error: { code: "save_failed", message: ups.error.message } }, 400);
+        }
+        const existing = await supabase().from("prompt_agent_skills").select("key");
+        const stale = (existing.data || []).map((r: any) => String(r.key)).filter((k: string) => !keys.includes(k));
+        if (stale.length) await supabase().from("prompt_agent_skills").delete().in("key", stale);
+      }
+
+      const cfg = await loadPromptAgentConfig(supabase());
+      return json({ config: cfg });
+    }
+
     if (path === "/prompt-agent" && method === "POST") {
+
       const body = await readJson(req) as { messages?: { role?: string; content?: string; images?: string[] }[]; skill?: string };
       const incoming = Array.isArray(body?.messages) ? body.messages : [];
       const history = incoming
