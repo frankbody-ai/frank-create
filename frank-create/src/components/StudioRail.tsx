@@ -130,15 +130,6 @@ export function StudioRail(props: StudioRailProps) {
             <span>Compare</span>
           </button>
         </div>
-        <button
-          className="rail-collapse"
-          type="button"
-          onClick={onClose}
-          aria-label="Collapse studio settings"
-          title="Collapse settings"
-        >
-          <ChevronLeft size={14} />
-        </button>
       </div>
 
 
