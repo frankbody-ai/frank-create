@@ -33,7 +33,7 @@ describe("AutoSolutions OS design system", () => {
     expect(typography).toContain("--font-body:'Roboto'");
     expect(fonts).toContain('font-family: "Google Sans"');
     expect(fonts).toContain('font-family: "Roboto"');
-    expect(fonts).toContain("/__l5e/assets-v1/");
+    expect(fonts).toContain("../../assets/fonts/GoogleSans-Variable.ttf");
     expect(fonts).not.toContain("fonts.googleapis.com");
   });
 

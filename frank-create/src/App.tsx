@@ -149,13 +149,9 @@ import type {
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
-import osLogoAsset from "./assets/ds/autosolutions-os-md.png.asset.json";
-import artificialWordmarkAsset from "./assets/ds/art-ificial-design-studio.svg.asset.json";
-import frankTenantAsset from "./assets/ds/frank.svg.asset.json";
-
-const osLogo = osLogoAsset.url;
-const designStudioLogo = artificialWordmarkAsset.url;
-const frankBodyLogo = frankTenantAsset.url;
+import osLogo from "./assets/ds/autosolutions-os-md.png";
+import designStudioLogo from "./assets/ds/art-ificial-design-studio.svg";
+import frankBodyLogo from "./assets/ds/frank.svg";
 
 
 type WalkthroughTarget =
