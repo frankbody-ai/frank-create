@@ -14,6 +14,8 @@ import {
   type FeedbackStatus,
 } from "../lib/feedback";
 import { supabase } from "../lib/supabaseClient";
+import { PromptAgentTab } from "./admin/PromptAgentTab";
+
 
 const ROLES: AppRole[] = ["user", "manager", "admin"];
 const BOARD_COLUMNS: { key: FeedbackStatus; label: string }[] = [
@@ -31,9 +33,13 @@ export function AdminPortal() {
   const initialTab = (() => {
     const h = window.location.hash;
     const q = h.includes("?") ? h.split("?")[1] : "";
-    return new URLSearchParams(q).get("tab") === "feedback" ? "feedback" : "users";
+    const t = new URLSearchParams(q).get("tab");
+    if (t === "feedback") return "feedback" as const;
+    if (t === "prompt-agent") return "prompt-agent" as const;
+    return "users" as const;
   })();
-  const [tab, setTab] = useState<"users" | "feedback">(initialTab);
+  const [tab, setTab] = useState<"users" | "feedback" | "prompt-agent">(initialTab);
+
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [meId, setMeId] = useState<string | null>(null);
 
@@ -62,7 +68,7 @@ export function AdminPortal() {
       <header className="admin-portal-header">
         <div>
           <h1>Admin portal</h1>
-          <p>Manage roles and triage user feedback.</p>
+          <p>Manage roles, triage user feedback, and edit the Prompt Generator agent.</p>
         </div>
         <a className="admin-portal-link" href="#/">← Back to app</a>
       </header>
@@ -75,8 +81,13 @@ export function AdminPortal() {
           className={`admin-portal-tab ${tab === "feedback" ? "active" : ""}`}
           onClick={() => setTab("feedback")}
         >Feedback tasks</button>
+        <button
+          className={`admin-portal-tab ${tab === "prompt-agent" ? "active" : ""}`}
+          onClick={() => setTab("prompt-agent")}
+        >Prompt agent</button>
       </nav>
-      {tab === "users" ? <UsersTab meId={meId} /> : <FeedbackBoard />}
+      {tab === "users" ? <UsersTab meId={meId} /> : tab === "feedback" ? <FeedbackBoard /> : <PromptAgentTab />}
+
     </div>
   );
 }
