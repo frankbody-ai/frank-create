@@ -8090,3 +8090,33 @@ body {
 .studio-shell.guided-studio .turn-meta span {
   color: var(--on-dark-body);
 }
+
+/* rounds well interior — sections read on ink, not as pale plates */
+.studio-shell.guided-studio .thread-surface .compare-run,
+.studio-shell.guided-studio .thread-surface .compare-run-grid,
+.studio-shell.guided-studio .thread-surface .turn-side,
+.studio-shell.guided-studio .thread-surface .turn-body {
+  background: transparent !important;
+  border-color: var(--on-dark-divider) !important;
+  box-shadow: none !important;
+}
+
+.studio-shell.guided-studio .thread-surface .secondary-button,
+.studio-shell.guided-studio .thread-surface .mini-button,
+.studio-shell.guided-studio .thread-surface .compact-action {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  color: var(--text-on-ink) !important;
+}
+
+.studio-shell.guided-studio .thread-surface .secondary-button:hover,
+.studio-shell.guided-studio .thread-surface .mini-button:hover,
+.studio-shell.guided-studio .thread-surface .compact-action:hover {
+  border-color: var(--text-on-ink) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.studio-shell.guided-studio .thread-surface .primary-button {
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+}
