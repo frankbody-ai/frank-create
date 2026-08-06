@@ -8385,3 +8385,29 @@ body {
   border-color: var(--ink);
   background: var(--surface);
 }
+
+/* 12. Review panel now lives inline in the studio column (inspector drawer removed) */
+.studio-shell.guided-studio .conversation-column > .selected-output {
+  order: 4;
+  padding: 18px;
+  border: 0;
+  border-radius: var(--radius-paper-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-card-glow);
+}
+
+.studio-shell.guided-studio .conversation-column > .status-strip {
+  order: 5;
+}
+
+.studio-shell.guided-studio .conversation-column > .selected-output .preview-slot {
+  aspect-ratio: auto;
+  max-height: 420px;
+}
+
+.studio-shell.guided-studio .conversation-column > .selected-output .preview-slot img,
+.studio-shell.guided-studio .conversation-column > .selected-output .preview-slot video {
+  max-height: 420px;
+  width: auto;
+  object-fit: contain;
+}
