@@ -1,5 +1,7 @@
 import {
   ArrowLeft,
+  Bell,
+
   Box,
   CheckCircle2,
   ChevronLeft,
