@@ -5761,7 +5761,7 @@ input:focus, textarea:focus, select:focus {
     grid-template-columns: 256px minmax(0, 1fr) !important;
   }
   .studio-shell.guided-studio.settings-rail-open {
-    grid-template-columns: 256px 300px minmax(0, 1fr) !important;
+    grid-template-columns: 256px minmax(0, 1fr) 300px !important;
   }
 }
 
@@ -6181,7 +6181,7 @@ input:focus, textarea:focus, select:focus {
 
 /* ---- Secondary setup rail (Image Studio) ---- */
 .studio-shell.guided-studio.settings-rail-open {
-  grid-template-columns: 256px 300px minmax(0, 1fr);
+  grid-template-columns: 256px minmax(0, 1fr) 300px;
 }
 
 .studio-shell.guided-studio.settings-rail-open .conversation-column {
@@ -6247,14 +6247,14 @@ input:focus, textarea:focus, select:focus {
    grid declaration and left the canvas trapped in the rail's 300px track. */
 @media (min-width: 1024px) {
   .studio-shell.guided-studio.settings-rail-open {
-    grid-template-columns: 256px 300px minmax(0, 1fr) !important;
+    grid-template-columns: 256px minmax(0, 1fr) 300px !important;
     grid-template-rows: minmax(0, 1fr) !important;
   }
 }
 
 @media (min-width: 921px) and (max-width: 1023px) {
   .studio-shell.guided-studio.settings-rail-open {
-    grid-template-columns: 64px 300px minmax(0, 1fr) !important;
+    grid-template-columns: 64px minmax(0, 1fr) 300px !important;
     grid-template-rows: minmax(0, 1fr) !important;
   }
 
@@ -7926,7 +7926,7 @@ body {
 /* ---- 9. specificity corrections -------------------------- */
 
 .studio-shell.guided-studio.settings-rail-open {
-  grid-template-columns: 216px 280px minmax(0, 1fr);
+  grid-template-columns: 216px minmax(0, 1fr) 280px;
 }
 
 .guided-header.app-sidebar .sidebar-nav-button,
