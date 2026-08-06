@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Send, Sparkles, Copy, Wand2, RotateCcw, Loader2, ImagePlus, X } from "lucide-react";
-import { promptAgentChat } from "../lib/api";
+import { promptAgentChat, fetchPromptAgentConfig } from "../lib/api";
 
 interface Props {
   onUsePrompt?: (prompt: string) => void;
