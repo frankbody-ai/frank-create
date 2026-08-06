@@ -152,7 +152,6 @@ import type {
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
 import osLogo from "./assets/ds/autosolutions-os-md.png";
-import frankBodyLogo from "./assets/ds/frank.svg";
 
 
 type WalkthroughTarget =
@@ -3329,9 +3328,6 @@ export default function App() {
 
 
         <nav className="sidebar-nav" aria-label="Frank Create navigation">
-          <div className="sidebar-studio-block">
-            <img src={frankBodyLogo} alt="frank body" className="sidebar-studio-logo" />
-          </div>
           <button
             className={`sidebar-nav-button ${studioMode === "image-studio" && reviewFilter === "all" ? "active" : ""}`}
             type="button"

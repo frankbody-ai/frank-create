@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS, hardSignOut } from "./lib/supabaseClient";
 import { lovable } from "./lib/lovableAuth";
-import frankBodyLogo from "./assets/ds/frank.svg";
 import designStudioLogo from "./assets/ds/art-ificial-design-studio.svg";
 
 
@@ -59,7 +58,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     <div className="frank-auth-wrap">
       <div className="frank-auth-card">
         <img src={designStudioLogo} alt="Design Studio" className="frank-auth-logo" />
-        <img src={frankBodyLogo} alt="frank body" className="frank-auth-studio-logo" />
         <h1 className="frank-auth-title">Hey babe.</h1>
         <p className="frank-auth-sub">
           sign in with your frank body or autosolutions google account.
