@@ -4807,6 +4807,76 @@ export default function App() {
         </div>
       ) : null}
 
+      {referencePickerOpen ? (
+        <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setReferencePickerOpen(false)}>
+          <div className="lightbox-inner reference-picker" onClick={(event) => event.stopPropagation()}>
+            <button
+              className="lightbox-close"
+              type="button"
+              onClick={() => setReferencePickerOpen(false)}
+              aria-label="Close reference picker"
+            >
+              <XCircle size={18} />
+            </button>
+            <header className="reference-picker-header">
+              <h3>Add references</h3>
+              <p>Reuse an approved image or upload from your computer.</p>
+            </header>
+            <input
+              ref={referencePickerInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onChange={async (event) => {
+                await handleReferenceUpload(event);
+                setReferencePickerOpen(false);
+              }}
+            />
+            <div className="reference-picker-grid">
+              <button
+                type="button"
+                className="reference-picker-upload"
+                onClick={() => referencePickerInputRef.current?.click()}
+              >
+                <Upload size={22} />
+                <strong>Upload from computer</strong>
+                <span>PNG, JPG or WEBP · you can also paste or drop</span>
+              </button>
+              {referenceLibraryLoading ? (
+                <div className="reference-picker-empty">Loading approved images…</div>
+              ) : referenceLibrary.length ? (
+                referenceLibrary.map((asset) => {
+                  const active = referenceAssets.some((ref) => ref.source_asset_id === asset.id);
+                  return (
+                    <button
+                      key={asset.id}
+                      type="button"
+                      className={`reference-picker-card${active ? " is-active" : ""}`}
+                      onClick={async () => {
+                        await useAssetAsReference(asset);
+                        setReferencePickerOpen(false);
+                      }}
+                      title={asset.title}
+                    >
+                      {asset.preview_url ? (
+                        <img src={asset.preview_url} alt={asset.title} />
+                      ) : (
+                        <span className="reference-picker-card-fallback"><Paperclip size={18} /></span>
+                      )}
+                      <span className="reference-picker-card-title">{asset.title}</span>
+                      {active ? <span className="reference-picker-card-flag">In use</span> : null}
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="reference-picker-empty">No approved images yet — approve a generation to reuse it here.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {referencePreviewAsset ? (
         <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setReferencePreviewAsset(null)}>
           <div className="lightbox-inner reference-preview-inner" onClick={(event) => event.stopPropagation()}>
