@@ -1021,6 +1021,232 @@ async function handleInference(body: any, userId: string) {
   };
 }
 
+// Download + upload + insert in parallel: serial persistence added ~10s per
+// image, which pushed multi-image rounds past the function's time budget.
+async function persistImageAssets(args: {
+  userId: string;
+  sessionId: string;
+  turnId: string;
+  prompt: string;
+  modelId: string;
+  aspectRatio?: string;
+  requestedSize?: string | null;
+  images: Array<{ b64?: string; url?: string; mime: string }>;
+}): Promise<any[]> {
+  const sb = supabase();
+  const requested = requestedDimensions(args.aspectRatio, args.requestedSize || undefined);
+  return (await Promise.all(args.images.map(async (img) => {
+    const assetId = crypto.randomUUID();
+    const imageBytes = await imageBytesForUpload(img);
+    const bytes = imageBytes.bytes;
+    const mime = imageBytes.mime;
+    const ext = mime.split("/")[1] || "png";
+    const storagePath = `${args.sessionId}/${assetId}.${ext}`;
+    const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, {
+      contentType: mime, upsert: false,
+    });
+    if (up.error) throw up.error;
+
+    const assetIns = await sb.from("assets").insert({
+      id: assetId,
+      user_id: args.userId,
+      session_id: args.sessionId,
+      message_id: args.turnId,
+      storage_path: storagePath,
+      asset_type: "generated",
+      prompt_snapshot: args.prompt,
+      model_key: args.modelId,
+      metadata_json: {
+        media_type: "image",
+        mime,
+        title: args.prompt.slice(0, 80) || "Generated image",
+        aspect_ratio: args.aspectRatio,
+        requested_size: args.requestedSize ?? null,
+        width: requested?.width,
+        height: requested?.height,
+      },
+    }).select().single();
+    if (assetIns.error) throw assetIns.error;
+    return assetIns.data;
+  }))).filter(Boolean);
+}
+
+// Poll the Replicate predictions recorded on a "running" turn. Returns as soon
+// as anything is still processing so the client can keep polling; persists the
+// images and closes out the turn once every prediction is terminal.
+async function handleTurnStatus(body: any, userId: string) {
+  const sb = supabase();
+  const turnId = String(body?.turn_id || "");
+  if (!turnId) throw new HttpError(400, "turn_id is required.");
+
+  const msgRes = await sb.from("messages").select("*").eq("id", turnId).maybeSingle();
+  if (msgRes.error) throw msgRes.error;
+  const row = msgRes.data;
+  if (!row) throw new HttpError(404, "Turn not found.");
+
+  const snapshot = (row.settings_snapshot_json ?? {}) as any;
+  const finishWithRows = async (snap: any, status: "complete" | "failed" | "running") => {
+    const assetRows = await sb.from("assets").select("*").eq("message_id", turnId);
+    const assets = await Promise.all((assetRows.data ?? []).map(async (asset: any) =>
+      rowToAsset(asset, await signed(asset.storage_path))));
+    return {
+      turn: rowToTurn({ ...row, settings_snapshot_json: snap }),
+      status,
+      assets,
+    };
+  };
+
+  const predictionIds: string[] = Array.isArray(snapshot.prediction_ids) ? snapshot.prediction_ids : [];
+  if (snapshot.status !== "running" || !predictionIds.length) {
+    const status = snapshot.status === "failed" ? "failed" : snapshot.status === "running" ? "running" : "complete";
+    return await finishWithRows(snapshot, status as any);
+  }
+
+  const replicateKey = getReplicateGatewayKey();
+  if (!replicateKey) throw new HttpError(400, "Replicate is not connected.");
+
+  const predictions = await Promise.all(predictionIds.map(async (id) => {
+    try {
+      return { id, prediction: await fetchReplicatePrediction(id, replicateKey) };
+    } catch (err) {
+      return { id, error: err };
+    }
+  }));
+
+  const pending = predictions.filter((entry) =>
+    entry.prediction && !["succeeded", "failed", "canceled"].includes(entry.prediction.status));
+  if (pending.length) {
+    return await finishWithRows({ ...snapshot, pending_count: pending.length }, "running");
+  }
+
+  const images: Array<{ url: string; mime: string }> = [];
+  const partialErrors: Array<Record<string, unknown>> = Array.isArray(snapshot.partial_errors) ? [...snapshot.partial_errors] : [];
+  for (const entry of predictions) {
+    if (entry.error) {
+      const m = mapReplicateError(entry.error);
+      partialErrors.push({ code: m.code, message: m.message, retryable: m.retryable, status: m.status, request_id: entry.id });
+      continue;
+    }
+    const prediction = entry.prediction;
+    if (prediction.status === "succeeded") {
+      const extracted = extractReplicateUrl(prediction.output);
+      if (extracted) images.push({ url: extracted, mime: "image/png" });
+      else partialErrors.push({ code: "empty_output", message: "Replicate returned no image URL.", retryable: true, request_id: entry.id });
+      continue;
+    }
+    const raw = typeof prediction.error === "string" ? prediction.error : JSON.stringify(prediction.error ?? prediction.status);
+    const classified = classifyReplicateModelError(raw, prediction.status);
+    partialErrors.push({ code: classified.code, message: classified.message, retryable: classified.retryable, request_id: entry.id });
+  }
+
+  if (!images.length) {
+    const first = partialErrors[0] as any;
+    const failedSnapshot = {
+      ...snapshot,
+      status: "failed",
+      error: first?.message || "Generation failed.",
+      error_code: first?.code ?? "provider_error",
+      error_retryable: first?.retryable ?? true,
+      partial_errors: partialErrors,
+    };
+    await sb.from("messages").update({ settings_snapshot_json: failedSnapshot }).eq("id", turnId);
+    const result = await finishWithRows(failedSnapshot, "failed");
+    return {
+      ...result,
+      error: {
+        code: failedSnapshot.error_code,
+        message: failedSnapshot.error,
+        retryable: failedSnapshot.error_retryable,
+        request_id: first?.request_id,
+      },
+    };
+  }
+
+  const inserted = await persistImageAssets({
+    userId,
+    sessionId: row.session_id,
+    turnId,
+    prompt: row.prompt_text || "",
+    modelId: snapshot.model || snapshot.model_key || "",
+    aspectRatio: snapshot.aspect_ratio ?? snapshot.settings?.aspect_ratio,
+    requestedSize: snapshot.image_size ?? snapshot.settings?.image_size ?? null,
+    images,
+  });
+
+  const completedSnapshot = {
+    ...snapshot,
+    status: "complete",
+    output_asset_ids: inserted.map((asset: any) => asset.id),
+    partial_errors: partialErrors.length ? partialErrors : undefined,
+    pending_count: 0,
+  };
+  await sb.from("messages").update({ settings_snapshot_json: completedSnapshot }).eq("id", turnId);
+  return await finishWithRows(completedSnapshot, "complete");
+}
+
+// Create a Replicate prediction and hand back its id without waiting for it.
+async function createReplicatePrediction(
+  slug: string,
+  input: Record<string, unknown>,
+  key: string,
+): Promise<string> {
+  const replicateGateway = "https://connector-gateway.lovable.dev/replicate/v1";
+  const headers = {
+    "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+    "X-Connection-Api-Key": key,
+  };
+  console.info("[frank-api] replicate:create_async", {
+    slug, input: sanitizeReplicateInput(input), reference_count: countReferenceInputs(input),
+  });
+  let res: Response | undefined;
+  let lastTransientBody = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      res = await fetch(`${replicateGateway}/models/${slug}/predictions`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ input }),
+      });
+    } catch (err) {
+      if (attempt === 2) throw new ProviderRunError(`Replicate network error: ${errMessage(err)}`, "provider_unavailable", true, undefined, errMessage(err));
+      await delay(1200 + attempt * 1200);
+      continue;
+    }
+    if ([502, 503, 504].includes(res.status)) {
+      lastTransientBody = await res.text().catch(() => "");
+      if (attempt === 2) break;
+      await delay(1200 + attempt * 1200);
+      continue;
+    }
+    break;
+  }
+  if (!res) throw new ProviderRunError("Replicate upstream unreachable.", "provider_unavailable", true);
+  if (!res.ok) {
+    const text = lastTransientBody || await res.text();
+    console.error("[frank-api] replicate:create_failed", { slug, status: res.status, body: text.slice(0, 1000) });
+    throw mapReplicateCreateFailure(slug, res.status, text);
+  }
+  const prediction: any = await res.json();
+  if (!prediction?.id) throw new ProviderRunError("Replicate did not return a prediction ID.", "provider_error", true);
+  return String(prediction.id);
+}
+
+async function fetchReplicatePrediction(id: string, key: string): Promise<any> {
+  const res = await fetch(`https://connector-gateway.lovable.dev/replicate/v1/predictions/${id}`, {
+    headers: {
+      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      "X-Connection-Api-Key": key,
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new ProviderRunError(`Replicate poll failed (${res.status}): ${extractProviderMessage(text)}`, res.status >= 500 ? "provider_unavailable" : "provider_error", true, res.status, text, id);
+  }
+  return await res.json();
+}
+
+
+
 async function imageBytesForUpload(img: { b64?: string; url?: string; mime: string }): Promise<{ bytes: Uint8Array; mime: string }> {
   if (img.b64) {
     return { bytes: base64Decode(img.b64), mime: img.mime || "image/png" };
