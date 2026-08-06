@@ -1798,6 +1798,32 @@ export default function App() {
     setStatusText(`${asset.title} removed from references.`);
   }
 
+  async function openReferencePicker() {
+    setReferencePickerOpen(true);
+    if (connection !== "online") {
+      setReferenceLibrary(
+        assets.filter(
+          (asset) => !["reference", "mask"].includes(asset.kind) && asset.approval_status === "approved" && asset.media_type !== "video"
+        )
+      );
+      return;
+    }
+    setReferenceLibraryLoading(true);
+    try {
+      const { assets: approved } = await listAssets({ approvalStatus: "approved" });
+      setReferenceLibrary((approved ?? []).filter((asset) => asset.media_type !== "video" && !["reference", "mask"].includes(asset.kind)));
+    } catch (err) {
+      console.error("[frank] approved library load failed", err);
+      setReferenceLibrary(
+        assets.filter(
+          (asset) => !["reference", "mask"].includes(asset.kind) && asset.approval_status === "approved" && asset.media_type !== "video"
+        )
+      );
+    } finally {
+      setReferenceLibraryLoading(false);
+    }
+  }
+
   async function handleReferenceUpload(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
     await addReferenceFiles(files);
