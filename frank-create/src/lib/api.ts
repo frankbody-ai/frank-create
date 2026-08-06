@@ -613,22 +613,53 @@ export async function uploadReferenceToStorage(
 
 
 async function fetchJson<T>(path: string, init: RequestInit = {}) {
-  const response = await fetch(`${frankBase}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(await authHeader()),
-      ...init.headers
-    }
-  });
+  // The edge runtime occasionally answers 503 SUPABASE_EDGE_RUNTIME_SERVICE_DEGRADED
+  // while a container is cycling. Retry a couple of times before surfacing it.
+  const maxAttempts = 3;
+  let lastError: Error | null = null;
 
-  if (!response.ok) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    let response: Response;
+    try {
+      response = await fetch(`${frankBase}${path}`, {
+        ...init,
+        headers: {
+          "Content-Type": "application/json",
+          ...(await authHeader()),
+          ...init.headers
+        }
+      });
+    } catch (err: any) {
+      lastError = new Error(err?.message || "Network request failed");
+      if (attempt < maxAttempts) {
+        await new Promise((r) => setTimeout(r, 400 * attempt));
+        continue;
+      }
+      throw lastError;
+    }
+
+    if (response.ok) {
+      return (await response.json()) as T;
+    }
+
     const text = await response.text();
-    throw new Error(apiErrorMessage(text, response.status));
+    const transient =
+      response.status === 503 ||
+      response.status === 502 ||
+      response.status === 504 ||
+      text.includes("SERVICE_DEGRADED");
+
+    lastError = new Error(apiErrorMessage(text, response.status));
+    if (transient && attempt < maxAttempts) {
+      await new Promise((r) => setTimeout(r, 600 * attempt));
+      continue;
+    }
+    throw lastError;
   }
 
-  return (await response.json()) as T;
+  throw lastError ?? new Error("Frank Create API failed");
 }
+
 
 
 function apiErrorMessage(text: string, status: number) {
