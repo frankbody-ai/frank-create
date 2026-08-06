@@ -889,45 +889,57 @@ async function handleInference(body: any, userId: string) {
     if (replicateSlug) {
       const replicateKey = getReplicateGatewayKey();
       if (!replicateKey) throw new Error("Replicate is not connected for this model yet.");
-      // Run the whole round in one wave (Seedream stays serial — it rate-limits).
-      // Sequential batches of 2 pushed 4-image rounds past the edge function's
-      // wall-clock budget, so the client only ever saw the first batch.
-      const PARALLEL = replicateSlug.includes("seedream") ? 1 : Math.max(1, count);
-      // Seedream + Nano Banana Pro 4K are slow; give them more headroom.
-      const PER_PREDICTION_MS = replicateSlug.includes("seedream") || replicateSlug.includes("nano-banana") ? 140_000 : 120_000;
-      const replicateErrors: unknown[] = [];
-      const runOne = () => Promise.race<string | undefined>([
-        runReplicate(replicateSlug, providerPrompt, {
-          aspect_ratio: reqSettings.aspect_ratio,
-          size: reqSettings.image_size || reqSettings.size,
-          reference_images: refUrls,
-        }, replicateKey),
-        new Promise<string | undefined>((_, reject) => setTimeout(
-          () => reject(new ProviderRunError("Prediction exceeded 120s soft cap.", "timeout", true)),
-          PER_PREDICTION_MS,
-        )),
-      ]);
-      for (let i = 0; i < count; i += PARALLEL) {
-        const batch = Array.from({ length: Math.min(PARALLEL, count - i) }, () => runOne());
-        const results = await Promise.allSettled(batch);
-        for (const result of results) {
-          if (result.status === "fulfilled" && result.value) {
-            generatedImages.push({ url: result.value, mime: "image/png" });
-          } else if (result.status === "fulfilled") {
-            replicateErrors.push(new ProviderRunError("Replicate returned no image URL.", "empty_output", true));
-          } else {
-            replicateErrors.push(result.reason);
-          }
-        }
+      // Long models (Riverflow 4K, Seedream, agentic runs) routinely outlive a
+      // single HTTP request. Create the predictions, hand the ids back to the
+      // client, and let it poll /inference/status until they finish.
+      const input = {
+        aspect_ratio: reqSettings.aspect_ratio,
+        size: reqSettings.image_size || reqSettings.size,
+        reference_images: refUrls,
+      };
+      const created = await Promise.allSettled(
+        Array.from({ length: count }, () =>
+          createReplicatePrediction(replicateSlug, buildReplicateInput(replicateSlug, providerPrompt, input), replicateKey)
+        )
+      );
+      const predictionIds: string[] = [];
+      const createErrors: unknown[] = [];
+      for (const result of created) {
+        if (result.status === "fulfilled" && result.value) predictionIds.push(result.value);
+        else createErrors.push(result.status === "rejected" ? result.reason : new ProviderRunError("Replicate did not return a prediction ID.", "provider_error", true));
       }
-      for (const err of replicateErrors) {
+      for (const err of createErrors) {
         const m = mapReplicateError(err);
         partialErrors.push({ code: m.code, message: m.message, retryable: m.retryable, status: m.status, request_id: m.requestId });
       }
-      if (!generatedImages.length) {
-        throw replicateErrors[0] ?? new ProviderRunError("Replicate returned no image URL.", "empty_output", true);
+      if (!predictionIds.length) {
+        throw createErrors[0] ?? new ProviderRunError("Replicate did not start any prediction.", "provider_error", true);
       }
+      const runningSnapshot = {
+        ...settingsSnapshot,
+        status: "running",
+        provider: "replicate",
+        replicate_slug: replicateSlug,
+        prediction_ids: predictionIds,
+        requested_count: count,
+        partial_errors: partialErrors.length ? partialErrors : undefined,
+        started_at: nowIso(),
+      };
+      await sb.from("messages").update({ settings_snapshot_json: runningSnapshot }).eq("id", turnId);
+      return {
+        turn: rowToTurn({
+          id: turnId, session_id: sessionId, role: "user",
+          message_type: settingsSnapshot.kind, prompt_text: prompt,
+          settings_snapshot_json: runningSnapshot,
+          seq: nextSeq, created_at: nowIso(),
+        }),
+        status: "running" as const,
+        assets: [],
+        providerPayload: { provider: "replicate", model: replicateSlug, prediction_ids: predictionIds },
+        localEngine: "cloud" as const,
+      };
     } else {
+
       for (let i = 0; i < count; i++) {
         generatedImages.push(await lovableImage(providerPrompt, refUrls, {
           gatewayModel,
