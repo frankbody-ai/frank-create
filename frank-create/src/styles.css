@@ -5310,14 +5310,12 @@ h3, h4 {
   align-items: stretch;
   gap: 8px;
   padding: 18px 16px 14px;
-  background: #000000;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
 }
 
 /* Wordmark capsules fill the sidebar width (starter §5 rule) */
 .sidebar-brand-mark {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   width: 100%;
   margin: 0;
   gap: 0;
@@ -5352,22 +5350,8 @@ h3, h4 {
 }
 
 .sidebar-nav-button {
-  border-radius: 8px !important;
-  margin: 0 8px;
-  padding: 10px 12px !important;
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink);
-  background: transparent;
-  box-shadow: none !important;
   transition: background 0.15s ease;
 }
-.sidebar-nav-button:hover { background: transparent !important; color: var(--ink) !important; }
-.sidebar-nav-button.active { background: var(--ink) !important; color: #fff !important; }
-.sidebar-nav-button.active svg { color: #fff; }
 
 /* "Logged in as" card at the bottom */
 .sidebar-account,
@@ -5616,24 +5600,7 @@ input:focus, textarea:focus, select:focus {
 .sidebar-studio-block .sidebar-studio-logo { display: block; width: 100%; height: auto; margin: 0; }
 .frank-auth-logo { display: block; width: 220px; max-width: 100%; height: auto; margin: 0 auto 8px; }
 
-/* ============= Sidebar bottom sections — blend with top nav (§) ============= */
-.guided-header .sidebar-session-card,
-.guided-header .sidebar-account {
-  background: transparent !important;
-  border-top: 0 !important;
-  padding: 4px 8px !important;
-  margin: 0 !important;
-  gap: 2px !important;
-}
-
-.guided-header .sidebar-session-card .session-picker {
-  border: 0 !important;
-  background: transparent !important;
-  padding: 10px 12px !important;
-  margin: 0 !important;
-  border-radius: 8px !important;
-  gap: 6px !important;
-}
+/* ============= Sidebar bottom sections — blend with top nav ============= */
 .guided-header .sidebar-session-card .session-picker span {
   color: var(--muted);
   font-family: var(--font-mono);
@@ -5643,11 +5610,11 @@ input:focus, textarea:focus, select:focus {
   text-transform: uppercase;
 }
 .guided-header .sidebar-session-card .session-picker select {
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--text-caption);
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--ink);
   background: transparent;
   border: 0;
@@ -5662,37 +5629,11 @@ input:focus, textarea:focus, select:focus {
   text-transform: none;
 }
 
-/* Rename / New session / Sign out — match .sidebar-nav-button look */
+/* Rename / New session / Sign out — geometry lives in the OS rail layer */
 .guided-header .sidebar-session-card .compact-action.secondary-button,
 .guided-header .sidebar-session-card .sidebar-new-session,
 .guided-header .sidebar-signout {
-  width: auto !important;
-  margin: 0 8px !important;
-  padding: 10px 12px !important;
-  min-height: 38px !important;
-  border: 0 !important;
-  border-radius: 8px !important;
-  background: transparent !important;
-  color: var(--ink) !important;
-  font-family: var(--font-body) !important;
-  font-weight: 600 !important;
-  font-size: 13px !important;
-  letter-spacing: 0.08em !important;
-  text-transform: uppercase !important;
-  box-shadow: none !important;
-  opacity: 1 !important;
-  justify-content: flex-start !important;
-  gap: 10px !important;
-}
-.guided-header .sidebar-session-card .compact-action.secondary-button:hover,
-.guided-header .sidebar-session-card .sidebar-new-session:hover,
-.guided-header .sidebar-signout:hover {
-  background: transparent !important;
-  color: var(--ink) !important;
-}
-
-.guided-header .sidebar-account {
-  padding-top: 6px !important;
+  justify-content: flex-start;
 }
 .guided-header .sidebar-account-info {
   padding: 10px 12px 4px;
