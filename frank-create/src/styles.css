@@ -8217,3 +8217,90 @@ body {
   border-color: rgba(255, 140, 140, 0.4) !important;
   color: rgba(255, 190, 190, 0.92) !important;
 }
+
+
+/* ============================================================
+   13. Main pane geometry — verbatim from docs/design-source
+   ============================================================ */
+
+.studio-shell.guided-studio .conversation-column {
+  padding: 28px 32px;
+  gap: 18px;
+  background: transparent;
+}
+
+@media (min-width: 1500px) {
+  .studio-shell.guided-studio .conversation-column {
+    padding-inline: 32px;
+  }
+}
+
+/* Page title: display face, 43px/46px, display weight, -0.02em. */
+.studio-shell.guided-studio .studio-topbar {
+  padding-bottom: 0;
+  border-bottom: 0;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.studio-shell.guided-studio .studio-topbar h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  line-height: 46px;
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-display);
+  color: var(--ink);
+  max-width: none;
+}
+
+/* Stat strip: one outlined pill group, cells split by hairlines. */
+.studio-shell.guided-studio .stat-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  flex-shrink: 0;
+  border: 1px solid var(--muted-20);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: transparent;
+}
+
+.studio-shell.guided-studio .stat-row > span {
+  min-width: 80px;
+  padding: 8px 18px;
+  border: 0;
+  border-left: 1px solid var(--muted-20);
+  border-radius: 0;
+  background: transparent;
+  align-items: flex-start;
+}
+
+.studio-shell.guided-studio .stat-row > span:first-child {
+  border-left: 0;
+}
+
+.studio-shell.guided-studio .stat-row > span strong {
+  font-size: var(--text-title);
+  line-height: 26px;
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Cards: 24px radius, glow shadow, no border. */
+.studio-shell.guided-studio .composer,
+.studio-shell.guided-studio .thread-surface,
+.studio-shell.guided-studio .empty-panel {
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card-glow);
+  border: 0;
+}
+
+.studio-shell.guided-studio .composer {
+  background: var(--surface);
+  padding: 18px;
+  gap: 12px;
+}
+
+.studio-shell.guided-studio .thread-surface,
+.studio-shell.guided-studio .empty-panel {
+  background: var(--surface-panel);
+}
