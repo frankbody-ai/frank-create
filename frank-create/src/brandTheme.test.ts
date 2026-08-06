@@ -42,6 +42,6 @@ describe("AutoSolutions OS design system", () => {
     expect(tenants).toContain("--tenant-accent:#F9ABAA");
     expect(tenants).toContain("--tenant-blob-bottom:#F9C0B9");
     expect(tenants).toContain("--tenant-blob-top:#FDEFE4");
-    expect(styles).toContain("background: var(--tenant-ambient)");
+    expect(styles).toContain("var(--tenant-blob-bottom), var(--tenant-blob-top)");
   });
 });

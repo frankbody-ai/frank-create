@@ -8089,7 +8089,7 @@ body {
 
 .studio-shell.guided-studio,
 .studio-shell {
-  background: var(--tenant-ambient) !important;
+  background: linear-gradient(to top, var(--tenant-blob-bottom), var(--tenant-blob-top)) !important;
   color: var(--ink);
 }
 
