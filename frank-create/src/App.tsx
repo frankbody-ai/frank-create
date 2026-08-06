@@ -3681,8 +3681,8 @@ export default function App() {
             );
           }) : null}
 
-          {turns.length ? (
-            groupCompareRows([...turns].reverse()).map((row, rowIdx) => (
+          {searchedTurns.length ? (
+            groupCompareRows([...searchedTurns].reverse()).map((row, rowIdx) => (
             <div
               key={`row-${row[0].id}`}
               className={row.length > 1 ? "compare-run" : "turn-row"}
