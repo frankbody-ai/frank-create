@@ -3284,9 +3284,13 @@ export default function App() {
         </div>
         <div className="os-topbar-right">
           <img className="os-tenant-mark" src={frankBodyLogo} alt="frank body" />
+          <span className="os-topbar-bell" aria-hidden="true">
+            <Bell size={16} />
+          </span>
           <span className="os-topbar-avatar" aria-hidden="true">
             {(userEmail ?? "—").slice(0, 1).toUpperCase()}
           </span>
+
           <button type="button" className="os-topbar-signout" onClick={handleSignOut}>
             Sign out
           </button>
