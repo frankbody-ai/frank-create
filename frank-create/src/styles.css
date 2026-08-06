@@ -7045,8 +7045,8 @@ body {
   content: "";
   display: block;
   margin: 10px -16px 0;
-  height: 1px;
-  background: var(--muted-15);
+  height: 2px;
+  background: rgba(48, 48, 48, 0.1);
 }
 
 
@@ -7148,13 +7148,24 @@ body {
 .sidebar-nav-sub,
 .sidebar-session-row {
   border-radius: var(--radius-pill);
-  font-family: var(--font-display);
-  font-size: var(--text-caption);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--ink);
+}
+.sidebar-nav-sub:hover,
+.sidebar-session-row:hover {
+  background: rgba(249, 192, 185, 0.4);
 }
 
 .sidebar-bottom-divider {
   margin-top: auto;
+  height: 2px;
+  background: rgba(48, 48, 48, 0.1);
+  margin-left: -6px;
+  margin-right: -6px;
 }
 
 .sidebar-nav-account {
