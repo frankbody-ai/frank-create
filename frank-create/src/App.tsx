@@ -28,8 +28,7 @@ import {
   Upload,
   Wand2,
   X,
-  XCircle,
-  LogOut
+  XCircle
 } from "lucide-react";
 import {
   CSSProperties,
@@ -3479,15 +3478,6 @@ export default function App() {
               Admin portal
             </a>
           )}
-          <button
-            type="button"
-            className="sidebar-nav-button"
-            onClick={handleSignOut}
-            aria-label="Sign out"
-          >
-            <LogOut size={16} />
-            Sign out
-          </button>
         </nav>
       </aside>
 
