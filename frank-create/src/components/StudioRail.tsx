@@ -1,4 +1,4 @@
-import { ChevronLeft, Columns2, Film, Image as ImageIcon, RotateCcw } from "lucide-react";
+import { Columns2, Film, Image as ImageIcon, RotateCcw } from "lucide-react";
 import type { PromptPreset, StudioModel, StudioSettings } from "../lib/types";
 import { estimateVideoCost, filterSizesForAspect, maxCountForModel, modelRateLabel } from "../lib/studio";
 import type { StudioAdjustment, StudioFieldErrors } from "../lib/studio";
