@@ -377,8 +377,6 @@ export default function App() {
   }, [studioMode]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
-  const [inspectorTab, setInspectorTab] = useState<"review" | "settings" | "brand" | "export">("review");
-  const [inspectorOpen, setInspectorOpen] = useState(false);
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
   const [walkthroughStep, setWalkthroughStep] = useState(0);
   const [walkthroughAnchor, setWalkthroughAnchor] = useState<WalkthroughAnchor | null>(null);
@@ -489,7 +487,6 @@ export default function App() {
       }
 
       setSettingsOpen(false);
-      setInspectorOpen(false);
     }
 
     window.addEventListener("keydown", handleDrawerKeyDown);
@@ -771,14 +768,12 @@ export default function App() {
     setEditSourceAsset(asset);
     setMaskAsset(null);
     setMaskPainterAsset(null);
-    setInspectorTab("review");
   }
 
   function startMaskPainter(asset: Asset) {
     setEditSourceAsset(asset);
     setMaskAsset(null);
     setMaskPainterAsset(asset);
-    setInspectorTab("review");
   }
 
   useEffect(() => {
@@ -945,8 +940,6 @@ export default function App() {
     () => (selectedAsset ? selectedAssetReviewMetadata(selectedAsset, assets, config, turns) : null),
     [assets, config, selectedAsset, turns]
   );
-  const recentExports = useMemo(() => filterExportsForAssets(exports, assets).slice(0, 6), [exports, assets]);
-  const showHandoffPanel = Boolean(selectedAsset) || approvedCount > 0 || recentExports.length > 0;
   const cliffGuideSteps = useMemo(
     () => buildCliffGuideSteps(outputAssets, referenceAssets, approvedCount, approvedMotionCount),
     [approvedCount, approvedMotionCount, outputAssets, referenceAssets]
@@ -971,20 +964,17 @@ export default function App() {
 
   function showPresetCreator() {
     setStudioMode("preset-creator");
-    setInspectorOpen(false);
     setStatusText("Preset Creator is open.");
   }
 
   function showEnhancer() {
     setStudioMode("enhancer");
-    setInspectorOpen(false);
     setSettingsRailOpen(false);
     setStatusText("Enhancer is open.");
   }
 
   function showPromptGenerator() {
     setStudioMode("prompt-generator");
-    setInspectorOpen(false);
     setSettingsRailOpen(false);
     setStatusText("Prompt Generator is open.");
   }
@@ -1022,30 +1012,12 @@ export default function App() {
     setStudioMode("approved-hot");
     setReviewFilter("approved");
     setSelectedAsset(firstApproved);
-    setInspectorTab("review");
-    setInspectorOpen(true);
     setLightboxAsset(null);
     clearCompare();
     setStatusText(firstApproved ? "approved only. hot." : "no approved images yet.");
   }
 
-  function showExportsPanel() {
-    setInspectorTab("export");
-    setInspectorOpen(true);
-    setStatusText(showHandoffPanel ? "export desk is open." : "approve a pick to unlock exports.");
-  }
-
-  function showBrandPanel() {
-    setInspectorTab("brand");
-    setInspectorOpen(true);
-    setStatusText("brand kit is open.");
-    requestAnimationFrame(() => {
-      document.querySelector(".brand-kit-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }
-
   function showModelSettings() {
-    setInspectorTab("review");
     setSettingsOpen(true);
     setStatusText("Model settings are open.");
     requestAnimationFrame(() => {
@@ -1769,7 +1741,6 @@ export default function App() {
         return;
       }
       setSelectedAsset(asset);
-      setInspectorTab("review");
       setCompareTargetAsset(asset);
       setLightboxAsset(null);
       setStatusText("Compare the picks side by side.");
@@ -1777,8 +1748,6 @@ export default function App() {
     }
 
     setSelectedAsset(asset);
-    setInspectorTab("review");
-    setInspectorOpen(true);
     setLightboxAsset(asset);
   }
 
@@ -3145,15 +3114,12 @@ export default function App() {
     }
     if (activeWalkthroughStep.openSettings) {
       setSettingsOpen(true);
-      setInspectorTab("settings");
     }
     if (activeWalkthroughStep.selectOutput && !selectedAsset && firstOutputAsset) {
       setSelectedAsset(firstOutputAsset);
-      setInspectorTab("review");
       setLightboxAsset(null);
     }
     if (activeWalkthroughStep.target === "review-panel" || activeWalkthroughStep.target === "export-controls") {
-      setInspectorTab("review");
     }
   }, [
     activeWalkthroughStep.openSettings,
@@ -3237,7 +3203,7 @@ export default function App() {
   }, []);
 
   const statusReadyLink = parseReadyStatusLink(statusText);
-  const modelSettingsExpanded = settingsOpen || inspectorTab === "settings";
+  const modelSettingsExpanded = settingsOpen;
 
   return (
     <div
@@ -3415,15 +3381,6 @@ export default function App() {
             <CheckCircle2 size={16} />
             Approved
             <span className="sidebar-badge">{approvedCount}</span>
-          </button>
-          <button
-            className={`sidebar-nav-button ${inspectorTab === "export" ? "active" : ""}`}
-            type="button"
-            aria-label="Open exports"
-            onClick={showExportsPanel}
-          >
-            <Download size={16} />
-            Exports
           </button>
 
           <button
