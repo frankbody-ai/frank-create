@@ -644,3 +644,35 @@ function apiErrorMessage(text: string, status: number) {
   }
 }
 
+
+// ---- Prompt Generator agent config (admin editable) ----
+export type PromptAgentSkillConfig = {
+  key: string;
+  label: string;
+  hint: string;
+  instruction: string;
+  sort_order: number;
+  is_active: boolean;
+};
+
+export type PromptAgentConfig = {
+  persona: string;
+  craftMethod: string;
+  blueprint: string;
+  rules: string;
+  skills: PromptAgentSkillConfig[];
+  updatedAt: string | null;
+};
+
+export async function fetchPromptAgentConfig() {
+  return fetchJson<{ config: PromptAgentConfig; defaults: Omit<PromptAgentConfig, "updatedAt"> }>(
+    "/prompt-agent/config"
+  );
+}
+
+export async function savePromptAgentConfig(payload: Omit<PromptAgentConfig, "updatedAt">) {
+  return fetchJson<{ config: PromptAgentConfig }>("/prompt-agent/config", {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+}
