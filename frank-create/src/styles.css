@@ -6873,17 +6873,6 @@ body {
 }
 
 
-/* The rail is part of the ambient page: transparent surface, single hairline. */
-.guided-header.app-sidebar {
-  background: transparent;
-  border: 0;
-  border-right: 1px solid rgba(48, 48, 48, 0.08);
-  box-shadow: none;
-  backdrop-filter: none;
-  width: 216px;
-  padding: 14px 0 0;
-}
-
 .studio-shell.guided-studio {
   grid-template-columns: 216px minmax(0, 1fr);
 }
@@ -6896,10 +6885,6 @@ body {
 .thread-surface,
 .empty-panel {
   background: transparent;
-}
-
-.studio-shell.guided-studio .conversation-column {
-  padding: 28px 36px 40px;
 }
 
 /* ---- 5. left rail ----------------------------------------- */
