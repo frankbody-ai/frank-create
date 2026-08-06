@@ -6212,23 +6212,6 @@ input:focus, textarea:focus, select:focus {
   background: var(--ink);
   color: #FFFFFF;
 }
-.rail-collapse {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(48, 48, 48, 0.16);
-  border-radius: 999px;
-  background: #FFFFFF;
-  color: var(--ink);
-  cursor: pointer;
-}
-.rail-collapse:hover {
-  background: #FFEFEA;
-}
-
 .rail-scroll {
   display: flex;
   flex-direction: column;
