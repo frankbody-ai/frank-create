@@ -1,100 +1,34 @@
 /* ============================================================
-   AutoSolutions OS skin — tokens
-   Two faces only: Google Sans (interface) + Roboto (copy/label).
-   Self-hosted font files drop into the stacks below when supplied;
-   until then the stacks fall back to system-ui. No CDN, no third face.
+   AutoSolutions OS skin — real design system tokens.
+   The eight token files below are the shipped DS export, verbatim
+   (fonts.css re-points the two variable faces at the project CDN).
+   Nothing in this file may redefine a token they own.
    ============================================================ */
+
+@import "./styles/ds/fonts.css";
+@import "./styles/ds/colors.css";
+@import "./styles/ds/typography.css";
+@import "./styles/ds/spacing.css";
+@import "./styles/ds/radius.css";
+@import "./styles/ds/elevation.css";
+@import "./styles/ds/motion.css";
+@import "./styles/ds/tenants.css";
+@import "./styles/ds/base.css";
 
 :root {
   color-scheme: light;
   font-family: var(--font-body);
-  line-height: 1.45;
-  font-weight: 300;
-  color: #303030;
-  background: #E3E5E6;
   font-size: 14px;
+  line-height: var(--leading-normal);
+  font-weight: var(--weight-regular);
+  color: var(--ink);
+  background: var(--canvas);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 
-  /* core */
-  --ink: #303030;
-  --muted: #5E5E5E;
-  --surface: #FFFFFF;
-  --canvas: #E3E5E6;
-  --text-on-ink: #FFFFFF;
-
-  /* paper scale */
-  --paper-50: #FAFAF8;
-  --paper-100: #F5F4F1;
-  --paper-200: #EFEDE9;
-  --paper-300: #D4D2CC;
-  --paper-350: #DEDCD6;
-  --paper-400: #D9D7D1;
-  --paper-600: #B8B5AD;
-  --paper-700: #A5A29A;
-  --paper-800: #7C7A73;
-
-  /* borders — never solid --muted */
-  --muted-08: rgba(137, 137, 137, 0.15);
-  --muted-15: rgba(137, 137, 137, 0.28);
-  --muted-20: rgba(137, 137, 137, 0.38);
-  --muted-25: rgba(137, 137, 137, 0.45);
-
-  /* on dark */
-  --on-dark-divider: rgba(255, 255, 255, 0.05);
-  --on-dark-tertiary: rgba(255, 255, 255, 0.5);
-  --on-dark-body: rgba(255, 255, 255, 0.7);
-
-  /* frank body tenant */
-  --tenant-tint: #FDF1F4;
-  --tenant-border: #F3CBD6;
-  --tenant-blob: #F9C0B9;
-
-  /* type sizes */
-  --text-metric: 36px;
-  --text-title: 22px;
-  --text-card-title: 18px;
-  --text-body: 14px;
-  --text-caption: 12px;
-  --text-micro: 10px;
-
-  /* weights — near uniform and light */
-  --weight-light: 300;
-  --weight-regular: 300;
-  --weight-medium: 500;
-  --weight-display: 600;
-
-  /* tracking */
-  --tracking-tight: -0.01em;
-  --tracking-label: 0.08em;
-  --tracking-label-sm: 0.06em;
-  --tracking-label-xs: 0.04em;
-
-  /* radii */
-  --radius-glass-card: 24px;
-  --radius-dark-panel: 24px;
-  --radius-inner-panel: 16px;
-  --radius-paper-card: 6px;
-  --radius-field: 4px;
-  --radius-pill: 99px;
-  --radius-hairline: 2px;
-  --radius-dialog: 18px;
-
-  /* elevation */
-  --shadow-card-glow: 0 0 10px rgba(0, 0, 0, 0.1);
-  --shadow-dialog: 0 24px 64px rgba(0, 0, 0, 0.22);
-  --shadow-menu: 0 12px 32px rgba(0, 0, 0, 0.14);
-
-  /* fonts */
-  --font-display: "Google Sans", "Roboto", system-ui, sans-serif;
-  --font-body: "Roboto", system-ui, sans-serif;
-  --font-mono: "Roboto", system-ui, sans-serif;
-  --font-heading: var(--font-display);
-  --font-brand: var(--font-display);
-
-  /* legacy aliases retargeted onto the new palette */
-  --frank-black: #303030;
-  --frank-white: #FFFFFF;
+  /* legacy aliases retargeted onto the real palette */
+  --frank-black: var(--ink);
+  --frank-white: var(--surface);
   --frank-original-pink: var(--tenant-blob);
   --paper: var(--surface);
   --white: var(--surface);
@@ -106,7 +40,21 @@
   --cream: var(--paper-100);
   --line: var(--muted-15);
   --shadow: var(--shadow-card-glow);
+  --font-heading: var(--font-display);
+  --font-brand: var(--font-display);
 }
+
+/* The app is the frank body tenant wearing the OS language. */
+html,
+body {
+  background: var(--canvas);
+}
+
+/* DS base.css underlines every anchor; in this product links are controls. */
+a {
+  text-decoration: none;
+}
+
 
 * {
   box-sizing: border-box;
