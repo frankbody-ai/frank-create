@@ -7161,7 +7161,16 @@ body {
   margin-top: auto;
 }
 
-.sidebar-nav-account,
+.sidebar-nav-account {
+  padding: 2px 12px 6px;
+  font-family: var(--font-body);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-light);
+  letter-spacing: var(--tracking-label-xs);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .sidebar-footer,
 .sidebar-session-card {
   padding: 8px 8px 6px;
