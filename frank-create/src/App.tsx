@@ -3324,6 +3324,7 @@ export default function App() {
 
 
         <nav className="sidebar-nav" aria-label="Frank Create navigation">
+          <div className="sidebar-section-label">Create</div>
           <button
             className={`sidebar-nav-button ${studioMode === "image-studio" && reviewFilter === "all" ? "active" : ""}`}
             type="button"
