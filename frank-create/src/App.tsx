@@ -20,6 +20,7 @@ import {
   Pencil,
   Plus,
   RefreshCw,
+  Search,
   Sparkles,
   Square,
   Upload,
