@@ -1875,8 +1875,8 @@ export default function App() {
     }
   }
 
-  async function handlePromptPaste(event: React.ClipboardEvent<HTMLTextAreaElement>) {
-    const items = Array.from(event.clipboardData?.items ?? []);
+  function imagesFromClipboard(data: DataTransfer | null | undefined) {
+    const items = Array.from(data?.items ?? []);
     const imageFiles: File[] = [];
     for (const item of items) {
       if (item.kind === "file" && item.type.startsWith("image/")) {
@@ -1890,11 +1890,32 @@ export default function App() {
         }
       }
     }
+    return imageFiles;
+  }
+
+  async function handlePromptPaste(event: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const imageFiles = imagesFromClipboard(event.clipboardData);
     if (imageFiles.length) {
       event.preventDefault();
       await addReferenceFiles(imageFiles);
     }
   }
+
+  useEffect(() => {
+    function onGlobalPaste(event: ClipboardEvent) {
+      if (event.defaultPrevented) return;
+      const target = event.target as HTMLElement | null;
+      // Let dedicated composers (which preventDefault themselves) handle their own paste.
+      if (target?.closest?.("[data-paste-scope]")) return;
+      const imageFiles = imagesFromClipboard(event.clipboardData);
+      if (!imageFiles.length) return;
+      event.preventDefault();
+      void addReferenceFiles(imageFiles);
+    }
+    window.addEventListener("paste", onGlobalPaste);
+    return () => window.removeEventListener("paste", onGlobalPaste);
+  }, [activeSession?.id, modelOptions.referenceLimit, connection]);
+
 
   function handlePromptDragOver(event: React.DragEvent<HTMLElement>) {
     event.preventDefault();
