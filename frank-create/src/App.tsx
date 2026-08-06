@@ -3570,7 +3570,7 @@ export default function App() {
       <main className="conversation-column">
         <header className="studio-topbar">
           <div>
-            <p className="eyebrow">Creative Studio</p>
+            
             <h2>{activeSession?.name ?? config.voice.labTitle}</h2>
             <p className="studio-topbar-copy">
               Brief in plain English. References and settings are optional. Click a pick to edit, approve, or export.
