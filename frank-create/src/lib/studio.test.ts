@@ -78,8 +78,13 @@ describe("studio helpers", () => {
       "grok-imagine-video-1-5",
       "happyhorse-1-0",
       "wan-2-7-i2v",
-      "hailuo-2-3"
+      "hailuo-2-3",
+      "recraft-crisp-upscale",
+      "topaz-image-upscale",
+      "topaz-video-upscale",
+      "crystal-video-upscaler"
     ]);
+
     expect(fallbackConfig.backlogModels).toEqual([]);
     expect(fallbackConfig.models.find((model) => model.id === "openai-gpt-image-2")?.provider_model).toBe(
       "openai/gpt-image-2"
