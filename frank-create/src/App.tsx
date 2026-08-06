@@ -3784,7 +3784,6 @@ export default function App() {
                           });
                         }}
                         title="Copy prompt"
-                        title="Copy prompt"
                       >
                         <Clipboard size={12} />
                         Copy prompt
