@@ -7212,12 +7212,14 @@ body {
   color: var(--ink);
 }
 
+.sidebar-bottom-divider {
+  margin-top: auto;
+}
+
 .sidebar-nav-account,
 .sidebar-footer,
 .sidebar-session-card {
-  margin-top: auto;
-  padding: 12px 8px;
-  border-top: 1px solid var(--muted-15);
+  padding: 8px 8px 6px;
   background: transparent;
 }
 
