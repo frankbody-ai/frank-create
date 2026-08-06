@@ -8388,7 +8388,7 @@ body {
 
 /* 12. Review panel now lives inline in the studio column (inspector drawer removed) */
 .studio-shell.guided-studio .conversation-column > .selected-output {
-  order: 4;
+  order: 2;
   padding: 18px;
   border: 0;
   border-radius: var(--radius-paper-card);
