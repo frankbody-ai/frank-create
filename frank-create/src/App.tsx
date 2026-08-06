@@ -3894,6 +3894,12 @@ export default function App() {
             </div>
             ))
 
+          ) : roundSearch.trim() && turns.length ? (
+            <div className="empty-thread">
+              <Search size={38} />
+              <strong>No rounds match “{roundSearch.trim()}”</strong>
+              <span>Clear the search in the top bar to see all {turns.length} rounds again.</span>
+            </div>
           ) : (
             <div className="empty-thread">
               <ImageIcon size={38} />
