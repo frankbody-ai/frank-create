@@ -230,6 +230,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
 
         <form
           className="prompt-agent-composer"
+          data-paste-scope="prompt-agent"
           onSubmit={(event) => {
             event.preventDefault();
             void send(input);

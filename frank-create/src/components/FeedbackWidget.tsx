@@ -137,7 +137,7 @@ export function FeedbackWidget({ variant = "fixed" }: { variant?: "fixed" | "inl
 
       {open && (
         <div className="feedback-backdrop" onClick={close}>
-          <div className="feedback-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="feedback-modal" data-paste-scope="feedback" onClick={(e) => e.stopPropagation()}>
             <div className="feedback-modal-header">
               <h2>Send feedback</h2>
               <button type="button" onClick={close} className="feedback-icon-btn" aria-label="Close">
