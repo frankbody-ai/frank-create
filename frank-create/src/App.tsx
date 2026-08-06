@@ -28,8 +28,7 @@ import {
   Upload,
   Wand2,
   X,
-  XCircle,
-  LogOut
+  XCircle
 } from "lucide-react";
 import {
   CSSProperties,
