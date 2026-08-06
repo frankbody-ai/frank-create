@@ -3630,9 +3630,18 @@ export default function App() {
           <div className="studio-topbar-right" data-tour-id="feedback-button" data-tour-active={tourActive("feedback-button")}>
             <FeedbackWidget variant="inline" />
             <div className="stat-row" aria-label="Studio stats">
-              <span>{turns.length} rounds</span>
-              <span>{approvedCount} approved</span>
-              <span>{favoriteCount} favorites</span>
+              <span role="group" aria-label={`${turns.length} rounds`}>
+                <strong aria-hidden="true">{turns.length}</strong>
+                <small aria-hidden="true">rounds</small>
+              </span>
+              <span role="group" aria-label={`${approvedCount} approved`}>
+                <strong aria-hidden="true">{approvedCount}</strong>
+                <small aria-hidden="true">approved</small>
+              </span>
+              <span role="group" aria-label={`${favoriteCount} favorites`}>
+                <strong aria-hidden="true">{favoriteCount}</strong>
+                <small aria-hidden="true">favorites</small>
+              </span>
             </div>
           </div>
         </header>
@@ -3643,6 +3652,13 @@ export default function App() {
           data-tour-id="output-thread"
           data-tour-active={tourActive("output-thread")}
         >
+          <div className="rounds-well-head" aria-hidden="true">
+            <span className="rounds-well-title">Rounds</span>
+            <span className="rounds-well-count">
+              {outputAssets.length ? `${outputAssets.length} picks` : "Empty"}
+            </span>
+          </div>
+
           {compareBaseAsset ? (
             <div className="compare-prompt" role="status">
               <span>
