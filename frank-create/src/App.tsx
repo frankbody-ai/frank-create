@@ -3506,7 +3506,6 @@ export default function App() {
           fieldErrors={fieldErrors}
           referenceCount={selectedReferenceAssets.length}
           onReset={resetStudioSettings}
-          onClose={() => setSettingsRailOpen(false)}
           compareMedia={compareMedia}
           onCompareMediaChange={switchCompareMedia}
           compareModelBId={compareModelBId}

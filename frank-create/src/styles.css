@@ -6185,9 +6185,9 @@ input:focus, textarea:focus, select:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   height: 32px;
-  padding: 0 6px;
+  padding: 0 4px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -6196,39 +6196,22 @@ input:focus, textarea:focus, select:focus {
 
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
   cursor: pointer;
 }
 .rail-media-toggle button > span {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
 }
 .rail-media-toggle button svg {
-  flex: 0 0 auto;
+  display: none;
 }
 .rail-media-toggle button.active {
   background: var(--ink);
   color: #FFFFFF;
 }
-.rail-collapse {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(48, 48, 48, 0.16);
-  border-radius: 999px;
-  background: #FFFFFF;
-  color: var(--ink);
-  cursor: pointer;
-}
-.rail-collapse:hover {
-  background: #FFEFEA;
-}
-
 .rail-scroll {
   display: flex;
   flex-direction: column;

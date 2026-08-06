@@ -1,4 +1,4 @@
-import { ChevronLeft, Columns2, Film, Image as ImageIcon, RotateCcw } from "lucide-react";
+import { Columns2, Film, Image as ImageIcon, RotateCcw } from "lucide-react";
 import type { PromptPreset, StudioModel, StudioSettings } from "../lib/types";
 import { estimateVideoCost, filterSizesForAspect, maxCountForModel, modelRateLabel } from "../lib/studio";
 import type { StudioAdjustment, StudioFieldErrors } from "../lib/studio";
@@ -29,7 +29,6 @@ export interface StudioRailProps {
   fieldErrors: StudioFieldErrors;
   referenceCount: number;
   onReset: () => void;
-  onClose: () => void;
   /** Side-by-side: media the comparison runs on. */
   compareMedia?: "image" | "video";
   onCompareMediaChange?: (media: "image" | "video") => void;
@@ -69,7 +68,7 @@ export function StudioRail(props: StudioRailProps) {
   const {
     mediaKind, onMediaKindChange, models, selectedModelId, onModelChange,
     settings, onSettingsChange, onAspectChange, presets, selectedPresetKey,
-    onPresetChange, fieldErrors, referenceCount, onReset, onClose,
+    onPresetChange, fieldErrors, referenceCount, onReset,
     compareMedia = "image", onCompareMediaChange, compareModelBId, onCompareModelBChange,
     compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel,
     videoFirstFrame = null, videoLastFrame = null, armedFrameSlot = null,
@@ -130,15 +129,6 @@ export function StudioRail(props: StudioRailProps) {
             <span>Compare</span>
           </button>
         </div>
-        <button
-          className="rail-collapse"
-          type="button"
-          onClick={onClose}
-          aria-label="Collapse studio settings"
-          title="Collapse settings"
-        >
-          <ChevronLeft size={14} />
-        </button>
       </div>
 
 
