@@ -5276,28 +5276,25 @@ input[aria-invalid="true"] {
    Loaded last so they win the cascade over earlier legacy rules.
    ============================================================ */
 :root {
-  --frank-pink: #F9C0B9;
-  --frank-ink: #303030;
-  --frank-blush: #FDF1F4;
-  --frank-pink-soft: #FDEFE4;
-  --frank-ink-40: rgba(48, 48, 48, 0.4);
-  --accent: #F9C0B9;
-  --accent-soft: #FDEFE4;
-  --shell: #FDEFE4;
-  --cream: #FDEFE4;
-  --paper: #FFFFFF;
-  --ink: #303030;
-  --pink: #F9C0B9;
-  --pink-soft: #FBD8CE;
-  --coffee: #303030;
-  --font-heading: "Google Sans", "Roboto", Arial, sans-serif;
-  --font-brand: "Google Sans", "Roboto", Arial, sans-serif;
-  --font-display: "Google Sans", "Roboto", Arial, sans-serif;
-  --font-body: "Roboto", Arial, sans-serif;
+  /* legacy aliases only — real tokens live in styles/ds/*.css and must win */
+  --frank-pink: var(--tenant-accent, #F9ABAA);
+  --frank-ink: var(--ink);
+  --frank-blush: var(--paper-50);
+  --frank-pink-soft: var(--tenant-blob-top, #FDEFE4);
+  --frank-ink-40: var(--muted-40);
+  --shell: var(--canvas);
+  --cream: var(--paper-100);
+  --paper: var(--surface);
+  --pink: var(--tenant-accent, #F9ABAA);
+  --pink-soft: var(--tenant-blob-bottom, #F9C0B9);
+  --coffee: var(--ink);
+  --font-heading: var(--font-display);
+  --font-brand: var(--font-display);
 
   color: var(--ink);
   background: var(--canvas);
 }
+
 
 html, body { background: var(--canvas) !important; color: var(--ink); }
 body { font-family: var(--font-body); font-weight: 400; }
