@@ -5328,10 +5328,10 @@ h3, h4 {
   color: var(--frank-ink);
 }
 
-/* Sidebar — invariant 256px white slab, ink/10 right border */
+/* Sidebar — transparent plane, single ink/10 hairline as the only edge */
 .guided-header.app-sidebar {
-  background: #FFD0C6 !important;
-  border-right: 2px solid rgba(63, 42, 45, 0.1) !important;
+  background: transparent !important;
+  border-right: 1px solid rgba(63, 42, 45, 0.1) !important;
   box-shadow: none;
 }
 
