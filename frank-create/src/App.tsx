@@ -3476,6 +3476,8 @@ export default function App() {
           }
           onStatus={setStatusText}
           onExpandAsset={(asset) => setLightboxAsset(asset)}
+          onDownloadAsset={(asset) => void downloadAssetFile(asset)}
+
         />
       ) : studioMode === "prompt-generator" ? (
         <PromptGenerator
