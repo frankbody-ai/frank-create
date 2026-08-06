@@ -985,43 +985,13 @@ async function handleInference(body: any, userId: string) {
     };
   }
 
-  const requested = requestedDimensions(reqSettings.aspect_ratio, reqSettings.image_size || reqSettings.size);
-  // Download + upload + insert in parallel: serial persistence added ~10s per
-  // image, which pushed multi-image rounds past the function's time budget.
-  const insertedAssets: any[] = (await Promise.all(generatedImages.map(async (img) => {
-    const assetId = crypto.randomUUID();
-    const imageBytes = await imageBytesForUpload(img);
-    const bytes = imageBytes.bytes;
-    const mime = imageBytes.mime;
-    const ext = mime.split("/")[1] || "png";
-    const storagePath = `${sessionId}/${assetId}.${ext}`;
-    const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, {
-      contentType: mime, upsert: false,
-    });
-    if (up.error) throw up.error;
+  const insertedAssets: any[] = await persistImageAssets({
+    userId, sessionId, turnId, prompt, modelId,
+    aspectRatio: reqSettings.aspect_ratio,
+    requestedSize: reqSettings.image_size || reqSettings.size || null,
+    images: generatedImages,
+  });
 
-    const assetIns = await sb.from("assets").insert({
-      id: assetId,
-      user_id: userId,
-      session_id: sessionId,
-      message_id: turnId,
-      storage_path: storagePath,
-      asset_type: "generated",
-      prompt_snapshot: prompt,
-      model_key: modelId,
-      metadata_json: {
-        media_type: "image",
-        mime,
-        title: prompt.slice(0, 80) || "Generated image",
-        aspect_ratio: reqSettings.aspect_ratio,
-        requested_size: reqSettings.image_size || reqSettings.size || null,
-        width: requested?.width,
-        height: requested?.height,
-      },
-    }).select().single();
-    if (assetIns.error) throw assetIns.error;
-    return assetIns.data;
-  }))).filter(Boolean);
 
   const assetIds = insertedAssets.map((asset) => asset.id);
 
