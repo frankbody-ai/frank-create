@@ -3324,7 +3324,6 @@ export default function App() {
 
 
         <nav className="sidebar-nav" aria-label="Frank Create navigation">
-          <div className="sidebar-section-label">Create</div>
           <button
             className={`sidebar-nav-button ${studioMode === "image-studio" && reviewFilter === "all" ? "active" : ""}`}
             type="button"
@@ -3364,7 +3363,6 @@ export default function App() {
             Preset Creator
           </button>
 
-          <div className="sidebar-section-label">Review</div>
           <button
             className={`sidebar-nav-button ${reviewFilter === "approved" ? "active" : ""}`}
             type="button"
@@ -3461,7 +3459,6 @@ export default function App() {
           ) : null}
 
           <div className="sidebar-bottom-divider" aria-hidden="true" />
-          <div className="sidebar-section-label">Workspace</div>
           <div className="sidebar-nav-account" title={userEmail ?? ""}>
             {userEmail ?? "—"}
           </div>

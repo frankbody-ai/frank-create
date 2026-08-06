@@ -6983,13 +6983,12 @@ body {
 }
 
 
-/* Brand rule: the rail is a white surface on the blush page, separated by a
-   2px ink hairline and a soft shadow. */
+/* The rail is part of the ambient page: transparent surface, single hairline. */
 .guided-header.app-sidebar {
-  background: #FFFFFF;
+  background: transparent;
   border: 0;
-  border-right: 2px solid rgba(48, 48, 48, 0.1);
-  box-shadow: 2px 0 18px rgba(48, 48, 48, 0.05);
+  border-right: 1px solid rgba(48, 48, 48, 0.08);
+  box-shadow: none;
   backdrop-filter: none;
   width: 216px;
   padding: 14px 0 0;
@@ -7051,8 +7050,8 @@ body {
   content: "";
   display: block;
   margin: 10px -16px 0;
-  height: 2px;
-  background: rgba(48, 48, 48, 0.1);
+  height: 1px;
+  background: rgba(48, 48, 48, 0.08);
 }
 
 
@@ -7168,8 +7167,8 @@ body {
 
 .sidebar-bottom-divider {
   margin-top: auto;
-  height: 2px;
-  background: rgba(48, 48, 48, 0.1);
+  height: 1px;
+  background: rgba(48, 48, 48, 0.08);
   margin-left: -6px;
   margin-right: -6px;
 }
