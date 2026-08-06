@@ -7071,3 +7071,58 @@ input:focus, textarea:focus, select:focus {
 .output-tile-frames button:hover {
   background: #ffefea;
 }
+
+/* ---- Admin: Prompt Generator instructions ---- */
+.prompt-agent-admin { display: grid; gap: 18px; }
+.prompt-agent-admin-head {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;
+}
+.prompt-agent-admin-head h2 { font-family: var(--font-heading); color: var(--coffee); margin: 0 0 4px; }
+.prompt-agent-admin-head p { margin: 0; color: var(--muted); font-size: 12px; max-width: 640px; }
+.prompt-agent-admin-actions { display: flex; gap: 8px; }
+.prompt-agent-admin-error {
+  background: #ffe4e1; border: 1.5px solid #b91c1c; color: #7f1d1d;
+  padding: 10px 14px; border-radius: 10px; font-size: 12px; margin: 0;
+}
+.prompt-agent-admin-ok {
+  background: var(--pink); border: 1.5px solid var(--coffee); color: var(--coffee);
+  padding: 10px 14px; border-radius: 10px; font-size: 12px; margin: 0;
+}
+.prompt-agent-admin-fields, .prompt-agent-admin-skills { display: grid; gap: 14px; }
+.prompt-agent-admin-block, .prompt-agent-admin-skill {
+  border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper);
+  padding: 14px; display: grid; gap: 10px;
+}
+.prompt-agent-admin-block-head {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+}
+.prompt-agent-admin-block-head strong { display: block; color: var(--coffee); font-size: 13px; }
+.prompt-agent-admin-block-head span { color: var(--muted); font-size: 11px; }
+.prompt-agent-admin textarea, .prompt-agent-admin input[type="text"], .prompt-agent-admin input:not([type]) {
+  width: 100%; background: var(--card, #fff); border: 1.5px solid var(--coffee); border-radius: 8px;
+  color: var(--ink); padding: 10px 12px; font-size: 12px; font-family: inherit; line-height: 1.5;
+  resize: vertical;
+}
+.prompt-agent-admin-skills-head { display: flex; justify-content: space-between; align-items: center; }
+.prompt-agent-admin-skills-head h3 { font-family: var(--font-heading); color: var(--coffee); margin: 0; font-size: 14px; }
+.prompt-agent-admin-skill-row {
+  display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;
+}
+.prompt-agent-admin-skill-row label, .prompt-agent-admin-field { display: grid; gap: 4px; flex: 1 1 160px; }
+.prompt-agent-admin-skill-row span, .prompt-agent-admin-field span {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+}
+.prompt-agent-admin-skill-toggle {
+  flex: 0 0 auto; display: flex !important; align-items: center; gap: 6px; padding-bottom: 10px;
+}
+.prompt-agent-admin-skill-toggle input { width: auto; }
+.prompt-agent-admin-skill-btns { display: flex; gap: 6px; padding-bottom: 2px; }
+.admin-portal-btn {
+  background: var(--coffee); color: var(--paper); border: 1.5px solid var(--coffee);
+  padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
+}
+.admin-portal-btn:hover { background: var(--ink); }
+.admin-portal-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.admin-portal-btn.ghost { background: var(--paper); color: var(--coffee); }
+.admin-portal-btn.ghost:hover { background: var(--pink); }
