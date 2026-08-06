@@ -1,0 +1,1 @@
+ALTER TABLE public.prompt_agent_config ADD COLUMN IF NOT EXISTS rules text NOT NULL DEFAULT '';

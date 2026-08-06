@@ -461,6 +461,7 @@ export type Database = {
           created_at: string
           id: number
           persona: string
+          rules: string
           updated_at: string
           updated_by: string | null
         }
@@ -470,6 +471,7 @@ export type Database = {
           created_at?: string
           id?: number
           persona?: string
+          rules?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -479,6 +481,7 @@ export type Database = {
           created_at?: string
           id?: number
           persona?: string
+          rules?: string
           updated_at?: string
           updated_by?: string | null
         }
