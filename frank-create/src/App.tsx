@@ -3321,6 +3321,8 @@ export default function App() {
             <span className="lockup-secondary">studio</span>
           </span>
         </div>
+        <div className="sidebar-brand-divider" aria-hidden="true" />
+
 
 
         <nav className="sidebar-nav" aria-label="Frank Create navigation">
