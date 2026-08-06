@@ -14,6 +14,7 @@ import { FeedbackWidget } from "./components/FeedbackWidget";
 import { installErrorReporter } from "./lib/errorReporter";
 import "./styles.css";
 
+document.documentElement.setAttribute("data-tenant", "frank");
 installErrorReporter();
 
 function resolveRoute() {
