@@ -1,0 +1,16 @@
+:root{
+/* Raw scale — the source works in 2px steps up to 16, then 4px steps. */
+--space-0:0;--space-05:2px;--space-1:4px;--space-15:6px;--space-2:8px;--space-25:10px;--space-3:12px;--space-35:14px;--space-4:16px;--space-45:18px;--space-5:20px;--space-55:22px;--space-6:24px;--space-65:26px;--space-7:28px;--space-8:32px;--space-9:36px;--space-11:44px;--space-13:52px;
+
+/* Layout */
+--rail-width:216px;--rail-lockup-h:38px;/* @kind spacing */--topbar-height:56px;--page-max:1400px;--page-gutter:24px;
+--panel-pad-y:28px;/* @kind spacing */--panel-pad-x:32px;/* @kind spacing */
+--card-pad:20px;/* @kind spacing */--card-pad-tight:14px 18px;/* @kind spacing */--row-pad:12px 18px;/* @kind spacing */
+--grid-gap:14px;--grid-gap-tight:4px;--widget-row:168px;--widget-cols:4;/* @kind other */
+--tile-w:264px;/* @kind spacing */--tile-h:122px;/* @kind spacing */--tile-gap:20px;/* @kind spacing */
+
+/* Control heights */
+--control-xs:30px;--control-sm:32px;--control-md:34px;--control-lg:42px;--control-xl:48px;
+--icon-btn:32px;--avatar-sm:24px;--avatar-md:32px;--avatar-lg:36px;--avatar-xl:42px;
+--checkbox:16px;/* @kind spacing */--glyph:14px;/* @kind spacing */
+}

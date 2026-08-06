@@ -1,0 +1,66 @@
+:root{
+/* Families. TWO faces, one family system.
+   --font-display  Google Sans — headings, titles, metrics, buttons, tabs,
+                   nav, menus, labels. The interface voice.
+   --font-body     Roboto — all reading copy: paragraphs, captions, table
+                   cells, list rows, form values, meta lines.
+   --font-mono     Roboto Light. The name is kept because the LABEL ROLE is
+                   real — uppercase, letterspaced eyebrows, counts and
+                   timestamps — but it is no longer a monospaced face: the
+                   register comes from weight 300 + uppercase + tracking.
+                   Anything relying on column alignment must set
+                   font-variant-numeric: tabular-nums (see base.css).
+   --font-core     Alias of --font-display, kept for existing markup. */
+--font-display:'Google Sans','Roboto',system-ui,sans-serif;
+--font-body:'Roboto',system-ui,sans-serif;
+--font-mono:'Roboto',system-ui,sans-serif;
+--font-core:var(--font-display);
+--font-ui:var(--font-body);
+--font-mono-alt:var(--font-mono);
+--font-boot:var(--font-display);
+
+/* Sizes — hierarchy comes from size, not weight or colour. */
+--text-display-lg:48px;--text-display:43px;--text-display-sm:30px;--text-metric:36px;--text-title:22px;--text-card-title:18px;--text-lead:19px;--text-control:16px;--text-body:14px;--text-caption:12px;--text-micro:10px;--text-nano:9px;
+
+/* AXIS LIMITS — the ramp is not equally available to both faces.
+   Google Sans  wght 400-700 (plus opsz 17-18, GRAD -50-200)
+   Roboto       wght 100-900 (plus wdth 75-100)
+   So --weight-light (300) renders as 400 on Google Sans: it silently
+   clamps. Light is only real on Roboto, which is where the label role
+   lives, so this is consistent by construction — but never expect a light
+   heading. 700 is Google Sans's ceiling; there is no headroom above it. */
+
+/* Weights — near uniform and LIGHT. Copy is 300: the system reads as a
+   quiet, airy interface and that is deliberate. 500 carries titles,
+   buttons and nav; 600 is reserved for unread mail.
+   Note the axis limits above: on Google Sans 300 clamps to 400, so display
+   type bottoms out at 400 no matter what is asked for. Roboto honours 300,
+   which is where all copy and the label role live.
+   Hierarchy comes from size, not weight. */
+--weight-light:300;/* @kind other */--weight-regular:300;/* @kind other */--weight-medium:500;/* @kind other */--weight-semibold:600;/* @kind other */
+/* Display type keeps its own hook so copy weight can be re-pointed without
+   dragging headings with it. The --type-* roles below are the SINGLE place
+   weight is declared — a consumer re-points --weight-regular (copy) or
+   --weight-display (headings) and every component follows. */
+--weight-display:600;/* @kind other */
+
+/* Tracking */
+--tracking-display:-0.02em;/* @kind other */--tracking-tight:-0.01em;/* @kind other */--tracking-normal:0;/* @kind other */--tracking-label:0.08em;/* @kind other */--tracking-label-sm:0.06em;/* @kind other */--tracking-label-xs:0.04em;/* @kind other */--tracking-status:0.1em;/* @kind other */
+
+/* Line height. Ratios are expressed as PIXELS in the role tokens below:
+   every role must produce a whole-pixel line box at its own size, or the
+   baselines that follow it land off the pixel grid and the type renders
+   soft. 18px x 1.2 = 21.6px is the bug this replaced. */
+--leading-tight:1;/* @kind other */--leading-snug:1.2;/* @kind other */--leading-normal:1.5;/* @kind other */
+
+/* Ready-made roles. Display roles take Google Sans; text roles take Roboto. */
+--type-display:var(--weight-display) var(--text-display)/46px var(--font-display);/* @kind font */
+--type-title:var(--weight-display) var(--text-title)/28px var(--font-display);/* @kind font */
+--type-card-title:var(--weight-display) var(--text-card-title)/24px var(--font-display);/* @kind font */
+--type-metric:var(--weight-display) var(--text-metric)/36px var(--font-display);/* @kind font */
+--type-control:var(--weight-medium) var(--text-body)/18px var(--font-display);/* @kind font */
+--type-body:var(--weight-regular) var(--text-body)/1.5 var(--font-body);/* @kind font */
+--type-caption:var(--weight-regular) var(--text-caption)/18px var(--font-body);/* @kind font */
+/* Light 300 + uppercase + tracking carry the label role, not a mono face. */
+--type-mono-label:var(--weight-light) var(--text-caption)/14px var(--font-mono);/* @kind font */
+}

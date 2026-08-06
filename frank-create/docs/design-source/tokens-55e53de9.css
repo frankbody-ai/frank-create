@@ -1,0 +1,14 @@
+:root{
+--ease-out-expo:cubic-bezier(0.22,1,0.36,1);/* @kind other */--ease-standard:ease;/* @kind other */
+--dur-instant:140ms;/* @kind other */--dur-fast:150ms;/* @kind other */--dur-hover:160ms;/* @kind other */--dur-base:200ms;/* @kind other */--dur-swap:250ms;/* @kind other */--dur-slow:300ms;/* @kind other */--dur-enter:320ms;/* @kind other */--dur-fade:380ms;/* @kind other */--dur-page:420ms;/* @kind other */--dur-hero:520ms;/* @kind other */
+--motion-hover-lift:translateY(-4px);/* @kind other */--motion-hover-lift-sm:translateY(-3px);/* @kind other */--motion-hover-grow:scale(1.05);/* @kind other */
+--transition-nav:color 200ms ease;/* @kind other */
+--transition-tile:transform 200ms cubic-bezier(0.22,1,0.36,1),box-shadow 200ms ease,border-color 200ms ease;/* @kind other */
+--transition-card:transform 160ms ease,background-color 160ms ease,border-color 160ms ease;/* @kind other */
+}
+@keyframes as-rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes as-fade{from{opacity:0}to{opacity:1}}
+@keyframes as-spin{to{transform:rotate(360deg)}}
+@keyframes as-blink{0%,100%{opacity:1}50%{opacity:0.25}}
+@keyframes as-pulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 10px var(--brand-magenta-28))}50%{transform:scale(1.035);filter:drop-shadow(0 0 28px var(--brand-magenta-60))}}
+@keyframes as-halo{0%,100%{opacity:0.22;transform:scale(0.95)}50%{opacity:0.6;transform:scale(1.06)}}
