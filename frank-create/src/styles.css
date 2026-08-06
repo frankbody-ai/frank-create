@@ -6206,7 +6206,7 @@ input:focus, textarea:focus, select:focus {
   white-space: nowrap;
 }
 .rail-media-toggle button svg {
-  flex: 0 0 auto;
+  display: none;
 }
 .rail-media-toggle button.active {
   background: var(--ink);
