@@ -6288,13 +6288,13 @@ input:focus, textarea:focus, select:focus {
   }
 
   .studio-shell.guided-studio.settings-rail-open .studio-settings-rail {
-    grid-column: 2 !important;
+    grid-column: 3 !important;
     height: 100vh;
     max-height: none;
   }
 
   .studio-shell.guided-studio.settings-rail-open .conversation-column {
-    grid-column: 3 !important;
+    grid-column: 2 !important;
     width: auto;
     height: 100vh;
     min-width: 0;
@@ -8417,4 +8417,11 @@ body {
   grid-row: 1;
   border-left: 1px solid rgba(63, 42, 45, 0.08);
   border-right: 0;
+}
+
+@media (min-width: 921px) {
+  .studio-shell.guided-studio.settings-rail-open .studio-settings-rail,
+  .studio-shell.guided-studio.settings-rail-open .conversation-column {
+    height: calc(100vh - 56px) !important;
+  }
 }
