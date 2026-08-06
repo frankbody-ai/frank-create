@@ -29,7 +29,6 @@ export interface StudioRailProps {
   fieldErrors: StudioFieldErrors;
   referenceCount: number;
   onReset: () => void;
-  onClose: () => void;
   /** Side-by-side: media the comparison runs on. */
   compareMedia?: "image" | "video";
   onCompareMediaChange?: (media: "image" | "video") => void;
@@ -69,7 +68,7 @@ export function StudioRail(props: StudioRailProps) {
   const {
     mediaKind, onMediaKindChange, models, selectedModelId, onModelChange,
     settings, onSettingsChange, onAspectChange, presets, selectedPresetKey,
-    onPresetChange, fieldErrors, referenceCount, onReset, onClose,
+    onPresetChange, fieldErrors, referenceCount, onReset,
     compareMedia = "image", onCompareMediaChange, compareModelBId, onCompareModelBChange,
     compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel,
     videoFirstFrame = null, videoLastFrame = null, armedFrameSlot = null,
