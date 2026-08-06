@@ -52,6 +52,7 @@ import {
   createProviderEnvTemplate,
   createExport,
   createInferenceTurn,
+  fetchTurnStatus,
   createProject,
   createProviderReadinessReceipt,
   createReference,
@@ -2244,8 +2245,16 @@ export default function App() {
     }
 
     try {
-      const result = await createInferenceTurn(request);
+      let result = await createInferenceTurn(request);
       setTurns((current) => [...current, result.turn]);
+
+      // The backend hands back "running" for providers that can outlive one
+      // request (Riverflow 4K, Seedream). Keep polling until it closes out.
+      if (result.status === "running") {
+        setStatusText("Model is running — long jobs keep going, this can take a few minutes...");
+        const final = await pollTurnUntilDone(result.turn.id);
+        if (final) result = { ...result, ...final } as typeof result;
+      }
 
       if (result.status === "blocked") {
         setStatusText(`Server key needed: ${(result.error?.env_vars ?? []).join(" or ")}`);
@@ -2308,6 +2317,25 @@ export default function App() {
       // (e.g. 4 images). Re-read the session so every produced image lands.
       void reconcileSessionAssets();
     }
+  }
+
+  // Poll a "running" turn until the backend reports complete/failed. Turn cards
+  // stay on screen the whole time, so a refresh mid-run loses nothing.
+  async function pollTurnUntilDone(turnId: string) {
+    for (let attempt = 0; attempt < 240; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, attempt < 4 ? 2500 : 5000));
+      let snapshot: Awaited<ReturnType<typeof fetchTurnStatus>>;
+      try {
+        snapshot = await fetchTurnStatus(turnId);
+      } catch {
+        continue;
+      }
+      setTurns((current) => current.map((turn) => (turn.id === turnId ? snapshot.turn : turn)));
+      if (snapshot.status !== "running") {
+        return snapshot;
+      }
+    }
+    return null;
   }
 
   // Pull turns + assets for the active session and merge them into local state
@@ -2535,7 +2563,12 @@ export default function App() {
         referenceAssetIds: sideReferenceAssets.map((asset) => asset.id),
         referenceImageUrls: sideReferenceUrls
       });
-      return createInferenceTurn(request);
+      const started = await createInferenceTurn(request);
+      if (started.status === "running") {
+        const final = await pollTurnUntilDone(started.turn.id);
+        if (final) return { ...started, ...final } as typeof started;
+      }
+      return started;
     };
 
     try {
@@ -3443,6 +3476,8 @@ export default function App() {
           }
           onStatus={setStatusText}
           onExpandAsset={(asset) => setLightboxAsset(asset)}
+          onDownloadAsset={(asset) => void downloadAssetFile(asset)}
+
         />
       ) : studioMode === "prompt-generator" ? (
         <PromptGenerator

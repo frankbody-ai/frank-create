@@ -14,6 +14,7 @@ interface EnhancerProps {
   onAssetsCreated: (assets: Asset[]) => void;
   onStatus: (text: string) => void;
   onExpandAsset?: (asset: Asset) => void;
+  onDownloadAsset?: (asset: Asset) => void;
 }
 
 const DEFAULTS: Record<MediaKind, EnhanceSettings> = {
@@ -40,7 +41,8 @@ export default function Enhancer({
   connection,
   onAssetsCreated,
   onStatus,
-  onExpandAsset
+  onExpandAsset,
+  onDownloadAsset
 }: EnhancerProps) {
   const [media, setMedia] = useState<MediaKind>("image");
   const [modelId, setModelId] = useState<string>("");
@@ -435,7 +437,7 @@ export default function Enhancer({
       <div className="enhancer-block">
         <h3>3 · Enhanced output</h3>
         {results.length ? (
-          <div className="enhancer-result-grid">
+          <div className="enhancer-result-stack">
             {results.map((asset) => {
               const preview = asset.preview_url || asset.remote_url || "";
               const beforeSrc = sourceByResult[asset.id] || "";
@@ -473,9 +475,9 @@ export default function Enhancer({
                       </button>
                     ) : null}
                     {preview ? (
-                      <a href={preview} target="_blank" rel="noreferrer" download>
+                      <button type="button" className="link-button" onClick={() => onDownloadAsset?.(asset)}>
                         Download
-                      </a>
+                      </button>
                     ) : null}
                   </figcaption>
                 </figure>

@@ -6818,9 +6818,24 @@ input:focus, textarea:focus, select:focus {
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 14px;
 }
+/* Upscales are the point of this view — show them big, one per row. */
+.enhancer-result-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
 .enhancer-result { margin: 0; display: flex; flex-direction: column; gap: 6px; }
 .enhancer-result img,
-.enhancer-result video { width: 100%; border-radius: 10px; display: block; cursor: zoom-in; }
+.enhancer-result video {
+  width: 100%;
+  max-height: 74vh;
+  object-fit: contain;
+  border-radius: 10px;
+  display: block;
+  cursor: zoom-in;
+}
+.enhancer-result-stack .compare-slider { max-height: 74vh; }
+
 .enhancer-result figcaption {
   display: flex;
   justify-content: space-between;

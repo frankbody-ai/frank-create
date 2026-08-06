@@ -407,6 +407,22 @@ export async function createInferenceTurn(payload: TurnRequest) {
   });
 }
 
+// Long provider runs (4K upscales, agentic image models) outlive a single HTTP
+// request, so /inference/turn can answer "running" with prediction ids. This
+// polls the turn until the backend closes it out.
+export async function fetchTurnStatus(turnId: string) {
+  return fetchJson<{
+    turn: StudioTurn;
+    status: "running" | "failed" | "complete";
+    assets?: Asset[];
+    error?: { code?: string; message?: string; retryable?: boolean; request_id?: string };
+  }>("/inference/status", {
+    method: "POST",
+    body: JSON.stringify({ turn_id: turnId })
+  });
+}
+
+
 export async function createVideoStoryboard(payload: VideoRequest, opts: { signal?: AbortSignal } = {}) {
   return fetchJson<{
     turn: StudioTurn;
