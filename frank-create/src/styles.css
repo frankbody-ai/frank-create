@@ -7167,8 +7167,8 @@ body {
 
 .sidebar-bottom-divider {
   margin-top: auto;
-  height: 2px;
-  background: rgba(48, 48, 48, 0.1);
+  height: 1px;
+  background: rgba(48, 48, 48, 0.08);
   margin-left: -6px;
   margin-right: -6px;
 }
