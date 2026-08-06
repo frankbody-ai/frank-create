@@ -8120,3 +8120,13 @@ body {
   background: var(--surface) !important;
   color: var(--ink) !important;
 }
+
+/* meta chips inside the ink well */
+.studio-shell.guided-studio .thread-surface .turn-meta span,
+.studio-shell.guided-studio .thread-surface .turn-card > div > span,
+.studio-shell.guided-studio .thread-surface .turn-tags span,
+.studio-shell.guided-studio .thread-surface .review-metadata span {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: rgba(255, 255, 255, 0.72) !important;
+}
