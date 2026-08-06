@@ -8180,7 +8180,7 @@ body {
 
 .studio-shell.guided-studio .guided-header.app-sidebar {
   height: calc(100vh - 56px);
-  top: 56px;
+  top: 0;
 }
 
 .studio-shell.guided-studio .conversation-column,
