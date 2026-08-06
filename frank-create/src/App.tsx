@@ -3231,9 +3231,29 @@ export default function App() {
       className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${studioMode !== "preset-creator" && studioMode !== "prompt-generator" && studioMode !== "enhancer" && settingsRailOpen ? "settings-rail-open" : ""}`}
       data-provider-audit={providerAuditMode ? "open" : undefined}
     >
+      <svg
+        className="ambient-field"
+        viewBox="0 0 1280 832"
+        preserveAspectRatio="xMidYMid slice"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <filter id="ambient-blob-blur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="250" />
+          </filter>
+        </defs>
+        <rect width="1280" height="832" fill="transparent" />
+        <g filter="url(#ambient-blob-blur)">
+          <ellipse cx="180" cy="880" rx="620" ry="420" fill="#F7B3AB" />
+          <ellipse cx="640" cy="960" rx="540" ry="300" fill="#F9C0B9" />
+        </g>
+
+      </svg>
       {studioMode === "preset-creator" || studioMode === "prompt-generator" || studioMode === "enhancer" ? (
         <FeedbackWidget />
       ) : null}
+
       {desktopNotice ? (
         <div
           role="status"
