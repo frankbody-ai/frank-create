@@ -3767,9 +3767,9 @@ body {
   min-height: 0;
   padding: 0;
   border: 0;
-  border-right: 2px solid rgba(63, 42, 45, 0.1);
-  background: #FFD0C6;
-  box-shadow: 4px 0 24px rgba(63, 42, 45, 0.06);
+  border-right: 1px solid rgba(63, 42, 45, 0.1);
+  background: transparent;
+  box-shadow: none;
   backdrop-filter: none;
   display: flex;
   flex-direction: column;
