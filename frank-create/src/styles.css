@@ -7672,8 +7672,7 @@ body {
 .mask-painter-backdrop,
 .session-cancel-modal,
 .walkthrough-scrim,
-.inspector-scrim,
-.reference-picker {
+.inspector-scrim {
   background: rgba(0, 0, 0, 0.55);
 }
 
