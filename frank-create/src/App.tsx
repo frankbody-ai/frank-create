@@ -3252,17 +3252,19 @@ export default function App() {
         focusable="false"
       >
         <defs>
-          <filter id="ambient-blob-blur" x="-50%" y="-50%" width="200%" height="200%">
+          <filter id="ambient-blob-blur" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur stdDeviation="250" />
           </filter>
         </defs>
         <rect width="1280" height="832" fill="transparent" />
-        <g filter="url(#ambient-blob-blur)">
-          <ellipse cx="180" cy="880" rx="620" ry="420" fill="var(--tenant-blob)" opacity="0.85" />
-          <ellipse cx="640" cy="960" rx="540" ry="300" fill="var(--tenant-blob-bottom)" />
+        <g filter="url(#ambient-blob-blur)" transform="translate(-64, 42) scale(1.05)">
+          <path
+            fill="var(--tenant-blob)"
+            d="M-140 402c72-138 150-236 292-268 142-32 268 26 372 118 104 92 176 214 152 336-24 122-144 244-306 268-162 24-366-50-476-176-110-126-106-140-34-278Z"
+          />
         </g>
-
       </svg>
+
 
       <header className="os-topbar" aria-label="AutoSolutions OS">
         <div className="os-topbar-logo">
