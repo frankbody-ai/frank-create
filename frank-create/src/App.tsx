@@ -3459,11 +3459,11 @@ export default function App() {
           ) : null}
 
           <div className="sidebar-bottom-divider" aria-hidden="true" />
-          <div data-tour-id="feedback-button" data-tour-active={tourActive("feedback-button")}>
-            <FeedbackWidget variant="sidebar" />
-          </div>
           <div className="sidebar-nav-account" title={userEmail ?? ""}>
             {userEmail ?? "—"}
+          </div>
+          <div data-tour-id="feedback-button" data-tour-active={tourActive("feedback-button")}>
+            <FeedbackWidget variant="sidebar" />
           </div>
           {isAdmin && (
             <a

@@ -5884,17 +5884,13 @@ input:focus, textarea:focus, select:focus {
   background: rgba(255, 255, 255, 0.18);
 }
 .sidebar-nav-account {
-  padding: 6px 16px 4px;
-  font-family: var(--font-body);
-  font-size: 0.72rem;
-  color: rgba(48, 48, 48, 0.55);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .sidebar-bottom-divider {
-  margin: 12px 8px 8px;
+  margin: 10px 12px 8px;
   border-top: 1px solid var(--muted-20);
 }
 
@@ -7161,7 +7157,16 @@ body {
   margin-top: auto;
 }
 
-.sidebar-nav-account,
+.sidebar-nav-account {
+  padding: 2px 12px 6px;
+  font-family: var(--font-body);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-light);
+  letter-spacing: var(--tracking-label-xs);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .sidebar-footer,
 .sidebar-session-card {
   padding: 8px 8px 6px;
