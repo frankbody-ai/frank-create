@@ -33,9 +33,13 @@ export function AdminPortal() {
   const initialTab = (() => {
     const h = window.location.hash;
     const q = h.includes("?") ? h.split("?")[1] : "";
-    return new URLSearchParams(q).get("tab") === "feedback" ? "feedback" : "users";
+    const t = new URLSearchParams(q).get("tab");
+    if (t === "feedback") return "feedback" as const;
+    if (t === "prompt-agent") return "prompt-agent" as const;
+    return "users" as const;
   })();
-  const [tab, setTab] = useState<"users" | "feedback">(initialTab);
+  const [tab, setTab] = useState<"users" | "feedback" | "prompt-agent">(initialTab);
+
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [meId, setMeId] = useState<string | null>(null);
 
