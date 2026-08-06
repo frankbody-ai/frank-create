@@ -3260,10 +3260,6 @@ export default function App() {
         </div>
       </header>
 
-      {studioMode === "preset-creator" || studioMode === "prompt-generator" || studioMode === "enhancer" ? (
-        <FeedbackWidget />
-      ) : null}
-
       {desktopNotice ? (
         <div
           role="status"
@@ -3463,6 +3459,9 @@ export default function App() {
           ) : null}
 
           <div className="sidebar-bottom-divider" aria-hidden="true" />
+          <div data-tour-id="feedback-button" data-tour-active={tourActive("feedback-button")}>
+            <FeedbackWidget variant="sidebar" />
+          </div>
           <div className="sidebar-nav-account" title={userEmail ?? ""}>
             {userEmail ?? "—"}
           </div>
@@ -3577,8 +3576,7 @@ export default function App() {
               Brief in plain English. References and settings are optional. Click a pick to edit, approve, or export.
             </p>
           </div>
-          <div className="studio-topbar-right" data-tour-id="feedback-button" data-tour-active={tourActive("feedback-button")}>
-            <FeedbackWidget variant="inline" />
+          <div className="studio-topbar-right">
             <div className="stat-row" aria-label="Studio stats">
               <span role="group" aria-label={`${turns.length} rounds`}>
                 <strong aria-hidden="true">{turns.length}</strong>
