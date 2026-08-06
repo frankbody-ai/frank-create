@@ -3357,8 +3357,12 @@ export default function App() {
 
       <aside className="guided-header app-sidebar" data-tour-id="app-header" data-tour-active={tourActive("app-header")}>
         <div className="sidebar-brand-block">
-          <img src={designStudioLogo} alt="Design Studio" className="sidebar-brand-logo" />
+          <span className="sidebar-lockup">
+            <span className="lockup-primary">art-ificial</span>
+            <span className="lockup-secondary">studio</span>
+          </span>
         </div>
+
 
         <nav className="sidebar-nav" aria-label="Frank Create navigation">
           <div className="sidebar-studio-block">
