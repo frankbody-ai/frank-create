@@ -6977,16 +6977,16 @@ body {
 }
 
 
-/* both planes transparent — the rail reads deeper only because the
-   blob sits under it. The hairline is the only edge. */
+/* Brand rule: the rail is a white surface on the blush page, separated by a
+   2px ink hairline and a soft shadow. */
 .guided-header.app-sidebar {
-  background: transparent;
+  background: #FFFFFF;
   border: 0;
-  border-right: 1px solid var(--muted-15);
-  box-shadow: none;
+  border-right: 2px solid rgba(48, 48, 48, 0.1);
+  box-shadow: 2px 0 18px rgba(48, 48, 48, 0.05);
   backdrop-filter: none;
   width: 216px;
-  padding: 16px 0 0;
+  padding: 14px 0 0;
 }
 
 .studio-shell.guided-studio {
