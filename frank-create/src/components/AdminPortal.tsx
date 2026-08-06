@@ -14,6 +14,8 @@ import {
   type FeedbackStatus,
 } from "../lib/feedback";
 import { supabase } from "../lib/supabaseClient";
+import { PromptAgentTab } from "./admin/PromptAgentTab";
+
 
 const ROLES: AppRole[] = ["user", "manager", "admin"];
 const BOARD_COLUMNS: { key: FeedbackStatus; label: string }[] = [
