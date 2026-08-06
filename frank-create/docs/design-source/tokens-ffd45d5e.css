@@ -1,0 +1,26 @@
+:root{
+/* Cards carry no border — separation comes from blur, fill and shadow. */
+--shadow-card:0 2px 20px rgba(0,0,0,0.06);
+/* Even halo. The directional card shadow reads as nothing on a tinted panel;
+   the glow separates on all four sides. Tile keeps its lift ON TOP of the
+   glow rather than replacing it. */
+--shadow-card-glow:0 0 10px rgba(0,0,0,0.10);
+--shadow-tile-glow:0 0 10px rgba(0,0,0,0.10),inset 0 1px 0 rgba(255,255,255,1);
+--shadow-tile-glow-hover:0 0 10px rgba(0,0,0,0.10),0 26px 44px -22px rgba(23,23,26,0.4),inset 0 1px 0 rgba(255,255,255,1);
+--shadow-photo:0 2px 20px rgba(0,0,0,0.10);
+--shadow-tile:0 16px 32px -22px rgba(23,23,26,0.45),inset 0 1px 0 rgba(255,255,255,1);
+--shadow-tile-hover:0 26px 44px -22px rgba(23,23,26,0.4),inset 0 1px 0 rgba(255,255,255,1);
+--shadow-menu:0 18px 40px -20px rgba(23,23,26,0.35);
+--shadow-business:0 20px 40px -24px rgba(0,0,0,0.6);
+--shadow-dialog:0 30px 60px -20px rgba(0,0,0,0.6);
+--shadow-logo:drop-shadow(0 10px 40px rgba(0,0,0,0.45));/* @kind shadow */
+--shadow-logo-sm:drop-shadow(0 4px 16px rgba(0,0,0,0.45));/* @kind shadow */
+--shadow-paper-press:0 2px 0 var(--paper-300);
+
+/* Liquid-glass button shell — the full inset stack, verbatim. */
+--shadow-lg-btn:0 0 8px rgba(0,0,0,0.03),0 2px 6px rgba(0,0,0,0.08),inset 3px 3px 0.5px -3.5px rgba(255,255,255,0.6),inset -3px -3px 0.5px -3.5px rgba(255,255,255,0.85),inset 1px 1px 1px -0.5px rgba(255,255,255,0.6),inset -1px -1px 1px -0.5px rgba(255,255,255,0.6),inset 0 0 6px 6px rgba(255,255,255,0.24),inset 0 0 2px 2px rgba(255,255,255,0.14),0 0 12px rgba(0,0,0,0.15);
+--shadow-lg-btn-hover:0 0 10px rgba(0,0,0,0.05),0 4px 12px rgba(0,0,0,0.12),inset 3px 3px 0.5px -3px rgba(255,255,255,0.75),inset -3px -3px 0.5px -3px rgba(255,255,255,0.95),inset 1px 1px 1px -0.5px rgba(255,255,255,0.7),inset -1px -1px 1px -0.5px rgba(255,255,255,0.7),inset 0 0 8px 7px rgba(255,255,255,0.32),inset 0 0 2px 2px rgba(255,255,255,0.18),0 0 18px rgba(0,0,0,0.18);
+
+/* Blur */
+--blur-glass:blur(64px);/* @kind other */--blur-tile:blur(16px) saturate(170%);/* @kind other */--blur-business:blur(14px) saturate(140%);/* @kind other */--blur-dialog:blur(18px) saturate(150%);/* @kind other */--blur-scrim:blur(6px);/* @kind other */--blur-ambient:250;/* @kind other */
+}
