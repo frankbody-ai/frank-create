@@ -454,6 +454,69 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_agent_config: {
+        Row: {
+          blueprint: string
+          craft_method: string
+          created_at: string
+          id: number
+          persona: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          blueprint?: string
+          craft_method?: string
+          created_at?: string
+          id?: number
+          persona?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          blueprint?: string
+          craft_method?: string
+          created_at?: string
+          id?: number
+          persona?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      prompt_agent_skills: {
+        Row: {
+          created_at: string
+          hint: string
+          instruction: string
+          is_active: boolean
+          key: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          hint?: string
+          instruction?: string
+          is_active?: boolean
+          key: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          hint?: string
+          instruction?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sessions: {
         Row: {
           active_model_key: string
