@@ -36,7 +36,7 @@ async function fileToBase64(file: File): Promise<string> {
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_BYTES = 3 * 1024 * 1024;
 
-export function FeedbackWidget({ variant = "fixed" }: { variant?: "fixed" | "inline" }) {
+export function FeedbackWidget({ variant = "fixed" }: { variant?: "fixed" | "inline" | "sidebar" }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -110,7 +110,17 @@ export function FeedbackWidget({ variant = "fixed" }: { variant?: "fixed" | "inl
 
   return (
     <>
-      {variant === "inline" ? (
+      {variant === "sidebar" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="sidebar-nav-button"
+          aria-label="Send feedback"
+        >
+          <MessageSquarePlus size={16} />
+          Feedback
+        </button>
+      ) : variant === "inline" ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
