@@ -7201,10 +7201,11 @@ body {
   pointer-events: none;
 }
 
-.studio-shell.guided-studio > *:not(.ambient-field) {
+.studio-shell.guided-studio > *:not(.ambient-field):not(.os-topbar) {
   position: relative;
   z-index: 1;
 }
+
 
 /* both planes transparent — the rail reads deeper only because the
    blob sits under it. The hairline is the only edge. */
