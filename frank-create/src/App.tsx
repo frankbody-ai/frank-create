@@ -385,6 +385,10 @@ export default function App() {
   const [lightboxAsset, setLightboxAsset] = useState<Asset | null>(null);
   const [referencePreviewAsset, setReferencePreviewAsset] = useState<Asset | null>(null);
   const [referenceDropActive, setReferenceDropActive] = useState(false);
+  const [referencePickerOpen, setReferencePickerOpen] = useState(false);
+  const [referenceLibrary, setReferenceLibrary] = useState<Asset[]>([]);
+  const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
+  const referencePickerInputRef = useRef<HTMLInputElement | null>(null);
 
   const [compareBaseAsset, setCompareBaseAsset] = useState<Asset | null>(null);
   const [compareTargetAsset, setCompareTargetAsset] = useState<Asset | null>(null);
