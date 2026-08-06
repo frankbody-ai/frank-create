@@ -904,6 +904,15 @@ export default function App() {
     return `A ${a ?? "—"} · B ${b ?? "—"}`;
   }, [mediaKind, compareMedia, compareResolved, modelOptions.model, compareModelB]);
 
+  const searchedTurns = useMemo(() => {
+    const needle = roundSearch.trim().toLowerCase();
+    if (!needle) return turns;
+    return turns.filter((turn) => {
+      const haystack = [turn.prompt, turn.model, turn.id, activeSession?.name].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [turns, roundSearch, activeSession?.name]);
+
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
   const firstOutputAsset = outputAssets[0] ?? null;
   const displayOutputAssets =
