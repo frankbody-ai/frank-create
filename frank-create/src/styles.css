@@ -3767,9 +3767,9 @@ body {
   min-height: 0;
   padding: 0;
   border: 0;
-  border-right: 2px solid rgba(63, 42, 45, 0.1);
-  background: #FFD0C6;
-  box-shadow: 4px 0 24px rgba(63, 42, 45, 0.06);
+  border-right: 1px solid rgba(63, 42, 45, 0.1);
+  background: transparent;
+  box-shadow: none;
   backdrop-filter: none;
   display: flex;
   flex-direction: column;
@@ -4184,7 +4184,7 @@ body {
 }
 
 .inspector-drawer-toolbar strong {
-  font-family: var(--font-display, "Jura", serif);
+  font-family: var(--font-display);
   font-size: 1.05rem;
   color: var(--frank-ink, #3F2A2D);
   display: block;
@@ -5309,7 +5309,7 @@ body { font-family: var(--font-body); font-weight: 400; }
 ::-webkit-scrollbar-thumb { background: var(--frank-pink-soft); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--frank-ink); }
 
-/* Headings — h1/h2 in Jura; h3/h4 and body in Jura (§3) */
+/* Headings — Google Sans display face (§3) */
 h1, h2 {
   font-family: var(--font-heading);
   font-weight: 600;
@@ -5328,10 +5328,10 @@ h3, h4 {
   color: var(--frank-ink);
 }
 
-/* Sidebar — invariant 256px white slab, ink/10 right border */
+/* Sidebar — transparent plane, single ink/10 hairline as the only edge */
 .guided-header.app-sidebar {
-  background: #FFD0C6 !important;
-  border-right: 2px solid rgba(63, 42, 45, 0.1) !important;
+  background: transparent !important;
+  border-right: 1px solid rgba(63, 42, 45, 0.1) !important;
   box-shadow: none;
 }
 
@@ -5521,7 +5521,7 @@ input:focus, textarea:focus, select:focus {
 /* Kill any red error tone — critical is ink (§6.16) */
 [class*="error"], .error-text, .error-message { color: var(--frank-ink); }
 
-/* Numbers / money / IDs in Jura (§3) */
+/* Numbers / money / IDs in the display face (§3) */
 .num, .money, .id, [data-num] {
   font-family: var(--font-display);
   font-weight: 600;
@@ -6212,7 +6212,7 @@ input:focus, textarea:focus, select:focus {
 
 .settings-rail-head strong {
   display: block;
-  font-family: var(--font-display, "Jura", monospace);
+  font-family: var(--font-display);
 
   font-size: 12px;
   text-transform: uppercase;
@@ -6363,7 +6363,7 @@ input:focus, textarea:focus, select:focus {
   border-radius: 999px;
   background: transparent;
   color: #3F2A2D;
-  font-family: var(--font-display, "Jura", monospace);
+  font-family: var(--font-display);
 
   font-size: 10px;
   text-transform: uppercase;
@@ -6412,7 +6412,7 @@ input:focus, textarea:focus, select:focus {
 }
 .rail-label {
   margin: 0;
-  font-family: var(--font-display, "Jura", monospace);
+  font-family: var(--font-display);
 
   font-size: 10px;
   text-transform: uppercase;
@@ -6564,7 +6564,7 @@ input:focus, textarea:focus, select:focus {
   border-radius: 999px;
   background: transparent;
   color: #3F2A2D;
-  font-family: var(--font-display, "Jura", monospace);
+  font-family: var(--font-display);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -7201,7 +7201,7 @@ body {
   pointer-events: none;
 }
 
-.studio-shell.guided-studio > *:not(.ambient-field):not(.os-topbar) {
+.studio-shell.guided-studio > *:not(.ambient-field) {
   position: relative;
   z-index: 1;
 }
@@ -8094,135 +8094,6 @@ body {
   color: var(--ink);
 }
 
-/* ---- OS top bar -------------------------------------------- */
-
-.os-topbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 45;
-  height: 56px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 0 20px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--muted-20);
-}
-
-.os-topbar-logo {
-  width: 216px;
-  margin-left: -20px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 18px;
-}
-
-.os-topbar-logo img {
-  width: 100%;
-  height: auto;
-  max-height: 44px;
-  object-fit: contain;
-  display: block;
-}
-
-.os-topbar-search {
-  flex: 1;
-  min-width: 140px;
-  max-width: 320px;
-  margin: 0 auto;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--muted-20);
-  background: var(--paper-50);
-  color: var(--muted);
-}
-
-.os-topbar-search input {
-  flex: 1;
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  outline: none;
-  font: var(--type-body);
-  color: var(--ink);
-}
-
-.os-topbar-search input::placeholder {
-  color: var(--muted);
-}
-
-.os-topbar-search:focus-within {
-  border-color: var(--ink);
-}
-
-.os-topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.os-tenant-mark {
-  height: 20px;
-  width: auto;
-  display: block;
-  opacity: 0.9;
-}
-
-.os-topbar-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-pill);
-  background: var(--paper-250);
-  border: 1px solid var(--paper-400);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font: var(--type-control);
-  color: var(--ink);
-  flex-shrink: 0;
-}
-
-.os-topbar-signout {
-  height: 30px;
-  padding: 0 12px;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--muted-25);
-  background: transparent;
-  color: var(--ink);
-  font: var(--type-control);
-}
-
-.os-topbar-signout:hover {
-  background: var(--accent-tint);
-  border-color: var(--ink);
-}
-
-/* the shell sits under the fixed OS bar */
-.studio-shell.guided-studio {
-  padding-top: 56px;
-  height: 100vh;
-}
-
-.studio-shell.guided-studio .guided-header.app-sidebar {
-  height: calc(100vh - 56px);
-  top: 56px;
-}
-
-.ambient-field {
-  top: 56px;
-  height: calc(100vh - 56px);
-}
-
 /* ---- rail marks -------------------------------------------- */
 
 .sidebar-brand-logo {
@@ -8254,22 +8125,6 @@ body {
 }
 
 /* ---- 10. AutoSolutions OS — new presentational pieces ------ */
-
-/* top bar notification */
-.os-topbar-bell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-pill);
-  color: var(--ink);
-  flex-shrink: 0;
-}
-
-.os-topbar-bell:hover {
-  background: var(--muted-08);
-}
 
 /* rail lockup — two live spans, same face, same size */
 .guided-header.app-sidebar .sidebar-lockup {

@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  Bell,
 
   Box,
   CheckCircle2,
@@ -151,7 +150,6 @@ import type {
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
-import osLogo from "./assets/ds/autosolutions-os-md.png";
 import frankBodyLogo from "./assets/ds/frank.svg";
 
 
@@ -3233,34 +3231,6 @@ export default function App() {
       </svg>
 
 
-      <header className="os-topbar" aria-label="AutoSolutions OS">
-        <div className="os-topbar-logo">
-          <img src={osLogo} alt="autosolutions OS" />
-        </div>
-        <div className="os-topbar-search">
-          <Search size={14} aria-hidden="true" />
-          <input
-            type="search"
-            value={roundSearch}
-            onChange={(event) => setRoundSearch(event.target.value)}
-            placeholder="Search sessions and picks"
-            aria-label="Search sessions and picks"
-          />
-        </div>
-        <div className="os-topbar-right">
-          <img className="os-tenant-mark" src={frankBodyLogo} alt="frank body" />
-          <span className="os-topbar-bell" aria-hidden="true">
-            <Bell size={16} />
-          </span>
-          <span className="os-topbar-avatar" aria-hidden="true">
-            {(userEmail ?? "—").slice(0, 1).toUpperCase()}
-          </span>
-
-          <button type="button" className="os-topbar-signout" onClick={handleSignOut}>
-            Sign out
-          </button>
-        </div>
-      </header>
 
       {studioMode === "preset-creator" || studioMode === "prompt-generator" || studioMode === "enhancer" ? (
         <FeedbackWidget />
