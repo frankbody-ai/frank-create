@@ -7672,11 +7672,11 @@ body {
 /* ---- 7. right panel -------------------------------------- */
 
 .studio-settings-rail {
-  width: 280px;
+  width: 248px;
   background: transparent;
   box-shadow: none;
   border: 0;
-  padding: 20px 16px;
+  padding: 16px 12px;
 }
 
 .rail-scroll {
@@ -7686,7 +7686,7 @@ body {
 }
 
 .rail-block {
-  padding: 14px;
+  padding: 12px;
 }
 
 .rail-label {
