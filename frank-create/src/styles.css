@@ -8215,3 +8215,20 @@ body {
     height: calc(100vh - 56px) !important;
   }
 }
+
+/* copy-prompt chip — legible on the ink rounds well */
+.turn-copy-prompt {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: var(--text-on-ink);
+  font-family: var(--font-mono);
+  letter-spacing: var(--tracking-label-sm);
+  text-transform: uppercase;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.turn-copy-prompt:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: var(--text-on-ink);
+}

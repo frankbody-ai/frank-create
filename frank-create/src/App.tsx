@@ -3786,8 +3786,7 @@ export default function App() {
                         title="Copy prompt"
                         style={{
                           fontSize: 11, padding: "2px 8px", borderRadius: 999,
-                          background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.65)",
-                          border: "1px solid rgba(0,0,0,0.12)", cursor: "pointer",
+                          cursor: "pointer",
                           display: "inline-flex", alignItems: "center", gap: 4,
                         }}
                       >
