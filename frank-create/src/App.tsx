@@ -385,6 +385,10 @@ export default function App() {
   const [lightboxAsset, setLightboxAsset] = useState<Asset | null>(null);
   const [referencePreviewAsset, setReferencePreviewAsset] = useState<Asset | null>(null);
   const [referenceDropActive, setReferenceDropActive] = useState(false);
+  const [referencePickerOpen, setReferencePickerOpen] = useState(false);
+  const [referenceLibrary, setReferenceLibrary] = useState<Asset[]>([]);
+  const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
+  const referencePickerInputRef = useRef<HTMLInputElement | null>(null);
 
   const [compareBaseAsset, setCompareBaseAsset] = useState<Asset | null>(null);
   const [compareTargetAsset, setCompareTargetAsset] = useState<Asset | null>(null);
@@ -1792,6 +1796,32 @@ export default function App() {
   function removeReferenceFromDock(asset: Asset) {
     detachReferences([asset], true);
     setStatusText(`${asset.title} removed from references.`);
+  }
+
+  async function openReferencePicker() {
+    setReferencePickerOpen(true);
+    if (connection !== "online") {
+      setReferenceLibrary(
+        assets.filter(
+          (asset) => !["reference", "mask"].includes(asset.kind) && asset.approval_status === "approved" && asset.media_type !== "video"
+        )
+      );
+      return;
+    }
+    setReferenceLibraryLoading(true);
+    try {
+      const { assets: approved } = await listAssets({ approvalStatus: "approved" });
+      setReferenceLibrary((approved ?? []).filter((asset) => asset.media_type !== "video" && !["reference", "mask"].includes(asset.kind)));
+    } catch (err) {
+      console.error("[frank] approved library load failed", err);
+      setReferenceLibrary(
+        assets.filter(
+          (asset) => !["reference", "mask"].includes(asset.kind) && asset.approval_status === "approved" && asset.media_type !== "video"
+        )
+      );
+    } finally {
+      setReferenceLibraryLoading(false);
+    }
   }
 
   async function handleReferenceUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -3902,7 +3932,11 @@ export default function App() {
               void handlePromptDrop(event);
             }}
           >
-            <label className={`upload-button reference-upload${referenceAssets.length ? " has-refs" : ""}`}>
+            <button
+              type="button"
+              className={`upload-button reference-upload${referenceAssets.length ? " has-refs" : ""}`}
+              onClick={() => void openReferencePicker()}
+            >
               <Upload size={16} />
               Add references
 
@@ -3912,8 +3946,7 @@ export default function App() {
                   {referenceAssets.length}
                 </span>
               ) : null}
-              <input type="file" accept="image/*" multiple onChange={handleReferenceUpload} />
-            </label>
+            </button>
             <div className="reference-dock" aria-label="Reference images">
 
               {referenceAssets.map((asset) => (
@@ -4768,6 +4801,76 @@ export default function App() {
                   <XCircle size={16} />
                   Rejected
                 </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {referencePickerOpen ? (
+        <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setReferencePickerOpen(false)}>
+          <div className="lightbox-inner reference-picker" onClick={(event) => event.stopPropagation()}>
+            <button
+              className="lightbox-close"
+              type="button"
+              onClick={() => setReferencePickerOpen(false)}
+              aria-label="Close reference picker"
+            >
+              <XCircle size={18} />
+            </button>
+            <header className="reference-picker-header">
+              <h3>Add references</h3>
+              <p>Reuse an approved image or upload from your computer.</p>
+            </header>
+            <input
+              ref={referencePickerInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onChange={async (event) => {
+                await handleReferenceUpload(event);
+                setReferencePickerOpen(false);
+              }}
+            />
+            <div className="reference-picker-grid">
+              <button
+                type="button"
+                className="reference-picker-upload"
+                onClick={() => referencePickerInputRef.current?.click()}
+              >
+                <Upload size={22} />
+                <strong>Upload from computer</strong>
+                <span>PNG, JPG or WEBP · you can also paste or drop</span>
+              </button>
+              {referenceLibraryLoading ? (
+                <div className="reference-picker-empty">Loading approved images…</div>
+              ) : referenceLibrary.length ? (
+                referenceLibrary.map((asset) => {
+                  const active = referenceAssets.some((ref) => ref.source_asset_id === asset.id);
+                  return (
+                    <button
+                      key={asset.id}
+                      type="button"
+                      className={`reference-picker-card${active ? " is-active" : ""}`}
+                      onClick={async () => {
+                        await useAssetAsReference(asset);
+                        setReferencePickerOpen(false);
+                      }}
+                      title={asset.title}
+                    >
+                      {asset.preview_url ? (
+                        <img src={asset.preview_url} alt={asset.title} />
+                      ) : (
+                        <span className="reference-picker-card-fallback"><Paperclip size={18} /></span>
+                      )}
+                      <span className="reference-picker-card-title">{asset.title}</span>
+                      {active ? <span className="reference-picker-card-flag">In use</span> : null}
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="reference-picker-empty">No approved images yet — approve a generation to reuse it here.</div>
               )}
             </div>
           </div>
