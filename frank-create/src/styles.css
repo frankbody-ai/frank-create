@@ -8373,3 +8373,15 @@ body {
 .guided-header.app-sidebar {
   overflow-y: auto;
 }
+
+/* 11. AutoSolutions OS — secondary action discipline in the studio shell */
+.studio-shell.guided-studio .remix-button {
+  border: 1px solid var(--muted-20);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: none;
+}
+.studio-shell.guided-studio .remix-button:hover:not(:disabled) {
+  border-color: var(--ink);
+  background: var(--surface);
+}
