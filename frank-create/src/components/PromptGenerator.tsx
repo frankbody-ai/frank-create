@@ -43,6 +43,7 @@ function extractPrompts(text: string): string[] {
 
 export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const [skill, setSkill] = useState("brief-to-prompt");
+  const [SKILLS, setSkills] = useState(FALLBACK_SKILLS);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -55,6 +56,26 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    let alive = true;
+    fetchPromptAgentConfig()
+      .then((res) => {
+        if (!alive) return;
+        const active = (res.config.skills || []).filter((s) => s.is_active);
+        if (!active.length) return;
+        setSkills(active.map((s) => ({ key: s.key, label: s.label || s.key, hint: s.hint })));
+        if (!active.some((s) => s.key === skill)) setSkill(active[0]!.key);
+      })
+      .catch(() => {
+        /* keep the built-in chips */
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
