@@ -152,7 +152,6 @@ import type {
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
 import osLogo from "./assets/ds/autosolutions-os-md.png";
-import designStudioLogo from "./assets/ds/art-ificial-design-studio.svg";
 import frankBodyLogo from "./assets/ds/frank.svg";
 
 
