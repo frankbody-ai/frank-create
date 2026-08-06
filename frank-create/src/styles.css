@@ -5761,7 +5761,7 @@ input:focus, textarea:focus, select:focus {
     grid-template-columns: 256px minmax(0, 1fr) !important;
   }
   .studio-shell.guided-studio.settings-rail-open {
-    grid-template-columns: 256px 300px minmax(0, 1fr) !important;
+    grid-template-columns: 256px minmax(0, 1fr) 300px !important;
   }
 }
 
@@ -6181,7 +6181,7 @@ input:focus, textarea:focus, select:focus {
 
 /* ---- Secondary setup rail (Image Studio) ---- */
 .studio-shell.guided-studio.settings-rail-open {
-  grid-template-columns: 256px 300px minmax(0, 1fr);
+  grid-template-columns: 256px minmax(0, 1fr) 300px;
 }
 
 .studio-shell.guided-studio.settings-rail-open .conversation-column {
@@ -6247,14 +6247,14 @@ input:focus, textarea:focus, select:focus {
    grid declaration and left the canvas trapped in the rail's 300px track. */
 @media (min-width: 1024px) {
   .studio-shell.guided-studio.settings-rail-open {
-    grid-template-columns: 256px 300px minmax(0, 1fr) !important;
+    grid-template-columns: 256px minmax(0, 1fr) 300px !important;
     grid-template-rows: minmax(0, 1fr) !important;
   }
 }
 
 @media (min-width: 921px) and (max-width: 1023px) {
   .studio-shell.guided-studio.settings-rail-open {
-    grid-template-columns: 64px 300px minmax(0, 1fr) !important;
+    grid-template-columns: 64px minmax(0, 1fr) 300px !important;
     grid-template-rows: minmax(0, 1fr) !important;
   }
 
@@ -6288,13 +6288,13 @@ input:focus, textarea:focus, select:focus {
   }
 
   .studio-shell.guided-studio.settings-rail-open .studio-settings-rail {
-    grid-column: 2 !important;
+    grid-column: 3 !important;
     height: 100vh;
     max-height: none;
   }
 
   .studio-shell.guided-studio.settings-rail-open .conversation-column {
-    grid-column: 3 !important;
+    grid-column: 2 !important;
     width: auto;
     height: 100vh;
     min-width: 0;
@@ -7201,7 +7201,7 @@ body {
   pointer-events: none;
 }
 
-.studio-shell.guided-studio > *:not(.ambient-field) {
+.studio-shell.guided-studio > *:not(.ambient-field):not(.os-topbar) {
   position: relative;
   z-index: 1;
 }
@@ -7926,7 +7926,7 @@ body {
 /* ---- 9. specificity corrections -------------------------- */
 
 .studio-shell.guided-studio.settings-rail-open {
-  grid-template-columns: 216px 280px minmax(0, 1fr);
+  grid-template-columns: 216px minmax(0, 1fr) 280px;
 }
 
 .guided-header.app-sidebar .sidebar-nav-button,
@@ -8265,4 +8265,163 @@ body {
   max-height: 420px;
   width: auto;
   object-fit: contain;
+}
+
+
+/* ---- OS top bar (restored, brief §4) ---------------------- */
+
+.os-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 45;
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--muted-20);
+}
+
+.os-topbar-logo {
+  width: 216px;
+  margin-left: -20px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+}
+
+.os-topbar-logo img {
+  width: 100%;
+  height: auto;
+  max-height: 44px;
+  object-fit: contain;
+  display: block;
+}
+
+.os-topbar-search {
+  flex: 1;
+  min-width: 140px;
+  max-width: 320px;
+  margin: 0 auto;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--muted-20);
+  background: var(--paper-50);
+  color: var(--muted);
+}
+
+.os-topbar-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font: var(--type-body);
+  color: var(--ink);
+}
+
+.os-topbar-search input::placeholder { color: var(--muted); }
+.os-topbar-search:focus-within { border-color: var(--ink); }
+
+.os-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.os-tenant-mark {
+  height: 20px;
+  width: auto;
+  display: block;
+  opacity: 0.9;
+}
+
+.os-topbar-bell {
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+}
+
+.os-topbar-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-250);
+  border: 1px solid var(--paper-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: var(--type-control);
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.os-topbar-signout {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--muted-25);
+  background: transparent;
+  color: var(--ink);
+  font: var(--type-control);
+}
+
+.os-topbar-signout:hover {
+  background: var(--accent-tint);
+  border-color: var(--ink);
+}
+
+/* the shell sits under the fixed OS bar */
+.studio-shell.guided-studio {
+  padding-top: 56px;
+  height: 100vh;
+}
+
+.studio-shell.guided-studio .guided-header.app-sidebar {
+  height: calc(100vh - 56px);
+  top: 56px;
+}
+
+.studio-shell.guided-studio .conversation-column,
+.studio-settings-rail {
+  height: calc(100vh - 56px);
+}
+
+.ambient-field {
+  top: 56px;
+  height: calc(100vh - 56px);
+}
+
+/* ---- settings rail sits to the RIGHT of the centre column -- */
+.studio-shell.guided-studio.settings-rail-open {
+  grid-template-columns: 216px minmax(0, 1fr) 300px;
+}
+
+.studio-shell.guided-studio.settings-rail-open .conversation-column {
+  grid-column: 2;
+}
+
+.studio-shell.guided-studio.settings-rail-open .studio-settings-rail {
+  grid-column: 3;
+  grid-row: 1;
+  border-left: 1px solid rgba(63, 42, 45, 0.08);
+  border-right: 0;
+}
+
+@media (min-width: 921px) {
+  .studio-shell.guided-studio.settings-rail-open .studio-settings-rail,
+  .studio-shell.guided-studio.settings-rail-open .conversation-column {
+    height: calc(100vh - 56px) !important;
+  }
 }
