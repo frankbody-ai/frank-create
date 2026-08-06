@@ -3932,7 +3932,11 @@ export default function App() {
               void handlePromptDrop(event);
             }}
           >
-            <label className={`upload-button reference-upload${referenceAssets.length ? " has-refs" : ""}`}>
+            <button
+              type="button"
+              className={`upload-button reference-upload${referenceAssets.length ? " has-refs" : ""}`}
+              onClick={() => void openReferencePicker()}
+            >
               <Upload size={16} />
               Add references
 
@@ -3942,8 +3946,7 @@ export default function App() {
                   {referenceAssets.length}
                 </span>
               ) : null}
-              <input type="file" accept="image/*" multiple onChange={handleReferenceUpload} />
-            </label>
+            </button>
             <div className="reference-dock" aria-label="Reference images">
 
               {referenceAssets.map((asset) => (
