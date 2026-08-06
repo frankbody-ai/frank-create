@@ -454,6 +454,7 @@ export default function App() {
   type InflightGen = { id: string; modelId: string; modelLabel: string; prompt: string; aspect: string; count: number };
   const [inflightGens, setInflightGens] = useState<InflightGen[]>([]);
 
+  const [roundSearch, setRoundSearch] = useState("");
   const [statusText, setStatusText] = useState("Waiting for the brief...");
   const [retrySafePayload, setRetrySafePayload] = useState<Record<string, unknown> | null>(null);
   type GenPhase = "idle" | "queued" | "running" | "completed" | "failed";
