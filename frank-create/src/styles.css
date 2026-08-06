@@ -90,7 +90,7 @@ button:disabled {
 }
 
 .studio-shell.guided-studio {
-  grid-template-columns: 256px minmax(0, 1fr);
+  grid-template-columns: 216px minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   gap: 0;
   background:
@@ -601,11 +601,11 @@ button:disabled {
 
 .eyebrow {
   margin: 0 0 4px;
-  color: var(--ink);
-  font-family: var(--font-heading);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-light);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 
@@ -3747,7 +3747,7 @@ body {
   min-height: 100vh;
   height: 100vh;
   display: grid;
-  grid-template-columns: 256px minmax(0, 1fr);
+  grid-template-columns: 216px minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   gap: 0;
   overflow: hidden;
@@ -3819,17 +3819,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1px;
-}
-
-.sidebar-section-label {
-  margin: 12px 0 0;
-  padding: 7px 16px 5px;
-  color: rgba(48, 48, 48, 0.42);
-  font-family: var(--font-brand);
-  font-size: 0.64rem;
-  font-weight: 900;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
 }
 
 .sidebar-nav-button {
@@ -5266,7 +5255,7 @@ input[aria-invalid="true"] {
   width: 100%; background: var(--paper); border: 1.5px solid var(--coffee); color: var(--ink);
   padding: 6px 10px; border-radius: 6px; font-size: 12px; font-family: var(--font-body);
 }
-.admin-sidebar-link { color: var(--ink) !important; }
+.admin-sidebar-link { color: var(--ink); }
 
 .studio-topbar-right { display: flex; align-items: flex-end; gap: 10px; flex-direction: column; }
 
@@ -5276,12 +5265,6 @@ input[aria-invalid="true"] {
    Loaded last so they win the cascade over earlier legacy rules.
    ============================================================ */
 :root {
-  /* legacy aliases only — real tokens live in styles/ds/*.css and must win */
-  --frank-pink: var(--tenant-accent, #F9ABAA);
-  --frank-ink: var(--ink);
-  --frank-blush: var(--paper-50);
-  --frank-pink-soft: var(--tenant-blob-top, #FDEFE4);
-  --frank-ink-40: var(--muted-40);
   --shell: var(--canvas);
   --cream: var(--paper-100);
   --paper: var(--surface);
@@ -5296,12 +5279,12 @@ input[aria-invalid="true"] {
 }
 
 
-html, body { background: var(--canvas) !important; color: var(--ink); }
+html, body { background: var(--canvas); color: var(--ink); }
 body { font-family: var(--font-body); font-weight: 400; }
 
 
 /* Global keyboard focus per §6.16 */
-:focus-visible { outline: 2px solid var(--accent) !important; outline-offset: 2px !important; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
 /* Scrollbar — §6.12 */
 ::-webkit-scrollbar { width: 8px; }
@@ -5322,18 +5305,7 @@ h3, h4 {
   color: var(--ink);
 }
 
-/* Studio shell paint on blush, no legacy gradient */
-.studio-shell.guided-studio {
-  background: var(--paper-50) !important;
-  color: var(--ink);
-}
-
-/* Sidebar — transparent plane, single ink/10 hairline as the only edge */
-.guided-header.app-sidebar {
-  background: transparent !important;
-  border-right: 1px solid var(--muted-20) !important;
-  box-shadow: none;
-}
+/* Shell and rail paint live in the OS ambient-field layer below. */
 
 .sidebar-brand-block {
   display: flex;
@@ -5380,17 +5352,6 @@ h3, h4 {
   letter-spacing: 0.24em;
   text-transform: uppercase;
   text-align: center;
-}
-
-/* Nav rows */
-.sidebar-section-label {
-  color: var(--muted);
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  padding: 14px 16px 6px;
 }
 
 .sidebar-nav-button {
@@ -5632,9 +5593,10 @@ input:focus, textarea:focus, select:focus {
 }
 .frank-auth-foot {
   margin-top: 24px;
-  font-family: var(--font-body);
-  font-size: 11px;
-  letter-spacing: 0.14em;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-light);
+  font-size: var(--text-caption);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -5677,10 +5639,10 @@ input:focus, textarea:focus, select:focus {
 }
 .guided-header .sidebar-session-card .session-picker span {
   color: var(--muted);
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-light);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 .guided-header .sidebar-session-card .session-picker select {
@@ -5740,10 +5702,10 @@ input:focus, textarea:focus, select:focus {
 }
 .guided-header .sidebar-account-label {
   color: var(--muted);
-  font-family: var(--font-body);
-  font-weight: 600;
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-family: var(--font-mono);
+  font-weight: var(--weight-light);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   opacity: 1;
 }
@@ -5755,20 +5717,10 @@ input:focus, textarea:focus, select:focus {
   margin-top: 2px;
 }
 
-/* ============= Sidebar repair — clean frank left rail footer ============= */
-@media (min-width: 1024px) {
-  .studio-shell.guided-studio:not(.settings-rail-open) {
-    grid-template-columns: 256px minmax(0, 1fr) !important;
-  }
-  .studio-shell.guided-studio.settings-rail-open {
-    grid-template-columns: 256px minmax(0, 1fr) 300px !important;
-  }
-}
-
+/* ============= Left rail structure (paint lives in the OS layer) ======== */
 .guided-header.app-sidebar {
-  width: 256px;
-  max-width: 256px;
-  overflow: hidden !important;
+  width: 216px;
+  max-width: 216px;
 }
 
 .guided-header.app-sidebar .sidebar-nav {
@@ -5776,7 +5728,6 @@ input:focus, textarea:focus, select:focus {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px 0 8px;
 }
 
 .guided-header.app-sidebar .sidebar-nav-button,
@@ -5788,22 +5739,10 @@ input:focus, textarea:focus, select:focus {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 40px !important;
-  width: calc(100% - 16px) !important;
-  margin: 0 8px !important;
-  padding: 10px 12px !important;
-  border: 0 !important;
-  border-radius: 8px !important;
-  background: transparent !important;
-  color: var(--ink) !important;
-  font-family: var(--font-body) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.08em !important;
+  width: calc(100% - 12px);
+  margin: 0 6px;
   line-height: 1.1;
-  text-transform: uppercase !important;
   text-decoration: none;
-  box-shadow: none !important;
 }
 
 .guided-header.app-sidebar .sidebar-nav-button > span:not(.sidebar-badge):not(.sidebar-soon-tag),
@@ -5824,46 +5763,23 @@ input:focus, textarea:focus, select:focus {
   flex: 0 0 auto;
 }
 
-.guided-header.app-sidebar .sidebar-nav-button:hover,
-.guided-header.app-sidebar .admin-sidebar-link:hover,
-.guided-header.app-sidebar .sidebar-session-card .compact-action.secondary-button:hover,
-.guided-header.app-sidebar .sidebar-session-card .sidebar-new-session:hover,
-.guided-header.app-sidebar .sidebar-signout:hover {
-  background: color-mix(in oklab, var(--paper-100) 40%, transparent) !important;
-  color: var(--ink) !important;
-}
-
-.guided-header.app-sidebar .sidebar-nav-button.active,
-.guided-header.app-sidebar .admin-sidebar-link.active {
-  background: var(--ink) !important;
-  color: var(--frank-white, #fff) !important;
-}
-
-.guided-header.app-sidebar .sidebar-nav-button.active svg,
-.guided-header.app-sidebar .admin-sidebar-link.active svg {
-  color: var(--frank-white, #fff) !important;
-}
-
 .guided-header.app-sidebar .sidebar-footer {
   flex: 0 0 auto;
   display: grid;
   gap: 0;
   margin-top: 0;
   padding: 0 0 10px;
-  border-top: 0 !important;
-  background: transparent !important;
 }
 
 .guided-header.app-sidebar .sidebar-session-card,
 .guided-header.app-sidebar .sidebar-account {
   min-width: 0;
   display: grid;
-  gap: 2px !important;
-  margin: 0 !important;
-  padding: 4px 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  gap: 2px;
+  margin: 0;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
 }
 
 .guided-header.app-sidebar .sidebar-session-card .session-picker {
@@ -5871,44 +5787,44 @@ input:focus, textarea:focus, select:focus {
   width: auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 4px !important;
-  margin: 0 8px 2px !important;
-  padding: 8px 12px !important;
-  border: 0 !important;
-  border-radius: 8px !important;
-  background: transparent !important;
+  gap: 4px;
+  margin: 0 6px 2px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
 }
 
 .guided-header.app-sidebar .sidebar-session-card .session-picker:hover {
-  background: color-mix(in oklab, var(--paper-100) 26%, transparent) !important;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .guided-header.app-sidebar .sidebar-session-card .session-picker span,
 .guided-header.app-sidebar .sidebar-account-label {
   min-width: 0;
-  color: var(--muted) !important;
-  font-family: var(--font-body) !important;
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.14em !important;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-light);
+  letter-spacing: var(--tracking-label);
   line-height: 1.1;
-  text-transform: uppercase !important;
+  text-transform: uppercase;
 }
 
 .guided-header.app-sidebar .sidebar-session-card .session-picker select {
   min-width: 0;
   width: 100%;
   height: 22px;
-  padding: 0 18px 0 0 !important;
-  border: 0 !important;
-  background-color: transparent !important;
-  color: var(--ink) !important;
-  font-family: var(--font-body) !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.02em !important;
+  padding: 0 18px 0 0;
+  border: 0;
+  background-color: transparent;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-caption);
+  font-weight: 400;
+  letter-spacing: 0;
   line-height: 1.1;
-  text-transform: none !important;
+  text-transform: none;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
@@ -5916,36 +5832,30 @@ input:focus, textarea:focus, select:focus {
 
 .guided-header.app-sidebar .sidebar-session-stats {
   min-width: 0;
-  margin: 0 !important;
-  padding: 4px 20px 6px !important;
-  color: var(--muted) !important;
-  font-family: var(--font-body) !important;
-  font-size: 11px !important;
-  font-weight: 400;
-  letter-spacing: 0.02em !important;
+  margin: 0;
+  padding: 2px 18px 6px;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
   line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.guided-header.app-sidebar .sidebar-account {
-  padding-top: 8px !important;
-}
-
 .guided-header.app-sidebar .sidebar-account-info {
   min-width: 0;
-  padding: 8px 20px 6px !important;
+  padding: 6px 18px 6px;
   display: grid;
   gap: 3px;
 }
 
 .guided-header.app-sidebar .sidebar-account-email {
   min-width: 0;
-  color: var(--ink) !important;
-  font-family: var(--font-body) !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-caption);
+  font-weight: 400;
   letter-spacing: 0;
   line-height: 1.2;
   overflow: hidden;
@@ -5954,10 +5864,6 @@ input:focus, textarea:focus, select:focus {
 }
 
 @media (max-width: 1023px) {
-  .studio-shell.guided-studio {
-    grid-template-columns: 64px minmax(0, 1fr) !important;
-  }
-
   .guided-header.app-sidebar {
     width: 64px;
     max-width: 64px;
@@ -5969,18 +5875,9 @@ input:focus, textarea:focus, select:focus {
 }
 
 @media (max-width: 920px) {
-  .studio-shell.guided-studio {
-    grid-template-columns: 1fr !important;
-  }
-
   .guided-header.app-sidebar {
     width: 100%;
     max-width: none;
-    overflow: visible !important;
-  }
-
-  .guided-header.app-sidebar .sidebar-nav {
-    overflow: visible;
   }
 
   .guided-header.app-sidebar .sidebar-footer {
@@ -6181,7 +6078,7 @@ input:focus, textarea:focus, select:focus {
 
 /* ---- Secondary setup rail (Image Studio) ---- */
 .studio-shell.guided-studio.settings-rail-open {
-  grid-template-columns: 256px minmax(0, 1fr) 300px;
+  grid-template-columns: 216px minmax(0, 1fr) 248px;
 }
 
 .studio-shell.guided-studio.settings-rail-open .conversation-column {
@@ -6247,14 +6144,14 @@ input:focus, textarea:focus, select:focus {
    grid declaration and left the canvas trapped in the rail's 300px track. */
 @media (min-width: 1024px) {
   .studio-shell.guided-studio.settings-rail-open {
-    grid-template-columns: 256px minmax(0, 1fr) 300px !important;
+    grid-template-columns: 216px minmax(0, 1fr) 248px !important;
     grid-template-rows: minmax(0, 1fr) !important;
   }
 }
 
 @media (min-width: 921px) and (max-width: 1023px) {
   .studio-shell.guided-studio.settings-rail-open {
-    grid-template-columns: 64px minmax(0, 1fr) 300px !important;
+    grid-template-columns: 64px minmax(0, 1fr) 248px !important;
     grid-template-rows: minmax(0, 1fr) !important;
   }
 
@@ -6412,12 +6309,11 @@ input:focus, textarea:focus, select:focus {
 }
 .rail-label {
   margin: 0;
-  font-family: var(--font-display);
-
-  font-size: 10px;
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-light);
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  opacity: 0.6;
+  letter-spacing: var(--tracking-label);
 }
 .rail-block select {
   width: 100%;
@@ -6564,14 +6460,15 @@ input:focus, textarea:focus, select:focus {
   border-radius: 999px;
   background: transparent;
   color: var(--ink);
-  font-family: var(--font-display);
-  font-size: 11px;
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-light);
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--tracking-label);
   cursor: pointer;
 }
 .rail-reset:hover {
-  background: #FFEFEA;
+  background: var(--accent-tint);
 }
 
 /* ==== Prompt Generator agent ==== */
@@ -7210,7 +7107,7 @@ body {
 /* both planes transparent — the rail reads deeper only because the
    blob sits under it. The hairline is the only edge. */
 .guided-header.app-sidebar {
-  background: transparent !important;
+  background: transparent;
   border: 0;
   border-right: 1px solid var(--muted-15);
   box-shadow: none;
@@ -7224,7 +7121,7 @@ body {
 }
 
 .studio-shell.guided-studio.settings-rail-open {
-  grid-template-columns: 208px minmax(0, 1fr) 248px;
+  grid-template-columns: 216px minmax(0, 1fr) 248px;
 }
 
 .studio-shell.guided-studio .conversation-column,
@@ -7318,9 +7215,9 @@ body {
 
 .sidebar-nav-button {
   flex-shrink: 0;
-  min-height: 29px;
-  height: 29px;
-  padding: 0 10px;
+  min-height: 34px;
+  height: 34px;
+  padding: 0 12px;
   border-radius: var(--radius-pill);
   gap: 10px;
   font-family: var(--font-display);
@@ -7644,9 +7541,9 @@ body {
 .turn-side small {
   color: var(--on-dark-tertiary);
   font-family: var(--font-mono);
-  font-size: var(--text-micro);
+  font-size: var(--text-caption);
   font-weight: var(--weight-light);
-  letter-spacing: var(--tracking-label);
+  letter-spacing: var(--tracking-label-sm);
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
 }
@@ -7690,7 +7587,7 @@ body {
 }
 
 .rail-label {
-  font-size: var(--text-micro);
+  font-size: var(--text-caption);
   color: var(--muted);
 }
 
@@ -7859,9 +7756,9 @@ body {
 
 .settings-rail-head small {
   font-family: var(--font-mono);
-  font-size: var(--text-micro);
+  font-size: var(--text-caption);
   font-weight: var(--weight-light);
-  letter-spacing: var(--tracking-label);
+  letter-spacing: var(--tracking-label-sm);
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -7923,48 +7820,42 @@ body {
 }
 
 
-/* ---- 9. specificity corrections -------------------------- */
+/* ---- 9. rail row geometry (single source) ----------------- */
 
-.studio-shell.guided-studio.settings-rail-open {
-  grid-template-columns: 208px minmax(0, 1fr) 248px;
-}
-
-.guided-header.app-sidebar .sidebar-nav-button,
 .guided-header.app-sidebar .admin-sidebar-link,
 .guided-header.app-sidebar .sidebar-signout,
 .guided-header.app-sidebar .sidebar-session-card .compact-action.secondary-button,
 .guided-header.app-sidebar .sidebar-session-card .sidebar-new-session {
-  min-height: 34px !important;
+  min-height: 34px;
   height: 34px;
-  padding: 0 12px !important;
-  border-radius: var(--radius-pill) !important;
-  background: transparent !important;
-  color: var(--ink) !important;
-  font-family: var(--font-display) !important;
-  font-size: var(--text-body) !important;
-  font-weight: 400 !important;
-  letter-spacing: 0 !important;
-  text-transform: none !important;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
-.guided-header.app-sidebar .sidebar-nav-button:hover,
 .guided-header.app-sidebar .admin-sidebar-link:hover,
 .guided-header.app-sidebar .sidebar-signout:hover,
 .guided-header.app-sidebar .sidebar-session-card .compact-action.secondary-button:hover,
 .guided-header.app-sidebar .sidebar-session-card .sidebar-new-session:hover {
-  background: rgba(0, 0, 0, 0.1) !important;
-  color: var(--ink) !important;
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--ink);
 }
 
-.guided-header.app-sidebar .sidebar-nav-button.active,
 .guided-header.app-sidebar .admin-sidebar-link.active {
-  background: var(--ink) !important;
-  color: var(--text-on-ink) !important;
+  background: var(--ink);
+  color: var(--text-on-ink);
 }
 
-.guided-header.app-sidebar .sidebar-nav-button.active svg,
 .guided-header.app-sidebar .admin-sidebar-link.active svg {
-  color: var(--text-on-ink) !important;
+  color: var(--text-on-ink);
 }
 
 /* stat cluster sizing — spans hold "34 rounds" on one line */
@@ -8196,9 +8087,9 @@ body {
 
 .studio-shell.guided-studio .thread-surface .rounds-well-count {
   font-family: var(--font-mono);
-  font-size: var(--text-micro);
+  font-size: var(--text-caption);
   font-weight: var(--weight-light);
-  letter-spacing: var(--tracking-label);
+  letter-spacing: var(--tracking-label-sm);
   text-transform: uppercase;
   color: var(--on-dark-tertiary);
   font-variant-numeric: tabular-nums;
@@ -8213,12 +8104,20 @@ body {
   margin-bottom: 4px;
 }
 
-.studio-shell.guided-studio .composer .brief-card-eyebrow,
-.studio-shell.guided-studio .composer .brief-card-meta {
+.studio-shell.guided-studio .composer .brief-card-eyebrow {
   font-family: var(--font-mono);
-  font-size: var(--text-micro);
+  font-size: var(--text-caption);
   font-weight: var(--weight-light);
   letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.studio-shell.guided-studio .composer .brief-card-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-light);
+  letter-spacing: var(--tracking-label-sm);
   text-transform: uppercase;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
@@ -8405,7 +8304,7 @@ body {
 
 /* ---- settings rail sits to the RIGHT of the centre column -- */
 .studio-shell.guided-studio.settings-rail-open {
-  grid-template-columns: 208px minmax(0, 1fr) 248px;
+  grid-template-columns: 216px minmax(0, 1fr) 248px;
 }
 
 .studio-shell.guided-studio.settings-rail-open .conversation-column {
