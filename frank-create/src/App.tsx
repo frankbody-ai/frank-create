@@ -3784,11 +3784,6 @@ export default function App() {
                           });
                         }}
                         title="Copy prompt"
-                        style={{
-                          fontSize: 11, padding: "2px 8px", borderRadius: 999,
-                          cursor: "pointer",
-                          display: "inline-flex", alignItems: "center", gap: 4,
-                        }}
                       >
                         <Clipboard size={12} />
                         Copy prompt

@@ -8216,19 +8216,55 @@ body {
   }
 }
 
-/* copy-prompt chip — legible on the ink rounds well */
-.turn-copy-prompt {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  color: var(--text-on-ink);
-  font-family: var(--font-mono);
-  letter-spacing: var(--tracking-label-sm);
-  text-transform: uppercase;
-  transition: background 140ms ease, border-color 140ms ease;
+/* ---- unified meta chip row (ink rounds well) ---------------- */
+.studio-shell.guided-studio .thread-surface .turn-meta {
+  gap: 6px;
+  align-items: center;
 }
 
-.turn-copy-prompt:hover {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.4);
-  color: var(--text-on-ink);
+.studio-shell.guided-studio .thread-surface .turn-meta > span,
+.studio-shell.guided-studio .thread-surface .turn-copy-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill, 999px);
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-light);
+  line-height: 1;
+  letter-spacing: var(--tracking-label-sm);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.studio-shell.guided-studio .thread-surface .turn-copy-prompt {
+  cursor: pointer;
+}
+
+.studio-shell.guided-studio .thread-surface .turn-copy-prompt:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: rgba(255, 255, 255, 0.36) !important;
+  color: #fff !important;
+}
+
+.studio-shell.guided-studio .thread-surface .turn-copy-prompt svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0.75;
+}
+
+.studio-shell.guided-studio .thread-surface .turn-meta > span.turn-error {
+  height: auto;
+  padding: 5px 10px;
+  text-transform: none;
+  white-space: normal;
+  border-color: rgba(255, 140, 140, 0.4) !important;
+  color: rgba(255, 190, 190, 0.92) !important;
 }
