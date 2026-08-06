@@ -68,7 +68,7 @@ export function AdminPortal() {
       <header className="admin-portal-header">
         <div>
           <h1>Admin portal</h1>
-          <p>Manage roles and triage user feedback.</p>
+          <p>Manage roles, triage user feedback, and edit the Prompt Generator agent.</p>
         </div>
         <a className="admin-portal-link" href="#/">← Back to app</a>
       </header>
@@ -81,8 +81,13 @@ export function AdminPortal() {
           className={`admin-portal-tab ${tab === "feedback" ? "active" : ""}`}
           onClick={() => setTab("feedback")}
         >Feedback tasks</button>
+        <button
+          className={`admin-portal-tab ${tab === "prompt-agent" ? "active" : ""}`}
+          onClick={() => setTab("prompt-agent")}
+        >Prompt agent</button>
       </nav>
-      {tab === "users" ? <UsersTab meId={meId} /> : <FeedbackBoard />}
+      {tab === "users" ? <UsersTab meId={meId} /> : tab === "feedback" ? <FeedbackBoard /> : <PromptAgentTab />}
+
     </div>
   );
 }
