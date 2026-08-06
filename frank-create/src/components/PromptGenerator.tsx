@@ -20,7 +20,7 @@ function fileToDataUrl(file: File) {
   });
 }
 
-const SKILLS = [
+const FALLBACK_SKILLS = [
   { key: "brief-to-prompt", label: "Brief → prompt", hint: "One production-ready image prompt from a rough brief." },
   { key: "variations", label: "Variations", hint: "3-5 distinct prompt variants of the same idea." },
   { key: "product-shot", label: "Product shot", hint: "Studio / e-comm product photography direction." },
@@ -28,6 +28,7 @@ const SKILLS = [
   { key: "video-prompt", label: "Video prompt", hint: "Camera move, action and pacing for video models." },
   { key: "critique", label: "Critique & fix", hint: "Diagnose a weak prompt and rewrite it." },
 ];
+
 
 function extractPrompts(text: string): string[] {
   const blocks: string[] = [];
