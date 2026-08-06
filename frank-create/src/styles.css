@@ -8126,22 +8126,6 @@ body {
 
 /* ---- 10. AutoSolutions OS — new presentational pieces ------ */
 
-/* top bar notification */
-.os-topbar-bell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-pill);
-  color: var(--ink);
-  flex-shrink: 0;
-}
-
-.os-topbar-bell:hover {
-  background: var(--muted-08);
-}
-
 /* rail lockup — two live spans, same face, same size */
 .guided-header.app-sidebar .sidebar-lockup {
   display: flex;
