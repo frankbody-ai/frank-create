@@ -7224,7 +7224,7 @@ body {
 }
 
 .studio-shell.guided-studio.settings-rail-open {
-  grid-template-columns: 216px minmax(0, 1fr) 280px;
+  grid-template-columns: 208px minmax(0, 1fr) 248px;
 }
 
 .studio-shell.guided-studio .conversation-column,
@@ -7279,35 +7279,35 @@ body {
 }
 
 .sidebar-brand-block {
-  margin-bottom: 22px;
+  margin-bottom: 10px;
 }
 
 .sidebar-brand-block::after {
   content: "";
   display: block;
-  margin: 22px -16px 0;
+  margin: 10px -16px 0;
   height: 1px;
   background: var(--muted-15);
 }
 
 .sidebar-studio-block {
-  padding: 0 16px 12px;
+  padding: 0 16px 6px;
   background: transparent;
 }
 
 .sidebar-nav {
   flex: 1 0 auto;
   min-height: 0;
-  padding: 0 8px 14px;
+  padding: 0 6px 10px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
 }
 
 .sidebar-section-label {
   flex-shrink: 0;
-  margin: 8px 0 2px;
-  padding: 6px 8px 4px;
+  margin: 4px 0 0;
+  padding: 3px 8px 2px;
   font-family: var(--font-mono);
   font-size: var(--text-caption);
   font-weight: var(--weight-light);
@@ -7318,9 +7318,9 @@ body {
 
 .sidebar-nav-button {
   flex-shrink: 0;
-  min-height: 34px;
-  height: 34px;
-  padding: 0 12px;
+  min-height: 29px;
+  height: 29px;
+  padding: 0 10px;
   border-radius: var(--radius-pill);
   gap: 10px;
   font-family: var(--font-display);
@@ -7926,7 +7926,7 @@ body {
 /* ---- 9. specificity corrections -------------------------- */
 
 .studio-shell.guided-studio.settings-rail-open {
-  grid-template-columns: 216px minmax(0, 1fr) 280px;
+  grid-template-columns: 208px minmax(0, 1fr) 248px;
 }
 
 .guided-header.app-sidebar .sidebar-nav-button,
@@ -8405,7 +8405,7 @@ body {
 
 /* ---- settings rail sits to the RIGHT of the centre column -- */
 .studio-shell.guided-studio.settings-rail-open {
-  grid-template-columns: 216px minmax(0, 1fr) 300px;
+  grid-template-columns: 208px minmax(0, 1fr) 248px;
 }
 
 .studio-shell.guided-studio.settings-rail-open .conversation-column {
