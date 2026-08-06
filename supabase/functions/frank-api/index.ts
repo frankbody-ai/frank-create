@@ -1077,12 +1077,12 @@ async function persistImageAssets(args: {
 async function handleTurnStatus(body: any, userId: string) {
   const sb = supabase();
   const turnId = String(body?.turn_id || "");
-  if (!turnId) throw new HttpError(400, "turn_id is required.");
+  if (!turnId) throw new Error("turn_id is required.");
 
   const msgRes = await sb.from("messages").select("*").eq("id", turnId).maybeSingle();
   if (msgRes.error) throw msgRes.error;
   const row = msgRes.data;
-  if (!row) throw new HttpError(404, "Turn not found.");
+  if (!row) throw new Error("Turn not found.");
 
   const snapshot = (row.settings_snapshot_json ?? {}) as any;
   const finishWithRows = async (snap: any, status: "complete" | "failed" | "running") => {
@@ -1103,7 +1103,7 @@ async function handleTurnStatus(body: any, userId: string) {
   }
 
   const replicateKey = getReplicateGatewayKey();
-  if (!replicateKey) throw new HttpError(400, "Replicate is not connected.");
+  if (!replicateKey) throw new Error("Replicate is not connected.");
 
   const predictions = await Promise.all(predictionIds.map(async (id) => {
     try {
@@ -1995,6 +1995,12 @@ Deno.serve(async (req) => {
     if (path === "/inference/turn" && method === "POST") {
       const body = await readJson(req);
       const result = await handleInference(body, userId);
+      return json(result);
+    }
+
+    if (path === "/inference/status" && method === "POST") {
+      const body = await readJson(req);
+      const result = await handleTurnStatus(body, userId);
       return json(result);
     }
 
