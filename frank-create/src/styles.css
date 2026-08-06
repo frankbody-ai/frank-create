@@ -4935,8 +4935,10 @@ input[aria-invalid="true"] {
 /* ================ Feedback widget ================ */
 .feedback-fab {
   position: fixed;
-  top: 1rem;
-  right: 1rem;
+  top: auto;
+  bottom: 20px;
+  right: 20px;
+  left: auto;
   z-index: 40;
   border: none;
   background: transparent;
@@ -4949,7 +4951,7 @@ input[aria-invalid="true"] {
   position: absolute;
   inset: -2px;
   border-radius: 999px;
-  background: conic-gradient(from 0deg, #ff2d55, #ff8a3d, #ff2d55, #ffb199, #ff2d55);
+  background: transparent;
   z-index: 0;
 }
 .feedback-fab-inner {
@@ -4960,13 +4962,14 @@ input[aria-invalid="true"] {
   gap: 6px;
   padding: 8px 14px;
   border-radius: 999px;
-  background: #dc2626;
-  color: #fff;
-  font-weight: 600;
-  font-size: 13px;
-  box-shadow: 0 6px 20px rgba(220,38,38,0.35);
+  background: var(--ink);
+  color: var(--text-on-ink);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--text-caption);
+  box-shadow: var(--shadow-card-glow);
 }
-.feedback-fab:hover .feedback-fab-inner { background: #b91c1c; }
+.feedback-fab:hover .feedback-fab-inner { background: #1f1f1f; }
 
 .feedback-inline {
   border: 0;
@@ -5219,7 +5222,7 @@ input[aria-invalid="true"] {
   background: var(--paper); border: 1.5px solid var(--coffee); color: var(--ink);
   padding: 6px 10px; border-radius: 6px; font-size: 12px; font-family: var(--font-body);
 }
-.admin-role-select.role-admin { background: var(--pink); color: var(--coffee); font-weight: 600; }
+.admin-role-select.role-admin { background: var(--tenant-accent); color: var(--ink); font-weight: 500; }
 .admin-role-select.role-manager { background: var(--pink-soft); color: var(--coffee); font-weight: 600; }
 
 .admin-board-toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
