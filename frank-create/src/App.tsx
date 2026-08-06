@@ -1,5 +1,7 @@
 import {
   ArrowLeft,
+  Bell,
+
   Box,
   CheckCircle2,
   ChevronLeft,
@@ -150,7 +152,6 @@ import type {
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
 import osLogo from "./assets/ds/autosolutions-os-md.png";
-import designStudioLogo from "./assets/ds/art-ificial-design-studio.svg";
 import frankBodyLogo from "./assets/ds/frank.svg";
 
 
@@ -3252,17 +3253,19 @@ export default function App() {
         focusable="false"
       >
         <defs>
-          <filter id="ambient-blob-blur" x="-50%" y="-50%" width="200%" height="200%">
+          <filter id="ambient-blob-blur" x="-60%" y="-60%" width="220%" height="220%">
             <feGaussianBlur stdDeviation="250" />
           </filter>
         </defs>
         <rect width="1280" height="832" fill="transparent" />
-        <g filter="url(#ambient-blob-blur)">
-          <ellipse cx="180" cy="880" rx="620" ry="420" fill="var(--tenant-blob)" opacity="0.85" />
-          <ellipse cx="640" cy="960" rx="540" ry="300" fill="var(--tenant-blob-bottom)" />
+        <g filter="url(#ambient-blob-blur)" transform="translate(-64, 42) scale(1.05)">
+          <path
+            fill="var(--tenant-blob)"
+            d="M-140 402c72-138 150-236 292-268 142-32 268 26 372 118 104 92 176 214 152 336-24 122-144 244-306 268-162 24-366-50-476-176-110-126-106-140-34-278Z"
+          />
         </g>
-
       </svg>
+
 
       <header className="os-topbar" aria-label="AutoSolutions OS">
         <div className="os-topbar-logo">
@@ -3280,9 +3283,13 @@ export default function App() {
         </div>
         <div className="os-topbar-right">
           <img className="os-tenant-mark" src={frankBodyLogo} alt="frank body" />
+          <span className="os-topbar-bell" aria-hidden="true">
+            <Bell size={16} />
+          </span>
           <span className="os-topbar-avatar" aria-hidden="true">
             {(userEmail ?? "—").slice(0, 1).toUpperCase()}
           </span>
+
           <button type="button" className="os-topbar-signout" onClick={handleSignOut}>
             Sign out
           </button>
@@ -3349,8 +3356,12 @@ export default function App() {
 
       <aside className="guided-header app-sidebar" data-tour-id="app-header" data-tour-active={tourActive("app-header")}>
         <div className="sidebar-brand-block">
-          <img src={designStudioLogo} alt="Design Studio" className="sidebar-brand-logo" />
+          <span className="sidebar-lockup">
+            <span className="lockup-primary">art-ificial</span>
+            <span className="lockup-secondary">studio</span>
+          </span>
         </div>
+
 
         <nav className="sidebar-nav" aria-label="Frank Create navigation">
           <div className="sidebar-studio-block">
@@ -3618,9 +3629,18 @@ export default function App() {
           <div className="studio-topbar-right" data-tour-id="feedback-button" data-tour-active={tourActive("feedback-button")}>
             <FeedbackWidget variant="inline" />
             <div className="stat-row" aria-label="Studio stats">
-              <span>{turns.length} rounds</span>
-              <span>{approvedCount} approved</span>
-              <span>{favoriteCount} favorites</span>
+              <span role="group" aria-label={`${turns.length} rounds`}>
+                <strong aria-hidden="true">{turns.length}</strong>
+                <small aria-hidden="true">rounds</small>
+              </span>
+              <span role="group" aria-label={`${approvedCount} approved`}>
+                <strong aria-hidden="true">{approvedCount}</strong>
+                <small aria-hidden="true">approved</small>
+              </span>
+              <span role="group" aria-label={`${favoriteCount} favorites`}>
+                <strong aria-hidden="true">{favoriteCount}</strong>
+                <small aria-hidden="true">favorites</small>
+              </span>
             </div>
           </div>
         </header>
@@ -3631,6 +3651,13 @@ export default function App() {
           data-tour-id="output-thread"
           data-tour-active={tourActive("output-thread")}
         >
+          <div className="rounds-well-head" aria-hidden="true">
+            <span className="rounds-well-title">Rounds</span>
+            <span className="rounds-well-count">
+              {outputAssets.length ? `${outputAssets.length} picks` : "Empty"}
+            </span>
+          </div>
+
           {compareBaseAsset ? (
             <div className="compare-prompt" role="status">
               <span>
@@ -3920,6 +3947,13 @@ export default function App() {
           data-tour-id="composer"
           data-tour-active={tourActive("composer")}
         >
+          <div className="brief-card-head" aria-hidden="true">
+            <span className="brief-card-eyebrow">Brief</span>
+            <span className="brief-card-meta">
+              {settings.aspect_ratio} · {settings.image_size} · {settings.count} pick{settings.count === 1 ? "" : "s"}
+            </span>
+          </div>
+
           {editSourceAsset ? (
             <div className="edit-banner">
               <ImageIcon size={16} />

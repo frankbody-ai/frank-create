@@ -8252,3 +8252,136 @@ body {
   border: 1px solid var(--accent-edge);
   color: var(--ink);
 }
+
+/* ---- 10. AutoSolutions OS — new presentational pieces ------ */
+
+/* top bar notification */
+.os-topbar-bell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.os-topbar-bell:hover {
+  background: var(--muted-08);
+}
+
+/* rail lockup — two live spans, same face, same size */
+.guided-header.app-sidebar .sidebar-lockup {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 22px;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.guided-header.app-sidebar .sidebar-lockup .lockup-primary {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.guided-header.app-sidebar .sidebar-lockup .lockup-secondary {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* stat cluster cells — metric over mono label */
+.studio-shell.guided-studio .stat-row > span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 16px;
+}
+
+.studio-shell.guided-studio .stat-row > span strong {
+  font-family: var(--font-display);
+  font-size: var(--text-title);
+  font-weight: var(--weight-display);
+  line-height: 1.05;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.studio-shell.guided-studio .stat-row > span small {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-light);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* rounds well head row — inside the one ink panel */
+.studio-shell.guided-studio .thread-surface .rounds-well-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--on-dark-divider);
+  background: transparent;
+}
+
+.studio-shell.guided-studio .thread-surface .rounds-well-title {
+  font-family: var(--font-display);
+  font-size: var(--text-card-title);
+  font-weight: var(--weight-medium);
+  color: var(--text-on-ink);
+}
+
+.studio-shell.guided-studio .thread-surface .rounds-well-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-light);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--on-dark-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* brief card head row */
+.studio-shell.guided-studio .composer .brief-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.studio-shell.guided-studio .composer .brief-card-eyebrow,
+.studio-shell.guided-studio .composer .brief-card-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  font-weight: var(--weight-light);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* the rail scrolls rather than crushing its rows */
+.guided-header.app-sidebar {
+  overflow-y: auto;
+}
+
+/* 11. AutoSolutions OS — secondary action discipline in the studio shell */
+.studio-shell.guided-studio .remix-button {
+  border: 1px solid var(--muted-20);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: none;
+}
+.studio-shell.guided-studio .remix-button:hover:not(:disabled) {
+  border-color: var(--ink);
+  background: var(--surface);
+}
