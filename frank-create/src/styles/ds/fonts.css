@@ -8,7 +8,9 @@
 
 @font-face {
   font-family: "Google Sans";
-  src: url("../../assets/fonts/GoogleSans-Variable.ttf") format("truetype-variations");
+  src:
+    url("../../assets/fonts/GoogleSans-Variable.ttf") format("truetype-variations"),
+    url("../../assets/fonts/GoogleSans-Variable.ttf") format("truetype");
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -16,7 +18,9 @@
 
 @font-face {
   font-family: "Roboto";
-  src: url("../../assets/fonts/Roboto-Variable.ttf") format("truetype-variations");
+  src:
+    url("../../assets/fonts/Roboto-Variable.ttf") format("truetype-variations"),
+    url("../../assets/fonts/Roboto-Variable.ttf") format("truetype");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
