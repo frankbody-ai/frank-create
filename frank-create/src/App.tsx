@@ -20,6 +20,7 @@ import {
   Pencil,
   Plus,
   RefreshCw,
+  Search,
   Sparkles,
   Square,
   Upload,
@@ -148,8 +149,9 @@ import type {
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
-import frankBodyLogo from "./assets/FrankBody_Logo.svg";
-import designStudioLogo from "./assets/Design_Studio.svg";
+import osLogo from "./assets/ds/autosolutions-os-md.png";
+import designStudioLogo from "./assets/ds/art-ificial-design-studio.svg";
+import frankBodyLogo from "./assets/ds/frank.svg";
 
 
 type WalkthroughTarget =
@@ -448,6 +450,7 @@ export default function App() {
   type InflightGen = { id: string; modelId: string; modelLabel: string; prompt: string; aspect: string; count: number };
   const [inflightGens, setInflightGens] = useState<InflightGen[]>([]);
 
+  const [roundSearch, setRoundSearch] = useState("");
   const [statusText, setStatusText] = useState("Waiting for the brief...");
   const [retrySafePayload, setRetrySafePayload] = useState<Record<string, unknown> | null>(null);
   type GenPhase = "idle" | "queued" | "running" | "completed" | "failed";
@@ -896,6 +899,15 @@ export default function App() {
     if (!a && !b) return null;
     return `A ${a ?? "—"} · B ${b ?? "—"}`;
   }, [mediaKind, compareMedia, compareResolved, modelOptions.model, compareModelB]);
+
+  const searchedTurns = useMemo(() => {
+    const needle = roundSearch.trim().toLowerCase();
+    if (!needle) return turns;
+    return turns.filter((turn) => {
+      const haystack = [turn.prompt, turn.model, turn.id, activeSession?.name].filter(Boolean).join(" ").toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [turns, roundSearch, activeSession?.name]);
 
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
   const firstOutputAsset = outputAssets[0] ?? null;
@@ -3230,6 +3242,7 @@ export default function App() {
     <div
       className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${studioMode !== "preset-creator" && studioMode !== "prompt-generator" && studioMode !== "enhancer" && settingsRailOpen ? "settings-rail-open" : ""}`}
       data-provider-audit={providerAuditMode ? "open" : undefined}
+      data-tenant="frank"
     >
       <svg
         className="ambient-field"
@@ -3245,11 +3258,37 @@ export default function App() {
         </defs>
         <rect width="1280" height="832" fill="transparent" />
         <g filter="url(#ambient-blob-blur)">
-          <ellipse cx="180" cy="880" rx="620" ry="420" fill="#F7B3AB" />
-          <ellipse cx="640" cy="960" rx="540" ry="300" fill="#F9C0B9" />
+          <ellipse cx="180" cy="880" rx="620" ry="420" fill="var(--tenant-blob)" opacity="0.85" />
+          <ellipse cx="640" cy="960" rx="540" ry="300" fill="var(--tenant-blob-bottom)" />
         </g>
 
       </svg>
+
+      <header className="os-topbar" aria-label="AutoSolutions OS">
+        <div className="os-topbar-logo">
+          <img src={osLogo} alt="autosolutions OS" />
+        </div>
+        <div className="os-topbar-search">
+          <Search size={14} aria-hidden="true" />
+          <input
+            type="search"
+            value={roundSearch}
+            onChange={(event) => setRoundSearch(event.target.value)}
+            placeholder="Search sessions and picks"
+            aria-label="Search sessions and picks"
+          />
+        </div>
+        <div className="os-topbar-right">
+          <img className="os-tenant-mark" src={frankBodyLogo} alt="frank body" />
+          <span className="os-topbar-avatar" aria-hidden="true">
+            {(userEmail ?? "—").slice(0, 1).toUpperCase()}
+          </span>
+          <button type="button" className="os-topbar-signout" onClick={handleSignOut}>
+            Sign out
+          </button>
+        </div>
+      </header>
+
       {studioMode === "preset-creator" || studioMode === "prompt-generator" || studioMode === "enhancer" ? (
         <FeedbackWidget />
       ) : null}
@@ -3647,8 +3686,8 @@ export default function App() {
             );
           }) : null}
 
-          {turns.length ? (
-            groupCompareRows([...turns].reverse()).map((row, rowIdx) => (
+          {searchedTurns.length ? (
+            groupCompareRows([...searchedTurns].reverse()).map((row, rowIdx) => (
             <div
               key={`row-${row[0].id}`}
               className={row.length > 1 ? "compare-run" : "turn-row"}
@@ -3860,6 +3899,12 @@ export default function App() {
             </div>
             ))
 
+          ) : roundSearch.trim() && turns.length ? (
+            <div className="empty-thread">
+              <Search size={38} />
+              <strong>No rounds match “{roundSearch.trim()}”</strong>
+              <span>Clear the search in the top bar to see all {turns.length} rounds again.</span>
+            </div>
           ) : (
             <div className="empty-thread">
               <ImageIcon size={38} />

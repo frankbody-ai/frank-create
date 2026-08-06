@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS, hardSignOut } from "./lib/supabaseClient";
 import { lovable } from "./lib/lovableAuth";
-import frankBodyLogo from "./assets/FrankBody_Logo.svg";
-import designStudioLogo from "./assets/Design_Studio.svg";
+import frankBodyLogo from "./assets/ds/frank.svg";
+import designStudioLogo from "./assets/ds/art-ificial-design-studio.svg";
 
 
 type Status = "loading" | "signed-out" | "denied" | "ready";

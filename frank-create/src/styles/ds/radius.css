@@ -1,0 +1,6 @@
+:root{
+--radius-hairline:2px;--radius-2xs:3px;--radius-xs:4px;--radius-sm:5px;--radius-md:6px;--radius-lg:10px;--radius-xl:12px;--radius-2xl:16px;--radius-3xl:18px;--radius-4xl:20px;--radius-card:24px;--radius-shell:32px;--radius-pill:99px;--radius-round:9999px;
+
+/* Named uses — copy these, do not re-derive. */
+--radius-glass-card:24px;--radius-dark-panel:24px;--radius-inner-panel:16px;--radius-app-tile:16px;--radius-business-card:20px;--radius-dialog:18px;--radius-avatar-well:12px;--radius-icon-badge:10px;--radius-paper-card:6px;--radius-field:4px;--radius-skeleton:2px;
+}
