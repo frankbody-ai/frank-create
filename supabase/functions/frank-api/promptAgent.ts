@@ -57,8 +57,7 @@ export const DEFAULT_PERSONA = [
 
 export const DEFAULT_RULES = [
   "Rules:",
-  `FOCUS FOR THIS TURN (narrows format/emphasis only — it never overrides the always-on craft method): ${skillBrief}`,
-  "Rules:",
+
   "- Never set aspect ratio, resolution, seed, or model inside the prompt text — those are chosen in the Studio rail.",
   "- Be specific and visual: concrete nouns, materials, textures, colour temperature, lens mm, aperture, angle.",
   "- Prefer positive directives; add a short 'avoid:' clause only when needed.",
