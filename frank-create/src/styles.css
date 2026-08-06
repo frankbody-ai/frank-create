@@ -6865,27 +6865,30 @@ input:focus, textarea:focus, select:focus {
 
 /* Reference picker modal */
 .reference-picker {
-  width: min(940px, 94vw);
-  max-height: 84vh;
+  width: min(1040px, 94vw);
+  max-height: 86vh;
   overflow: auto;
   background: var(--surface, #fff);
   border-radius: 18px;
-  padding: 28px;
+  padding: 20px 22px 22px;
   text-align: left;
+  display: block;
 }
 .reference-picker-header h3 {
-  margin: 0 0 4px;
-  font-size: 1.15rem;
+  margin: 0 0 2px;
+  font-size: 1.05rem;
 }
 .reference-picker-header p {
-  margin: 0 0 18px;
+  margin: 0 0 12px;
   opacity: 0.7;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 .reference-picker-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 14px;
+  width: 100%;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 10px;
+  align-content: start;
 }
 .reference-picker-upload,
 .reference-picker-card {
@@ -6894,10 +6897,10 @@ input:focus, textarea:focus, select:focus {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 150px;
-  padding: 14px;
-  border-radius: 14px;
+  gap: 4px;
+  min-height: 0;
+  padding: 10px;
+  border-radius: 12px;
   border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
   background: color-mix(in srgb, currentColor 4%, transparent);
   cursor: pointer;
@@ -6906,14 +6909,17 @@ input:focus, textarea:focus, select:focus {
 }
 .reference-picker-upload {
   border-style: dashed;
+  min-height: 126px;
 }
-.reference-picker-upload strong { font-size: 0.85rem; }
-.reference-picker-upload span { font-size: 0.7rem; opacity: 0.65; }
+.reference-picker-upload strong { font-size: 0.78rem; }
+.reference-picker-upload span { font-size: 0.65rem; opacity: 0.65; line-height: 1.3; }
 .reference-picker-card { padding: 0; }
 .reference-picker-card img {
   width: 100%;
-  height: 116px;
+  aspect-ratio: 1 / 1;
+  height: auto;
   object-fit: cover;
+  display: block;
 }
 .reference-picker-card-title {
   width: 100%;
@@ -7666,8 +7672,7 @@ body {
 .mask-painter-backdrop,
 .session-cancel-modal,
 .walkthrough-scrim,
-.inspector-scrim,
-.reference-picker {
+.inspector-scrim {
   background: rgba(0, 0, 0, 0.55);
 }
 
