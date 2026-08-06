@@ -3235,6 +3235,7 @@ export default function App() {
     <div
       className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${studioMode !== "preset-creator" && studioMode !== "prompt-generator" && studioMode !== "enhancer" && settingsRailOpen ? "settings-rail-open" : ""}`}
       data-provider-audit={providerAuditMode ? "open" : undefined}
+      data-tenant="frank"
     >
       <svg
         className="ambient-field"
@@ -3250,11 +3251,37 @@ export default function App() {
         </defs>
         <rect width="1280" height="832" fill="transparent" />
         <g filter="url(#ambient-blob-blur)">
-          <ellipse cx="180" cy="880" rx="620" ry="420" fill="#F7B3AB" />
-          <ellipse cx="640" cy="960" rx="540" ry="300" fill="#F9C0B9" />
+          <ellipse cx="180" cy="880" rx="620" ry="420" fill="var(--tenant-blob)" opacity="0.85" />
+          <ellipse cx="640" cy="960" rx="540" ry="300" fill="var(--tenant-blob-bottom)" />
         </g>
 
       </svg>
+
+      <header className="os-topbar" aria-label="AutoSolutions OS">
+        <div className="os-topbar-logo">
+          <img src={osLogo} alt="autosolutions OS" />
+        </div>
+        <div className="os-topbar-search">
+          <Search size={14} aria-hidden="true" />
+          <input
+            type="search"
+            value={roundSearch}
+            onChange={(event) => setRoundSearch(event.target.value)}
+            placeholder="Search sessions and picks"
+            aria-label="Search sessions and picks"
+          />
+        </div>
+        <div className="os-topbar-right">
+          <img className="os-tenant-mark" src={frankBodyLogo} alt="frank body" />
+          <span className="os-topbar-avatar" aria-hidden="true">
+            {(userEmail ?? "—").slice(0, 1).toUpperCase()}
+          </span>
+          <button type="button" className="os-topbar-signout" onClick={handleSignOut}>
+            Sign out
+          </button>
+        </div>
+      </header>
+
       {studioMode === "preset-creator" || studioMode === "prompt-generator" || studioMode === "enhancer" ? (
         <FeedbackWidget />
       ) : null}
