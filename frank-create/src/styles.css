@@ -8130,3 +8130,9 @@ body {
   border-color: rgba(255, 255, 255, 0.16) !important;
   color: rgba(255, 255, 255, 0.72) !important;
 }
+
+.studio-shell.guided-studio .thread-surface .compare-side-badge {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: var(--text-on-ink) !important;
+}
