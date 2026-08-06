@@ -3948,6 +3948,13 @@ export default function App() {
           data-tour-id="composer"
           data-tour-active={tourActive("composer")}
         >
+          <div className="brief-card-head" aria-hidden="true">
+            <span className="brief-card-eyebrow">Brief</span>
+            <span className="brief-card-meta">
+              {settings.aspect_ratio} · {settings.image_size} · {settings.count} pick{settings.count === 1 ? "" : "s"}
+            </span>
+          </div>
+
           {editSourceAsset ? (
             <div className="edit-banner">
               <ImageIcon size={16} />
