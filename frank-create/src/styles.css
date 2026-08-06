@@ -27,9 +27,6 @@
   text-rendering: optimizeLegibility;
 
   /* legacy aliases retargeted onto the real palette */
-  --frank-black: var(--ink);
-  --frank-white: var(--surface);
-  --frank-original-pink: var(--tenant-blob);
   --paper: var(--surface);
   --white: var(--surface);
   --shell: transparent;
