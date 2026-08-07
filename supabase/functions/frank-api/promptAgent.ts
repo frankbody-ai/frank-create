@@ -115,6 +115,7 @@ export const DEFAULT_SKILLS: PromptAgentSkill[] = Object.keys(DEFAULT_SKILL_BRIE
 export type PromptAgentConfig = {
   persona: string;
   craftMethod: string;
+  conversationProtocol: string;
   blueprint: string;
   rules: string;
   skills: PromptAgentSkill[];
@@ -124,6 +125,7 @@ export type PromptAgentConfig = {
 export const DEFAULT_CONFIG: PromptAgentConfig = {
   persona: DEFAULT_PERSONA,
   craftMethod: DEFAULT_CRAFT_METHOD,
+  conversationProtocol: DEFAULT_CONVERSATION_PROTOCOL,
   blueprint: DEFAULT_BLUEPRINT,
   rules: DEFAULT_RULES,
   skills: DEFAULT_SKILLS,
@@ -141,6 +143,9 @@ export async function loadPromptAgentConfig(db: any): Promise<PromptAgentConfig>
     if (cfg) {
       if (String(cfg.persona || "").trim()) out.persona = cfg.persona;
       if (String(cfg.craft_method || "").trim()) out.craftMethod = cfg.craft_method;
+      if (String((cfg as any).conversation_protocol || "").trim()) {
+        out.conversationProtocol = (cfg as any).conversation_protocol;
+      }
       if (String(cfg.blueprint || "").trim()) out.blueprint = cfg.blueprint;
       if (String((cfg as any).rules || "").trim()) out.rules = (cfg as any).rules;
       out.updatedAt = cfg.updated_at ?? null;
@@ -168,8 +173,10 @@ export function buildPromptAgentSystem(cfg: PromptAgentConfig, skillKey: string)
   return [
     cfg.persona,
     cfg.craftMethod,
+    cfg.conversationProtocol || DEFAULT_CONVERSATION_PROTOCOL,
     cfg.blueprint,
-    `FOCUS FOR THIS TURN (narrows format/emphasis only \u2014 it never overrides the always-on craft method): ${brief}`,
+    `FOCUS FOR THIS TURN (narrows format/emphasis only \u2014 it never overrides the always-on craft method or the conversation protocol): ${brief}`,
     cfg.rules,
   ].join("\n");
 }
+
