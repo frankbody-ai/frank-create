@@ -4132,16 +4132,15 @@ export default function App() {
                           </span>
                         );
                       })()}
-                      {turn.provider_request_json ? (
-                        <button
-                          type="button"
-                          className="turn-chip-json"
-                          onClick={() => setPayloadTurnId(turn.id)}
-                          title="Show the JSON body sent to the provider"
-                        >
-                          JSON
-                        </button>
-                      ) : null}
+                      <button
+                        type="button"
+                        className="turn-chip-json"
+                        onClick={() => setPayloadTurnId(turn.id)}
+                        title="Show the JSON body sent to the provider"
+                      >
+                        JSON
+                      </button>
+
 
                       <button
                         type="button"
