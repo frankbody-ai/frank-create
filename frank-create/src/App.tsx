@@ -394,6 +394,9 @@ export default function App() {
   const [referencePreviewAsset, setReferencePreviewAsset] = useState<Asset | null>(null);
   const [referenceDropActive, setReferenceDropActive] = useState(false);
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
+  // Turn whose provider request body is being inspected via the JSON chip.
+  const [payloadTurnId, setPayloadTurnId] = useState<string | null>(null);
+
   const [referenceLibrary, setReferenceLibrary] = useState<Asset[]>([]);
   const [referencePickerSelection, setReferencePickerSelection] = useState<string[]>([]);
   const [referencePickerBusy, setReferencePickerBusy] = useState(false);
@@ -3982,6 +3985,32 @@ export default function App() {
                       {timeLabel ? <span title={timeLabel}>{timeLabel}</span> : null}
                       <span>{turn.status}</span>
                       {turn.frank_body_mode ? <span>Frank Body Mode</span> : <span>User prompt</span>}
+                      {turnAspect(turn) ? <span className="turn-chip-aspect">{formatAspectChip(turnAspect(turn))}</span> : null}
+                      {(() => {
+                        // Real returned pixel size, read from the delivered file.
+                        const sizes = Array.from(new Set(
+                          displayOutputAssets
+                            .filter((a) => a.turn_id === turn.id && a.width && a.height)
+                            .map((a) => `${a.width} × ${a.height}`),
+                        ));
+                        if (!sizes.length) return null;
+                        return (
+                          <span className="turn-chip-resolution" title="Resolution returned by the provider">
+                            {sizes.join(" · ")}
+                          </span>
+                        );
+                      })()}
+                      {turn.provider_request_json ? (
+                        <button
+                          type="button"
+                          className="turn-chip-json"
+                          onClick={() => setPayloadTurnId(turn.id)}
+                          title="Show the JSON body sent to the provider"
+                        >
+                          JSON
+                        </button>
+                      ) : null}
+
                       <button
                         type="button"
                         className="turn-copy-prompt"
@@ -4613,7 +4642,15 @@ export default function App() {
               <XCircle size={18} />
             </button>
             <AssetPreviewMedia asset={lightboxAsset} fallbackIconSize={42} controls />
+            <div className="lightbox-meta">
+              {lightboxAsset.aspect_ratio ? <span>{formatAspectChip(lightboxAsset.aspect_ratio)}</span> : null}
+              {lightboxAsset.width && lightboxAsset.height ? (
+                <span title="Resolution returned by the provider">{lightboxAsset.width} × {lightboxAsset.height}</span>
+              ) : null}
+              {lightboxAsset.model ? <span>{modelName(config, lightboxAsset.model)}</span> : null}
+            </div>
             <div className="lightbox-actions">
+
               <button
                 type="button"
                 onClick={() => {
@@ -4775,6 +4812,45 @@ export default function App() {
         </div>,
         document.body
       ) : null}
+
+      {payloadTurnId ? createPortal(
+        <div
+          className="payload-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setPayloadTurnId(null)}
+        >
+          <div className="payload-modal" onClick={(event) => event.stopPropagation()}>
+            <header className="payload-modal-header">
+              <div>
+                <p className="eyebrow">Provider request</p>
+                <h3>JSON sent to the model</h3>
+              </div>
+              <div className="payload-modal-actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const body = formatProviderPayload(turns.find((t) => t.id === payloadTurnId));
+                    void navigator.clipboard?.writeText(body).then(() => {
+                      setStatusText("Provider JSON copied to clipboard.");
+                    }).catch(() => setStatusText("Could not copy the JSON."));
+                  }}
+                >
+                  <Clipboard size={14} />
+                  Copy
+                </button>
+                <button type="button" onClick={() => setPayloadTurnId(null)} aria-label="Close JSON view">
+                  <XCircle size={18} />
+                </button>
+              </div>
+            </header>
+            <pre className="payload-modal-body">{formatProviderPayload(turns.find((t) => t.id === payloadTurnId))}</pre>
+          </div>
+        </div>,
+        document.body
+      ) : null}
+
+
 
       {referencePreviewAsset ? (
         <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setReferencePreviewAsset(null)}>
@@ -5461,7 +5537,25 @@ function turnExpectedCount(turn: StudioTurn) {
   return Number.isFinite(raw) && raw > 0 ? Math.min(24, Math.floor(raw)) : 1;
 }
 
+/** Human label for the aspect chip; passes through provider enums like "match_input_image". */
+function formatAspectChip(value: string) {
+  if (!value) return "";
+  if (/^\d+(\.\d+)?\s*:\s*\d+(\.\d+)?$/.test(value)) return value.replace(/\s+/g, "");
+  return value.replace(/[_-]+/g, " ").toLowerCase();
+}
+
+/** Pretty-print the stored provider request body for the JSON chip modal. */
+function formatProviderPayload(turn?: StudioTurn) {
+  if (!turn?.provider_request_json) return "No request body was captured for this round.";
+  try {
+    return JSON.stringify(JSON.parse(turn.provider_request_json), null, 2);
+  } catch {
+    return turn.provider_request_json;
+  }
+}
+
 function turnAspect(turn: StudioTurn) {
+
   const parsed = parseJsonRecord(turn.settings_json) as { aspect_ratio?: unknown };
   return typeof parsed.aspect_ratio === "string" ? parsed.aspect_ratio : "";
 }
@@ -5534,6 +5628,12 @@ function OutputStrip({
               <AssetPreviewMedia asset={asset} fallbackIconSize={24} variant="thumb" />
               <span>{assetStatusCopy(status)}</span>
             </button>
+            {asset.width && asset.height ? (
+              <span className="output-tile-resolution" title="Resolution returned by the provider">
+                {asset.width} × {asset.height}
+              </span>
+            ) : null}
+
             {(onQuickApprove || onQuickReject) && asset.kind !== "reference" && asset.kind !== "mask" ? (
               <div className="output-tile-quick" onClick={(e) => e.stopPropagation()}>
                 {onQuickApprove ? (
