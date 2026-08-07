@@ -5532,18 +5532,8 @@ function OutputStrip({
                 ) : null}
               </div>
             ) : null}
-            {onUseAsFrame && asset.media_type !== "video" && asset.kind !== "mask" ? (
-              <div className="output-tile-frames" onClick={(e) => e.stopPropagation()}>
-                <button type="button" onClick={() => onUseAsFrame(asset, "first")} title="Use as first frame">
-                  first frame
-                </button>
-                {canUseLastFrame ? (
-                  <button type="button" onClick={() => onUseAsFrame(asset, "last")} title="Use as last frame">
-                    last frame
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
+          </div>
+
           </div>
         );
       })}
