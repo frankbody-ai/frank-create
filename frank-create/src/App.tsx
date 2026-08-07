@@ -6417,10 +6417,14 @@ function providerUnlockPriority(model: StudioModel) {
     "google-nb-pro": 1,
     "google-nb-2": 1,
     "openai-gpt-image-2": 2,
-    "riverflow-2-pro": 2,
-    "reve-2-1": 3,
-    "mai-image-2-5": 3,
-    "seedream-5-pro": 3
+    "seedream-4-5": 2,
+    "flux-2-pro": 2,
+    "flux-2-max": 3,
+    "riverflow-2-5-pro": 3,
+    "qwen-image-3-pro": 3,
+    "krea-2-large": 3,
+    "mai-image-2-5-pro": 3,
+    "grok-imagine-image": 3
   };
 
   return priorities[model.id] ?? 99;
