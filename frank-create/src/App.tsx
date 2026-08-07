@@ -5395,11 +5395,23 @@ function isPlayableVideoAsset(asset: Asset) {
   return /\.(mp4|webm|mov|m4v)(?:$|[?#\s&])/.test(haystack) || /filename=[^&\s]+\.(mp4|webm|mov|m4v)/.test(haystack);
 }
 
+function turnExpectedCount(turn: StudioTurn) {
+  const parsed = parseJsonRecord(turn.settings_json) as { count?: unknown };
+  const raw = Number(parsed.count);
+  return Number.isFinite(raw) && raw > 0 ? Math.min(24, Math.floor(raw)) : 1;
+}
+
+function turnAspect(turn: StudioTurn) {
+  const parsed = parseJsonRecord(turn.settings_json) as { aspect_ratio?: unknown };
+  return typeof parsed.aspect_ratio === "string" ? parsed.aspect_ratio : "";
+}
+
 function OutputStrip({
   assets,
   emptyLabel = "Waiting for provider output",
   pending = false,
   pendingCount = 1,
+  pendingAspect,
   selectedAssetId,
   onSelect,
   onQuickApprove,
@@ -5411,6 +5423,7 @@ function OutputStrip({
   emptyLabel?: string;
   pending?: boolean;
   pendingCount?: number;
+  pendingAspect?: string;
   selectedAssetId?: string;
   onSelect: (asset: Asset) => void;
   onQuickApprove?: (asset: Asset) => void;
@@ -5418,21 +5431,7 @@ function OutputStrip({
   onUseAsFrame?: (asset: Asset, slot: "first" | "last") => void;
   canUseLastFrame?: boolean;
 }) {
-  if (!assets.length && pending) {
-    return (
-      <div className="output-grid">
-        {Array.from({ length: Math.max(1, Math.min(4, pendingCount)) }).map((_, index) => (
-          <div className="output-skeleton" key={`pending-${index}`}>
-            <span className="output-skeleton-shimmer" aria-hidden="true" />
-            <span className="output-skeleton-spinner" aria-hidden="true" />
-            {index === 0 ? <span className="output-skeleton-label">{emptyLabel}</span> : null}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (!assets.length) {
+  if (!assets.length && !pending) {
     return (
       <div className="output-placeholder">
         <RefreshCw size={18} />
@@ -5441,9 +5440,18 @@ function OutputStrip({
     );
   }
 
+  const aspectParts = pendingAspect ? aspectRatioParts(pendingAspect) : null;
+  const fallbackAsset = assets.find((asset) => asset.width && asset.height);
+  const pendingRatio = aspectParts
+    ? `${aspectParts.width} / ${aspectParts.height}`
+    : fallbackAsset
+      ? `${fallbackAsset.width} / ${fallbackAsset.height}`
+      : "1 / 1";
+  const skeletonCount = pending ? Math.max(0, Math.min(24, pendingCount) - assets.length) : 0;
 
   return (
     <div className="output-grid">
+
       {assets.map((asset) => {
         const ratio = asset.width && asset.height ? `${asset.width} / ${asset.height}` : undefined;
         const status = asset.approval_status ?? "review";
