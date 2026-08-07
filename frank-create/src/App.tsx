@@ -4065,6 +4065,33 @@ export default function App() {
                 </span>
               )}
             </div>
+            {referenceAssets.length ? (
+              <p className="reference-tag-hint">
+                Reference tags:{" "}
+                {taggedReferences(referenceAssets).map((ref, i) => (
+                  <span key={ref.tag}>
+                    {i ? ", " : ""}
+                    <button
+                      type="button"
+                      className="reference-tag-hint-chip"
+                      onMouseEnter={() => setHoveredReferenceTag(ref.tag)}
+                      onMouseLeave={() => setHoveredReferenceTag(null)}
+                      onClick={() => insertReferenceTag(ref.tag)}
+                    >
+                      {ref.tag}
+                    </button>{" "}
+                    {ref.title}
+                  </span>
+                ))}
+                {" "}— use them in the prompt to point at one image.
+                {unknownReferenceTags(prompt, referenceAssets.length).length ? (
+                  <strong className="reference-tag-hint-warn">
+                    {" "}Unknown tag{unknownReferenceTags(prompt, referenceAssets.length).length === 1 ? "" : "s"}:{" "}
+                    {unknownReferenceTags(prompt, referenceAssets.length).join(", ")}
+                  </strong>
+                ) : null}
+              </p>
+            ) : null}
             {editSourceAsset && selectedModel?.capabilities.masked_edit ? (
               <>
                 <button className="upload-button mask-paint-button" type="button" onClick={() => setMaskPainterAsset(editSourceAsset)}>
