@@ -6944,8 +6944,9 @@ input:focus, textarea:focus, select:focus {
 .reference-picker-count { font-size: 0.72rem; opacity: 0.75; }
 .reference-picker-count em { font-style: normal; opacity: 0.9; }
 .reference-picker-footer-actions { display: flex; align-items: center; gap: 8px; }
-
+.reference-picker-empty {
   grid-column: 1 / -1;
+
   padding: 24px;
   font-size: 0.82rem;
   opacity: 0.7;
