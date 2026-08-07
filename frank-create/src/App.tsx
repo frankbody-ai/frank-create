@@ -4412,6 +4412,38 @@ export default function App() {
               ) : null}
             </p>
           ) : null}
+          {(() => {
+            const videoActive = mediaKind === "video" || (mediaKind === "compare" && compareMedia === "video");
+            if (!videoActive) return null;
+            const vModel = isVideoModel(selectedModel) ? selectedModel : null;
+            const refs = referenceAssets.length;
+            const endFrames = Boolean(vModel?.supports_last_frame);
+            let note: React.ReactNode;
+            if (endFrames) {
+              note = refs === 0
+                ? "Add 1 reference to animate from it, or 2 to set a start and end frame."
+                : refs === 1
+                  ? "Starts on @ref1. Add a second reference to set the end frame."
+                  : <>Starts on <strong>@ref1</strong>, ends on <strong>@ref2</strong>.</>;
+            } else if (refs > 0) {
+              note = <>Image-to-video from <strong>@ref1</strong>.</>;
+            } else if (vModel?.requires_source_image) {
+              note = "This model needs one reference image — add one to run.";
+            } else {
+              note = "No references — text-to-video.";
+            }
+            return (
+              <p className="video-frame-note">
+                {note}
+                {endFrames && refs > 1 ? (
+                  <button type="button" className="video-frame-swap" onClick={swapFrameOrder}>
+                    Swap
+                  </button>
+                ) : null}
+              </p>
+            );
+          })()}
+
         </form>
 
 
