@@ -200,9 +200,11 @@ export function StudioRail(props: StudioRailProps) {
                 <option value="">— Pick a second model —</option>
                 {models.filter((item) => item.id !== model?.id).map((item) => {
                   const rate = modelRateLabel(item);
+                  const cost = modelCostBadge(item);
                   return (
                     <option key={item.id} value={item.id} disabled={item.status === "disabled"}>
                       {(item.short_label ?? item.label)
+                        + (cost ? `  ${cost}` : "")
                         + (rate ? ` — ${rate}` : "")
                         + (item.status === "disabled" ? " (soon)" : item.degraded ? " (provider issue)" : "")}
                     </option>
