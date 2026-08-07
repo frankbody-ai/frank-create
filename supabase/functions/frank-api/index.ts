@@ -420,7 +420,10 @@ async function handleVideo(body: any, userId: string) {
 
   let videoUrl: string | undefined;
   try {
-    const input = buildVideoInput(slug, prompt, {
+    const videoProviderPrompt = typeof body.provider_prompt === "string" && body.provider_prompt.trim()
+      ? body.provider_prompt.trim()
+      : prompt;
+    const input = buildVideoInput(slug, videoProviderPrompt, {
       aspect_ratio: reqSettings.aspect_ratio,
       duration: Number(reqSettings.duration ?? 5),
       resolution: reqSettings.video_resolution || reqSettings.image_size,
