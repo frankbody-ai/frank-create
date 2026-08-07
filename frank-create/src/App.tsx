@@ -3818,7 +3818,12 @@ export default function App() {
               </button>
             </div>
           ) : null}
-          {inflightGens.length ? inflightGens.slice().reverse().map((gen) => {
+          {(() => {
+            // Once the backend has a queued/running round of its own, that round card
+            // IS the loading state — never show a second local card for the same run.
+            const hasLiveTurn = turns.some((t) => t.status === "queued" || t.status === "running");
+            if (hasLiveTurn || !inflightGens.length) return null;
+            return inflightGens.slice().reverse().map((gen) => {
             const p = aspectRatioParts(gen.aspect);
             const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
             return (
@@ -3840,19 +3845,15 @@ export default function App() {
                 </div>
                 </div>
                 <div className="turn-visual">
-                <div className="pending-strip" style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(gen.count, 3)}, minmax(0, 1fr))`, gap: 12 }}>
+                <div className="output-grid">
                   {Array.from({ length: gen.count }).map((_, i) => (
                     <div
+                      className="output-skeleton"
                       key={i}
-                      className="pending-tile"
-                      style={{
-                        aspectRatio: ar,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        borderRadius: 12, border: "1px dashed rgba(0,0,0,0.15)",
-                        background: "rgba(0,0,0,0.03)",
-                      }}
+                      style={{ ["--asset-aspect" as string]: ar } as React.CSSProperties}
                     >
-                      <Loader2 size={22} className="spin" style={{ opacity: 0.6 }} />
+                      <span className="output-skeleton-shimmer" aria-hidden="true" />
+                      <span className="output-skeleton-spinner" aria-hidden="true" />
                     </div>
                   ))}
                 </div>
@@ -3861,7 +3862,9 @@ export default function App() {
 
               </article>
             );
-          }) : null}
+          });
+          })()}
+
 
           {searchedTurns.length ? (
             groupCompareRows([...searchedTurns].reverse()).map((row, rowIdx) => (
