@@ -8800,3 +8800,42 @@ body {
     row-gap: 4px;
   }
 }
+
+/* ── Small screen gate ─────────────────────────────────────────── */
+.small-screen-notice { display: none; }
+@media (max-width: 1023px) {
+  .small-screen-notice {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: var(--surface-app, #f7f4f2);
+  }
+  .small-screen-notice-card {
+    max-width: 420px;
+    width: 100%;
+    display: grid;
+    gap: 12px;
+    text-align: center;
+    padding: 28px 24px;
+    border-radius: 20px;
+    border: 1px solid var(--line-soft, rgba(0,0,0,0.08));
+    background: var(--surface-card, #fff);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
+  }
+  .small-screen-notice-eyebrow,
+  .small-screen-notice-foot {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted, #6b6b6b);
+  }
+  .small-screen-notice-card h2 { margin: 0; font-size: 22px; line-height: 1.2; }
+  .small-screen-notice-card p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-muted, #6b6b6b); }
+  body > #root { display: none; }
+  body > #root:has(.small-screen-notice) { display: block; }
+  #root > *:not(.small-screen-notice) { display: none !important; }
+}
+
