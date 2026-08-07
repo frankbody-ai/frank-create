@@ -11,6 +11,7 @@ import { CliffAccessPage } from "./components/CliffAccessPage";
 import { AdminFeedbackPage } from "./components/AdminFeedbackPage";
 import { AdminPortal } from "./components/AdminPortal";
 import { FeedbackWidget } from "./components/FeedbackWidget";
+import { SmallScreenNotice } from "./components/SmallScreenNotice";
 import { installErrorReporter } from "./lib/errorReporter";
 import "./styles.css";
 
@@ -72,6 +73,7 @@ function Router() {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
+    <SmallScreenNotice />
     <StatusBanner />
     <ErrorToast />
     <Router />

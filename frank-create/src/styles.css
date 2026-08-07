@@ -8834,8 +8834,6 @@ body {
   }
   .small-screen-notice-card h2 { margin: 0; font-size: 22px; line-height: 1.2; }
   .small-screen-notice-card p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-muted, #6b6b6b); }
-  body > #root { display: none; }
-  body > #root:has(.small-screen-notice) { display: block; }
   #root > *:not(.small-screen-notice) { display: none !important; }
 }
 
