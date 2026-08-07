@@ -451,6 +451,8 @@ async function handleVideo(body: any, userId: string) {
   };
 
   let videoUrl: string | undefined;
+  let providerRequest: unknown = null;
+  let returnedSize: { width?: number; height?: number } = {};
   try {
     const videoProviderPrompt = typeof body.provider_prompt === "string" && body.provider_prompt.trim()
       ? body.provider_prompt.trim()
@@ -468,6 +470,8 @@ async function handleVideo(body: any, userId: string) {
       firstFrameUrl,
       lastFrameUrl,
       referenceUrls: firstFrameUrl ? [] : sourceUrls,
+      onRequest: (record) => { providerRequest = record; },
+      onMeta: (meta) => { returnedSize = meta; },
     });
   } catch (err) {
     const mapped = mapReplicateError(err);
@@ -501,6 +505,8 @@ async function handleVideo(body: any, userId: string) {
       aspect_ratio: reqSettings.aspect_ratio,
       duration: reqSettings.duration ?? null,
       resolution: reqSettings.video_resolution ?? null,
+      bytes: bytes.byteLength,
+      ...(returnedSize.width && returnedSize.height ? { width: returnedSize.width, height: returnedSize.height } : {}),
     },
   }).select().single();
   if (assetIns.error) return await failTurn("db_failed", assetIns.error.message);
@@ -510,7 +516,9 @@ async function handleVideo(body: any, userId: string) {
     status: "complete",
     output_asset_ids: [assetId],
     requested_count: 1,
+    provider_request: providerRequest,
   };
+
   await sb.from("messages").update({ settings_snapshot_json: completedSnapshot }).eq("id", turnId);
 
   return {
