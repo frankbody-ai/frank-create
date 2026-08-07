@@ -107,6 +107,8 @@ export interface StudioModel {
   price_flat?: number;
   /** Video-only: exact USD prices keyed as `${duration}@${resolution}`. */
   price_table?: Record<string, number>;
+  /** Image-only: relative cost band, 1 ($) to 3 ($$$). */
+  cost_tier?: 1 | 2 | 3;
   /** Relative price band, drives the Cheapest / Premium badges. */
   price_tier?: "cheapest" | "standard" | "premium";
   configured?: boolean;
