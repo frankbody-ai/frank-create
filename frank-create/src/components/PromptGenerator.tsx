@@ -41,6 +41,55 @@ function extractPrompts(text: string): string[] {
   return blocks;
 }
 
+type AgentPhase = "discovery" | "final" | "unknown";
+
+/**
+ * The agent labels every reply with DISCOVERY or FINAL PROMPT on the first line
+ * (see the conversation protocol in the prompt agent config). We read that label
+ * to decide whether a reply is a question round or the deliverable, then strip it
+ * so the user never sees the marker.
+ */
+function parseAgentReply(content: string): { phase: AgentPhase; body: string } {
+  const trimmed = content.trim();
+  const firstBreak = trimmed.indexOf("\n");
+  const head = (firstBreak === -1 ? trimmed : trimmed.slice(0, firstBreak)).trim();
+  const normalized = head.replace(/[*_#`:—-]/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
+  const rest = (firstBreak === -1 ? "" : trimmed.slice(firstBreak + 1)).trim();
+  if (normalized === "DISCOVERY") return { phase: "discovery", body: rest || trimmed };
+  if (normalized === "FINAL PROMPT" || normalized === "FINAL") return { phase: "final", body: rest || trimmed };
+  // Unlabelled reply: a fenced block means it delivered a prompt.
+  return { phase: extractPrompts(trimmed).length ? "final" : "unknown", body: trimmed };
+}
+
+/** Renders the reply body, pulling numbered question runs out into a real list. */
+function AgentBody({ text }: { text: string }) {
+  const lines = text.split("\n");
+  const chunks: { type: "text" | "list"; lines: string[] }[] = [];
+  for (const line of lines) {
+    const isItem = /^\s*\d+[.)]\s+\S/.test(line);
+    const last = chunks[chunks.length - 1];
+    const type = isItem ? "list" : "text";
+    if (last && last.type === type) last.lines.push(line);
+    else chunks.push({ type, lines: [line] });
+  }
+  return (
+    <div className="prompt-agent-msg-body">
+      {chunks.map((chunk, index) =>
+        chunk.type === "list" ? (
+          <ol className="prompt-agent-questions" key={index}>
+            {chunk.lines.map((line, i) => (
+              <li key={i}>{line.replace(/^\s*\d+[.)]\s+/, "")}</li>
+            ))}
+          </ol>
+        ) : (
+          <p key={index}>{chunk.lines.join("\n").trim()}</p>
+        )
+      )}
+    </div>
+  );
+}
+
+
 export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const [skill, setSkill] = useState("brief-to-prompt");
   const [SKILLS, setSkills] = useState(FALLBACK_SKILLS);
