@@ -4165,9 +4165,34 @@ export default function App() {
                         <Clipboard size={12} />
                         Copy prompt
                       </button>
-                      {parseJsonList(turn.reference_asset_ids_json).length ? (
-                        <span>{referenceCountLabel(parseJsonList(turn.reference_asset_ids_json).length)}</span>
-                      ) : null}
+                      {(() => {
+                        const refIds = parseJsonList(turn.reference_asset_ids_json);
+                        if (!refIds.length) return null;
+                        return (
+                          <span className="turn-ref-strip" title={referenceCountLabel(refIds.length)}>
+                            {refIds.map((refId, refIndex) => {
+                              const refAsset = assets.find((a) => a.id === refId);
+                              const tag = referenceTagFor(refIndex);
+                              return (
+                                <span
+                                  key={`${turn.id}-${refId}`}
+                                  className="turn-ref-thumb"
+                                  title={`${tag} · ${refAsset?.title ?? "reference"}`}
+                                  onClick={() => { if (refAsset) setReferencePreviewAsset(refAsset); }}
+                                  role={refAsset ? "button" : undefined}
+                                >
+                                  {refAsset?.preview_url ? (
+                                    <img src={refAsset.preview_url} alt={refAsset.title} loading="lazy" />
+                                  ) : (
+                                    <Paperclip size={12} />
+                                  )}
+                                </span>
+                              );
+                            })}
+                          </span>
+                        );
+                      })()}
+
                       {turnErrorCopy(turn) ? <span className="turn-error">{turnErrorCopy(turn)}</span> : null}
 
                       {(() => {
