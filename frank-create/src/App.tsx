@@ -395,8 +395,8 @@ export default function App() {
   const [referenceDropActive, setReferenceDropActive] = useState(false);
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
   const [referenceLibrary, setReferenceLibrary] = useState<Asset[]>([]);
-  const [referenceUploads, setReferenceUploads] = useState<Asset[]>([]);
   const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
+
   useEffect(() => {
     if (!referencePickerOpen) return;
     const previous = document.body.style.overflow;
