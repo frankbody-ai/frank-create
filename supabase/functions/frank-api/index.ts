@@ -1126,19 +1126,23 @@ async function handleInference(body: any, userId: string) {
     const openrouterModel = OPENROUTER_IMAGE_MAP[modelId];
     const replicateSlug = openrouterModel ? undefined : REPLICATE_MAP[modelId];
     if (openrouterModel) {
-      // Primary path: OpenRouter chat/completions with image modality.
+      // Primary path: OpenRouter's dedicated /v1/images endpoint. Models that
+      // support n>1 get one call; the rest are fanned out in parallel.
+      const nativeN = OPENROUTER_NATIVE_N.has(openrouterModel);
+      const calls = nativeN ? 1 : count;
       const results = await Promise.allSettled(
-        Array.from({ length: count }, () =>
+        Array.from({ length: calls }, () =>
           openrouterImage(providerPrompt, refUrls, {
             model: openrouterModel,
             aspectRatio: reqSettings.aspect_ratio,
             size: reqSettings.image_size || reqSettings.size,
-            thinkingBudget: Number(reqSettings.thinking_budget ?? body.thinking_budget ?? 0),
+            quality: reqSettings.quality,
+            n: nativeN ? count : 1,
           })
         )
       );
       for (const result of results) {
-        if (result.status === "fulfilled") generatedImages.push(result.value);
+        if (result.status === "fulfilled") generatedImages.push(...result.value);
         else {
           const m = mapReplicateError(result.reason);
           partialErrors.push({ code: m.code, message: m.message, retryable: m.retryable, status: m.status });
@@ -1149,6 +1153,7 @@ async function handleInference(body: any, userId: string) {
         throw first?.reason ?? new ProviderRunError("OpenRouter returned no images.", "provider_error", true);
       }
     } else if (replicateSlug) {
+
 
       const replicateKey = getReplicateGatewayKey();
       if (!replicateKey) throw new Error("Replicate is not connected for this model yet.");
