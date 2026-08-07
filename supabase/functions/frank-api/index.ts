@@ -697,7 +697,10 @@ async function handleEnhance(body: any, userId: string) {
       enhanced: true,
       source_asset_id: sourceAssetId ?? null,
       enhance_settings: reqSettings,
+      bytes: bytes.byteLength,
+      ...(media === "image" ? (imageDimensions(bytes, mime) ?? {}) : {}),
     },
+
   }).select().single();
   if (assetIns.error) return await failTurn("db_failed", assetIns.error.message);
 
