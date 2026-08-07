@@ -2645,6 +2645,7 @@ export default function App() {
         prompt,
         aspect: videoSettings.aspect_ratio,
         count: 1,
+        startedAt: Date.now(),
       },
     ]);
     const finishVideoInflight = () =>
