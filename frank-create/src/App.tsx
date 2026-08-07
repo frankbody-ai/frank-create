@@ -1813,6 +1813,71 @@ export default function App() {
     });
   }
 
+  const mentionOptions = (() => {
+    const options = taggedReferences(referenceAssets).map((ref) => {
+      const asset = referenceAssets[Number(ref.tag.replace(/\D/g, "")) - 1];
+      return { tag: ref.tag, title: ref.title, preview: asset?.preview_url ?? null };
+    });
+    if (videoFirstFrame)
+      options.push({ tag: "@first", title: videoFirstFrame.title, preview: videoFirstFrame.preview_url ?? null });
+    if (videoLastFrame)
+      options.push({ tag: "@last", title: videoLastFrame.title, preview: videoLastFrame.preview_url ?? null });
+    return options;
+  })();
+
+  const mentionSuggestions = mentionState
+    ? mentionOptions.filter((option) => {
+        const q = mentionState.query.toLowerCase();
+        if (!q) return true;
+        return option.tag.slice(1).toLowerCase().startsWith(q) || option.title.toLowerCase().includes(q);
+      })
+    : [];
+  const mentionOpen = Boolean(mentionState) && (mentionSuggestions.length > 0 || mentionOptions.length === 0);
+  const activeMention = mentionOpen ? mentionSuggestions[Math.min(mentionIndex, mentionSuggestions.length - 1)] : undefined;
+
+  function detectMention(value: string, caret: number) {
+    const before = value.slice(0, caret);
+    const match = /(?:^|\s)@([A-Za-z0-9_]*)$/.exec(before);
+    if (!match) return null;
+    const query = match[1] ?? "";
+    return { start: caret - query.length - 1, query };
+  }
+
+  function syncMention(value: string, caret: number | null) {
+    const next = caret == null ? null : detectMention(value, caret);
+    setMentionState(next);
+    setMentionIndex(0);
+  }
+
+  function closeMention() {
+    setMentionState(null);
+    setMentionIndex(0);
+  }
+
+  function applyMention(tag: string) {
+    if (!mentionState) {
+      insertReferenceTag(tag);
+      return;
+    }
+    const el = promptInputRef.current;
+    const caret = el ? (el.selectionStart ?? prompt.length) : prompt.length;
+    const before = prompt.slice(0, mentionState.start);
+    const after = prompt.slice(caret);
+    const insert = `${tag}${after.startsWith(" ") ? "" : " "}`;
+    const nextCaret = before.length + insert.length;
+    setPrompt(`${before}${insert}${after}`);
+    closeMention();
+    setHoveredReferenceTag(null);
+    requestAnimationFrame(() => {
+      const node = promptInputRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(nextCaret, nextCaret);
+    });
+  }
+
+
+
   function removeReferenceFromDock(asset: Asset) {
     detachReferences([asset], true);
     setStatusText(`${asset.title} removed from references.`);
