@@ -8878,3 +8878,29 @@ body {
 .oauth-consent__primary:disabled,
 .oauth-consent__secondary:disabled { opacity: 0.55; cursor: not-allowed; }
 .oauth-consent__error { margin: 0; font-size: 13px; color: #ff8b8b; }
+
+.turn-ref-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.turn-ref-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--white);
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.turn-ref-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
