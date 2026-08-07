@@ -329,7 +329,7 @@ const OPENROUTER_VIDEO_MAP: Record<string, VideoCaps> = {
     minDuration: 3, maxDuration: 15, defaultDuration: 5,
   },
   "happyhorse-1-0": {
-    model: "alibaba/happyhorse-1.1",
+    model: "alibaba/happyhorse-1.0",
     resolutions: ["720p", "1080p"],
     defaultResolution: "1080p",
     aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9", "9:21"],
