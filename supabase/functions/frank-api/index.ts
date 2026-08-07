@@ -65,8 +65,79 @@ async function requireUser(req: Request): Promise<string> {
 }
 
 async function signed(path: string): Promise<string> {
+  if (!path) return "";
   const { data } = await supabase().storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24);
   return data?.signedUrl ?? "";
+}
+
+// The backend caps stored objects at 20 MB. Anything larger (4K video, big
+// upscales) still has a usable provider URL, so we keep the asset row and fall
+// back to that temporary URL instead of failing the whole run.
+const MAX_STORAGE_BYTES = 20 * 1024 * 1024;
+
+function isStorageSizeError(message: string): boolean {
+  const m = (message || "").toLowerCase();
+  return m.includes("exceeds the maximum allowed size") ||
+    m.includes("maximum allowed size") ||
+    m.includes("payload too large") ||
+    m.includes("entity too large") ||
+    m.includes("413");
+}
+
+type StoredResult = {
+  /** Metadata to merge into the asset row. */
+  meta: Record<string, unknown>;
+  /** True when the bytes are permanently stored. */
+  stored: boolean;
+};
+
+/**
+ * Upload bytes to storage, or fall back to the provider's temporary URL when
+ * the file is over the storage size cap. Throws only when neither works.
+ */
+async function storeOrFallback(args: {
+  storagePath: string;
+  bytes: Uint8Array;
+  mime: string;
+  /** Temporary provider URL used when the bytes cannot be stored. */
+  remoteUrl?: string;
+}): Promise<StoredResult> {
+  const sb = supabase();
+  const remote = (args.remoteUrl || "").startsWith("http") ? args.remoteUrl! : "";
+  const tooBig = args.bytes.byteLength > MAX_STORAGE_BYTES;
+
+  if (!tooBig) {
+    const up = await sb.storage.from(BUCKET).upload(args.storagePath, args.bytes, {
+      contentType: args.mime, upsert: false,
+    });
+    if (!up.error) return { meta: {}, stored: true };
+    const message = up.error.message || "Upload failed";
+    if (!isStorageSizeError(message) || !remote) throw up.error;
+    return {
+      stored: false,
+      meta: {
+        storage_missing: true,
+        storage_skip_reason: message,
+        remote_url: remote,
+        remote_url_expires: true,
+      },
+    };
+  }
+
+  if (!remote) {
+    throw new Error(
+      `File is ${(args.bytes.byteLength / 1048576).toFixed(1)} MB, over the 20 MB storage limit, and the provider gave no temporary URL.`,
+    );
+  }
+  return {
+    stored: false,
+    meta: {
+      storage_missing: true,
+      storage_skip_reason: `File is ${(args.bytes.byteLength / 1048576).toFixed(1)} MB, over the 20 MB storage limit.`,
+      remote_url: remote,
+      remote_url_expires: true,
+    },
+  };
 }
 
 const DEFAULT_MODEL = {
