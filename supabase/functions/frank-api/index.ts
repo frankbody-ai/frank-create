@@ -186,6 +186,9 @@ function rowToAsset(row: any, signedUrl = ""): any {
     remote_url: signedUrl,
     width: meta.width,
     height: meta.height,
+    aspect_ratio: meta.aspect_ratio ?? undefined,
+    bytes: meta.bytes ?? undefined,
+
     favorite: !!meta.favorite,
     approval_status: meta.approval_status || "review",
     notes: meta.notes,
