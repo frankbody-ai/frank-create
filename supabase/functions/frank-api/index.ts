@@ -991,7 +991,7 @@ function imageDimensions(bytes: Uint8Array, mime = ""): { width: number; height:
 async function openrouterImage(
   prompt: string,
   referenceImageUrls: string[] = [],
-  opts: { model: string; aspectRatio?: string; size?: string; quality?: string; n?: number } = { model: "google/gemini-3.1-flash-image" },
+  opts: { model: string; aspectRatio?: string; size?: string; quality?: string; n?: number; onRequest?: (record: unknown) => void } = { model: "google/gemini-3.1-flash-image" },
 ): Promise<Array<{ b64?: string; url?: string; mime: string }>> {
   const payload: Record<string, unknown> = { model: opts.model, prompt };
   if (opts.aspectRatio && opts.aspectRatio !== "match_input_image" && opts.aspectRatio !== "adaptive") {
