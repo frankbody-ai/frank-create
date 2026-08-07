@@ -1,6 +1,6 @@
 import { Columns2, Film, Image as ImageIcon, RotateCcw } from "lucide-react";
 import type { PromptPreset, StudioModel, StudioSettings } from "../lib/types";
-import { estimateVideoCost, filterSizesForAspect, maxCountForModel, modelRateLabel } from "../lib/studio";
+import { estimateVideoCost, filterSizesForAspect, maxCountForModel, modelCostBadge, modelRateLabel } from "../lib/studio";
 import type { StudioAdjustment, StudioFieldErrors } from "../lib/studio";
 import { AspectPreview } from "./AspectPreview";
 
