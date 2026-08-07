@@ -242,6 +242,9 @@ const DEFAULT_CONFIG = {
 
 function rowToAsset(row: any, signedUrl = ""): any {
   const meta = row.metadata_json || {};
+  // Oversized files were never stored, so the signed URL would 404 — serve the
+  // provider's temporary URL instead.
+  const url = meta.storage_missing && meta.remote_url ? String(meta.remote_url) : signedUrl;
   return {
     id: row.id,
     session_id: row.session_id,
@@ -253,12 +256,15 @@ function rowToAsset(row: any, signedUrl = ""): any {
     model: row.model_key || undefined,
     prompt: row.prompt_snapshot || undefined,
     file_path: row.storage_path,
-    preview_url: signedUrl,
-    remote_url: signedUrl,
+    preview_url: url,
+    remote_url: url,
+    storage_missing: !!meta.storage_missing,
+    temporary_url: !!meta.storage_missing,
     width: meta.width,
     height: meta.height,
     aspect_ratio: meta.aspect_ratio ?? undefined,
     bytes: meta.bytes ?? undefined,
+
 
     favorite: !!meta.favorite,
     approval_status: meta.approval_status || "review",
