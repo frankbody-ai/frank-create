@@ -1229,6 +1229,9 @@ async function handleInference(body: any, userId: string) {
   const count = Math.min(Math.max(Number(reqSettings.count ?? body.count ?? 1) || 1, 1), modelCap);
   const generatedImages: Array<{ b64?: string; url?: string; mime: string }> = [];
   const partialErrors: Array<{ code: string; message: string; retryable: boolean; status?: number; request_id?: string }> = [];
+  // The sanitised body we sent upstream, stored on the turn for troubleshooting.
+  let providerRequest: unknown = null;
+
   try {
     const refIds: string[] = [
       ...(body.edit_source_asset_id ? [body.edit_source_asset_id] : []),
