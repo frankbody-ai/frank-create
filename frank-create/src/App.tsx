@@ -1773,10 +1773,7 @@ export default function App() {
   }
 
   function inspectAsset(asset: Asset) {
-    if (armedFrameSlot) {
-      assignFrameSlot(armedFrameSlot, asset.id);
-      return;
-    }
+
     if (compareBaseAsset && asset.kind !== "reference") {
       if (asset.id === compareBaseAsset.id) {
         setStatusText("Pick a different image to compare.");
@@ -3738,17 +3735,7 @@ export default function App() {
           compareCostLabel={compareCostLabel}
           videoFirstFrame={videoFirstFrame}
           videoLastFrame={videoLastFrame}
-          armedFrameSlot={armedFrameSlot}
-          onArmFrameSlot={setArmedFrameSlot}
-          onClearFrameSlot={(slot) => {
-            if (slot === "first") {
-              setVideoFirstFrameId(null);
-              setVideoLastFrameId(null);
-            } else {
-              setVideoLastFrameId(null);
-            }
-          }}
-          onDropFrameAsset={assignFrameSlot}
+
         />
 
       ) : null}
@@ -4076,12 +4063,8 @@ export default function App() {
                   selectedAssetId={selectedAsset?.id}
                   onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
                   onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
-                  onUseAsFrame={
-                    mediaKind === "video" || (mediaKind === "compare" && compareMedia === "video")
-                      ? (asset, slot) => assignFrameSlot(slot, asset.id)
-                      : undefined
-                  }
-                  canUseLastFrame={Boolean(selectedModel?.supports_last_frame) && Boolean(videoFirstFrameId)}
+                />
+
                 />
                 </div>
                 </div>
