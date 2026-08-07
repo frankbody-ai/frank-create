@@ -1037,7 +1037,7 @@ h3 {
 .output-skeleton {
   position: relative;
   overflow: hidden;
-  min-height: 120px;
+  aspect-ratio: var(--asset-aspect, 1 / 1);
   border: 1px dashed rgba(48, 48, 48, 0.28);
   border-radius: 8px;
   background: var(--cream);
@@ -1047,6 +1047,7 @@ h3 {
   padding: 14px;
   text-align: center;
 }
+
 
 .output-skeleton-shimmer {
   position: absolute;
