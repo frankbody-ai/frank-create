@@ -55,29 +55,67 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (status === "ready" && session) return <>{children}</>;
 
   return (
-    <div className="frank-auth-wrap">
-      <div className="frank-auth-card">
-        <img src={designStudioLogo} alt="Design Studio" className="frank-auth-logo" />
-        <h1 className="frank-auth-title">Hey babe.</h1>
-        <p className="frank-auth-sub">
-          sign in with your frank body or autosolutions google account.
-        </p>
-        {status === "loading" && <p className="frank-auth-muted">Checking session.</p>}
-        {(status === "signed-out" || status === "denied") && (
-          <button onClick={signIn} className="frank-auth-btn">
-            Continue with Google.
-          </button>
+    <div className="signin-shell">
+      <div className="signin-plate">
+        {motionOk && (
+          <video
+            aria-hidden="true"
+            className="signin-video"
+            src="/media/signin.mp4"
+            poster="/media/signin-poster.jpg"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+          />
         )}
-        {status === "denied" && (
-          <button onClick={signOut} className="frank-auth-link">
-            use a different account.
-          </button>
-        )}
-        {error && <p className="frank-auth-err">{error}</p>}
-        <p className="frank-auth-foot">
-          allowed domains: {ALLOWED_EMAIL_DOMAINS.map((d) => "@" + d).join(", ")}
-        </p>
+        <div aria-hidden="true" className="signin-veil" />
+        <div aria-hidden="true" className="signin-gradient" />
+        <div aria-hidden="true" className="signin-glow" />
+
+        <div className="signin-stack">
+          <div className="signin-lockup">
+            <img
+              src="/brand/autosolutions-os-magenta.png"
+              alt="autosolutions OS"
+              className="signin-brand"
+            />
+            <div className="signin-name">art-ificial studio</div>
+            <div className="signin-kicker">THE UNMARKED GROUP</div>
+          </div>
+
+          <div className="signin-card">
+            <div className="signin-card-head">
+              <h1 className="signin-card-title">Sign in</h1>
+              <p className="signin-card-sub">
+                use your frank body or autosolutions google account.
+              </p>
+            </div>
+
+            {status === "loading" && <p className="signin-muted">Checking session.</p>}
+
+            {(status === "signed-out" || status === "denied") && (
+              <button onClick={signIn} className="signin-primary">
+                Continue with Google
+              </button>
+            )}
+
+            {status === "denied" && (
+              <button onClick={signOut} className="signin-secondary">
+                use a different account
+              </button>
+            )}
+
+            {error && <p className="signin-err">{error}</p>}
+
+            <p className="signin-foot">
+              allowed domains: {ALLOWED_EMAIL_DOMAINS.map((d) => "@" + d).join(", ")}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+
