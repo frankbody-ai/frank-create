@@ -8777,3 +8777,26 @@ body {
     overflow-y: auto;
   }
 }
+
+@media (max-width: 1180px) {
+  .studio-shell.guided-studio .conversation-column > *,
+  .studio-shell.guided-studio .composer,
+  .studio-shell.guided-studio .composer * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .studio-shell.guided-studio .composer-actions {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .studio-shell.guided-studio .composer-action-group {
+    flex-wrap: wrap;
+  }
+
+  .studio-shell.guided-studio .brief-card-head {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+}
