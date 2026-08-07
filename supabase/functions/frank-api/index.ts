@@ -2110,18 +2110,20 @@ Deno.serve(async (req) => {
         return json({ error: { code: "forbidden", message: "Admin role required" } }, 403);
       }
       const body = await readJson(req) as {
-        persona?: string; craftMethod?: string; blueprint?: string; rules?: string;
+        persona?: string; craftMethod?: string; conversationProtocol?: string; blueprint?: string; rules?: string;
         skills?: { key?: string; label?: string; hint?: string; instruction?: string; sort_order?: number; is_active?: boolean }[];
       };
       const up = await supabase().from("prompt_agent_config").upsert({
         id: 1,
         persona: String(body.persona ?? "").trim(),
         craft_method: String(body.craftMethod ?? "").trim(),
+        conversation_protocol: String(body.conversationProtocol ?? "").trim(),
         blueprint: String(body.blueprint ?? "").trim(),
         rules: String(body.rules ?? "").trim(),
         updated_by: userId,
         updated_at: new Date().toISOString(),
       }, { onConflict: "id" });
+
       if (up.error) return json({ error: { code: "save_failed", message: up.error.message } }, 400);
 
       if (Array.isArray(body.skills)) {
