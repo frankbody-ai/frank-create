@@ -2563,9 +2563,17 @@ export default function App() {
     }
 
     const referenceCount = selectedReferenceAssets.length;
-    const generationReferenceUrls = selectedReferenceAssets
-      .map(referenceUrlForGeneration)
-      .filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u));
+    const comparePairs = selectedReferenceAssets
+      .map((asset) => ({ asset, url: referenceUrlForGeneration(asset) }))
+      .filter((pair): pair is { asset: Asset; url: string } =>
+        typeof pair.url === "string" && /^https?:\/\//.test(pair.url));
+    const generationReferenceUrls = comparePairs.map((pair) => pair.url);
+    const compareReferenceAssets = comparePairs.map((pair) => pair.asset);
+    const compareUnknownTags = unknownReferenceTags(prompt, compareReferenceAssets.length);
+    if (compareUnknownTags.length) {
+      setStatusText(`${compareUnknownTags.join(", ")} ${compareUnknownTags.length === 1 ? "does" : "do"} not match a loaded reference.`);
+      return;
+    }
     if (referenceCount && !generationReferenceUrls.length) {
       setStatusText("Reference images are still uploading. Try again in a moment.");
       return;
@@ -2603,8 +2611,9 @@ export default function App() {
         compare_group: groupId,
         compare_side: side
       };
-      const sideReferenceAssets = selectedReferenceAssets.slice(0, resolved.referenceLimit);
+      const sideReferenceAssets = compareReferenceAssets.slice(0, resolved.referenceLimit);
       const sideReferenceUrls = generationReferenceUrls.slice(0, resolved.referenceLimit);
+      const sideProviderPrompt = composeReferencePrompt(prompt, sideReferenceAssets);
 
       if (compareMedia === "video") {
         const sourceAsset = compareFirstFrame ?? undefined;
@@ -2619,7 +2628,8 @@ export default function App() {
           settings: sideSettings,
           source_asset_id: sourceAsset?.id,
           last_frame_asset_id: lastFrameAsset?.id,
-          reference_asset_ids: sideReferenceAssets.map((asset) => asset.id)
+          reference_asset_ids: sideReferenceAssets.map((asset) => asset.id),
+          provider_prompt: composeVideoReferencePrompt(prompt, sideReferenceAssets, sourceAsset, lastFrameAsset)
         });
       }
 
@@ -2632,7 +2642,8 @@ export default function App() {
         presetKey: selectedPresetKey ?? undefined,
         settings: sideSettings,
         referenceAssetIds: sideReferenceAssets.map((asset) => asset.id),
-        referenceImageUrls: sideReferenceUrls
+        referenceImageUrls: sideReferenceUrls,
+        providerPrompt: sideProviderPrompt
       });
       const started = await createInferenceTurn(request);
       if (started.status === "running") {
