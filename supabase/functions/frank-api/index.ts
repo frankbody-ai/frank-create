@@ -1100,8 +1100,14 @@ async function handleInference(body: any, userId: string) {
     "google-nb-pro": 4,
     "google-nb-2": 4,
     "openai-gpt-image-2": 10,
-    "reve-2-1": 4,
-    "seedream-5-pro": 6,
+    "seedream-4-5": 6,
+    "flux-2-pro": 4,
+    "flux-2-max": 4,
+    "riverflow-2-5-pro": 4,
+    "qwen-image-3-pro": 4,
+    "krea-2-large": 4,
+    "mai-image-2-5-pro": 4,
+    "grok-imagine-image": 4,
   };
   const modelCap = MAX_COUNT_BY_MODEL[modelId] ?? 4;
   const count = Math.min(Math.max(Number(reqSettings.count ?? body.count ?? 1) || 1, 1), modelCap);
