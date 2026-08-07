@@ -120,7 +120,8 @@ import {
   insertTagAtCaret,
   unknownReferenceTags,
   buildReferenceManifest,
-  expandReferenceTags
+  expandReferenceTags,
+  thumbnailUrl
 } from "./lib/studio";
 import type { StudioFieldErrors } from "./lib/studio";
 
@@ -393,7 +394,16 @@ export default function App() {
   const [referenceDropActive, setReferenceDropActive] = useState(false);
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
   const [referenceLibrary, setReferenceLibrary] = useState<Asset[]>([]);
+  const [referenceUploads, setReferenceUploads] = useState<Asset[]>([]);
   const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
+  useEffect(() => {
+    if (!referencePickerOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [referencePickerOpen]);
   const referencePickerInputRef = useRef<HTMLInputElement | null>(null);
   const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [hoveredReferenceTag, setHoveredReferenceTag] = useState<string | null>(null);
@@ -1801,27 +1811,37 @@ export default function App() {
     setStatusText(`${asset.title} removed from references.`);
   }
 
+  function splitReferenceLibrary(pool: Asset[]) {
+    const images = pool.filter((asset) => asset.media_type !== "video" && asset.kind !== "mask");
+    const approved = images.filter((asset) => asset.kind !== "reference" && asset.approval_status === "approved");
+    const seenUploads = new Set<string>();
+    const uploads = images
+      .filter((asset) => asset.kind === "reference")
+      .slice()
+      .reverse()
+      .filter((asset) => {
+        const key = asset.file_path || asset.remote_url || asset.id;
+        if (seenUploads.has(key)) return false;
+        seenUploads.add(key);
+        return true;
+      });
+    setReferenceLibrary(approved.slice().reverse());
+    setReferenceUploads(uploads);
+  }
+
   async function openReferencePicker() {
     setReferencePickerOpen(true);
     if (connection !== "online") {
-      setReferenceLibrary(
-        assets.filter(
-          (asset) => !["reference", "mask"].includes(asset.kind) && asset.approval_status === "approved" && asset.media_type !== "video"
-        )
-      );
+      splitReferenceLibrary(assets);
       return;
     }
     setReferenceLibraryLoading(true);
     try {
-      const { assets: approved } = await listAssets({ approvalStatus: "approved" });
-      setReferenceLibrary((approved ?? []).filter((asset) => asset.media_type !== "video" && !["reference", "mask"].includes(asset.kind)));
+      const { assets: library } = await listAssets({});
+      splitReferenceLibrary(library ?? assets);
     } catch (err) {
-      console.error("[frank] approved library load failed", err);
-      setReferenceLibrary(
-        assets.filter(
-          (asset) => !["reference", "mask"].includes(asset.kind) && asset.approval_status === "approved" && asset.media_type !== "video"
-        )
-      );
+      console.error("[frank] reference library load failed", err);
+      splitReferenceLibrary(assets);
     } finally {
       setReferenceLibraryLoading(false);
     }
@@ -4421,10 +4441,15 @@ export default function App() {
       ) : null}
 
       {referencePickerOpen ? (
-        <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setReferencePickerOpen(false)}>
-          <div className="lightbox-inner reference-picker" onClick={(event) => event.stopPropagation()}>
+        <div
+          className="reference-picker-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setReferencePickerOpen(false)}
+        >
+          <div className="reference-picker" onClick={(event) => event.stopPropagation()}>
             <button
-              className="lightbox-close"
+              className="reference-picker-close"
               type="button"
               onClick={() => setReferencePickerOpen(false)}
               aria-label="Close reference picker"
@@ -4433,7 +4458,7 @@ export default function App() {
             </button>
             <header className="reference-picker-header">
               <h3>Add references</h3>
-              <p>Reuse an approved image or upload from your computer.</p>
+              <p>Reuse an approved image, pick a previous upload, or upload from your computer.</p>
             </header>
             <input
               ref={referencePickerInputRef}
@@ -4446,44 +4471,65 @@ export default function App() {
                 setReferencePickerOpen(false);
               }}
             />
-            <div className="reference-picker-grid">
-              <button
-                type="button"
-                className="reference-picker-upload"
-                onClick={() => referencePickerInputRef.current?.click()}
-              >
-                <Upload size={22} />
-                <strong>Upload from computer</strong>
-                <span>PNG, JPG or WEBP · you can also paste or drop</span>
-              </button>
+            <div className="reference-picker-body">
+              <div className="reference-picker-grid">
+                <button
+                  type="button"
+                  className="reference-picker-upload"
+                  onClick={() => referencePickerInputRef.current?.click()}
+                >
+                  <Upload size={22} />
+                  <strong>Upload from computer</strong>
+                  <span>PNG, JPG or WEBP · you can also paste or drop</span>
+                </button>
+              </div>
+
               {referenceLibraryLoading ? (
-                <div className="reference-picker-empty">Loading approved images…</div>
-              ) : referenceLibrary.length ? (
-                referenceLibrary.map((asset) => {
-                  const active = referenceAssets.some((ref) => ref.source_asset_id === asset.id);
-                  return (
-                    <button
-                      key={asset.id}
-                      type="button"
-                      className={`reference-picker-card${active ? " is-active" : ""}`}
-                      onClick={async () => {
-                        await useAssetAsReference(asset);
-                        setReferencePickerOpen(false);
-                      }}
-                      title={asset.title}
-                    >
-                      {asset.preview_url ? (
-                        <img src={asset.preview_url} alt={asset.title} />
-                      ) : (
-                        <span className="reference-picker-card-fallback"><Paperclip size={18} /></span>
-                      )}
-                      <span className="reference-picker-card-title">{asset.title}</span>
-                      {active ? <span className="reference-picker-card-flag">In use</span> : null}
-                    </button>
-                  );
-                })
+                <div className="reference-picker-empty">Loading your reference library…</div>
               ) : (
-                <div className="reference-picker-empty">No approved images yet — approve a generation to reuse it here.</div>
+                <>
+                  <div className="reference-picker-section-label">
+                    Your uploads {referenceUploads.length ? `(${referenceUploads.length})` : ""}
+                  </div>
+                  {referenceUploads.length ? (
+                    <div className="reference-picker-grid">
+                      {referenceUploads.map((asset) => (
+                        <ReferencePickerCard
+                          key={asset.id}
+                          asset={asset}
+                          active={referenceAssets.some((ref) => ref.id === asset.id || ref.source_asset_id === asset.id)}
+                          onPick={async () => {
+                            await useAssetAsReference(asset);
+                            setReferencePickerOpen(false);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="reference-picker-empty">No uploads yet — anything you upload shows up here next time.</div>
+                  )}
+
+                  <div className="reference-picker-section-label">
+                    Approved generations {referenceLibrary.length ? `(${referenceLibrary.length})` : ""}
+                  </div>
+                  {referenceLibrary.length ? (
+                    <div className="reference-picker-grid">
+                      {referenceLibrary.map((asset) => (
+                        <ReferencePickerCard
+                          key={asset.id}
+                          asset={asset}
+                          active={referenceAssets.some((ref) => ref.source_asset_id === asset.id)}
+                          onPick={async () => {
+                            await useAssetAsReference(asset);
+                            setReferencePickerOpen(false);
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="reference-picker-empty">No approved images yet — approve a generation to reuse it here.</div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -4542,6 +4588,48 @@ export default function App() {
     </div>
   );
 }
+
+function ReferencePickerCard({
+  asset,
+  active,
+  onPick
+}: {
+  asset: Asset;
+  active: boolean;
+  onPick: () => void | Promise<void>;
+}) {
+  const full = asset.preview_url || asset.remote_url;
+  const [src, setSrc] = useState(() => thumbnailUrl(full, 280));
+  return (
+    <button
+      type="button"
+      className={`reference-picker-card${active ? " is-active" : ""}`}
+      onClick={() => { void onPick(); }}
+      title={asset.title}
+    >
+      {src ? (
+        <img
+          src={src}
+          alt={asset.title}
+          loading="lazy"
+          decoding="async"
+          width={280}
+          height={280}
+          onError={() => {
+            // Transformed variants aren't available for every source; fall back
+            // to the original URL so the tile still renders.
+            if (full && src !== full) setSrc(full);
+          }}
+        />
+      ) : (
+        <span className="reference-picker-card-fallback"><Paperclip size={18} /></span>
+      )}
+      <span className="reference-picker-card-title">{asset.title}</span>
+      {active ? <span className="reference-picker-card-flag">In use</span> : null}
+    </button>
+  );
+}
+
 
 function WalkthroughOverlay({
   anchor,
