@@ -69,10 +69,14 @@ describe("studio helpers", () => {
       "google-nb-pro",
       "google-nb-2",
       "openai-gpt-image-2",
-      "reve-2-1",
-      "riverflow-2-pro",
-      "mai-image-2-5",
-      "seedream-5-pro",
+      "seedream-4-5",
+      "flux-2-pro",
+      "flux-2-max",
+      "riverflow-2-5-pro",
+      "qwen-image-3-pro",
+      "krea-2-large",
+      "mai-image-2-5-pro",
+      "grok-imagine-image",
       "grok-imagine-video",
       "dreamina-seedance-2",
       "grok-imagine-video-1-5",
@@ -89,11 +93,16 @@ describe("studio helpers", () => {
     expect(fallbackConfig.models.find((model) => model.id === "openai-gpt-image-2")?.provider_model).toBe(
       "openai/gpt-image-2"
     );
-    expect(fallbackConfig.models.find((model) => model.id === "reve-2-1")?.provider_model).toBe("reve/reve-2.1");
-    expect(fallbackConfig.models.find((model) => model.id === "seedream-5-pro")?.allowed_image_sizes).toEqual(["1K", "2K"]);
-    expect(fallbackConfig.models.find((model) => model.id === "mai-image-2-5")?.status).toBe("disabled");
+    // Every image and video model runs on OpenRouter now; only upscalers stay on Replicate.
+    expect(
+      fallbackConfig.models
+        .filter((model) => model.id.includes("upscal") === false && !model.id.includes("crystal"))
+        .every((model) => model.provider === "openrouter")
+    ).toBe(true);
+    expect(fallbackConfig.models.find((model) => model.id === "qwen-image-3-pro")?.allowed_image_sizes).toEqual(["1K", "2K"]);
     expect(fallbackConfig.tasks.find((task) => task.key === "prompt-remix")?.providers).toContain("google");
   });
+
 
   it("normalizes stale or malformed settings when the selected model changes", () => {
     expect(
