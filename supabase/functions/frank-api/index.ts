@@ -1168,7 +1168,10 @@ async function handleInference(body: any, userId: string) {
     }),
     status: "complete" as const,
     assets,
-    providerPayload: { provider: "lovable", model: gatewayModel },
+    providerPayload: OPENROUTER_IMAGE_MAP[modelId]
+      ? { provider: "openrouter", model: OPENROUTER_IMAGE_MAP[modelId] }
+      : { provider: "lovable", model: gatewayModel },
+
     localEngine: "cloud" as const,
   };
 }
