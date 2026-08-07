@@ -6896,6 +6896,7 @@ input:focus, textarea:focus, select:focus {
   height: auto;
   object-fit: cover;
   display: block;
+  background: color-mix(in srgb, currentColor 8%, transparent);
 }
 .reference-picker-card-title {
   width: 100%;
