@@ -4,6 +4,7 @@ export interface BuildTurnRequestInput {
   sessionId?: string;
   modelId: string;
   prompt: string;
+  providerPrompt?: string;
   promptMode: "generate" | "edit" | "masked_edit";
   frankBodyMode?: boolean;
   presetKey?: string;
@@ -20,6 +21,7 @@ export function buildTurnRequest(input: BuildTurnRequestInput): TurnRequest {
     kind: input.promptMode,
     model: input.modelId,
     prompt: input.prompt.trim(),
+    provider_prompt: input.providerPrompt?.trim() || undefined,
     frank_body_mode: input.frankBodyMode ?? false,
     preset_key: input.presetKey,
     settings: input.settings,

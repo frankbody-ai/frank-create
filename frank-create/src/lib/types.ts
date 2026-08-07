@@ -704,6 +704,8 @@ export interface TurnRequest {
   kind: "generate" | "edit" | "masked_edit";
   model: string;
   prompt: string;
+  /** Prompt actually sent to the provider: reference manifest + expanded @ref tags. */
+  provider_prompt?: string;
   frank_body_mode: boolean;
   preset_key?: string;
   settings: StudioSettings;
@@ -722,4 +724,6 @@ export interface VideoRequest {
   /** Video-only: explicit end frame; only sent for models whose schema accepts it. */
   last_frame_asset_id?: string;
   reference_asset_ids: string[];
+  /** Prompt actually sent to the provider: reference manifest + expanded @ref tags. */
+  provider_prompt?: string;
 }
