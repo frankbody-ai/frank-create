@@ -69,10 +69,14 @@ describe("studio helpers", () => {
       "google-nb-pro",
       "google-nb-2",
       "openai-gpt-image-2",
-      "reve-2-1",
-      "riverflow-2-pro",
-      "mai-image-2-5",
-      "seedream-5-pro",
+      "seedream-4-5",
+      "flux-2-pro",
+      "flux-2-max",
+      "riverflow-2-5-pro",
+      "qwen-image-3-pro",
+      "krea-2-large",
+      "mai-image-2-5-pro",
+      "grok-imagine-image",
       "grok-imagine-video",
       "dreamina-seedance-2",
       "grok-imagine-video-1-5",
@@ -89,11 +93,16 @@ describe("studio helpers", () => {
     expect(fallbackConfig.models.find((model) => model.id === "openai-gpt-image-2")?.provider_model).toBe(
       "openai/gpt-image-2"
     );
-    expect(fallbackConfig.models.find((model) => model.id === "reve-2-1")?.provider_model).toBe("reve/reve-2.1");
-    expect(fallbackConfig.models.find((model) => model.id === "seedream-5-pro")?.allowed_image_sizes).toEqual(["1K", "2K"]);
-    expect(fallbackConfig.models.find((model) => model.id === "mai-image-2-5")?.status).toBe("disabled");
+    // Every image and video model runs on OpenRouter now; only upscalers stay on Replicate.
+    expect(
+      fallbackConfig.models
+        .filter((model) => model.id.includes("upscal") === false && !model.id.includes("crystal"))
+        .every((model) => model.provider === "openrouter")
+    ).toBe(true);
+    expect(fallbackConfig.models.find((model) => model.id === "qwen-image-3-pro")?.allowed_image_sizes).toEqual(["1K", "2K"]);
     expect(fallbackConfig.tasks.find((task) => task.key === "prompt-remix")?.providers).toContain("google");
   });
+
 
   it("normalizes stale or malformed settings when the selected model changes", () => {
     expect(
@@ -130,16 +139,9 @@ describe("studio helpers", () => {
     ).toBe("The fallback renderer made this round.");
   });
 
-  it("flags size for models that pick resolution from aspect (Reve)", () => {
-    const reve = fallbackConfig.models.find((m) => m.id === "reve-2-1")!;
-    const errors = validateStudioSettings(reve, { aspect_ratio: "1:1", image_size: "1K", count: 1 });
-    expect(errors.size).toMatch(/leave size empty/i);
-    expect(hasStudioFieldErrors(errors)).toBe(true);
-  });
-
-  it("flags unsupported size for Seedream (no 4K)", () => {
-    const seedream = fallbackConfig.models.find((m) => m.id === "seedream-5-pro")!;
-    const errors = validateStudioSettings(seedream, { aspect_ratio: "1:1", image_size: "4K", count: 1 });
+  it("flags unsupported size for Qwen Image 3 Pro (no 4K)", () => {
+    const qwen = fallbackConfig.models.find((m) => m.id === "qwen-image-3-pro")!;
+    const errors = validateStudioSettings(qwen, { aspect_ratio: "1:1", image_size: "4K", count: 1 });
     expect(errors.size).toMatch(/Unsupported/);
   });
 
@@ -149,15 +151,16 @@ describe("studio helpers", () => {
     expect(errors.aspect).toBeTruthy();
   });
 
-  it("passes validation on a valid Seedream combo", () => {
-    const seedream = fallbackConfig.models.find((m) => m.id === "seedream-5-pro")!;
+  it("passes validation on a valid Seedream 4.5 combo", () => {
+    const seedream = fallbackConfig.models.find((m) => m.id === "seedream-4-5")!;
     const errors = validateStudioSettings(seedream, { aspect_ratio: "16:9", image_size: "2K", count: 2 });
     expect(hasStudioFieldErrors(errors)).toBe(false);
   });
 
   it("flags too many reference images", () => {
-    const reve = fallbackConfig.models.find((m) => m.id === "reve-2-1")!;
-    const errors = validateStudioSettings(reve, { aspect_ratio: "1:1", image_size: "", count: 1 }, { referenceCount: 20 });
-    expect(errors.references).toMatch(/at most 8/);
+    const grok = fallbackConfig.models.find((m) => m.id === "grok-imagine-image")!;
+    const errors = validateStudioSettings(grok, { aspect_ratio: "1:1", image_size: "1K", count: 1 }, { referenceCount: 20 });
+    expect(errors.references).toMatch(/at most 4/);
   });
 });
+
