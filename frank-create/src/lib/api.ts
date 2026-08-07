@@ -689,11 +689,13 @@ export type PromptAgentSkillConfig = {
 export type PromptAgentConfig = {
   persona: string;
   craftMethod: string;
+  conversationProtocol: string;
   blueprint: string;
   rules: string;
   skills: PromptAgentSkillConfig[];
   updatedAt: string | null;
 };
+
 
 export async function fetchPromptAgentConfig() {
   return fetchJson<{ config: PromptAgentConfig; defaults: Omit<PromptAgentConfig, "updatedAt"> }>(
