@@ -1,43 +1,28 @@
-# Centre the preview overlay + edit prompt inside the preview
+# Format, real resolution, and a JSON payload chip on every round
 
-## What's wrong today
+## What gets added
 
-The preview isn't a real overlay. A late skin rule in `frank-create/src/styles.css` (line 7010) sets
-`position: relative` on every direct child of the studio shell, and because it loads after the
-overlay rules it beats `.lightbox { position: fixed }`. The preview therefore becomes a normal grid
-item in the shell layout — which is why it lands low and to the left, sized to its contents, with no
-full-screen dark scrim.
+1. **Aspect chip** — each round's meta column gets a chip with the format that was chosen (`1:1`, `3:4`, `16:9`…), read from the round's saved settings. Video rounds also show the duration/resolution enum they were run at.
 
-## What changes
+2. **Real returned resolution** — a per-image chip like `1536 × 2048` measured from the file the provider actually returned, not from what we requested.
+   - Today the stored `width`/`height` are fake: `persistImageAssets` fills them with `requestedDimensions()`, which just parses the aspect ratio string, so an asset can literally be stored as 3 × 4.
+   - Fix: after the image bytes are downloaded and before upload, read the true pixel dimensions out of the file header (PNG `IHDR`, JPEG `SOF`, WebP `VP8`/`VP8L`/`VP8X`) and persist those, alongside the byte size.
+   - Videos: OpenRouter's job payload is used when it reports dimensions; otherwise the player reports the true `videoWidth × videoHeight` on load and that is what the chip shows.
+   - Older assets with no real dimensions stored fall back to measuring the loaded media in the browser, so historical rounds show a correct number too instead of `3 × 4`.
 
-1. **Preview opens dead-centre**
-   - The preview overlay is rendered into the page body instead of inside the studio shell layout, so
-     no layout rule can pull it back into the grid.
-   - Full-screen dark scrim, image/video centred both vertically and horizontally, media up to ~90%
-     of viewport width and ~82% of height. Same fix applies to the reference preview, compare view
-     and mask painter overlays so they can't drift either.
-   - Backdrop click and Escape still close it.
-
-2. **Edit the prompt from inside the preview**
-   - "Edit this" no longer sends you back to the main composer. It expands a prompt box directly
-     under the previewed image, pre-filled with that asset's prompt.
-   - The box shows which reference the run will start from (the previewed asset is attached as a
-     reference, exactly as "Edit this" does today), a Send button, and Cancel to collapse it.
-   - Send (or Cmd/Ctrl+Enter) immediately kicks off a new run using the current model, aspect,
-     quality and count settings — no extra clicks. The preview closes and the new round appears at
-     the top of the thread with its loading skeletons.
-   - While the run is submitting, the Send button is disabled with a short "Starting…" state; if the
-     run fails to start, the error surfaces in the usual thread error card.
+3. **JSON chip** — a new `JSON` chip next to the existing chips on every image and video round. Clicking it opens a centred panel showing the exact request body that was sent to the provider (model, prompt, aspect ratio, resolution/size, quality, n, duration, reference/frame image entries), pretty-printed, with a Copy button.
+   - The payload is captured server-side at send time and saved on the round, so it reflects exactly what went out — including the composed provider prompt with the `@ref` manifest.
+   - Reference images are recorded as short descriptors (`ref1: image/png, 412 KB`) rather than inlined base64 so the panel stays readable and the record stays small.
+   - Keys that look like credentials are stripped before saving; no headers or API keys are ever stored or shown.
+   - Rounds generated before this change show the chip disabled with "not captured for this round".
 
 ## Technical notes
 
-- `frank-create/src/App.tsx`: wrap each overlay's JSX in a `createPortal(..., document.body)` so the
-  shell's `> *` rule can't apply. Add local state for the in-preview edit box
-  (`lightboxEditOpen`, `lightboxEditPrompt`) and reuse the existing `startEditFromAsset` +
-  generation handler (`handleGenerate` / `handleVideoGenerate` depending on `mediaMode`) for Send.
-  No changes to generation, approval or reference business logic — same handlers, same payloads.
-- `frank-create/src/styles.css`: exclude overlay classes from the
-  `.studio-shell.guided-studio > *:not(...)` positioning rule (defensive, in case an overlay is ever
-  rendered inline again) and add `.lightbox-edit` styles (textarea + action row) matching the
-  existing `.lightbox-actions` treatment.
-- No backend, edge function or `lib/` changes.
+- `supabase/functions/frank-api/index.ts`:
+  - New `imageDimensions(bytes, mime)` header reader; `persistImageAssets` stores real `width`, `height`, `bytes` in `metadata_json` and keeps `requested_*` fields separately for comparison.
+  - `openrouterImage` / `openrouterVideo` return the payload they sent (or write it through a passed-in collector); the image/video handlers put a sanitized copy on the turn's `settings_snapshot_json` as `provider_request` (reuse the existing sensitive-key redaction pattern), and video assets record dimensions from the job payload when present.
+  - Replicate path (upscaler) records its built input the same way, so the chip works there too.
+- `frank-create/src/lib/types.ts`: extend `Asset` with optional `bytes`, and `StudioSettings`/turn parsing with `provider_request`.
+- `frank-create/src/App.tsx`: add the aspect chip and `JSON` chip to `turn-meta`; add a resolution badge on output tiles and a line in the full-screen preview; add a `ProviderPayloadModal` (portal-rendered, centred, Escape/backdrop close, Copy button); measure `naturalWidth`/`videoWidth` on load as the fallback source.
+- `frank-create/src/styles.css`: styles for the resolution badge, the `JSON` chip, and the payload panel (`pre` block, monospace, scrollable).
+- No schema migration needed — everything rides in existing `metadata_json` / `settings_snapshot_json`.
