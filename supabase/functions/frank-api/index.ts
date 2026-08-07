@@ -2086,6 +2086,7 @@ Deno.serve(async (req) => {
         config: {
           persona: cfg.persona,
           craftMethod: cfg.craftMethod,
+          conversationProtocol: cfg.conversationProtocol,
           blueprint: cfg.blueprint,
           rules: cfg.rules,
           skills: cfg.skills,
@@ -2094,11 +2095,13 @@ Deno.serve(async (req) => {
         defaults: {
           persona: DEFAULT_CONFIG.persona,
           craftMethod: DEFAULT_CONFIG.craftMethod,
+          conversationProtocol: DEFAULT_CONFIG.conversationProtocol,
           blueprint: DEFAULT_CONFIG.blueprint,
           rules: DEFAULT_CONFIG.rules,
           skills: DEFAULT_CONFIG.skills,
         },
       });
+
     }
 
     if (path === "/prompt-agent/config" && method === "PUT") {
