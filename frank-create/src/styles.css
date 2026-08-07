@@ -4082,6 +4082,26 @@ body {
   flex: 0 0 auto;
 }
 
+/* With references loaded the row runs out of width: collapse the three action
+   buttons into icon-only circles instead of wrapping onto a new line. */
+.composer-actions--icons .composer-action-group .action-label {
+  display: none;
+}
+
+.composer-actions--icons .composer-action-group .primary-button,
+.composer-actions--icons .action-compact-pile .remix-button,
+.composer-actions--icons .action-compact-pile .composer-cancel-button {
+  width: 46px;
+  min-width: 46px;
+  height: 46px;
+  min-height: 46px;
+  padding: 0;
+  gap: 0;
+  border-radius: 999px;
+  justify-content: center;
+  align-items: center;
+}
+
 .action-compact-pile .remix-button,
 .action-compact-pile .composer-cancel-button {
   min-height: 46px;
