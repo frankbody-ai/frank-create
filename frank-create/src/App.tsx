@@ -2755,6 +2755,7 @@ export default function App() {
       prompt,
       aspect: settings.aspect_ratio,
       count: 1,
+      startedAt: Date.now(),
     }));
     setInflightGens((current) => [...current, ...inflight]);
     setBusy(true);
