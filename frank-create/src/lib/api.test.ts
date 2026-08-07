@@ -52,7 +52,7 @@ describe("api", () => {
     const planned = new Set(fallbackConfig.providers.filter((provider) => provider.status === "later").map((provider) => provider.key));
 
     expect([...used].filter((provider) => !declared.has(provider))).toEqual([]);
-    expect([...declared]).toEqual(["google", "replicate", "openai"]);
+    expect([...declared]).toEqual(["openrouter", "google", "replicate", "openai"]);
     expect([...planned]).toEqual([]);
   });
 });
