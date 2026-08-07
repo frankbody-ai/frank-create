@@ -394,6 +394,9 @@ export default function App() {
   const [referencePreviewAsset, setReferencePreviewAsset] = useState<Asset | null>(null);
   const [referenceDropActive, setReferenceDropActive] = useState(false);
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
+  // Turn whose provider request body is being inspected via the JSON chip.
+  const [payloadTurnId, setPayloadTurnId] = useState<string | null>(null);
+
   const [referenceLibrary, setReferenceLibrary] = useState<Asset[]>([]);
   const [referencePickerSelection, setReferencePickerSelection] = useState<string[]>([]);
   const [referencePickerBusy, setReferencePickerBusy] = useState(false);
