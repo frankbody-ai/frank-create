@@ -620,6 +620,9 @@ export interface StudioTurn {
   preset_key?: string | null;
   status: "queued" | "running" | "complete" | "blocked" | "failed" | "review";
   error_json?: string | null;
+  /** Sanitised JSON body that was posted to the model provider (JSON chip). */
+  provider_request_json?: string | null;
+
   sync_status?: string;
   remote_id?: string | null;
   created_at: string;
