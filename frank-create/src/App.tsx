@@ -2111,9 +2111,18 @@ export default function App() {
       return;
     }
 
-    const generationReferenceUrls = selectedReferenceAssets
-      .map(referenceUrlForGeneration)
-      .filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u));
+    const referencePairs = selectedReferenceAssets
+      .map((asset) => ({ asset, url: referenceUrlForGeneration(asset) }))
+      .filter((pair): pair is { asset: Asset; url: string } =>
+        typeof pair.url === "string" && /^https?:\/\//.test(pair.url));
+    const generationReferenceUrls = referencePairs.map((pair) => pair.url);
+    const generationReferenceAssets = referencePairs.map((pair) => pair.asset);
+    const unknownTags = unknownReferenceTags(prompt, generationReferenceAssets.length);
+    if (unknownTags.length) {
+      setStatusText(`${unknownTags.join(", ")} ${unknownTags.length === 1 ? "does" : "do"} not match a loaded reference. Remove the tag or add the image.`);
+      return;
+    }
+    const providerPrompt = composeReferencePrompt(prompt, generationReferenceAssets);
     if (selectedReferenceAssets.length && !generationReferenceUrls.length) {
       setStatusText("Reference images are still uploading. Try again in a moment.");
       return;
@@ -2147,6 +2156,7 @@ export default function App() {
       settings,
       referenceAssetIds: selectedReferenceAssets.map((asset) => asset.id),
       referenceImageUrls: generationReferenceUrls,
+      providerPrompt,
       editSourceAssetId: editSourceAsset?.id,
       maskAssetId: promptMode === "masked_edit" ? maskAsset?.id : undefined
     });
@@ -2166,7 +2176,7 @@ export default function App() {
         }
       }
       const invokeBody = {
-        prompt: composeReferenceLockedPrompt(request.prompt, generationReferenceUrls.length),
+        prompt: providerPrompt,
         count: settings.count,
         modelId: selectedModel.id,
         aspect_ratio: settings.aspect_ratio,
