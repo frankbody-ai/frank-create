@@ -396,6 +396,14 @@ export default function App() {
   const [referenceLibrary, setReferenceLibrary] = useState<Asset[]>([]);
   const [referenceUploads, setReferenceUploads] = useState<Asset[]>([]);
   const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
+  useEffect(() => {
+    if (!referencePickerOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [referencePickerOpen]);
   const referencePickerInputRef = useRef<HTMLInputElement | null>(null);
   const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [hoveredReferenceTag, setHoveredReferenceTag] = useState<string | null>(null);
