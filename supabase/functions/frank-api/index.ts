@@ -455,19 +455,25 @@ async function handleVideo(body: any, userId: string) {
     const videoProviderPrompt = typeof body.provider_prompt === "string" && body.provider_prompt.trim()
       ? body.provider_prompt.trim()
       : prompt;
-    const input = buildVideoInput(slug, videoProviderPrompt, {
+    const clamped = clampVideoSettings(caps, {
       aspect_ratio: reqSettings.aspect_ratio,
       duration: Number(reqSettings.duration ?? 5),
       resolution: reqSettings.video_resolution || reqSettings.image_size,
-      image: firstFrameUrl,
-      last_frame: lastFrameUrl,
     });
-
-    videoUrl = await runReplicatePrediction(slug, input, key, 300_000);
+    videoUrl = await openrouterVideo(videoProviderPrompt, {
+      model: slug,
+      aspectRatio: clamped.aspectRatio,
+      resolution: clamped.resolution,
+      duration: clamped.duration,
+      firstFrameUrl,
+      lastFrameUrl,
+      referenceUrls: firstFrameUrl ? [] : sourceUrls,
+    });
   } catch (err) {
     const mapped = mapReplicateError(err);
     return await failTurn(mapped.code, mapped.message);
   }
+
   if (!videoUrl) return await failTurn("empty_output", "The video model returned no clip.");
 
   const res = await fetch(videoUrl);
