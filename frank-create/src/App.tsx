@@ -1836,8 +1836,12 @@ export default function App() {
   }
 
 
+  const referencePickerLimit = Math.min(10, modelOptions.referenceLimit || 10);
+
   async function openReferencePicker() {
     setReferencePickerOpen(true);
+    setReferencePickerSelection([]);
+    setReferencePickerNote(null);
     if (connection !== "online") {
       splitReferenceLibrary(assets);
       return;
@@ -1854,16 +1858,73 @@ export default function App() {
     }
   }
 
+  function togglePickerSelection(asset: Asset) {
+    setReferencePickerNote(null);
+    setReferencePickerSelection((current) => {
+      if (current.includes(asset.id)) return current.filter((id) => id !== asset.id);
+      if (current.length >= referencePickerLimit) {
+        setReferencePickerNote(`You can pick up to ${referencePickerLimit} references at a time.`);
+        return current;
+      }
+      return [...current, asset.id];
+    });
+  }
+
+  async function confirmReferencePickerSelection() {
+    const picks = referencePickerSelection
+      .map((id) => referenceLibrary.find((asset) => asset.id === id))
+      .filter((asset): asset is Asset => Boolean(asset));
+    if (!picks.length) {
+      setReferencePickerOpen(false);
+      return;
+    }
+    setReferencePickerBusy(true);
+    try {
+      for (const pick of picks) {
+        if (pick.kind === "reference") {
+          setActiveReferenceIds((current) => Array.from(new Set([...current, pick.id])));
+        } else {
+          await useAssetAsReference(pick);
+        }
+      }
+    } finally {
+      setReferencePickerBusy(false);
+      setReferencePickerSelection([]);
+      setReferencePickerOpen(false);
+    }
+  }
+
   async function handleReferenceUpload(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
     await addReferenceFiles(files);
     event.target.value = "";
   }
 
-  async function addReferenceFiles(files: File[]) {
-    if (!files.length || !activeSession) {
-      return;
+  async function handlePickerUpload(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (!files.length) return;
+    setReferencePickerBusy(true);
+    setReferencePickerNote(null);
+    try {
+      const created = await addReferenceFiles(files, { attach: false });
+      if (created?.length) {
+        setReferenceLibrary((current) => [...created, ...current]);
+        setReferencePickerSelection((current) =>
+          Array.from(new Set([...current, ...created.map((asset) => asset.id)])).slice(0, referencePickerLimit)
+        );
+      }
+    } finally {
+      setReferencePickerBusy(false);
     }
+  }
+
+  async function addReferenceFiles(files: File[], options?: { attach?: boolean }) {
+    const attach = options?.attach !== false;
+    if (!files.length || !activeSession) {
+      return [];
+    }
+
 
     setStatusText("Adding reference images...");
     const createdAssets: Asset[] = [];
