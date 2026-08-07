@@ -395,7 +395,11 @@ export default function App() {
   const [referenceDropActive, setReferenceDropActive] = useState(false);
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
   const [referenceLibrary, setReferenceLibrary] = useState<Asset[]>([]);
+  const [referencePickerSelection, setReferencePickerSelection] = useState<string[]>([]);
+  const [referencePickerBusy, setReferencePickerBusy] = useState(false);
+  const [referencePickerNote, setReferencePickerNote] = useState<string | null>(null);
   const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
+
 
   useEffect(() => {
     if (!referencePickerOpen) return;
@@ -1832,8 +1836,12 @@ export default function App() {
   }
 
 
+  const referencePickerLimit = Math.min(10, modelOptions.referenceLimit || 10);
+
   async function openReferencePicker() {
     setReferencePickerOpen(true);
+    setReferencePickerSelection([]);
+    setReferencePickerNote(null);
     if (connection !== "online") {
       splitReferenceLibrary(assets);
       return;
@@ -1850,16 +1858,73 @@ export default function App() {
     }
   }
 
+  function togglePickerSelection(asset: Asset) {
+    setReferencePickerNote(null);
+    setReferencePickerSelection((current) => {
+      if (current.includes(asset.id)) return current.filter((id) => id !== asset.id);
+      if (current.length >= referencePickerLimit) {
+        setReferencePickerNote(`You can pick up to ${referencePickerLimit} references at a time.`);
+        return current;
+      }
+      return [...current, asset.id];
+    });
+  }
+
+  async function confirmReferencePickerSelection() {
+    const picks = referencePickerSelection
+      .map((id) => referenceLibrary.find((asset) => asset.id === id))
+      .filter((asset): asset is Asset => Boolean(asset));
+    if (!picks.length) {
+      setReferencePickerOpen(false);
+      return;
+    }
+    setReferencePickerBusy(true);
+    try {
+      for (const pick of picks) {
+        if (pick.kind === "reference") {
+          setActiveReferenceIds((current) => Array.from(new Set([...current, pick.id])));
+        } else {
+          await useAssetAsReference(pick);
+        }
+      }
+    } finally {
+      setReferencePickerBusy(false);
+      setReferencePickerSelection([]);
+      setReferencePickerOpen(false);
+    }
+  }
+
   async function handleReferenceUpload(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
     await addReferenceFiles(files);
     event.target.value = "";
   }
 
-  async function addReferenceFiles(files: File[]) {
-    if (!files.length || !activeSession) {
-      return;
+  async function handlePickerUpload(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (!files.length) return;
+    setReferencePickerBusy(true);
+    setReferencePickerNote(null);
+    try {
+      const created = await addReferenceFiles(files, { attach: false });
+      if (created?.length) {
+        setReferenceLibrary((current) => [...created, ...current]);
+        setReferencePickerSelection((current) =>
+          Array.from(new Set([...current, ...created.map((asset) => asset.id)])).slice(0, referencePickerLimit)
+        );
+      }
+    } finally {
+      setReferencePickerBusy(false);
     }
+  }
+
+  async function addReferenceFiles(files: File[], options?: { attach?: boolean }) {
+    const attach = options?.attach !== false;
+    if (!files.length || !activeSession) {
+      return [];
+    }
+
 
     setStatusText("Adding reference images...");
     const createdAssets: Asset[] = [];
@@ -1920,7 +1985,9 @@ export default function App() {
 
     if (createdAssets.length) {
       setAssets((current) => [...createdAssets, ...current]);
-      setActiveReferenceIds((current) => Array.from(new Set([...current, ...createdAssets.map((asset) => asset.id)])));
+      if (attach) {
+        setActiveReferenceIds((current) => Array.from(new Set([...current, ...createdAssets.map((asset) => asset.id)])));
+      }
     }
     if (failedUploads.length && createdAssets.length) {
       setStatusText(`${createdAssets.length} reference${createdAssets.length === 1 ? "" : "s"} locked. ${failedUploads.length} upload${failedUploads.length === 1 ? "" : "s"} failed.`);
@@ -1929,7 +1996,9 @@ export default function App() {
     } else if (createdAssets.length) {
       setStatusText("Reference locked. Nice.");
     }
+    return createdAssets;
   }
+
 
   function imagesFromClipboard(data: DataTransfer | null | undefined) {
     const items = Array.from(data?.items ?? []);
@@ -4458,7 +4527,7 @@ export default function App() {
             </button>
             <header className="reference-picker-header">
               <h3>Add references</h3>
-              <p>Reuse an approved image, pick a previous upload, or upload from your computer.</p>
+              <p>Pick up to {referencePickerLimit} images — newest first. Uploads land here preselected.</p>
             </header>
             <input
               ref={referencePickerInputRef}
@@ -4466,11 +4535,9 @@ export default function App() {
               accept="image/*"
               multiple
               hidden
-              onChange={async (event) => {
-                await handleReferenceUpload(event);
-                setReferencePickerOpen(false);
-              }}
+              onChange={(event) => { void handlePickerUpload(event); }}
             />
+
             <div className="reference-picker-body">
               {referenceLibraryLoading ? (
                 <div className="reference-picker-empty">Loading your reference library…</div>
@@ -4480,9 +4547,10 @@ export default function App() {
                     type="button"
                     className="reference-picker-upload"
                     onClick={() => referencePickerInputRef.current?.click()}
+                    disabled={referencePickerBusy}
                   >
                     <Upload size={22} />
-                    <strong>Upload from computer</strong>
+                    <strong>{referencePickerBusy ? "Uploading…" : "Upload from computer"}</strong>
                     <span>PNG, JPG or WEBP · you can also paste or drop</span>
                   </button>
                   {referenceLibrary.length ? (
@@ -4493,10 +4561,8 @@ export default function App() {
                         active={referenceAssets.some(
                           (ref) => ref.id === asset.id || ref.source_asset_id === asset.id
                         )}
-                        onPick={async () => {
-                          await useAssetAsReference(asset);
-                          setReferencePickerOpen(false);
-                        }}
+                        selected={referencePickerSelection.includes(asset.id)}
+                        onPick={() => togglePickerSelection(asset)}
                       />
                     ))
                   ) : null}
@@ -4508,6 +4574,26 @@ export default function App() {
                 </div>
               ) : null}
             </div>
+            <footer className="reference-picker-footer">
+              <span className="reference-picker-count">
+                {referencePickerSelection.length} of {referencePickerLimit} selected
+                {referencePickerNote ? <em> · {referencePickerNote}</em> : null}
+              </span>
+              <div className="reference-picker-footer-actions">
+                <button type="button" className="ghost-button" onClick={() => setReferencePickerOpen(false)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={!referencePickerSelection.length || referencePickerBusy}
+                  onClick={() => void confirmReferencePickerSelection()}
+                >
+                  {referencePickerBusy ? "Working…" : `Add references${referencePickerSelection.length ? ` (${referencePickerSelection.length})` : ""}`}
+                </button>
+              </div>
+            </footer>
+
 
           </div>
         </div>,
@@ -4570,20 +4656,24 @@ export default function App() {
 function ReferencePickerCard({
   asset,
   active,
+  selected,
   onPick
 }: {
   asset: Asset;
   active: boolean;
+  selected: boolean;
   onPick: () => void | Promise<void>;
 }) {
   const full = asset.preview_url || asset.remote_url;
-  const [src, setSrc] = useState(() => thumbnailUrl(full, 280));
+  const [src, setSrc] = useState(() => thumbnailUrl(full, 150, 25, "webp"));
   return (
     <button
       type="button"
-      className={`reference-picker-card${active ? " is-active" : ""}`}
+      className={`reference-picker-card${active ? " is-active" : ""}${selected ? " is-selected" : ""}`}
       onClick={() => { void onPick(); }}
       title={asset.title}
+      aria-pressed={selected}
+      disabled={active}
     >
       {src ? (
         <img
@@ -4591,8 +4681,8 @@ function ReferencePickerCard({
           alt={asset.title}
           loading="lazy"
           decoding="async"
-          width={280}
-          height={280}
+          width={150}
+          height={150}
           onError={() => {
             // Transformed variants aren't available for every source; fall back
             // to the original URL so the tile still renders.
@@ -4603,10 +4693,15 @@ function ReferencePickerCard({
         <span className="reference-picker-card-fallback"><Paperclip size={18} /></span>
       )}
       <span className="reference-picker-card-title">{asset.title}</span>
-      {active ? <span className="reference-picker-card-flag">In use</span> : null}
+      {active ? (
+        <span className="reference-picker-card-flag">In use</span>
+      ) : selected ? (
+        <span className="reference-picker-card-check"><CheckCircle2 size={16} /></span>
+      ) : null}
     </button>
   );
 }
+
 
 
 function WalkthroughOverlay({

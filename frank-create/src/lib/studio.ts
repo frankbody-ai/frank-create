@@ -692,7 +692,12 @@ export function composeReferencePrompt(
  * the object path instead of re-signing every asset. Anything that isn't a
  * storage URL (data URLs, provider URLs, blobs) is returned untouched.
  */
-export function thumbnailUrl(url: string | undefined | null, width = 280): string | undefined {
+export function thumbnailUrl(
+  url: string | undefined | null,
+  width = 280,
+  quality = 60,
+  format?: "origin" | "webp"
+): string | undefined {
   if (!url) return undefined;
   if (url.startsWith("data:") || url.startsWith("blob:")) return url;
   if (!url.includes("/storage/v1/object/")) return url;
@@ -700,10 +705,12 @@ export function thumbnailUrl(url: string | undefined | null, width = 280): strin
     const parsed = new URL(url);
     parsed.pathname = parsed.pathname.replace("/storage/v1/object/", "/storage/v1/render/image/");
     parsed.searchParams.set("width", String(width));
-    parsed.searchParams.set("quality", "60");
+    parsed.searchParams.set("quality", String(quality));
     parsed.searchParams.set("resize", "cover");
+    if (format) parsed.searchParams.set("format", format);
     return parsed.toString();
   } catch {
     return url;
   }
 }
+
