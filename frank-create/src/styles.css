@@ -6799,15 +6799,56 @@ input:focus, textarea:focus, select:focus {
 .admin-portal-btn.ghost:hover { background: var(--pink); }
 
 /* Reference picker modal */
+.reference-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(24, 13, 12, 0.86);
+}
 .reference-picker {
+  position: relative;
   width: min(1040px, 94vw);
   max-height: 86vh;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--surface, #fff);
   border-radius: 18px;
   padding: 20px 22px 22px;
   text-align: left;
-  display: block;
+  box-shadow: var(--shadow-dialog, 0 26px 70px rgba(0, 0, 0, 0.35));
+}
+.reference-picker-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--muted-20, rgba(0, 0, 0, 0.12));
+  border-radius: 999px;
+  background: var(--surface, #fff);
+  color: var(--ink, #180d0c);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.reference-picker-body {
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.reference-picker-section-label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.6;
+  padding-top: 4px;
 }
 .reference-picker-header h3 {
   margin: 0 0 2px;
