@@ -6329,10 +6329,15 @@ input:focus, textarea:focus, select:focus {
 
 /* ==== Prompt Generator agent ==== */
 .prompt-agent-view { padding-bottom: 24px; }
+/* Header stays at the top of the agent view; the guided-studio topbar order:1 rule
+   would otherwise push it below the chat shell (default order 0). */
+.prompt-agent-view > .studio-topbar { order: 0; }
 .prompt-agent-shell {
   display: flex; flex-direction: column; gap: 12px;
   padding: 8px 24px 24px; min-height: 0; flex: 1;
+  order: 1;
 }
+
 .prompt-agent-skills { display: flex; flex-wrap: wrap; gap: 8px; }
 .prompt-agent-skill {
   display: inline-flex; align-items: center; gap: 6px;
