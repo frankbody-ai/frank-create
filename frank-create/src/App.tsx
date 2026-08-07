@@ -3818,7 +3818,12 @@ export default function App() {
               </button>
             </div>
           ) : null}
-          {inflightGens.length ? inflightGens.slice().reverse().map((gen) => {
+          {(() => {
+            // Once the backend has a queued/running round of its own, that round card
+            // IS the loading state — never show a second local card for the same run.
+            const hasLiveTurn = turns.some((t) => t.status === "queued" || t.status === "running");
+            if (hasLiveTurn || !inflightGens.length) return null;
+            return inflightGens.slice().reverse().map((gen) => {
             const p = aspectRatioParts(gen.aspect);
             const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
             return (
@@ -3840,19 +3845,15 @@ export default function App() {
                 </div>
                 </div>
                 <div className="turn-visual">
-                <div className="pending-strip" style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(gen.count, 3)}, minmax(0, 1fr))`, gap: 12 }}>
+                <div className="output-grid">
                   {Array.from({ length: gen.count }).map((_, i) => (
                     <div
+                      className="output-skeleton"
                       key={i}
-                      className="pending-tile"
-                      style={{
-                        aspectRatio: ar,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        borderRadius: 12, border: "1px dashed rgba(0,0,0,0.15)",
-                        background: "rgba(0,0,0,0.03)",
-                      }}
+                      style={{ ["--asset-aspect" as string]: ar } as React.CSSProperties}
                     >
-                      <Loader2 size={22} className="spin" style={{ opacity: 0.6 }} />
+                      <span className="output-skeleton-shimmer" aria-hidden="true" />
+                      <span className="output-skeleton-spinner" aria-hidden="true" />
                     </div>
                   ))}
                 </div>
@@ -3861,7 +3862,9 @@ export default function App() {
 
               </article>
             );
-          }) : null}
+          });
+          })()}
+
 
           {searchedTurns.length ? (
             groupCompareRows([...searchedTurns].reverse()).map((row, rowIdx) => (
@@ -4047,7 +4050,9 @@ export default function App() {
                   onSelect={inspectAsset}
                   emptyLabel={studioMode === "approved-hot" ? "No approved picks in this round" : turnEmptyLabel(turn)}
                   pending={studioMode !== "approved-hot" && (turn.status === "queued" || turn.status === "running")}
-                  pendingCount={1}
+                  pendingCount={turnExpectedCount(turn)}
+                  pendingAspect={turnAspect(turn)}
+
 
                   selectedAssetId={selectedAsset?.id}
                   onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
@@ -5145,11 +5150,13 @@ function formatCount(count: number, singular: string, plural = `${singular}s`) {
 function AssetPreviewMedia({
   asset,
   controls = false,
-  fallbackIconSize = 24
+  fallbackIconSize = 24,
+  variant = "full"
 }: {
   asset: Asset;
   controls?: boolean;
   fallbackIconSize?: number;
+  variant?: "thumb" | "full";
 }) {
   if (!asset.preview_url) {
     if (controls) {
@@ -5163,12 +5170,13 @@ function AssetPreviewMedia({
     return <ImageIcon size={fallbackIconSize} />;
   }
 
+  const isThumb = variant === "thumb";
 
   if (isPlayableVideoAsset(asset)) {
     return (
       <video
         aria-label={asset.title}
-        autoPlay={!controls}
+        autoPlay={!controls && !isThumb}
         className="asset-preview-media"
         controls={controls}
         loop
@@ -5180,8 +5188,33 @@ function AssetPreviewMedia({
     );
   }
 
+  if (isThumb) {
+    return <AssetThumbImage asset={asset} />;
+  }
+
   return <img className="asset-preview-media" src={asset.preview_url} alt={asset.title} />;
 }
+
+function AssetThumbImage({ asset }: { asset: Asset }) {
+  const full = asset.preview_url ?? "";
+  const [src, setSrc] = useState(() => thumbnailUrl(full, 320, 40, "webp") || full);
+  useEffect(() => {
+    setSrc(thumbnailUrl(full, 320, 40, "webp") || full);
+  }, [full]);
+  return (
+    <img
+      className="asset-preview-media"
+      src={src}
+      alt={asset.title}
+      loading="lazy"
+      decoding="async"
+      onError={() => {
+        if (full && src !== full) setSrc(full);
+      }}
+    />
+  );
+}
+
 
 function MaskPainterDialog({
   asset,
@@ -5390,11 +5423,23 @@ function isPlayableVideoAsset(asset: Asset) {
   return /\.(mp4|webm|mov|m4v)(?:$|[?#\s&])/.test(haystack) || /filename=[^&\s]+\.(mp4|webm|mov|m4v)/.test(haystack);
 }
 
+function turnExpectedCount(turn: StudioTurn) {
+  const parsed = parseJsonRecord(turn.settings_json) as { count?: unknown };
+  const raw = Number(parsed.count);
+  return Number.isFinite(raw) && raw > 0 ? Math.min(24, Math.floor(raw)) : 1;
+}
+
+function turnAspect(turn: StudioTurn) {
+  const parsed = parseJsonRecord(turn.settings_json) as { aspect_ratio?: unknown };
+  return typeof parsed.aspect_ratio === "string" ? parsed.aspect_ratio : "";
+}
+
 function OutputStrip({
   assets,
   emptyLabel = "Waiting for provider output",
   pending = false,
   pendingCount = 1,
+  pendingAspect,
   selectedAssetId,
   onSelect,
   onQuickApprove,
@@ -5406,6 +5451,7 @@ function OutputStrip({
   emptyLabel?: string;
   pending?: boolean;
   pendingCount?: number;
+  pendingAspect?: string;
   selectedAssetId?: string;
   onSelect: (asset: Asset) => void;
   onQuickApprove?: (asset: Asset) => void;
@@ -5413,21 +5459,7 @@ function OutputStrip({
   onUseAsFrame?: (asset: Asset, slot: "first" | "last") => void;
   canUseLastFrame?: boolean;
 }) {
-  if (!assets.length && pending) {
-    return (
-      <div className="output-grid">
-        {Array.from({ length: Math.max(1, Math.min(4, pendingCount)) }).map((_, index) => (
-          <div className="output-skeleton" key={`pending-${index}`}>
-            <span className="output-skeleton-shimmer" aria-hidden="true" />
-            <span className="output-skeleton-spinner" aria-hidden="true" />
-            {index === 0 ? <span className="output-skeleton-label">{emptyLabel}</span> : null}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (!assets.length) {
+  if (!assets.length && !pending) {
     return (
       <div className="output-placeholder">
         <RefreshCw size={18} />
@@ -5436,9 +5468,18 @@ function OutputStrip({
     );
   }
 
+  const aspectParts = pendingAspect ? aspectRatioParts(pendingAspect) : null;
+  const fallbackAsset = assets.find((asset) => asset.width && asset.height);
+  const pendingRatio = aspectParts
+    ? `${aspectParts.width} / ${aspectParts.height}`
+    : fallbackAsset
+      ? `${fallbackAsset.width} / ${fallbackAsset.height}`
+      : "1 / 1";
+  const skeletonCount = pending ? Math.max(0, Math.min(24, pendingCount) - assets.length) : 0;
 
   return (
     <div className="output-grid">
+
       {assets.map((asset) => {
         const ratio = asset.width && asset.height ? `${asset.width} / ${asset.height}` : undefined;
         const status = asset.approval_status ?? "review";
@@ -5461,7 +5502,7 @@ function OutputStrip({
               onClick={() => onSelect(asset)}
               aria-label={`Open ${asset.title}`}
             >
-              <AssetPreviewMedia asset={asset} fallbackIconSize={24} />
+              <AssetPreviewMedia asset={asset} fallbackIconSize={24} variant="thumb" />
               <span>{assetStatusCopy(status)}</span>
             </button>
             {(onQuickApprove || onQuickReject) && asset.kind !== "reference" && asset.kind !== "mask" ? (
@@ -5505,7 +5546,18 @@ function OutputStrip({
           </div>
         );
       })}
+      {Array.from({ length: skeletonCount }).map((_, index) => (
+        <div
+          className="output-skeleton"
+          key={`pending-${index}`}
+          style={{ ["--asset-aspect" as string]: pendingRatio } as React.CSSProperties}
+        >
+          <span className="output-skeleton-shimmer" aria-hidden="true" />
+          <span className="output-skeleton-spinner" aria-hidden="true" />
+        </div>
+      ))}
     </div>
+
   );
 }
 
