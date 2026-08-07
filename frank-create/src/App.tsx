@@ -4598,7 +4598,8 @@ function ReferencePickerCard({
   active: boolean;
   onPick: () => void | Promise<void>;
 }) {
-  const thumb = thumbnailUrl(asset.preview_url || asset.remote_url, 280);
+  const full = asset.preview_url || asset.remote_url;
+  const [src, setSrc] = useState(() => thumbnailUrl(full, 280));
   return (
     <button
       type="button"
@@ -4606,8 +4607,20 @@ function ReferencePickerCard({
       onClick={() => { void onPick(); }}
       title={asset.title}
     >
-      {thumb ? (
-        <img src={thumb} alt={asset.title} loading="lazy" decoding="async" width={280} height={280} />
+      {src ? (
+        <img
+          src={src}
+          alt={asset.title}
+          loading="lazy"
+          decoding="async"
+          width={280}
+          height={280}
+          onError={() => {
+            // Transformed variants aren't available for every source; fall back
+            // to the original URL so the tile still renders.
+            if (full && src !== full) setSrc(full);
+          }}
+        />
       ) : (
         <span className="reference-picker-card-fallback"><Paperclip size={18} /></span>
       )}
