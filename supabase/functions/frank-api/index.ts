@@ -1012,8 +1012,33 @@ async function handleInference(body: any, userId: string) {
     const providerPrompt = clientProviderPrompt
       ? clientProviderPrompt
       : (refUrls.length ? withReferenceIdentityLock(prompt, refUrls.length) : prompt);
-    const replicateSlug = REPLICATE_MAP[modelId];
-    if (replicateSlug) {
+    const openrouterModel = OPENROUTER_IMAGE_MAP[modelId];
+    const replicateSlug = openrouterModel ? undefined : REPLICATE_MAP[modelId];
+    if (openrouterModel) {
+      // Primary path: OpenRouter chat/completions with image modality.
+      const results = await Promise.allSettled(
+        Array.from({ length: count }, () =>
+          openrouterImage(providerPrompt, refUrls, {
+            model: openrouterModel,
+            aspectRatio: reqSettings.aspect_ratio,
+            size: reqSettings.image_size || reqSettings.size,
+            thinkingBudget: Number(reqSettings.thinking_budget ?? body.thinking_budget ?? 0),
+          })
+        )
+      );
+      for (const result of results) {
+        if (result.status === "fulfilled") generatedImages.push(result.value);
+        else {
+          const m = mapReplicateError(result.reason);
+          partialErrors.push({ code: m.code, message: m.message, retryable: m.retryable, status: m.status });
+        }
+      }
+      if (!generatedImages.length) {
+        const first = results.find((r) => r.status === "rejected") as PromiseRejectedResult | undefined;
+        throw first?.reason ?? new ProviderRunError("OpenRouter returned no images.", "provider_error", true);
+      }
+    } else if (replicateSlug) {
+
       const replicateKey = getReplicateGatewayKey();
       if (!replicateKey) throw new Error("Replicate is not connected for this model yet.");
       // Long models (Riverflow 4K, Seedream, agentic runs) routinely outlive a
