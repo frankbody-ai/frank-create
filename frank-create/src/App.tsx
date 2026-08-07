@@ -2688,6 +2688,44 @@ export default function App() {
     return settledIds.length;
   }
 
+  // Live reconcile: while anything is pending locally or a round is queued/running
+  // on the backend, keep re-reading our own database so finished work appears
+  // without a manual refresh. Idle sessions poll nothing.
+  const hasLiveTurn = turns.some((turn) => turn.status === "queued" || turn.status === "running");
+  const shouldPollSession = (inflightGens.length > 0 || hasLiveTurn) && connection === "online";
+  useEffect(() => {
+    if (!shouldPollSession) return;
+    let disposed = false;
+    const startedAt = Date.now();
+    let timer = 0;
+    const tick = async () => {
+      if (disposed) return;
+      await settleFinishedRunsFromServer();
+      if (disposed) return;
+      const elapsed = Date.now() - startedAt;
+      timer = window.setTimeout(tick, elapsed > 60000 ? 10000 : 5000);
+    };
+    timer = window.setTimeout(tick, 5000);
+    return () => { disposed = true; window.clearTimeout(timer); };
+  }, [shouldPollSession, activeSession?.id]);
+
+  // Coming back to a backgrounded tab shows finished work straight away.
+  useEffect(() => {
+    if (!shouldPollSession) return;
+    const onWake = () => {
+      if (document.visibilityState === "hidden") return;
+      void settleFinishedRunsFromServer();
+    };
+    window.addEventListener("focus", onWake);
+    document.addEventListener("visibilitychange", onWake);
+    return () => {
+      window.removeEventListener("focus", onWake);
+      document.removeEventListener("visibilitychange", onWake);
+    };
+  }, [shouldPollSession, activeSession?.id]);
+
+
+
 
 
   async function handleVideoGenerate() {
