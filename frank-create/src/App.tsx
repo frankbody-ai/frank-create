@@ -5518,7 +5518,18 @@ function OutputStrip({
           </div>
         );
       })}
+      {Array.from({ length: skeletonCount }).map((_, index) => (
+        <div
+          className="output-skeleton"
+          key={`pending-${index}`}
+          style={{ ["--asset-aspect" as string]: pendingRatio } as React.CSSProperties}
+        >
+          <span className="output-skeleton-shimmer" aria-hidden="true" />
+          <span className="output-skeleton-spinner" aria-hidden="true" />
+        </div>
+      ))}
     </div>
+
   );
 }
 
