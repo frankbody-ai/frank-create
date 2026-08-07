@@ -8797,3 +8797,28 @@ body {
   word-break: break-word;
   color: var(--text-primary, #0f172a);
 }
+
+/* Stuck-run escape hatch inside the pending round card */
+.turn-pending-recheck {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-secondary, rgba(15, 23, 42, 0.66));
+}
+
+.turn-pending-recheck button {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid var(--line-soft, rgba(15, 23, 42, 0.18));
+  background: transparent;
+  font-size: 12px;
+  color: var(--text-primary, #0f172a);
+  cursor: pointer;
+}
+
+.turn-pending-recheck button:hover {
+  border-color: var(--line-strong, rgba(15, 23, 42, 0.32));
+}
