@@ -521,10 +521,7 @@ export default function App() {
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
   const [settingsRailOpen, setSettingsRailOpen] = useState(true);
   const [mediaKind, setMediaKind] = useState<"image" | "video" | "compare">("image");
-  // Video: explicit first/last frame picks (no implicit "newest still" guessing).
-  const [videoFirstFrameId, setVideoFirstFrameId] = useState<string | null>(null);
-  const [videoLastFrameId, setVideoLastFrameId] = useState<string | null>(null);
-  const [armedFrameSlot, setArmedFrameSlot] = useState<"first" | "last" | null>(null);
+
   const [compareMedia, setCompareMedia] = useState<"image" | "video">("image");
   const [compareModelBId, setCompareModelBId] = useState<string>("");
   const [compareApproved, setCompareApproved] = useState(false);
