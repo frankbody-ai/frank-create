@@ -8889,8 +8889,6 @@ body {
   width: 42px;
   height: 42px;
   border-radius: 8px;
-  border: 1px solid var(--line);
-  background: var(--white);
   overflow: hidden;
   display: inline-flex;
   align-items: center;
