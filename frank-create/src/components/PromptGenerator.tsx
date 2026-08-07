@@ -82,7 +82,10 @@ function AgentBody({ text }: { text: string }) {
             ))}
           </ol>
         ) : (
+        ) : chunk.lines.join("\n").trim() ? (
           <p key={index}>{chunk.lines.join("\n").trim()}</p>
+        ) : null
+
         )
       )}
     </div>
