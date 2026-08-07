@@ -8,7 +8,7 @@ import listSessionsTool from "./tools/list-sessions";
 import setAssetApprovalTool from "./tools/set-asset-approval";
 import submitFeedbackTool from "./tools/submit-feedback";
 
-export default defineMcp({
+const mcp: ReturnType<typeof defineMcp> = defineMcp({
   name: "frank-create",
   title: "frank Create",
   version: "0.1.0",
@@ -29,3 +29,5 @@ export default defineMcp({
     submitFeedbackTool,
   ],
 });
+
+export default mcp;

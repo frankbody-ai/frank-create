@@ -299,7 +299,7 @@ var submit_feedback_default = defineTool7({
 });
 
 // src/lib/mcp/index.ts
-var mcp_default = defineMcp({
+var mcp = defineMcp({
   name: "frank-create",
   title: "frank Create",
   version: "0.1.0",
@@ -319,6 +319,7 @@ var mcp_default = defineMcp({
     submit_feedback_default
   ]
 });
+var mcp_default = mcp;
 
 // lovable-mcp-supabase-entry.ts
 import { createSupabaseHandler } from "npm:@lovable.dev/mcp-js@0.26.1/stacks/supabase";
