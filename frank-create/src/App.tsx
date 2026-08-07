@@ -4805,6 +4805,45 @@ export default function App() {
         document.body
       ) : null}
 
+      {payloadTurnId ? createPortal(
+        <div
+          className="payload-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setPayloadTurnId(null)}
+        >
+          <div className="payload-modal" onClick={(event) => event.stopPropagation()}>
+            <header className="payload-modal-header">
+              <div>
+                <p className="eyebrow">Provider request</p>
+                <h3>JSON sent to the model</h3>
+              </div>
+              <div className="payload-modal-actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const body = formatProviderPayload(turns.find((t) => t.id === payloadTurnId));
+                    void navigator.clipboard?.writeText(body).then(() => {
+                      setStatusText("Provider JSON copied to clipboard.");
+                    }).catch(() => setStatusText("Could not copy the JSON."));
+                  }}
+                >
+                  <Clipboard size={14} />
+                  Copy
+                </button>
+                <button type="button" onClick={() => setPayloadTurnId(null)} aria-label="Close JSON view">
+                  <XCircle size={18} />
+                </button>
+              </div>
+            </header>
+            <pre className="payload-modal-body">{formatProviderPayload(turns.find((t) => t.id === payloadTurnId))}</pre>
+          </div>
+        </div>,
+        document.body
+      ) : null}
+
+
+
       {referencePreviewAsset ? (
         <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setReferencePreviewAsset(null)}>
           <div className="lightbox-inner reference-preview-inner" onClick={(event) => event.stopPropagation()}>
