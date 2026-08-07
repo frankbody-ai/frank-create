@@ -5,6 +5,18 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { buildManifest, manifestToCsv, validateManifest } from "./handoff.ts";
 import { loadPromptAgentConfig, buildPromptAgentSystem, DEFAULT_CONFIG } from "./promptAgent.ts";
+import {
+  OPENROUTER_IMAGE_MAP,
+  OPENROUTER_VIDEO_CAPS,
+  OPENROUTER_VIDEO_MAP,
+  buildImagePayload,
+  buildVideoPayload,
+  classifyVideoJobStatus,
+  imageCallsFor,
+  resolvePollingUrl,
+  shouldAuthorizeDownload,
+  type VideoCaps,
+} from "./openrouter_payload.ts";
 
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -258,31 +270,8 @@ const MODEL_MAP: Record<string, string> = {
 
 // OpenRouter is the primary provider for every image and video model in the
 // roster, through its dedicated /v1/images and /v1/videos endpoints. Only the
-// upscaler path stays on Replicate.
-const OPENROUTER_IMAGE_MAP: Record<string, string> = {
-  "google-nb-pro": "google/gemini-3-pro-image",
-  "nano-banana-pro": "google/gemini-3-pro-image",
-  "google-nb-2": "google/gemini-3.1-flash-image",
-  "nano-banana-2": "google/gemini-3.1-flash-image",
-  "openai-gpt-image-2": "openai/gpt-image-2",
-  "seedream-4-5": "bytedance-seed/seedream-4.5",
-  "flux-2-pro": "black-forest-labs/flux.2-pro",
-  "flux-2-max": "black-forest-labs/flux.2-max",
-  "riverflow-2-5-pro": "sourceful/riverflow-v2.5-pro",
-  "qwen-image-3-pro": "qwen/qwen-image-3-pro",
-  "krea-2-large": "krea/krea-2-large",
-  "mai-image-2-5-pro": "microsoft/mai-image-2.5-pro",
-  "grok-imagine-image": "x-ai/grok-imagine-image-quality",
-};
-
-// Models that accept n > 1 natively; everything else is fanned out as parallel
-// single-image calls.
-const OPENROUTER_NATIVE_N = new Set<string>([
-  "openai/gpt-image-2",
-  "bytedance-seed/seedream-4.5",
-  "qwen/qwen-image-3-pro",
-]);
-
+// upscaler path stays on Replicate. The id->slug maps and each slug's
+// capability envelope live in openrouter_payload.ts.
 const REPLICATE_MAP: Record<string, string> = {
   // Image models all run on OpenRouter now; kept empty so the fallback branch
   // stays wired for any future Replicate-only image model.
@@ -290,90 +279,8 @@ const REPLICATE_MAP: Record<string, string> = {
 
 
 
-// Video models on OpenRouter, with the capability envelope each one actually
-// accepts (verified against GET /api/v1/videos/models).
-type VideoCaps = {
-  model: string;
-  resolutions: string[];
-  defaultResolution: string;
-  aspects: string[];
-  defaultAspect: string;
-  minDuration: number;
-  maxDuration: number;
-  defaultDuration: number;
-};
-
-const OPENROUTER_VIDEO_MAP: Record<string, VideoCaps> = {
-  "grok-imagine-video": {
-    model: "x-ai/grok-imagine-video",
-    resolutions: ["480p", "720p"],
-    defaultResolution: "720p",
-    aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3"],
-    defaultAspect: "16:9",
-    minDuration: 1, maxDuration: 15, defaultDuration: 5,
-  },
-  "grok-imagine-video-1-5": {
-    model: "x-ai/grok-imagine-video-1.5",
-    resolutions: ["480p", "720p", "1080p"],
-    defaultResolution: "720p",
-    aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3"],
-    defaultAspect: "16:9",
-    minDuration: 1, maxDuration: 15, defaultDuration: 5,
-  },
-  "dreamina-seedance-2": {
-    model: "bytedance/seedance-2.0",
-    resolutions: ["480p", "720p", "1080p", "4K"],
-    defaultResolution: "1080p",
-    aspects: ["1:1", "3:4", "9:16", "4:3", "16:9", "21:9", "9:21"],
-    defaultAspect: "16:9",
-    minDuration: 3, maxDuration: 15, defaultDuration: 5,
-  },
-  "happyhorse-1-0": {
-    model: "alibaba/happyhorse-1.0",
-    resolutions: ["720p", "1080p"],
-    defaultResolution: "1080p",
-    aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9", "9:21"],
-    defaultAspect: "16:9",
-    minDuration: 3, maxDuration: 15, defaultDuration: 5,
-  },
-  "wan-2-7-i2v": {
-    model: "alibaba/wan-2.7",
-    resolutions: ["720p", "1080p"],
-    defaultResolution: "1080p",
-    aspects: ["16:9", "9:16", "1:1", "4:3", "3:4"],
-    defaultAspect: "16:9",
-    minDuration: 2, maxDuration: 15, defaultDuration: 5,
-  },
-  "hailuo-2-3": {
-    model: "minimax/hailuo-2.3",
-    resolutions: ["1080p"],
-    defaultResolution: "1080p",
-    aspects: ["16:9"],
-    defaultAspect: "16:9",
-    minDuration: 6, maxDuration: 10, defaultDuration: 6,
-  },
-};
-
 function pick<T>(value: T | undefined, allowed: T[], fallback: T): T {
   return value !== undefined && allowed.includes(value) ? value : fallback;
-}
-
-// Normalise the client's settings onto what the chosen model accepts.
-function clampVideoSettings(
-  caps: VideoCaps,
-  opts: { aspect_ratio?: string; duration?: number; resolution?: string },
-): { aspectRatio: string; resolution: string; duration: number } {
-  const requestedRes = String(opts.resolution ?? "").toLowerCase() === "4k"
-    ? "4K"
-    : String(opts.resolution ?? "");
-  const duration = Number(opts.duration);
-  return {
-    aspectRatio: pick(opts.aspect_ratio, caps.aspects, caps.defaultAspect),
-    resolution: pick(requestedRes, caps.resolutions, caps.defaultResolution),
-    duration: Number.isFinite(duration) && duration >= caps.minDuration && duration <= caps.maxDuration
-      ? Math.round(duration)
-      : caps.defaultDuration,
-  };
 }
 
 
@@ -387,14 +294,14 @@ async function handleVideo(body: any, userId: string) {
   if (!prompt.trim()) throw new Error("Prompt is required");
 
   const modelId: string = body.model || "grok-imagine-video";
-  const caps = OPENROUTER_VIDEO_MAP[modelId];
-  if (!caps) {
+  const slug = OPENROUTER_VIDEO_MAP[modelId];
+  const caps: VideoCaps | undefined = slug ? OPENROUTER_VIDEO_CAPS[slug] : undefined;
+  if (!slug || !caps) {
     return {
       turn: null, status: "failed" as const,
       error: { code: "model_unavailable", message: `${modelId} is not a supported video model.` },
     };
   }
-  const slug = caps.model;
   if (!Deno.env.get("OPENROUTER_API_KEY")) {
     return {
       turn: null, status: "blocked" as const,
@@ -455,28 +362,31 @@ async function handleVideo(body: any, userId: string) {
     const videoProviderPrompt = typeof body.provider_prompt === "string" && body.provider_prompt.trim()
       ? body.provider_prompt.trim()
       : prompt;
-    const clamped = clampVideoSettings(caps, {
-      aspect_ratio: reqSettings.aspect_ratio,
-      duration: Number(reqSettings.duration ?? 5),
-      resolution: reqSettings.video_resolution || reqSettings.image_size,
-    });
-    videoUrl = await openrouterVideo(videoProviderPrompt, {
+    videoUrl = await openrouterVideo({
       model: slug,
-      aspectRatio: clamped.aspectRatio,
-      resolution: clamped.resolution,
-      duration: clamped.duration,
+      prompt: videoProviderPrompt,
+      aspectRatio: reqSettings.aspect_ratio,
+      resolution: reqSettings.video_resolution || reqSettings.image_size,
+      duration: Number(reqSettings.duration ?? 5),
       firstFrameUrl,
       lastFrameUrl,
       referenceUrls: firstFrameUrl ? [] : sourceUrls,
+      generateAudio: typeof reqSettings.generate_audio === "boolean" ? reqSettings.generate_audio : undefined,
     });
   } catch (err) {
-    const mapped = mapReplicateError(err);
+    const mapped = mapProviderError(err);
     return await failTurn(mapped.code, mapped.message);
   }
 
   if (!videoUrl) return await failTurn("empty_output", "The video model returned no clip.");
 
-  const res = await fetch(videoUrl);
+  // unsigned_urls point at OpenRouter's own /videos/{id}/content endpoint,
+  // which is authenticated — an unauthenticated GET here 401s every time.
+  const res = await fetch(videoUrl, {
+    headers: shouldAuthorizeDownload(videoUrl)
+      ? { Authorization: `Bearer ${Deno.env.get("OPENROUTER_API_KEY")}` }
+      : {},
+  });
   if (!res.ok) return await failTurn("download_failed", `Could not download the clip (${res.status}).`);
   const mime = (res.headers.get("content-type") || "video/mp4").split(";")[0];
   const bytes = new Uint8Array(await res.arrayBuffer());
@@ -520,7 +430,7 @@ async function handleVideo(body: any, userId: string) {
     }),
     status: "complete" as const,
     assets: [rowToAsset(assetIns.data, await signed(storagePath))],
-    providerPayload: { provider: "replicate", model: slug },
+    providerPayload: { provider: "openrouter", model: slug },
   };
 }
 
@@ -888,27 +798,23 @@ async function openrouterPost(path: string, payload: Record<string, unknown>): P
   throw (lastErr instanceof ProviderRunError ? lastErr : new ProviderRunError(`OpenRouter unreachable: ${errMessage(lastErr)}`, "provider_unavailable", true));
 }
 
-function imageRefParts(urls: string[]): Array<Record<string, unknown>> {
-  return urls.map((url) => ({ type: "image_url", image_url: { url } }));
-}
-
-// Dedicated image endpoint. `n` is honoured natively where the model supports it.
+// Dedicated image endpoint. Every field is clamped to the chosen model's
+// published envelope first — OpenRouter 400s on out-of-enum values and on
+// knobs the model does not expose at all (e.g. `resolution` on gpt-image-2).
 async function openrouterImage(
   prompt: string,
   referenceImageUrls: string[] = [],
   opts: { model: string; aspectRatio?: string; size?: string; quality?: string; n?: number } = { model: "google/gemini-3.1-flash-image" },
 ): Promise<Array<{ b64?: string; url?: string; mime: string }>> {
-  const payload: Record<string, unknown> = { model: opts.model, prompt };
-  if (opts.aspectRatio && opts.aspectRatio !== "match_input_image" && opts.aspectRatio !== "adaptive") {
-    payload.aspect_ratio = opts.aspectRatio;
-  }
-  if (opts.size) {
-    const res = String(opts.size).toUpperCase().replace("512", "512");
-    if (["512", "1K", "2K", "4K"].includes(res)) payload.resolution = res;
-  }
-  if (opts.quality && ["auto", "low", "medium", "high"].includes(opts.quality)) payload.quality = opts.quality;
-  if (opts.n && opts.n > 1) payload.n = opts.n;
-  if (referenceImageUrls.length) payload.input_references = imageRefParts(referenceImageUrls);
+  const payload = buildImagePayload({
+    model: opts.model,
+    aspectRatio: opts.aspectRatio,
+    size: opts.size,
+    quality: opts.quality,
+    n: opts.n,
+    referenceUrls: referenceImageUrls,
+  });
+  payload.prompt = prompt;
 
   const j = await openrouterPost("/images", payload);
   const out: Array<{ b64?: string; url?: string; mime: string }> = [];
@@ -929,9 +835,9 @@ async function openrouterImage(
 
 // Async video job: submit, poll, return the finished clip URL.
 async function openrouterVideo(
-  prompt: string,
   opts: {
     model: string;
+    prompt: string;
     aspectRatio?: string;
     resolution?: string;
     duration?: number;
@@ -942,27 +848,10 @@ async function openrouterVideo(
   },
   maxMs = 600_000,
 ): Promise<string> {
-  const payload: Record<string, unknown> = { model: opts.model, prompt };
-  if (Number.isFinite(opts.duration) && Number(opts.duration) > 0) payload.duration = Math.round(Number(opts.duration));
-  if (opts.resolution) payload.resolution = opts.resolution;
-  if (opts.aspectRatio && opts.aspectRatio !== "auto" && opts.aspectRatio !== "match_input_image" && opts.aspectRatio !== "adaptive") {
-    payload.aspect_ratio = opts.aspectRatio;
-  }
-  const frames: Array<Record<string, unknown>> = [];
-  if (opts.firstFrameUrl) frames.push({ type: "image_url", image_url: { url: opts.firstFrameUrl }, frame_type: "first_frame" });
-  if (opts.lastFrameUrl) frames.push({ type: "image_url", image_url: { url: opts.lastFrameUrl }, frame_type: "last_frame" });
-  if (frames.length) {
-    payload.frame_images = frames;
-    // frame_images takes precedence over input_references upstream; sending both
-    // is pointless, so only attach refs in reference-to-video mode.
-  } else if (opts.referenceUrls?.length) {
-    payload.input_references = imageRefParts(opts.referenceUrls);
-  }
-  if (opts.generateAudio === false) payload.generate_audio = false;
-
-  const job = await openrouterPost("/videos", payload);
-  const jobId: string | undefined = job?.id;
-  const pollUrl: string = job?.polling_url || (jobId ? `${OPENROUTER_BASE}/videos/${jobId}` : "");
+  const job = await openrouterPost("/videos", buildVideoPayload(opts));
+  // polling_url is returned site-relative ("/api/v1/videos/<id>"); passing it
+  // straight to fetch() throws "Invalid URL" and the job never completes.
+  const pollUrl = resolvePollingUrl(OPENROUTER_BASE, job?.polling_url, job?.id);
   if (!pollUrl) {
     throw new ProviderRunError(`OpenRouter did not return a video job id. ${JSON.stringify(job).slice(0, 300)}`, "provider_error", true);
   }
@@ -970,28 +859,35 @@ async function openrouterVideo(
   const key = openrouterKey();
   const started = Date.now();
   let delay = 4_000;
+  let pollFailures = 0;
   while (Date.now() - started < maxMs) {
     await new Promise((r) => setTimeout(r, delay));
     delay = Math.min(delay + 2_000, 10_000);
     let res: Response;
     try {
       res = await fetch(pollUrl, { headers: openrouterHeaders(key) });
-    } catch {
-      continue; // transient poll failure — keep waiting
+    } catch (err) {
+      // Don't swallow this forever — a permanently unfetchable poll URL used to
+      // masquerade as a 10-minute render.
+      if (++pollFailures >= 5) {
+        throw new ProviderRunError(`Could not reach the video job status endpoint: ${errMessage(err)}`, "provider_unavailable", true);
+      }
+      continue;
     }
     if (!res.ok) {
       if (res.status >= 500 || res.status === 429) continue;
       throw mapOpenrouterHttpError(res.status, await res.text());
     }
+    pollFailures = 0;
     const status: any = await res.json();
-    const state = String(status?.status || "").toLowerCase();
-    if (state === "completed" || state === "succeeded") {
+    const state = classifyVideoJobStatus(status?.status);
+    if (state === "completed") {
       const url: string | undefined = status?.unsigned_urls?.[0] || status?.urls?.[0] || status?.output?.[0];
       if (!url) throw new ProviderRunError("The video job completed without a downloadable clip.", "empty_output", true);
       return url;
     }
-    if (state === "failed" || state === "canceled" || state === "cancelled") {
-      const msg = status?.error?.message || status?.error || "The video model failed to render this clip.";
+    if (state === "failed") {
+      const msg = status?.error?.message || status?.error || `The video model returned status "${status?.status}".`;
       throw new ProviderRunError(String(msg).slice(0, 400), "provider_error", true);
     }
   }
@@ -1096,6 +992,8 @@ async function handleInference(body: any, userId: string) {
   if (msgIns.error) throw msgIns.error;
   const nextSeq = (msgIns.data as any)?.seq ?? 0;
 
+  // How many images one round may return. Single-image models are fanned out
+  // into parallel calls, so this is a cost ceiling rather than an API limit.
   const MAX_COUNT_BY_MODEL: Record<string, number> = {
     "google-nb-pro": 4,
     "google-nb-2": 4,
@@ -1104,7 +1002,7 @@ async function handleInference(body: any, userId: string) {
     "flux-2-pro": 4,
     "flux-2-max": 4,
     "riverflow-2-5-pro": 4,
-    "qwen-image-3-pro": 4,
+    "qwen-image-3-pro": 6,
     "krea-2-large": 4,
     "mai-image-2-5-pro": 4,
     "grok-imagine-image": 4,
@@ -1133,9 +1031,9 @@ async function handleInference(body: any, userId: string) {
     const replicateSlug = openrouterModel ? undefined : REPLICATE_MAP[modelId];
     if (openrouterModel) {
       // Primary path: OpenRouter's dedicated /v1/images endpoint. Models that
-      // support n>1 get one call; the rest are fanned out in parallel.
-      const nativeN = OPENROUTER_NATIVE_N.has(openrouterModel);
-      const calls = nativeN ? 1 : count;
+      // support n>1 natively get one call for their batch; anything above that
+      // ceiling (and every single-image model) is fanned out in parallel.
+      const { calls, n } = imageCallsFor(openrouterModel, count);
       const results = await Promise.allSettled(
         Array.from({ length: calls }, () =>
           openrouterImage(providerPrompt, refUrls, {
@@ -1143,17 +1041,19 @@ async function handleInference(body: any, userId: string) {
             aspectRatio: reqSettings.aspect_ratio,
             size: reqSettings.image_size || reqSettings.size,
             quality: reqSettings.quality,
-            n: nativeN ? count : 1,
+            n,
           })
         )
       );
       for (const result of results) {
         if (result.status === "fulfilled") generatedImages.push(...result.value);
         else {
-          const m = mapReplicateError(result.reason);
+          const m = mapProviderError(result.reason);
           partialErrors.push({ code: m.code, message: m.message, retryable: m.retryable, status: m.status });
         }
       }
+      // A native batch can overshoot when `count` isn't a multiple of `n`.
+      if (generatedImages.length > count) generatedImages.length = count;
       if (!generatedImages.length) {
         const first = results.find((r) => r.status === "rejected") as PromiseRejectedResult | undefined;
         throw first?.reason ?? new ProviderRunError("OpenRouter returned no images.", "provider_error", true);
@@ -1224,7 +1124,7 @@ async function handleInference(body: any, userId: string) {
       }
     }
   } catch (err) {
-    const mapped = mapReplicateError(err);
+    const mapped = mapProviderError(err);
     const msg = mapped.message;
     await sb.from("messages").update({
       settings_snapshot_json: {
@@ -1720,13 +1620,19 @@ function extractGatewayRequestId(raw: string): string | undefined {
   }
 }
 
-function mapReplicateError(err: unknown): ProviderRunError {
+// Provider-agnostic. Anything already classified (including every OpenRouter
+// failure, which arrives as a ProviderRunError) passes through untouched.
+function mapProviderError(err: unknown, provider = "the provider"): ProviderRunError {
   if (err instanceof ProviderRunError) return err;
   const message = errMessage(err);
   if (/fetch failed|ECONN|ENOTFOUND|network|timeout/i.test(message)) {
-    return new ProviderRunError("Network error reaching Replicate. Retry in a moment.", "network_error", true, undefined, message);
+    return new ProviderRunError(`Network error reaching ${provider}. Retry in a moment.`, "network_error", true, undefined, message);
   }
   return new ProviderRunError(message, "provider_error", true, undefined, message);
+}
+
+function mapReplicateError(err: unknown): ProviderRunError {
+  return mapProviderError(err, "Replicate");
 }
 
 function extractProviderMessage(raw: string): string {
