@@ -1005,7 +1005,9 @@ async function openrouterImage(
   if (opts.n && opts.n > 1) payload.n = opts.n;
   if (referenceImageUrls.length) payload.input_references = imageRefParts(referenceImageUrls);
 
+  opts.onRequest?.(providerRequestRecord("POST https://openrouter.ai/api/v1/images", payload));
   const j = await openrouterPost("/images", payload);
+
   const out: Array<{ b64?: string; url?: string; mime: string }> = [];
   for (const item of (Array.isArray(j?.data) ? j.data : [])) {
     const mime = String(item?.media_type || "image/png").toLowerCase();
