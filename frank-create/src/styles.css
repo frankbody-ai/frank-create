@@ -4304,7 +4304,18 @@ body {
   .studio-shell.guided-studio .composer-actions > *,
   .studio-shell.guided-studio .composer .primary-button,
   .studio-shell.guided-studio .composer-cancel-button {
-    width: 100%;
+    width: auto;
+  }
+
+  .studio-shell.guided-studio .action-compact-pile {
+    flex-direction: row;
+  }
+
+  .studio-shell.guided-studio .action-compact-pile .remix-button,
+  .studio-shell.guided-studio .action-compact-pile .composer-cancel-button {
+    min-height: 36px;
+    padding: 0 12px;
+    font-size: 0.8rem;
   }
 }
 
