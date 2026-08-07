@@ -1089,8 +1089,12 @@ async function openrouterVideo(
     if (state === "completed" || state === "succeeded") {
       const url: string | undefined = status?.unsigned_urls?.[0] || status?.urls?.[0] || status?.output?.[0];
       if (!url) throw new ProviderRunError("The video job completed without a downloadable clip.", "empty_output", true);
+      const w = Number(status?.width ?? status?.metadata?.width ?? status?.video?.width);
+      const h = Number(status?.height ?? status?.metadata?.height ?? status?.video?.height);
+      if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) opts.onMeta?.({ width: w, height: h });
       return url;
     }
+
     if (state === "failed" || state === "canceled" || state === "cancelled") {
       const msg = status?.error?.message || status?.error || "The video model failed to render this clip.";
       throw new ProviderRunError(String(msg).slice(0, 400), "provider_error", true);
