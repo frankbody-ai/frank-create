@@ -521,10 +521,7 @@ export default function App() {
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
   const [settingsRailOpen, setSettingsRailOpen] = useState(true);
   const [mediaKind, setMediaKind] = useState<"image" | "video" | "compare">("image");
-  // Video: explicit first/last frame picks (no implicit "newest still" guessing).
-  const [videoFirstFrameId, setVideoFirstFrameId] = useState<string | null>(null);
-  const [videoLastFrameId, setVideoLastFrameId] = useState<string | null>(null);
-  const [armedFrameSlot, setArmedFrameSlot] = useState<"first" | "last" | null>(null);
+
   const [compareMedia, setCompareMedia] = useState<"image" | "video">("image");
   const [compareModelBId, setCompareModelBId] = useState<string>("");
   const [compareApproved, setCompareApproved] = useState(false);
@@ -850,9 +847,11 @@ export default function App() {
   }, [selectedAsset?.id]);
 
   const activeReferenceIdSet = useMemo(() => new Set(activeReferenceIds), [activeReferenceIds]);
-  const referenceAssets = assets.filter(
-    (asset) => asset.kind === "reference" && activeReferenceIdSet.has(asset.id)
-  );
+  // Dock order (activeReferenceIds) drives @refN tags and video frame order.
+  const referenceAssets = activeReferenceIds
+    .map((id) => assets.find((asset) => asset.id === id && asset.kind === "reference"))
+    .filter((asset): asset is Asset => Boolean(asset));
+
   // All loaded references are used for the next generation; the only way to
   // exclude one is to remove it from the dock with the X button.
   const selectedReferenceAssets = referenceAssets;
@@ -875,42 +874,28 @@ export default function App() {
     }
   }
 
-  const videoFirstFrame = useMemo(
-    () => assets.find((asset) => asset.id === videoFirstFrameId) ?? null,
-    [assets, videoFirstFrameId]
-  );
-  const videoLastFrame = useMemo(
-    () => assets.find((asset) => asset.id === videoLastFrameId) ?? null,
-    [assets, videoLastFrameId]
-  );
+  // Frames are derived from the reference dock: ref #1 is the first frame and,
+  // when the model accepts an end frame, ref #2 is the last frame.
+  const videoFirstFrame = referenceAssets[0] ?? null;
+  const videoLastFrame = referenceAssets[1] ?? null;
 
   function clearReferenceDock() {
     setActiveReferenceIds([]);
     setReferencePreviewAsset(null);
-    setVideoFirstFrameId(null);
-    setVideoLastFrameId(null);
-    setArmedFrameSlot(null);
   }
 
-  function assignFrameSlot(slot: "first" | "last", assetId: string) {
-    const asset = assets.find((item) => item.id === assetId);
-    if (!asset || asset.media_type === "video") {
-      setStatusText("Frames must be still images.");
-      return;
-    }
-    if (slot === "last") {
-      if (!videoFirstFrameId) {
-        setStatusText("Pick a first frame before the last frame.");
-        return;
-      }
-      setVideoLastFrameId(asset.id);
-      setStatusText(`Last frame set — ${asset.title}.`);
-    } else {
-      setVideoFirstFrameId(asset.id);
-      setStatusText(`First frame set — ${asset.title}.`);
-    }
-    setArmedFrameSlot(null);
+  function swapFrameOrder() {
+    setActiveReferenceIds((current) => {
+      if (current.length < 2) return current;
+      const next = [...current];
+      const [a, b] = [next[0], next[1]];
+      next[0] = b;
+      next[1] = a;
+      return next;
+    });
+    setStatusText("Swapped the start and end frames.");
   }
+
 
 
   const baseFieldErrors = useMemo(
@@ -1788,10 +1773,7 @@ export default function App() {
   }
 
   function inspectAsset(asset: Asset) {
-    if (armedFrameSlot) {
-      assignFrameSlot(armedFrameSlot, asset.id);
-      return;
-    }
+
     if (compareBaseAsset && asset.kind !== "reference") {
       if (asset.id === compareBaseAsset.id) {
         setStatusText("Pick a different image to compare.");
@@ -2640,14 +2622,15 @@ export default function App() {
       ? selectedModel
       : mediaModels.find((model) => model.status === "ready") ?? selectedModel;
 
-    // Frames are explicit: whatever sits in the rail's first/last frame slots.
+    // Frames come from the reference dock: ref #1 starts the clip, ref #2 ends it.
     const sourceAsset = videoFirstFrame ?? undefined;
     const lastFrameAsset = videoModel?.supports_last_frame && sourceAsset ? (videoLastFrame ?? undefined) : undefined;
 
     if (videoModel?.requires_source_image && !sourceAsset) {
-      setStatusText(`${videoModel.short_label ?? videoModel.label} needs a source frame. Fill the first frame slot in the settings rail.`);
+      setStatusText(`${videoModel.short_label ?? videoModel.label} only runs image-to-video — attach a reference image first.`);
       return;
     }
+
 
     const videoSettings = videoModel ? normalizeVideoSettings(settings, videoModel) : settings;
     const videoProviderPrompt = composeVideoReferencePrompt(
@@ -3751,19 +3734,7 @@ export default function App() {
           compareApproved={compareApproved}
           onCompareApprovedChange={setCompareApproved}
           compareCostLabel={compareCostLabel}
-          videoFirstFrame={videoFirstFrame}
-          videoLastFrame={videoLastFrame}
-          armedFrameSlot={armedFrameSlot}
-          onArmFrameSlot={setArmedFrameSlot}
-          onClearFrameSlot={(slot) => {
-            if (slot === "first") {
-              setVideoFirstFrameId(null);
-              setVideoLastFrameId(null);
-            } else {
-              setVideoLastFrameId(null);
-            }
-          }}
-          onDropFrameAsset={assignFrameSlot}
+
         />
 
       ) : null}
@@ -4091,13 +4062,8 @@ export default function App() {
                   selectedAssetId={selectedAsset?.id}
                   onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
                   onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
-                  onUseAsFrame={
-                    mediaKind === "video" || (mediaKind === "compare" && compareMedia === "video")
-                      ? (asset, slot) => assignFrameSlot(slot, asset.id)
-                      : undefined
-                  }
-                  canUseLastFrame={Boolean(selectedModel?.supports_last_frame) && Boolean(videoFirstFrameId)}
                 />
+
                 </div>
                 </div>
 
@@ -4446,6 +4412,38 @@ export default function App() {
               ) : null}
             </p>
           ) : null}
+          {(() => {
+            const videoActive = mediaKind === "video" || (mediaKind === "compare" && compareMedia === "video");
+            if (!videoActive) return null;
+            const vModel = isVideoModel(selectedModel) ? selectedModel : null;
+            const refs = referenceAssets.length;
+            const endFrames = Boolean(vModel?.supports_last_frame);
+            let note: React.ReactNode;
+            if (endFrames) {
+              note = refs === 0
+                ? "Add 1 reference to animate from it, or 2 to set a start and end frame."
+                : refs === 1
+                  ? "Starts on @ref1. Add a second reference to set the end frame."
+                  : <>Starts on <strong>@ref1</strong>, ends on <strong>@ref2</strong>.</>;
+            } else if (refs > 0) {
+              note = <>Image-to-video from <strong>@ref1</strong>.</>;
+            } else if (vModel?.requires_source_image) {
+              note = "This model needs one reference image — add one to run.";
+            } else {
+              note = "No references — text-to-video.";
+            }
+            return (
+              <p className="video-frame-note">
+                {note}
+                {endFrames && refs > 1 ? (
+                  <button type="button" className="video-frame-swap" onClick={swapFrameOrder}>
+                    Swap
+                  </button>
+                ) : null}
+              </p>
+            );
+          })()}
+
         </form>
 
 
@@ -5477,9 +5475,7 @@ function OutputStrip({
   selectedAssetId,
   onSelect,
   onQuickApprove,
-  onQuickReject,
-  onUseAsFrame,
-  canUseLastFrame = false
+  onQuickReject
 }: {
   assets: Asset[];
   emptyLabel?: string;
@@ -5490,8 +5486,7 @@ function OutputStrip({
   onSelect: (asset: Asset) => void;
   onQuickApprove?: (asset: Asset) => void;
   onQuickReject?: (asset: Asset) => void;
-  onUseAsFrame?: (asset: Asset, slot: "first" | "last") => void;
-  canUseLastFrame?: boolean;
+
 }) {
   if (!assets.length && !pending) {
     return (
@@ -5565,19 +5560,8 @@ function OutputStrip({
                 ) : null}
               </div>
             ) : null}
-            {onUseAsFrame && asset.media_type !== "video" && asset.kind !== "mask" ? (
-              <div className="output-tile-frames" onClick={(e) => e.stopPropagation()}>
-                <button type="button" onClick={() => onUseAsFrame(asset, "first")} title="Use as first frame">
-                  first frame
-                </button>
-                {canUseLastFrame ? (
-                  <button type="button" onClick={() => onUseAsFrame(asset, "last")} title="Use as last frame">
-                    last frame
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
           </div>
+
         );
       })}
       {Array.from({ length: skeletonCount }).map((_, index) => (

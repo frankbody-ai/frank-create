@@ -3,8 +3,7 @@ import type { PromptPreset, StudioModel, StudioSettings } from "../lib/types";
 import { estimateVideoCost, filterSizesForAspect, maxCountForModel, modelRateLabel } from "../lib/studio";
 import type { StudioAdjustment, StudioFieldErrors } from "../lib/studio";
 import { AspectPreview } from "./AspectPreview";
-import { FrameSlots, type FrameSlotKind } from "./FrameSlots";
-import type { Asset } from "../lib/types";
+
 
 export type StudioMediaKind = "image" | "video" | "compare";
 
@@ -39,13 +38,7 @@ export interface StudioRailProps {
   compareApproved?: boolean;
   onCompareApprovedChange?: (approved: boolean) => void;
   compareCostLabel?: string | null;
-  /** Video: explicit first/last frame picks. */
-  videoFirstFrame?: Asset | null;
-  videoLastFrame?: Asset | null;
-  armedFrameSlot?: FrameSlotKind | null;
-  onArmFrameSlot?: (slot: FrameSlotKind | null) => void;
-  onClearFrameSlot?: (slot: FrameSlotKind) => void;
-  onDropFrameAsset?: (slot: FrameSlotKind, assetId: string) => void;
+
 }
 
 function ratioBoxStyle(aspect: string) {
@@ -70,9 +63,8 @@ export function StudioRail(props: StudioRailProps) {
     settings, onSettingsChange, onAspectChange, presets, selectedPresetKey,
     onPresetChange, fieldErrors, referenceCount, onReset,
     compareMedia = "image", onCompareMediaChange, compareModelBId, onCompareModelBChange,
-    compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel,
-    videoFirstFrame = null, videoLastFrame = null, armedFrameSlot = null,
-    onArmFrameSlot, onClearFrameSlot, onDropFrameAsset
+    compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel
+
   } = props;
 
   const isCompare = mediaKind === "compare";
@@ -356,18 +348,8 @@ export function StudioRail(props: StudioRailProps) {
           </section>
         ) : null}
 
-        {isVideo && onArmFrameSlot && onClearFrameSlot && onDropFrameAsset ? (
-          <FrameSlots
-            supportsLastFrame={Boolean(model?.supports_last_frame)}
-            requiresFirstFrame={Boolean(model?.requires_source_image)}
-            firstFrame={videoFirstFrame}
-            lastFrame={videoLastFrame}
-            armedSlot={armedFrameSlot}
-            onArm={onArmFrameSlot}
-            onClear={onClearFrameSlot}
-            onDropAsset={onDropFrameAsset}
-          />
-        ) : null}
+
+
 
         <section className="rail-block">
           <p className="rail-label">Style preset</p>
@@ -386,7 +368,7 @@ export function StudioRail(props: StudioRailProps) {
 
         {(() => {
           const hasPreview = /^\d+(?:\.\d+)?\s*[:x/]\s*\d+(?:\.\d+)?$/i.test(settings.aspect_ratio ?? "");
-          const needsFrameError = Boolean(isVideo && model?.requires_source_image && !videoFirstFrame);
+          const needsFrameError = Boolean(isVideo && model?.requires_source_image && referenceCount === 0);
           if (!hasPreview && !fieldErrors.references && !needsFrameError) return null;
           return (
             <section className="rail-block">
@@ -401,7 +383,7 @@ export function StudioRail(props: StudioRailProps) {
               {fieldErrors.references ? <p className="field-error" role="alert">{fieldErrors.references}</p> : null}
               {needsFrameError ? (
                 <p className="field-error" role="alert">
-                  {model?.short_label ?? model?.label} needs a source frame — fill the frame slot above.
+                  {model?.short_label ?? model?.label} only runs image-to-video — attach a reference image in the brief.
                 </p>
               ) : null}
             </section>
