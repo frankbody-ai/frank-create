@@ -847,9 +847,11 @@ export default function App() {
   }, [selectedAsset?.id]);
 
   const activeReferenceIdSet = useMemo(() => new Set(activeReferenceIds), [activeReferenceIds]);
-  const referenceAssets = assets.filter(
-    (asset) => asset.kind === "reference" && activeReferenceIdSet.has(asset.id)
-  );
+  // Dock order (activeReferenceIds) drives @refN tags and video frame order.
+  const referenceAssets = activeReferenceIds
+    .map((id) => assets.find((asset) => asset.id === id && asset.kind === "reference"))
+    .filter((asset): asset is Asset => Boolean(asset));
+
   // All loaded references are used for the next generation; the only way to
   // exclude one is to remove it from the dock with the X button.
   const selectedReferenceAssets = referenceAssets;
