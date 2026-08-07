@@ -8676,6 +8676,7 @@ body {
 /* ---- Round meta chips: aspect, returned resolution, provider JSON -------- */
 .turn-chip-aspect,
 .turn-chip-resolution,
+.turn-chip-json,
 .output-tile-resolution {
   display: inline-flex;
   align-items: center;
@@ -8692,20 +8693,11 @@ body {
 }
 
 .turn-chip-json {
-  display: inline-flex;
-  align-items: center;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  padding: 2px 9px;
-  border-radius: var(--radius-pill, 999px);
-  border: 1px solid var(--line-soft, rgba(15, 23, 42, 0.16));
-  background: transparent;
-  color: var(--text-secondary, rgba(15, 23, 42, 0.7));
   cursor: pointer;
 }
 
 .turn-chip-json:hover {
-  border-color: var(--line-strong, rgba(15, 23, 42, 0.32));
+  background: var(--surface-muted-hover, rgba(15, 23, 42, 0.08));
   color: var(--text-primary, #0f172a);
 }
 
