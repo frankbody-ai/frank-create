@@ -2457,6 +2457,12 @@ export default function App() {
     }
 
     const videoSettings = videoModel ? normalizeVideoSettings(settings, videoModel) : settings;
+    const videoProviderPrompt = composeVideoReferencePrompt(
+      prompt,
+      selectedReferenceAssets,
+      sourceAsset,
+      lastFrameAsset
+    );
     clearReferenceDock();
 
     const ctrl = new AbortController();
@@ -2491,7 +2497,8 @@ export default function App() {
         settings: videoSettings,
         source_asset_id: sourceAsset?.id,
         last_frame_asset_id: lastFrameAsset?.id,
-        reference_asset_ids: selectedReferenceAssets.map((asset) => asset.id)
+        reference_asset_ids: selectedReferenceAssets.map((asset) => asset.id),
+        provider_prompt: videoProviderPrompt
       }, { signal: ctrl.signal });
       setTurns((current) => [...current, result.turn]);
       if (result.status === "blocked") {
@@ -6050,15 +6057,22 @@ function referenceUrlForGeneration(asset: Asset) {
   return asset.remote_url || asset.preview_url || asset.file_path;
 }
 
-function composeReferenceLockedPrompt(prompt: string, referenceCount: number) {
-  if (!referenceCount) return prompt;
-  return [
-    `Use the ${referenceCount} attached reference image${referenceCount === 1 ? "" : "s"} as strict product identity input.`,
-    "The product, packaging, logo, colors, label layout, shape, and material details must come from the reference image(s).",
-    "Do not invent or substitute a different object, animal product, box, brand, flavour, label, or packaging. If the prompt says product/object/pack, it means the referenced Frank Body product.",
-    "Keep the referenced product clearly visible and recognizable in the final image.",
-    prompt,
-  ].join("\n");
+function composeVideoReferencePrompt(
+  prompt: string,
+  references: Asset[],
+  firstFrame?: Asset | null,
+  lastFrame?: Asset | null
+) {
+  const frames: string[] = [];
+  if (firstFrame) frames.push(`First frame (@first) = ${firstFrame.title}`);
+  if (lastFrame) frames.push(`Last frame (@last) = ${lastFrame.title}`);
+  let body = prompt
+    .replace(/@first\b/gi, "the first frame image (@first)")
+    .replace(/@last\b/gi, "the last frame image (@last)");
+  if (references.length) {
+    body = [buildReferenceManifest(references), expandReferenceTags(body, references)].join("\n");
+  }
+  return frames.length ? [...frames, body].join("\n") : body;
 }
 
 function fileToDataUrl(file: File) {
