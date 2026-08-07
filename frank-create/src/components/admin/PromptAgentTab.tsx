@@ -24,6 +24,7 @@ export function PromptAgentTab() {
   const [defaults, setDefaults] = useState<Defaults | null>(null);
   const [persona, setPersona] = useState("");
   const [craftMethod, setCraftMethod] = useState("");
+  const [conversationProtocol, setConversationProtocol] = useState("");
   const [blueprint, setBlueprint] = useState("");
   const [rules, setRules] = useState("");
   const [skills, setSkills] = useState<PromptAgentSkillConfig[]>([]);
@@ -32,10 +33,12 @@ export function PromptAgentTab() {
   function apply(cfg: PromptAgentConfig | Defaults) {
     setPersona(cfg.persona);
     setCraftMethod(cfg.craftMethod);
+    setConversationProtocol(cfg.conversationProtocol ?? "");
     setBlueprint(cfg.blueprint);
     setRules(cfg.rules);
     setSkills(cfg.skills.map((s) => ({ ...s })));
   }
+
 
   useEffect(() => {
     let alive = true;
