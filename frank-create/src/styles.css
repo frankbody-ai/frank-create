@@ -4027,20 +4027,24 @@ body {
 
 .action-compact-pile {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
   flex: 0 0 auto;
 }
 
 .action-compact-pile .remix-button,
 .action-compact-pile .composer-cancel-button {
-  min-height: 28px;
+  min-height: 46px;
+  min-width: 66px;
+  border-radius: 8px;
   padding: 0 10px;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   gap: 6px;
   justify-content: center;
   white-space: nowrap;
 }
+
 
 
 .studio-shell.guided-studio .context-panel.inspector-drawer {
@@ -6811,8 +6815,9 @@ input:focus, textarea:focus, select:focus {
 }
 .reference-picker {
   position: relative;
-  width: min(1040px, 94vw);
-  max-height: 86vh;
+  width: min(880px, 94vw);
+  max-height: min(86vh, 760px);
+  min-height: min(80vh, 660px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -6862,7 +6867,8 @@ input:focus, textarea:focus, select:focus {
 .reference-picker-grid {
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  /* At least four columns at every dialog width. */
+  grid-template-columns: repeat(auto-fill, minmax(min(190px, 24%), 1fr));
   gap: 10px;
   align-content: start;
 }

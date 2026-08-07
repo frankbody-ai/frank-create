@@ -40,6 +40,7 @@ import {
   useRef,
   useState
 } from "react";
+import { createPortal } from "react-dom";
 
 import {
   fetchActivationChecklist,
@@ -4440,7 +4441,7 @@ export default function App() {
         </div>
       ) : null}
 
-      {referencePickerOpen ? (
+      {referencePickerOpen ? createPortal(
         <div
           className="reference-picker-overlay"
           role="dialog"
@@ -4533,7 +4534,8 @@ export default function App() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       ) : null}
 
       {referencePreviewAsset ? (
