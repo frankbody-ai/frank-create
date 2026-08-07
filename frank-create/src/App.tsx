@@ -2622,14 +2622,15 @@ export default function App() {
       ? selectedModel
       : mediaModels.find((model) => model.status === "ready") ?? selectedModel;
 
-    // Frames are explicit: whatever sits in the rail's first/last frame slots.
+    // Frames come from the reference dock: ref #1 starts the clip, ref #2 ends it.
     const sourceAsset = videoFirstFrame ?? undefined;
     const lastFrameAsset = videoModel?.supports_last_frame && sourceAsset ? (videoLastFrame ?? undefined) : undefined;
 
     if (videoModel?.requires_source_image && !sourceAsset) {
-      setStatusText(`${videoModel.short_label ?? videoModel.label} needs a source frame. Fill the first frame slot in the settings rail.`);
+      setStatusText(`${videoModel.short_label ?? videoModel.label} only runs image-to-video — attach a reference image first.`);
       return;
     }
+
 
     const videoSettings = videoModel ? normalizeVideoSettings(settings, videoModel) : settings;
     const videoProviderPrompt = composeVideoReferencePrompt(
