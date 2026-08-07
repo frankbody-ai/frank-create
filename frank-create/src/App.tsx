@@ -4472,66 +4472,43 @@ export default function App() {
               }}
             />
             <div className="reference-picker-body">
-              <div className="reference-picker-grid">
-                <button
-                  type="button"
-                  className="reference-picker-upload"
-                  onClick={() => referencePickerInputRef.current?.click()}
-                >
-                  <Upload size={22} />
-                  <strong>Upload from computer</strong>
-                  <span>PNG, JPG or WEBP · you can also paste or drop</span>
-                </button>
-              </div>
-
               {referenceLibraryLoading ? (
                 <div className="reference-picker-empty">Loading your reference library…</div>
               ) : (
-                <>
-                  <div className="reference-picker-section-label">
-                    Your uploads {referenceUploads.length ? `(${referenceUploads.length})` : ""}
-                  </div>
-                  {referenceUploads.length ? (
-                    <div className="reference-picker-grid">
-                      {referenceUploads.map((asset) => (
-                        <ReferencePickerCard
-                          key={asset.id}
-                          asset={asset}
-                          active={referenceAssets.some((ref) => ref.id === asset.id || ref.source_asset_id === asset.id)}
-                          onPick={async () => {
-                            await useAssetAsReference(asset);
-                            setReferencePickerOpen(false);
-                          }}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="reference-picker-empty">No uploads yet — anything you upload shows up here next time.</div>
-                  )}
-
-                  <div className="reference-picker-section-label">
-                    Approved generations {referenceLibrary.length ? `(${referenceLibrary.length})` : ""}
-                  </div>
+                <div className="reference-picker-grid">
+                  <button
+                    type="button"
+                    className="reference-picker-upload"
+                    onClick={() => referencePickerInputRef.current?.click()}
+                  >
+                    <Upload size={22} />
+                    <strong>Upload from computer</strong>
+                    <span>PNG, JPG or WEBP · you can also paste or drop</span>
+                  </button>
                   {referenceLibrary.length ? (
-                    <div className="reference-picker-grid">
-                      {referenceLibrary.map((asset) => (
-                        <ReferencePickerCard
-                          key={asset.id}
-                          asset={asset}
-                          active={referenceAssets.some((ref) => ref.source_asset_id === asset.id)}
-                          onPick={async () => {
-                            await useAssetAsReference(asset);
-                            setReferencePickerOpen(false);
-                          }}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="reference-picker-empty">No approved images yet — approve a generation to reuse it here.</div>
-                  )}
-                </>
+                    referenceLibrary.map((asset) => (
+                      <ReferencePickerCard
+                        key={asset.id}
+                        asset={asset}
+                        active={referenceAssets.some(
+                          (ref) => ref.id === asset.id || ref.source_asset_id === asset.id
+                        )}
+                        onPick={async () => {
+                          await useAssetAsReference(asset);
+                          setReferencePickerOpen(false);
+                        }}
+                      />
+                    ))
+                  ) : null}
+                </div>
               )}
+              {!referenceLibraryLoading && !referenceLibrary.length ? (
+                <div className="reference-picker-empty">
+                  No reference images yet — upload one or approve a generation to reuse it here.
+                </div>
+              ) : null}
             </div>
+
           </div>
         </div>,
         document.body
