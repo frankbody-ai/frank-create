@@ -1401,6 +1401,8 @@ async function handleInference(body: any, userId: string) {
     output_asset_ids: assetIds,
     requested_count: count,
     partial_errors: partialErrors.length ? partialErrors : undefined,
+    provider_request: providerRequest,
+
   };
   await sb.from("messages").update({
     settings_snapshot_json: completedSnapshot,
