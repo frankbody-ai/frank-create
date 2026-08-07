@@ -4120,19 +4120,21 @@ export default function App() {
                   Setup
                 </button>
               ) : null}
-              <button className="secondary-button remix-button" type="button" onClick={handlePromptRemix} disabled={remixBusy}>
-                {remixBusy ? <RefreshCw className="spin" size={16} /> : <Sparkles size={16} />}
-                Brief remix
-              </button>
-              <button
-                className="secondary-button danger-button composer-cancel-button"
-                type="button"
-                onClick={requestCancelCurrentSession}
-                disabled={!activeSession}
-              >
-                <XCircle size={16} />
-                Cancel session
-              </button>
+              <div className="action-compact-pile">
+                <button className="secondary-button remix-button" type="button" onClick={handlePromptRemix} disabled={remixBusy}>
+                  {remixBusy ? <RefreshCw className="spin" size={14} /> : <Sparkles size={14} />}
+                  Brief remix
+                </button>
+                <button
+                  className="secondary-button danger-button composer-cancel-button"
+                  type="button"
+                  onClick={requestCancelCurrentSession}
+                  disabled={!activeSession}
+                >
+                  <XCircle size={14} />
+                  Cancel
+                </button>
+              </div>
               <button
                 className="primary-button"
                 type="submit"
