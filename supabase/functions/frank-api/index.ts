@@ -198,6 +198,9 @@ function rowToAsset(row: any, signedUrl = ""): any {
     remote_url: signedUrl,
     width: meta.width,
     height: meta.height,
+    aspect_ratio: meta.aspect_ratio ?? undefined,
+    bytes: meta.bytes ?? undefined,
+
     favorite: !!meta.favorite,
     approval_status: meta.approval_status || "review",
     notes: meta.notes,
@@ -229,6 +232,9 @@ function rowToTurn(row: any): any {
       ? JSON.stringify(settings.partial_errors)
       : null,
     requested_count: typeof settings.requested_count === "number" ? settings.requested_count : null,
+    // Sanitised copy of the exact body we posted to the provider (JSON chip).
+    provider_request_json: settings.provider_request ? JSON.stringify(settings.provider_request) : null,
+
     created_at: row.created_at,
     updated_at: row.created_at,
   };
@@ -358,6 +364,8 @@ async function handleVideo(body: any, userId: string) {
   };
 
   let videoUrl: string | undefined;
+  let providerRequest: unknown = null;
+  let returnedSize: { width?: number; height?: number } = {};
   try {
     const videoProviderPrompt = typeof body.provider_prompt === "string" && body.provider_prompt.trim()
       ? body.provider_prompt.trim()
@@ -372,6 +380,8 @@ async function handleVideo(body: any, userId: string) {
       lastFrameUrl,
       referenceUrls: firstFrameUrl ? [] : sourceUrls,
       generateAudio: typeof reqSettings.generate_audio === "boolean" ? reqSettings.generate_audio : undefined,
+      onRequest: (record) => { providerRequest = record; },
+      onMeta: (meta) => { returnedSize = meta; },
     });
   } catch (err) {
     const mapped = mapProviderError(err);
@@ -411,6 +421,8 @@ async function handleVideo(body: any, userId: string) {
       aspect_ratio: reqSettings.aspect_ratio,
       duration: reqSettings.duration ?? null,
       resolution: reqSettings.video_resolution ?? null,
+      bytes: bytes.byteLength,
+      ...(returnedSize.width && returnedSize.height ? { width: returnedSize.width, height: returnedSize.height } : {}),
     },
   }).select().single();
   if (assetIns.error) return await failTurn("db_failed", assetIns.error.message);
@@ -420,7 +432,9 @@ async function handleVideo(body: any, userId: string) {
     status: "complete",
     output_asset_ids: [assetId],
     requested_count: 1,
+    provider_request: providerRequest,
   };
+
   await sb.from("messages").update({ settings_snapshot_json: completedSnapshot }).eq("id", turnId);
 
   return {
@@ -607,7 +621,10 @@ async function handleEnhance(body: any, userId: string) {
       enhanced: true,
       source_asset_id: sourceAssetId ?? null,
       enhance_settings: reqSettings,
+      bytes: bytes.byteLength,
+      ...(media === "image" ? (imageDimensions(bytes, mime) ?? {}) : {}),
     },
+
   }).select().single();
   if (assetIns.error) return await failTurn("db_failed", assetIns.error.message);
 
@@ -798,13 +815,108 @@ async function openrouterPost(path: string, payload: Record<string, unknown>): P
   throw (lastErr instanceof ProviderRunError ? lastErr : new ProviderRunError(`OpenRouter unreachable: ${errMessage(lastErr)}`, "provider_unavailable", true));
 }
 
+// ---- Troubleshooting: the exact request body we sent to the provider --------
+// Stored on the turn so the UI can show it behind a "JSON" chip. Credential-ish
+// keys are stripped and inline data URLs are collapsed to short descriptors so
+// the record stays readable and small.
+function describeInlineImage(url: string, index: number): string {
+  const m = /^data:([^;,]+);base64,(.*)$/i.exec(url);
+  if (!m) return `ref${index + 1}: ${url.slice(0, 120)}`;
+  const bytes = Math.floor((m[2]?.length ?? 0) * 0.75);
+  const kb = bytes >= 1024 ? `${Math.round(bytes / 1024)} KB` : `${bytes} B`;
+  return `ref${index + 1}: ${m[1]}, ${kb}`;
+}
+
+function redactProviderPayload(value: unknown, key = ""): unknown {
+  if (/api[_-]?key|token|secret|authorization|bearer|password|credential/i.test(key)) {
+    return "[redacted]";
+  }
+  if (typeof value === "string") {
+    return value.startsWith("data:") ? describeInlineImage(value, 0) : value;
+  }
+  if (Array.isArray(value)) {
+    if (key === "input_references" || key === "frame_images" || key === "reference_images") {
+      return value.map((item, i) => {
+        const url = typeof item === "string"
+          ? item
+          : String((item as any)?.image_url?.url ?? (item as any)?.url ?? "");
+        const label = describeInlineImage(url, i);
+        const frameType = typeof item === "object" && item ? (item as any).frame_type : undefined;
+        return frameType ? `${label} (${frameType})` : label;
+      });
+    }
+    return value.map((item) => redactProviderPayload(item));
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, redactProviderPayload(v, k)]),
+    );
+  }
+  return value;
+}
+
+function providerRequestRecord(endpoint: string, payload: Record<string, unknown>) {
+  return { endpoint, sent_at: nowIso(), body: redactProviderPayload(payload) };
+}
+
+// ---- Real pixel dimensions, read out of the returned file's header ----------
+function imageDimensions(bytes: Uint8Array, mime = ""): { width: number; height: number } | null {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  // PNG: 8-byte signature, then IHDR with width/height as big-endian uint32.
+  if (bytes.length > 24 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+    return { width: view.getUint32(16), height: view.getUint32(20) };
+  }
+  // GIF
+  if (bytes.length > 10 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
+    return { width: view.getUint16(6, true), height: view.getUint16(8, true) };
+  }
+  // JPEG: walk the markers to the first SOFn frame header.
+  if (bytes.length > 4 && bytes[0] === 0xff && bytes[1] === 0xd8) {
+    let offset = 2;
+    while (offset + 9 < bytes.length) {
+      if (bytes[offset] !== 0xff) { offset++; continue; }
+      const marker = bytes[offset + 1];
+      if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) { offset += 2; continue; }
+      const length = view.getUint16(offset + 2);
+      const isSof = marker >= 0xc0 && marker <= 0xcf
+        && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
+      if (isSof) {
+        return { height: view.getUint16(offset + 5), width: view.getUint16(offset + 7) };
+      }
+      offset += 2 + length;
+    }
+    return null;
+  }
+  // WebP: RIFF container with VP8 / VP8L / VP8X chunks.
+  if (
+    bytes.length > 30 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46
+    && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
+  ) {
+    const chunk = String.fromCharCode(bytes[12], bytes[13], bytes[14], bytes[15]);
+    if (chunk === "VP8 ") {
+      return { width: view.getUint16(26, true) & 0x3fff, height: view.getUint16(28, true) & 0x3fff };
+    }
+    if (chunk === "VP8L") {
+      const b = view.getUint32(21, true);
+      return { width: (b & 0x3fff) + 1, height: ((b >> 14) & 0x3fff) + 1 };
+    }
+    if (chunk === "VP8X") {
+      const w = 1 + (bytes[24] | (bytes[25] << 8) | (bytes[26] << 16));
+      const h = 1 + (bytes[27] | (bytes[28] << 8) | (bytes[29] << 16));
+      return { width: w, height: h };
+    }
+  }
+  return mime ? null : null;
+}
+
+
 // Dedicated image endpoint. Every field is clamped to the chosen model's
 // published envelope first — OpenRouter 400s on out-of-enum values and on
 // knobs the model does not expose at all (e.g. `resolution` on gpt-image-2).
 async function openrouterImage(
   prompt: string,
   referenceImageUrls: string[] = [],
-  opts: { model: string; aspectRatio?: string; size?: string; quality?: string; n?: number } = { model: "google/gemini-3.1-flash-image" },
+  opts: { model: string; aspectRatio?: string; size?: string; quality?: string; n?: number; onRequest?: (record: unknown) => void } = { model: "google/gemini-3.1-flash-image" },
 ): Promise<Array<{ b64?: string; url?: string; mime: string }>> {
   const payload = buildImagePayload({
     model: opts.model,
@@ -816,7 +928,9 @@ async function openrouterImage(
   });
   payload.prompt = prompt;
 
+  opts.onRequest?.(providerRequestRecord("POST https://openrouter.ai/api/v1/images", payload));
   const j = await openrouterPost("/images", payload);
+
   const out: Array<{ b64?: string; url?: string; mime: string }> = [];
   for (const item of (Array.isArray(j?.data) ? j.data : [])) {
     const mime = String(item?.media_type || "image/png").toLowerCase();
@@ -845,10 +959,15 @@ async function openrouterVideo(
     lastFrameUrl?: string;
     referenceUrls?: string[];
     generateAudio?: boolean;
+    onRequest?: (record: unknown) => void;
+    onMeta?: (meta: { width?: number; height?: number }) => void;
   },
   maxMs = 600_000,
 ): Promise<string> {
-  const job = await openrouterPost("/videos", buildVideoPayload(opts));
+  const payload = buildVideoPayload(opts);
+  opts.onRequest?.(providerRequestRecord("POST https://openrouter.ai/api/v1/videos", payload));
+  const job = await openrouterPost("/videos", payload);
+
   // polling_url is returned site-relative ("/api/v1/videos/<id>"); passing it
   // straight to fetch() throws "Invalid URL" and the job never completes.
   const pollUrl = resolvePollingUrl(OPENROUTER_BASE, job?.polling_url, job?.id);
@@ -884,8 +1003,13 @@ async function openrouterVideo(
     if (state === "completed") {
       const url: string | undefined = status?.unsigned_urls?.[0] || status?.urls?.[0] || status?.output?.[0];
       if (!url) throw new ProviderRunError("The video job completed without a downloadable clip.", "empty_output", true);
+      const w = Number(status?.width ?? status?.metadata?.width ?? status?.video?.width);
+      const h = Number(status?.height ?? status?.metadata?.height ?? status?.video?.height);
+      if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) opts.onMeta?.({ width: w, height: h });
       return url;
     }
+    // classifyVideoJobStatus folds failed / cancelled / canceled / expired
+    // into one terminal-failure state.
     if (state === "failed") {
       const msg = status?.error?.message || status?.error || `The video model returned status "${status?.status}".`;
       throw new ProviderRunError(String(msg).slice(0, 400), "provider_error", true);
@@ -1011,6 +1135,9 @@ async function handleInference(body: any, userId: string) {
   const count = Math.min(Math.max(Number(reqSettings.count ?? body.count ?? 1) || 1, 1), modelCap);
   const generatedImages: Array<{ b64?: string; url?: string; mime: string }> = [];
   const partialErrors: Array<{ code: string; message: string; retryable: boolean; status?: number; request_id?: string }> = [];
+  // The sanitised body we sent upstream, stored on the turn for troubleshooting.
+  let providerRequest: unknown = null;
+
   try {
     const refIds: string[] = [
       ...(body.edit_source_asset_id ? [body.edit_source_asset_id] : []),
@@ -1042,9 +1169,11 @@ async function handleInference(body: any, userId: string) {
             size: reqSettings.image_size || reqSettings.size,
             quality: reqSettings.quality,
             n,
+            onRequest: (record) => { providerRequest = record; },
           })
         )
       );
+
       for (const result of results) {
         if (result.status === "fulfilled") generatedImages.push(...result.value);
         else {
@@ -1071,11 +1200,14 @@ async function handleInference(body: any, userId: string) {
         size: reqSettings.image_size || reqSettings.size,
         reference_images: refUrls,
       };
+      const replicateBody = { version_or_model: replicateSlug, input: buildReplicateInput(replicateSlug, providerPrompt, input) };
+      providerRequest = providerRequestRecord(`POST https://api.replicate.com/v1/models/${replicateSlug}/predictions`, replicateBody);
       const created = await Promise.allSettled(
         Array.from({ length: count }, () =>
           createReplicatePrediction(replicateSlug, buildReplicateInput(replicateSlug, providerPrompt, input), replicateKey)
         )
       );
+
       const predictionIds: string[] = [];
       const createErrors: unknown[] = [];
       for (const result of created) {
@@ -1097,10 +1229,12 @@ async function handleInference(body: any, userId: string) {
         prediction_ids: predictionIds,
         requested_count: count,
         partial_errors: partialErrors.length ? partialErrors : undefined,
+        provider_request: providerRequest,
         started_at: nowIso(),
       };
       await sb.from("messages").update({ settings_snapshot_json: runningSnapshot }).eq("id", turnId);
       return {
+
         turn: rowToTurn({
           id: turnId, session_id: sessionId, role: "user",
           message_type: settingsSnapshot.kind, prompt_text: prompt,
@@ -1126,34 +1260,26 @@ async function handleInference(body: any, userId: string) {
   } catch (err) {
     const mapped = mapProviderError(err);
     const msg = mapped.message;
-    await sb.from("messages").update({
-      settings_snapshot_json: {
-        ...settingsSnapshot,
-        status: "failed",
-        error: msg,
-        error_code: mapped.code,
-        error_retryable: mapped.retryable,
-        error_status: mapped.status ?? null,
-        error_raw: mapped.raw ?? null,
-        error_request_id: mapped.requestId ?? null,
-      },
-    }).eq("id", turnId);
+    const failedSnapshot = {
+      ...settingsSnapshot,
+      status: "failed",
+      error: msg,
+      error_code: mapped.code,
+      error_retryable: mapped.retryable,
+      error_status: mapped.status ?? null,
+      error_raw: mapped.raw ?? null,
+      error_request_id: mapped.requestId ?? null,
+      provider_request: providerRequest,
+    };
+    await sb.from("messages").update({ settings_snapshot_json: failedSnapshot }).eq("id", turnId);
     return {
       turn: rowToTurn({
         id: turnId, session_id: sessionId, role: "user",
         message_type: settingsSnapshot.kind, prompt_text: prompt,
-        settings_snapshot_json: {
-          ...settingsSnapshot,
-          status: "failed",
-          error: msg,
-          error_code: mapped.code,
-          error_retryable: mapped.retryable,
-          error_status: mapped.status ?? null,
-          error_raw: mapped.raw ?? null,
-          error_request_id: mapped.requestId ?? null,
-        },
+        settings_snapshot_json: failedSnapshot,
         seq: nextSeq, created_at: nowIso(),
       }),
+
       status: "failed" as const,
       error: { code: mapped.code, message: msg, retryable: mapped.retryable, status: mapped.status, raw: mapped.raw, request_id: mapped.requestId } as any,
     };
@@ -1175,6 +1301,8 @@ async function handleInference(body: any, userId: string) {
     output_asset_ids: assetIds,
     requested_count: count,
     partial_errors: partialErrors.length ? partialErrors : undefined,
+    provider_request: providerRequest,
+
   };
   await sb.from("messages").update({
     settings_snapshot_json: completedSnapshot,
@@ -1233,15 +1361,24 @@ async function persistImageAssets(args: {
       asset_type: "generated",
       prompt_snapshot: args.prompt,
       model_key: args.modelId,
-      metadata_json: {
-        media_type: "image",
-        mime,
-        title: args.prompt.slice(0, 80) || "Generated image",
-        aspect_ratio: args.aspectRatio,
-        requested_size: args.requestedSize ?? null,
-        width: requested?.width,
-        height: requested?.height,
-      },
+      metadata_json: (() => {
+        // The real pixel size comes from the file the provider returned; the
+        // requested aspect/size is kept alongside it for comparison.
+        const real = imageDimensions(bytes, mime);
+        return {
+          media_type: "image",
+          mime,
+          title: args.prompt.slice(0, 80) || "Generated image",
+          aspect_ratio: args.aspectRatio,
+          requested_size: args.requestedSize ?? null,
+          requested_width: requested?.width ?? null,
+          requested_height: requested?.height ?? null,
+          bytes: bytes.byteLength,
+          width: real?.width,
+          height: real?.height,
+        };
+      })(),
+
     }).select().single();
     if (assetIns.error) throw assetIns.error;
     return assetIns.data;

@@ -394,6 +394,9 @@ export default function App() {
   const [referencePreviewAsset, setReferencePreviewAsset] = useState<Asset | null>(null);
   const [referenceDropActive, setReferenceDropActive] = useState(false);
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
+  // Turn whose provider request body is being inspected via the JSON chip.
+  const [payloadTurnId, setPayloadTurnId] = useState<string | null>(null);
+
   const [referenceLibrary, setReferenceLibrary] = useState<Asset[]>([]);
   const [referencePickerSelection, setReferencePickerSelection] = useState<string[]>([]);
   const [referencePickerBusy, setReferencePickerBusy] = useState(false);
@@ -486,18 +489,35 @@ export default function App() {
   const videoAbortRef = useRef<AbortController | null>(null);
   const generateAbortRef = useRef<AbortController | null>(null);
 
+  // Always-fresh view of the pending cards for interval/event callbacks.
+  const inflightRef = useRef<InflightGen[]>([]);
+  useEffect(() => { inflightRef.current = inflightGens; }, [inflightGens]);
+
+  // Ticks once a second while something is pending so the card can show elapsed time.
+  const [pendingTick, setPendingTick] = useState(Date.now());
+  useEffect(() => {
+    if (!inflightGens.length) return;
+    setPendingTick(Date.now());
+    const iv = window.setInterval(() => setPendingTick(Date.now()), 1000);
+    return () => window.clearInterval(iv);
+  }, [inflightGens.length]);
+
   // Watchdog: a dropped connection or a provider that never answers used to leave
-  // the pending card spinning forever. After RUN_TIMEOUT_MS we abort the request,
-  // clear the pending cards and surface a retryable error instead.
+  // the pending card spinning forever. After RUN_TIMEOUT_MS we re-check the server
+  // first (the round may well have landed), then abort and surface a retryable error.
   const RUN_TIMEOUT_MS = 12 * 60 * 1000;
   useEffect(() => {
     if (!inflightGens.length) return;
+    let disposed = false;
     const timer = window.setInterval(() => {
       const cutoff = Date.now() - RUN_TIMEOUT_MS;
-      setInflightGens((current) => {
-        const stale = current.filter((g) => g.startedAt <= cutoff);
-        if (!stale.length) return current;
-        const remaining = current.filter((g) => g.startedAt > cutoff);
+      if (!inflightRef.current.some((g) => g.startedAt <= cutoff)) return;
+      void (async () => {
+        // Never fail a run that actually finished server-side.
+        await settleFinishedRunsFromServer();
+        if (disposed) return;
+        const stale = inflightRef.current.filter((g) => g.startedAt <= cutoff);
+        if (!stale.length) return;
         try { generateAbortRef.current?.abort(); } catch { /* already settled */ }
         try { videoAbortRef.current?.abort(); } catch { /* already settled */ }
         setGenError({
@@ -506,16 +526,21 @@ export default function App() {
           retryable: true,
         });
         setGenErrorOpen(true);
-        if (!remaining.length) {
-          setBusy(false);
-          setGenPhase("idle");
-          setStatusText("Run timed out. Ready when you are.");
-        }
-        return remaining;
-      });
+        const staleIds = new Set(stale.map((g) => g.id));
+        setInflightGens((current) => {
+          const remaining = current.filter((g) => !staleIds.has(g.id));
+          if (!remaining.length) {
+            setBusy(false);
+            setGenPhase("idle");
+            setStatusText("Run timed out. Ready when you are.");
+          }
+          return remaining;
+        });
+      })();
     }, 15000);
-    return () => window.clearInterval(timer);
+    return () => { disposed = true; window.clearInterval(timer); };
   }, [inflightGens.length]);
+
   // Set by "Switch model and retry": once the picker has re-rendered on the new
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
@@ -2580,7 +2605,7 @@ export default function App() {
   // Pull turns + assets for the active session and merge them into local state
   // without dropping anything already on screen.
   async function reconcileSessionAssets() {
-    if (connection !== "online" || !activeSession) return;
+    if (connection !== "online" || !activeSession) return null;
     try {
       const [turnResult, assetResult] = await Promise.all([
         listTurns(activeSession.id),
@@ -2601,10 +2626,106 @@ export default function App() {
             new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
         );
       });
+      return { turns: turnResult.turns, assets: assetResult.assets };
     } catch {
       /* reconcile is best-effort */
+      return null;
     }
   }
+
+  // The provider work is persisted server-side before the HTTP call returns, so a
+  // dropped/timed-out response used to leave the pending card spinning even though
+  // the round had finished. Re-read the session and settle any local pending card
+  // whose round already landed. Returns the number of cards settled.
+  async function settleFinishedRunsFromServer() {
+    const snapshot = await reconcileSessionAssets();
+    if (!snapshot) return 0;
+
+    const pending = inflightRef.current;
+    if (!pending.length) return 0;
+
+    const claimed = new Set<string>();
+    const settledIds: string[] = [];
+    let newestAsset: Asset | undefined;
+
+    for (const gen of pending) {
+      const match = snapshot.turns.find((turn) => {
+        if (claimed.has(turn.id)) return false;
+        if (turn.status === "queued" || turn.status === "running") return false;
+        if (turn.model !== gen.modelId) return false;
+        // Allow a little clock skew between the browser and the backend.
+        if (new Date(turn.created_at).getTime() < gen.startedAt - 15000) return false;
+        const done =
+          turn.status === "failed" ||
+          turn.status === "blocked" ||
+          snapshot.assets.some((asset) => asset.turn_id === turn.id);
+        return done;
+      });
+      if (!match) continue;
+      claimed.add(match.id);
+      settledIds.push(gen.id);
+      const asset = snapshot.assets.find((item) => item.turn_id === match.id);
+      if (asset && !newestAsset) newestAsset = asset;
+    }
+
+    if (!settledIds.length) return 0;
+
+    const settled = new Set(settledIds);
+    setInflightGens((current) => {
+      const remaining = current.filter((gen) => !settled.has(gen.id));
+      if (!remaining.length) {
+        setBusy(false);
+        setGenPhase("completed");
+        setStatusText(
+          newestAsset
+            ? "Round landed while you were waiting — picks are ready."
+            : "Round closed out on the server.",
+        );
+      }
+      return remaining;
+    });
+    if (newestAsset) setSelectedAsset(newestAsset);
+    return settledIds.length;
+  }
+
+  // Live reconcile: while anything is pending locally or a round is queued/running
+  // on the backend, keep re-reading our own database so finished work appears
+  // without a manual refresh. Idle sessions poll nothing.
+  const hasLiveTurn = turns.some((turn) => turn.status === "queued" || turn.status === "running");
+  const shouldPollSession = (inflightGens.length > 0 || hasLiveTurn) && connection === "online";
+  useEffect(() => {
+    if (!shouldPollSession) return;
+    let disposed = false;
+    const startedAt = Date.now();
+    let timer = 0;
+    const tick = async () => {
+      if (disposed) return;
+      await settleFinishedRunsFromServer();
+      if (disposed) return;
+      const elapsed = Date.now() - startedAt;
+      timer = window.setTimeout(tick, elapsed > 60000 ? 10000 : 5000);
+    };
+    timer = window.setTimeout(tick, 5000);
+    return () => { disposed = true; window.clearTimeout(timer); };
+  }, [shouldPollSession, activeSession?.id]);
+
+  // Coming back to a backgrounded tab shows finished work straight away.
+  useEffect(() => {
+    if (!shouldPollSession) return;
+    const onWake = () => {
+      if (document.visibilityState === "hidden") return;
+      void settleFinishedRunsFromServer();
+    };
+    window.addEventListener("focus", onWake);
+    document.addEventListener("visibilitychange", onWake);
+    return () => {
+      window.removeEventListener("focus", onWake);
+      document.removeEventListener("visibilitychange", onWake);
+    };
+  }, [shouldPollSession, activeSession?.id]);
+
+
+
 
 
   async function handleVideoGenerate() {
@@ -3826,11 +3947,15 @@ export default function App() {
           {(() => {
             // Once the backend has a queued/running round of its own, that round card
             // IS the loading state — never show a second local card for the same run.
-            const hasLiveTurn = turns.some((t) => t.status === "queued" || t.status === "running");
             if (hasLiveTurn || !inflightGens.length) return null;
             return inflightGens.slice().reverse().map((gen) => {
             const p = aspectRatioParts(gen.aspect);
             const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
+            const waitedMs = Math.max(0, pendingTick - gen.startedAt);
+            const waitedSeconds = Math.floor(waitedMs / 1000);
+            const waitedLabel = waitedSeconds >= 60
+              ? `${Math.floor(waitedSeconds / 60)}m ${String(waitedSeconds % 60).padStart(2, "0")}s`
+              : `${waitedSeconds}s`;
             return (
               <article key={gen.id} className="turn-card turn-card-pending" aria-live="polite" aria-busy="true">
                 <div className="turn-card-body">
@@ -3845,10 +3970,20 @@ export default function App() {
                       <span>Running</span>
                       <span>{gen.aspect}</span>
                       <span>{gen.count} pick{gen.count === 1 ? "" : "s"}</span>
+                      {waitedSeconds >= 5 ? <span>{waitedLabel} elapsed</span> : null}
                     </div>
+                    {waitedMs > 90000 ? (
+                      <div className="turn-pending-recheck">
+                        <span>Taking longer than usual — the picks may already be saved.</span>
+                        <button type="button" onClick={() => void settleFinishedRunsFromServer()}>
+                          Check for results
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
                 </div>
+
                 <div className="turn-visual">
                 <div className="output-grid">
                   {Array.from({ length: gen.count }).map((_, i) => (
@@ -3982,6 +4117,32 @@ export default function App() {
                       {timeLabel ? <span title={timeLabel}>{timeLabel}</span> : null}
                       <span>{turn.status}</span>
                       {turn.frank_body_mode ? <span>Frank Body Mode</span> : <span>User prompt</span>}
+                      {turnAspect(turn) ? <span className="turn-chip-aspect">{formatAspectChip(turnAspect(turn))}</span> : null}
+                      {(() => {
+                        // Real returned pixel size, read from the delivered file.
+                        const sizes = Array.from(new Set(
+                          displayOutputAssets
+                            .filter((a) => a.turn_id === turn.id && a.width && a.height)
+                            .map((a) => `${a.width} × ${a.height}`),
+                        ));
+                        if (!sizes.length) return null;
+                        return (
+                          <span className="turn-chip-resolution" title="Resolution returned by the provider">
+                            {sizes.join(" · ")}
+                          </span>
+                        );
+                      })()}
+                      {turn.provider_request_json ? (
+                        <button
+                          type="button"
+                          className="turn-chip-json"
+                          onClick={() => setPayloadTurnId(turn.id)}
+                          title="Show the JSON body sent to the provider"
+                        >
+                          JSON
+                        </button>
+                      ) : null}
+
                       <button
                         type="button"
                         className="turn-copy-prompt"
@@ -4613,7 +4774,15 @@ export default function App() {
               <XCircle size={18} />
             </button>
             <AssetPreviewMedia asset={lightboxAsset} fallbackIconSize={42} controls />
+            <div className="lightbox-meta">
+              {lightboxAsset.aspect_ratio ? <span>{formatAspectChip(lightboxAsset.aspect_ratio)}</span> : null}
+              {lightboxAsset.width && lightboxAsset.height ? (
+                <span title="Resolution returned by the provider">{lightboxAsset.width} × {lightboxAsset.height}</span>
+              ) : null}
+              {lightboxAsset.model ? <span>{modelName(config, lightboxAsset.model)}</span> : null}
+            </div>
             <div className="lightbox-actions">
+
               <button
                 type="button"
                 onClick={() => {
@@ -4775,6 +4944,45 @@ export default function App() {
         </div>,
         document.body
       ) : null}
+
+      {payloadTurnId ? createPortal(
+        <div
+          className="payload-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setPayloadTurnId(null)}
+        >
+          <div className="payload-modal" onClick={(event) => event.stopPropagation()}>
+            <header className="payload-modal-header">
+              <div>
+                <p className="eyebrow">Provider request</p>
+                <h3>JSON sent to the model</h3>
+              </div>
+              <div className="payload-modal-actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const body = formatProviderPayload(turns.find((t) => t.id === payloadTurnId));
+                    void navigator.clipboard?.writeText(body).then(() => {
+                      setStatusText("Provider JSON copied to clipboard.");
+                    }).catch(() => setStatusText("Could not copy the JSON."));
+                  }}
+                >
+                  <Clipboard size={14} />
+                  Copy
+                </button>
+                <button type="button" onClick={() => setPayloadTurnId(null)} aria-label="Close JSON view">
+                  <XCircle size={18} />
+                </button>
+              </div>
+            </header>
+            <pre className="payload-modal-body">{formatProviderPayload(turns.find((t) => t.id === payloadTurnId))}</pre>
+          </div>
+        </div>,
+        document.body
+      ) : null}
+
+
 
       {referencePreviewAsset ? (
         <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setReferencePreviewAsset(null)}>
@@ -5461,7 +5669,25 @@ function turnExpectedCount(turn: StudioTurn) {
   return Number.isFinite(raw) && raw > 0 ? Math.min(24, Math.floor(raw)) : 1;
 }
 
+/** Human label for the aspect chip; passes through provider enums like "match_input_image". */
+function formatAspectChip(value: string) {
+  if (!value) return "";
+  if (/^\d+(\.\d+)?\s*:\s*\d+(\.\d+)?$/.test(value)) return value.replace(/\s+/g, "");
+  return value.replace(/[_-]+/g, " ").toLowerCase();
+}
+
+/** Pretty-print the stored provider request body for the JSON chip modal. */
+function formatProviderPayload(turn?: StudioTurn) {
+  if (!turn?.provider_request_json) return "No request body was captured for this round.";
+  try {
+    return JSON.stringify(JSON.parse(turn.provider_request_json), null, 2);
+  } catch {
+    return turn.provider_request_json;
+  }
+}
+
 function turnAspect(turn: StudioTurn) {
+
   const parsed = parseJsonRecord(turn.settings_json) as { aspect_ratio?: unknown };
   return typeof parsed.aspect_ratio === "string" ? parsed.aspect_ratio : "";
 }
@@ -5534,6 +5760,12 @@ function OutputStrip({
               <AssetPreviewMedia asset={asset} fallbackIconSize={24} variant="thumb" />
               <span>{assetStatusCopy(status)}</span>
             </button>
+            {asset.width && asset.height ? (
+              <span className="output-tile-resolution" title="Resolution returned by the provider">
+                {asset.width} × {asset.height}
+              </span>
+            ) : null}
+
             {(onQuickApprove || onQuickReject) && asset.kind !== "reference" && asset.kind !== "mask" ? (
               <div className="output-tile-quick" onClick={(e) => e.stopPropagation()}>
                 {onQuickApprove ? (
