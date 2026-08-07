@@ -1438,15 +1438,24 @@ async function persistImageAssets(args: {
       asset_type: "generated",
       prompt_snapshot: args.prompt,
       model_key: args.modelId,
-      metadata_json: {
-        media_type: "image",
-        mime,
-        title: args.prompt.slice(0, 80) || "Generated image",
-        aspect_ratio: args.aspectRatio,
-        requested_size: args.requestedSize ?? null,
-        width: requested?.width,
-        height: requested?.height,
-      },
+      metadata_json: (() => {
+        // The real pixel size comes from the file the provider returned; the
+        // requested aspect/size is kept alongside it for comparison.
+        const real = imageDimensions(bytes, mime);
+        return {
+          media_type: "image",
+          mime,
+          title: args.prompt.slice(0, 80) || "Generated image",
+          aspect_ratio: args.aspectRatio,
+          requested_size: args.requestedSize ?? null,
+          requested_width: requested?.width ?? null,
+          requested_height: requested?.height ?? null,
+          bytes: bytes.byteLength,
+          width: real?.width,
+          height: real?.height,
+        };
+      })(),
+
     }).select().single();
     if (assetIns.error) throw assetIns.error;
     return assetIns.data;
