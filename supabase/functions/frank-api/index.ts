@@ -569,8 +569,12 @@ async function handleVideo(body: any, userId: string) {
   const bytes = new Uint8Array(await res.arrayBuffer());
   const assetId = crypto.randomUUID();
   const storagePath = `${sessionId}/${assetId}.mp4`;
-  const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, { contentType: mime, upsert: false });
-  if (up.error) return await failTurn("storage_failed", up.error.message);
+  let stored: StoredResult;
+  try {
+    stored = await storeOrFallback({ storagePath, bytes, mime, remoteUrl: videoUrl });
+  } catch (err) {
+    return await failTurn("storage_failed", err instanceof Error ? err.message : String(err));
+  }
 
   const assetIns = await sb.from("assets").insert({
     id: assetId,
@@ -590,7 +594,9 @@ async function handleVideo(body: any, userId: string) {
       resolution: reqSettings.video_resolution ?? null,
       bytes: bytes.byteLength,
       ...(returnedSize.width && returnedSize.height ? { width: returnedSize.width, height: returnedSize.height } : {}),
+      ...stored.meta,
     },
+
   }).select().single();
   if (assetIns.error) return await failTurn("db_failed", assetIns.error.message);
 
