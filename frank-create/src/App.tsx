@@ -4656,20 +4656,24 @@ export default function App() {
 function ReferencePickerCard({
   asset,
   active,
+  selected,
   onPick
 }: {
   asset: Asset;
   active: boolean;
+  selected: boolean;
   onPick: () => void | Promise<void>;
 }) {
   const full = asset.preview_url || asset.remote_url;
-  const [src, setSrc] = useState(() => thumbnailUrl(full, 280));
+  const [src, setSrc] = useState(() => thumbnailUrl(full, 150, 25, "webp"));
   return (
     <button
       type="button"
-      className={`reference-picker-card${active ? " is-active" : ""}`}
+      className={`reference-picker-card${active ? " is-active" : ""}${selected ? " is-selected" : ""}`}
       onClick={() => { void onPick(); }}
       title={asset.title}
+      aria-pressed={selected}
+      disabled={active}
     >
       {src ? (
         <img
@@ -4677,8 +4681,8 @@ function ReferencePickerCard({
           alt={asset.title}
           loading="lazy"
           decoding="async"
-          width={280}
-          height={280}
+          width={150}
+          height={150}
           onError={() => {
             // Transformed variants aren't available for every source; fall back
             // to the original URL so the tile still renders.
@@ -4689,10 +4693,15 @@ function ReferencePickerCard({
         <span className="reference-picker-card-fallback"><Paperclip size={18} /></span>
       )}
       <span className="reference-picker-card-title">{asset.title}</span>
-      {active ? <span className="reference-picker-card-flag">In use</span> : null}
+      {active ? (
+        <span className="reference-picker-card-flag">In use</span>
+      ) : selected ? (
+        <span className="reference-picker-card-check"><CheckCircle2 size={16} /></span>
+      ) : null}
     </button>
   );
 }
+
 
 
 function WalkthroughOverlay({
