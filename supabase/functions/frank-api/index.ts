@@ -786,49 +786,47 @@ async function lovableImage(
   throw new Error(`Lovable AI returned no image data. ${JSON.stringify(j).slice(0, 300)}`);
 }
 
-// ---- OpenRouter (primary image provider) ----
+// ---- OpenRouter (primary image + video provider) ----
+// Images go through the dedicated POST /v1/images endpoint (real aspect_ratio /
+// resolution / n / input_references enums). Video goes through the async
+// POST /v1/videos job API: submit → poll polling_url → download unsigned_urls[0].
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 
-async function openrouterImage(
-  prompt: string,
-  referenceImageUrls: string[] = [],
-  opts: { model: string; aspectRatio?: string; size?: string; thinkingBudget?: number } = { model: "google/gemini-3.1-flash-image" },
-): Promise<{ b64?: string; url?: string; mime: string }> {
+function openrouterHeaders(key: string): Record<string, string> {
+  return {
+    Authorization: `Bearer ${key}`,
+    "Content-Type": "application/json",
+    "HTTP-Referer": "https://frank-create.lovable.app",
+    "X-Title": "autosolutions OS",
+  };
+}
+
+function openrouterKey(): string {
   const key = Deno.env.get("OPENROUTER_API_KEY");
   if (!key) throw new ProviderRunError("OpenRouter is not configured (missing OPENROUTER_API_KEY).", "auth_failed", false);
+  return key;
+}
 
-  const hints: string[] = [];
-  if (opts.aspectRatio && opts.aspectRatio !== "auto" && /^\d+\s*:\s*\d+$/.test(opts.aspectRatio)) {
-    hints.push(`The final image canvas must be exactly ${opts.aspectRatio} aspect ratio. Do not use a square canvas unless ${opts.aspectRatio} is 1:1.`);
-  }
-  if (opts.size && ["1K", "2K", "4K"].includes(opts.size)) hints.push(`Output resolution: ${opts.size}.`);
-  const fullText = hints.length ? `${prompt}\n\nOutput constraints: ${hints.join(" ")}` : prompt;
+function mapOpenrouterHttpError(status: number, text: string): ProviderRunError {
+  const msg = extractProviderMessage(text);
+  if (status === 401 || status === 403) return new ProviderRunError(`OpenRouter auth failed: ${msg}`, "auth_failed", false, status, text);
+  if (status === 402) return new ProviderRunError("OpenRouter credits exhausted. Top up the OpenRouter account.", "quota_exhausted", false, status, text);
+  if (status === 429) return new ProviderRunError("OpenRouter is rate limited. Try again in a moment.", "rate_limited", true, status, text);
+  if (status === 400 || status === 422) return new ProviderRunError(`Invalid request: ${msg}`, "invalid_params", false, status, text);
+  if (status >= 500) return new ProviderRunError(`OpenRouter is busy (${status}). Try again in a moment.`, "provider_unavailable", true, status, text);
+  return new ProviderRunError(`OpenRouter error ${status}: ${msg}`, "provider_error", false, status, text);
+}
 
-  const content: any[] = [{ type: "text", text: fullText }];
-  for (const url of referenceImageUrls) content.push({ type: "image_url", image_url: { url } });
-
-  const payload: Record<string, unknown> = {
-    model: opts.model,
-    messages: [{ role: "user", content }],
-    modalities: ["image", "text"],
-  };
-  const budget = Number(opts.thinkingBudget ?? 0);
-  if (budget > 0 && opts.model.includes("gemini-3-pro")) {
-    payload.reasoning = { effort: budget >= 5000 ? "high" : "low" };
-  }
-
-  let res: Response | undefined;
+// POST with retry/backoff on transient statuses. Returns the parsed JSON body.
+async function openrouterPost(path: string, payload: Record<string, unknown>): Promise<any> {
+  const key = openrouterKey();
   let lastErr: unknown;
   for (let attempt = 0; attempt < 3; attempt++) {
+    let res: Response;
     try {
-      res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
+      res = await fetch(`${OPENROUTER_BASE}${path}`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${key}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://frank-create.lovable.app",
-          "X-Title": "autosolutions OS",
-        },
+        headers: openrouterHeaders(key),
         body: JSON.stringify(payload),
       });
     } catch (err) {
@@ -837,56 +835,143 @@ async function openrouterImage(
       await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
       continue;
     }
-    if (res.ok) break;
-    if (res.status === 429 || res.status >= 500) {
-      const text = await res.text();
-      lastErr = text;
-      console.warn("[frank-api] openrouter:transient", { model: opts.model, status: res.status, body: text.slice(0, 400) });
-      if (attempt === 2) {
+    if (res.ok) {
+      const j: any = await res.json();
+      if (j?.error) {
         throw new ProviderRunError(
-          `OpenRouter is busy (${res.status}). Try again in a moment.`,
-          res.status === 429 ? "rate_limited" : "provider_unavailable",
+          `OpenRouter error: ${j.error?.message || JSON.stringify(j.error).slice(0, 200)}`,
+          "provider_error",
           true,
-          res.status,
-          text,
+          undefined,
+          JSON.stringify(j).slice(0, 800),
         );
       }
+      return j;
+    }
+    const text = await res.text();
+    const mapped = mapOpenrouterHttpError(res.status, text);
+    if (mapped.retryable && attempt < 2) {
+      console.warn("[frank-api] openrouter:transient", { path, status: res.status, body: text.slice(0, 300) });
+      lastErr = mapped;
       await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
       continue;
     }
-    const text = await res.text();
-    console.error("[frank-api] openrouter:failed", { model: opts.model, status: res.status, body: text.slice(0, 800) });
-    const msg = extractProviderMessage(text);
-    if (res.status === 401 || res.status === 403) throw new ProviderRunError(`OpenRouter auth failed: ${msg}`, "auth_failed", false, res.status, text);
-    if (res.status === 402) throw new ProviderRunError("OpenRouter credits exhausted. Top up the OpenRouter account.", "quota_exhausted", false, res.status, text);
-    if (res.status === 400) throw new ProviderRunError(`Invalid request for ${opts.model}: ${msg}`, "invalid_params", false, res.status, text);
-    throw new ProviderRunError(`OpenRouter error ${res.status}: ${msg}`, "provider_error", false, res.status, text);
+    console.error("[frank-api] openrouter:failed", { path, status: res.status, body: text.slice(0, 800) });
+    throw mapped;
   }
-  if (!res || !res.ok) throw new ProviderRunError(`OpenRouter unreachable: ${errMessage(lastErr)}`, "provider_unavailable", true);
+  throw (lastErr instanceof ProviderRunError ? lastErr : new ProviderRunError(`OpenRouter unreachable: ${errMessage(lastErr)}`, "provider_unavailable", true));
+}
 
-  const j: any = await res.json();
-  if (j?.error) {
-    throw new ProviderRunError(`OpenRouter error: ${j.error?.message || JSON.stringify(j.error).slice(0, 200)}`, "provider_error", true, undefined, JSON.stringify(j).slice(0, 800));
+function imageRefParts(urls: string[]): Array<Record<string, unknown>> {
+  return urls.map((url) => ({ type: "image_url", image_url: { url } }));
+}
+
+// Dedicated image endpoint. `n` is honoured natively where the model supports it.
+async function openrouterImage(
+  prompt: string,
+  referenceImageUrls: string[] = [],
+  opts: { model: string; aspectRatio?: string; size?: string; quality?: string; n?: number } = { model: "google/gemini-3.1-flash-image" },
+): Promise<Array<{ b64?: string; url?: string; mime: string }>> {
+  const payload: Record<string, unknown> = { model: opts.model, prompt };
+  if (opts.aspectRatio && opts.aspectRatio !== "match_input_image" && opts.aspectRatio !== "adaptive") {
+    payload.aspect_ratio = opts.aspectRatio;
   }
-  const msgOut = j?.choices?.[0]?.message;
-  const images = msgOut?.images;
-  if (Array.isArray(images)) {
-    for (const img of images) {
-      const url: string = img?.image_url?.url || img?.url || "";
-      const m = String(url).match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);
-      if (m) return { b64: m[2], mime: m[1].toLowerCase() };
-      if (url) return { url, mime: "image/png" };
+  if (opts.size) {
+    const res = String(opts.size).toUpperCase().replace("512", "512");
+    if (["512", "1K", "2K", "4K"].includes(res)) payload.resolution = res;
+  }
+  if (opts.quality && ["auto", "low", "medium", "high"].includes(opts.quality)) payload.quality = opts.quality;
+  if (opts.n && opts.n > 1) payload.n = opts.n;
+  if (referenceImageUrls.length) payload.input_references = imageRefParts(referenceImageUrls);
+
+  const j = await openrouterPost("/images", payload);
+  const out: Array<{ b64?: string; url?: string; mime: string }> = [];
+  for (const item of (Array.isArray(j?.data) ? j.data : [])) {
+    const mime = String(item?.media_type || "image/png").toLowerCase();
+    if (item?.b64_json) out.push({ b64: item.b64_json, mime });
+    else if (item?.url) out.push({ url: item.url, mime });
+  }
+  if (!out.length) {
+    throw new ProviderRunError(
+      `OpenRouter returned no image data. ${JSON.stringify(j).slice(0, 300)}`,
+      "provider_error",
+      true,
+    );
+  }
+  return out;
+}
+
+// Async video job: submit, poll, return the finished clip URL.
+async function openrouterVideo(
+  prompt: string,
+  opts: {
+    model: string;
+    aspectRatio?: string;
+    resolution?: string;
+    duration?: number;
+    firstFrameUrl?: string;
+    lastFrameUrl?: string;
+    referenceUrls?: string[];
+    generateAudio?: boolean;
+  },
+  maxMs = 600_000,
+): Promise<string> {
+  const payload: Record<string, unknown> = { model: opts.model, prompt };
+  if (Number.isFinite(opts.duration) && Number(opts.duration) > 0) payload.duration = Math.round(Number(opts.duration));
+  if (opts.resolution) payload.resolution = opts.resolution;
+  if (opts.aspectRatio && opts.aspectRatio !== "auto" && opts.aspectRatio !== "match_input_image" && opts.aspectRatio !== "adaptive") {
+    payload.aspect_ratio = opts.aspectRatio;
+  }
+  const frames: Array<Record<string, unknown>> = [];
+  if (opts.firstFrameUrl) frames.push({ type: "image_url", image_url: { url: opts.firstFrameUrl }, frame_type: "first_frame" });
+  if (opts.lastFrameUrl) frames.push({ type: "image_url", image_url: { url: opts.lastFrameUrl }, frame_type: "last_frame" });
+  if (frames.length) {
+    payload.frame_images = frames;
+    // frame_images takes precedence over input_references upstream; sending both
+    // is pointless, so only attach refs in reference-to-video mode.
+  } else if (opts.referenceUrls?.length) {
+    payload.input_references = imageRefParts(opts.referenceUrls);
+  }
+  if (opts.generateAudio === false) payload.generate_audio = false;
+
+  const job = await openrouterPost("/videos", payload);
+  const jobId: string | undefined = job?.id;
+  const pollUrl: string = job?.polling_url || (jobId ? `${OPENROUTER_BASE}/videos/${jobId}` : "");
+  if (!pollUrl) {
+    throw new ProviderRunError(`OpenRouter did not return a video job id. ${JSON.stringify(job).slice(0, 300)}`, "provider_error", true);
+  }
+
+  const key = openrouterKey();
+  const started = Date.now();
+  let delay = 4_000;
+  while (Date.now() - started < maxMs) {
+    await new Promise((r) => setTimeout(r, delay));
+    delay = Math.min(delay + 2_000, 10_000);
+    let res: Response;
+    try {
+      res = await fetch(pollUrl, { headers: openrouterHeaders(key) });
+    } catch {
+      continue; // transient poll failure — keep waiting
+    }
+    if (!res.ok) {
+      if (res.status >= 500 || res.status === 429) continue;
+      throw mapOpenrouterHttpError(res.status, await res.text());
+    }
+    const status: any = await res.json();
+    const state = String(status?.status || "").toLowerCase();
+    if (state === "completed" || state === "succeeded") {
+      const url: string | undefined = status?.unsigned_urls?.[0] || status?.urls?.[0] || status?.output?.[0];
+      if (!url) throw new ProviderRunError("The video job completed without a downloadable clip.", "empty_output", true);
+      return url;
+    }
+    if (state === "failed" || state === "canceled" || state === "cancelled") {
+      const msg = status?.error?.message || status?.error || "The video model failed to render this clip.";
+      throw new ProviderRunError(String(msg).slice(0, 400), "provider_error", true);
     }
   }
-  const refusal = typeof msgOut?.content === "string" ? msgOut.content.slice(0, 300) : "";
-  throw new ProviderRunError(
-    refusal
-      ? `The model returned text instead of an image: ${refusal}`
-      : `OpenRouter returned no image data. ${JSON.stringify(j).slice(0, 300)}`,
-    refusal ? "content_filtered" : "provider_error",
-    !refusal,
-  );
+  throw new ProviderRunError("The video job is still rendering after 10 minutes. Try a shorter clip or a lower resolution.", "timeout", true);
 }
+
 
 
 
