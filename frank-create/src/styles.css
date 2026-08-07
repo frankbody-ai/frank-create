@@ -8822,3 +8822,47 @@ body {
 .turn-pending-recheck button:hover {
   border-color: var(--line-strong, rgba(15, 23, 42, 0.32));
 }
+
+/* ---------- OAuth consent (MCP agent integrations) ---------- */
+.oauth-consent {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: var(--bg, #0d0f12);
+}
+.oauth-consent__card {
+  width: min(460px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px);
+  text-align: left;
+}
+.oauth-consent__logo { height: 26px; width: auto; opacity: 0.9; }
+.oauth-consent__title { margin: 0; font-size: 22px; font-weight: 600; }
+.oauth-consent__body { margin: 0; font-size: 14px; line-height: 1.55; opacity: 0.78; }
+.oauth-consent__actions { display: flex; gap: 10px; margin-top: 6px; }
+.oauth-consent__primary,
+.oauth-consent__secondary {
+  flex: 1;
+  padding: 11px 16px;
+  border-radius: var(--radius-pill, 999px);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.oauth-consent__primary { background: #fff; color: #111; }
+.oauth-consent__secondary {
+  background: transparent;
+  color: inherit;
+  border-color: rgba(255, 255, 255, 0.24);
+}
+.oauth-consent__primary:disabled,
+.oauth-consent__secondary:disabled { opacity: 0.55; cursor: not-allowed; }
+.oauth-consent__error { margin: 0; font-size: 13px; color: #ff8b8b; }
