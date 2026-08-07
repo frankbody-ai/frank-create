@@ -1352,34 +1352,26 @@ async function handleInference(body: any, userId: string) {
   } catch (err) {
     const mapped = mapReplicateError(err);
     const msg = mapped.message;
-    await sb.from("messages").update({
-      settings_snapshot_json: {
-        ...settingsSnapshot,
-        status: "failed",
-        error: msg,
-        error_code: mapped.code,
-        error_retryable: mapped.retryable,
-        error_status: mapped.status ?? null,
-        error_raw: mapped.raw ?? null,
-        error_request_id: mapped.requestId ?? null,
-      },
-    }).eq("id", turnId);
+    const failedSnapshot = {
+      ...settingsSnapshot,
+      status: "failed",
+      error: msg,
+      error_code: mapped.code,
+      error_retryable: mapped.retryable,
+      error_status: mapped.status ?? null,
+      error_raw: mapped.raw ?? null,
+      error_request_id: mapped.requestId ?? null,
+      provider_request: providerRequest,
+    };
+    await sb.from("messages").update({ settings_snapshot_json: failedSnapshot }).eq("id", turnId);
     return {
       turn: rowToTurn({
         id: turnId, session_id: sessionId, role: "user",
         message_type: settingsSnapshot.kind, prompt_text: prompt,
-        settings_snapshot_json: {
-          ...settingsSnapshot,
-          status: "failed",
-          error: msg,
-          error_code: mapped.code,
-          error_retryable: mapped.retryable,
-          error_status: mapped.status ?? null,
-          error_raw: mapped.raw ?? null,
-          error_request_id: mapped.requestId ?? null,
-        },
+        settings_snapshot_json: failedSnapshot,
         seq: nextSeq, created_at: nowIso(),
       }),
+
       status: "failed" as const,
       error: { code: mapped.code, message: msg, retryable: mapped.retryable, status: mapped.status, raw: mapped.raw, request_id: mapped.requestId } as any,
     };
