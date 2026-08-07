@@ -470,7 +470,7 @@ export default function App() {
   const [handoffProofText, setHandoffProofText] = useState("");
   const [remixBusy, setRemixBusy] = useState(false);
   const [busy, setBusy] = useState(false);
-  type InflightGen = { id: string; modelId: string; modelLabel: string; prompt: string; aspect: string; count: number };
+  type InflightGen = { id: string; modelId: string; modelLabel: string; prompt: string; aspect: string; count: number; startedAt: number };
   const [inflightGens, setInflightGens] = useState<InflightGen[]>([]);
 
   const [roundSearch, setRoundSearch] = useState("");
