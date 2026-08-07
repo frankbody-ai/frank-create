@@ -1814,21 +1814,23 @@ export default function App() {
 
   function splitReferenceLibrary(pool: Asset[]) {
     const images = pool.filter((asset) => asset.media_type !== "video" && asset.kind !== "mask");
-    const approved = images.filter((asset) => asset.kind !== "reference" && asset.approval_status === "approved");
-    const seenUploads = new Set<string>();
-    const uploads = images
-      .filter((asset) => asset.kind === "reference")
+    const seen = new Set<string>();
+    const merged = images
       .slice()
-      .reverse()
+      .sort((a, b) => {
+        const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return tb - ta;
+      })
       .filter((asset) => {
         const key = asset.file_path || asset.remote_url || asset.id;
-        if (seenUploads.has(key)) return false;
-        seenUploads.add(key);
+        if (seen.has(key)) return false;
+        seen.add(key);
         return true;
       });
-    setReferenceLibrary(approved.slice().reverse());
-    setReferenceUploads(uploads);
+    setReferenceLibrary(merged);
   }
+
 
   async function openReferencePicker() {
     setReferencePickerOpen(true);
