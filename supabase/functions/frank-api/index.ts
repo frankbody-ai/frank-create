@@ -1036,6 +1036,8 @@ async function openrouterVideo(
     lastFrameUrl?: string;
     referenceUrls?: string[];
     generateAudio?: boolean;
+    onRequest?: (record: unknown) => void;
+    onMeta?: (meta: { width?: number; height?: number }) => void;
   },
   maxMs = 600_000,
 ): Promise<string> {
@@ -1057,7 +1059,9 @@ async function openrouterVideo(
   }
   if (opts.generateAudio === false) payload.generate_audio = false;
 
+  opts.onRequest?.(providerRequestRecord("POST https://openrouter.ai/api/v1/videos", payload));
   const job = await openrouterPost("/videos", payload);
+
   const jobId: string | undefined = job?.id;
   const pollUrl: string = job?.polling_url || (jobId ? `${OPENROUTER_BASE}/videos/${jobId}` : "");
   if (!pollUrl) {
