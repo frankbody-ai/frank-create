@@ -6154,38 +6154,6 @@ input:focus, textarea:focus, select:focus {
   }
 }
 
-@media (max-width: 920px) {
-  .studio-shell.guided-studio.settings-rail-open {
-    height: auto;
-    min-height: 100vh;
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-rows: auto auto auto !important;
-    overflow: visible;
-  }
-
-  .studio-shell.guided-studio.settings-rail-open .app-sidebar {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-    width: 100%;
-    max-width: none;
-    height: auto;
-  }
-
-  .studio-shell.guided-studio.settings-rail-open .studio-settings-rail {
-    grid-column: 1 !important;
-    grid-row: 2 !important;
-    width: 100%;
-    height: auto;
-    max-height: none;
-  }
-
-  .studio-shell.guided-studio.settings-rail-open .conversation-column {
-    grid-column: 1 !important;
-    grid-row: 3 !important;
-    width: 100%;
-    height: auto;
-  }
-}
 
 
 /* ---- Studio rail (image + video) ---- */
