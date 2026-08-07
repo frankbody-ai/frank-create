@@ -1381,9 +1381,6 @@ select:focus {
   transform: scale(1.1);
 }
 
-.reference-thumb {
-  cursor: pointer;
-}
 
 .reference-preview-inner {
   max-width: min(720px, 94vw);
