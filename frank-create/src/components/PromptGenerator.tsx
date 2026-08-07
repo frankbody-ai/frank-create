@@ -239,10 +239,21 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
             </div>
           ) : (
             messages.map((message, index) => {
-              const prompts = message.role === "assistant" ? extractPrompts(message.content) : [];
+              const parsed =
+                message.role === "assistant"
+                  ? parseAgentReply(message.content)
+                  : { phase: "unknown" as AgentPhase, body: message.content };
+              const prompts = parsed.phase === "discovery" ? [] : extractPrompts(parsed.body);
               return (
                 <div key={index} className={`prompt-agent-msg ${message.role}`}>
-                  <p className="prompt-agent-msg-role">{message.role === "user" ? "You" : "Agent"}</p>
+                  <p className="prompt-agent-msg-role">
+                    {message.role === "user" ? "You" : "Agent"}
+                    {message.role === "assistant" && parsed.phase !== "unknown" ? (
+                      <span className={`prompt-agent-phase ${parsed.phase}`}>
+                        {parsed.phase === "discovery" ? "Discovery" : "Final prompt"}
+                      </span>
+                    ) : null}
+                  </p>
                   {message.images?.length ? (
                     <div className="prompt-agent-msg-refs">
                       {message.images.map((src, i) => (
@@ -250,7 +261,13 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
                       ))}
                     </div>
                   ) : null}
-                  {message.content ? <div className="prompt-agent-msg-body">{message.content}</div> : null}
+                  {parsed.body ? (
+                    message.role === "assistant" ? (
+                      <AgentBody text={parsed.body} />
+                    ) : (
+                      <div className="prompt-agent-msg-body">{parsed.body}</div>
+                    )
+                  ) : null}
                   {prompts.map((value, i) => (
                     <div className="prompt-agent-actions" key={i}>
                       <button type="button" className="pc-primary-btn" onClick={() => onUsePrompt?.(value)}>
@@ -261,9 +278,26 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
                       </button>
                     </div>
                   ))}
+                  {message.role === "assistant" && parsed.phase === "discovery" && index === messages.length - 1 ? (
+                    <div className="prompt-agent-actions">
+                      <button
+                        type="button"
+                        className="pc-secondary-btn"
+                        disabled={busy}
+                        onClick={() =>
+                          void send(
+                            "Draft it now — fill any remaining gaps with sensible defaults and list the assumptions you locked."
+                          )
+                        }
+                      >
+                        <Wand2 size={14} /> Draft it now
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               );
             })
+
           )}
           {busy ? (
             <div className="prompt-agent-msg assistant">
