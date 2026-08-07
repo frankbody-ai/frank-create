@@ -8365,7 +8365,8 @@ body {
   border-left: 1px solid var(--muted-20);
   border-radius: 0;
   background: transparent;
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
 }
 
 .studio-shell.guided-studio .stat-row > span:first-child {
@@ -8376,7 +8377,13 @@ body {
   font-size: var(--text-title);
   line-height: 26px;
   letter-spacing: var(--tracking-tight);
+  text-align: center;
 }
+
+.studio-shell.guided-studio .stat-row > span small {
+  text-align: center;
+}
+
 
 /* Cards: 24px radius, glow shadow, no border. */
 .studio-shell.guided-studio .composer,
