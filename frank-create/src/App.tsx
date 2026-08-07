@@ -485,6 +485,37 @@ export default function App() {
   const [videoNowTick, setVideoNowTick] = useState(Date.now());
   const videoAbortRef = useRef<AbortController | null>(null);
   const generateAbortRef = useRef<AbortController | null>(null);
+
+  // Watchdog: a dropped connection or a provider that never answers used to leave
+  // the pending card spinning forever. After RUN_TIMEOUT_MS we abort the request,
+  // clear the pending cards and surface a retryable error instead.
+  const RUN_TIMEOUT_MS = 12 * 60 * 1000;
+  useEffect(() => {
+    if (!inflightGens.length) return;
+    const timer = window.setInterval(() => {
+      const cutoff = Date.now() - RUN_TIMEOUT_MS;
+      setInflightGens((current) => {
+        const stale = current.filter((g) => g.startedAt <= cutoff);
+        if (!stale.length) return current;
+        const remaining = current.filter((g) => g.startedAt > cutoff);
+        try { generateAbortRef.current?.abort(); } catch { /* already settled */ }
+        try { videoAbortRef.current?.abort(); } catch { /* already settled */ }
+        setGenError({
+          message: `${stale.length === 1 ? "That run" : `${stale.length} runs`} never came back after 12 minutes, so we stopped waiting. Nothing was charged twice — hit Generate again.`,
+          code: "client_timeout",
+          retryable: true,
+        });
+        setGenErrorOpen(true);
+        if (!remaining.length) {
+          setBusy(false);
+          setGenPhase("idle");
+          setStatusText("Run timed out. Ready when you are.");
+        }
+        return remaining;
+      });
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, [inflightGens.length]);
   // Set by "Switch model and retry": once the picker has re-rendered on the new
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
