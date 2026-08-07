@@ -647,8 +647,13 @@ export interface Asset {
   file_path?: string;
   preview_url?: string;
   remote_url?: string;
+  /** Real pixel size of the file the provider returned. */
   width?: number;
   height?: number;
+  /** Aspect ratio requested for this asset, e.g. "3:4". */
+  aspect_ratio?: string;
+  bytes?: number;
+
   favorite: boolean;
   approval_status: ApprovalStatus;
   notes?: string;
