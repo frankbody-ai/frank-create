@@ -4534,7 +4534,8 @@ export default function App() {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       ) : null}
 
       {referencePreviewAsset ? (
