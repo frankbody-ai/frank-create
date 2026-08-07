@@ -5444,9 +5444,7 @@ function OutputStrip({
   selectedAssetId,
   onSelect,
   onQuickApprove,
-  onQuickReject,
   onQuickReject
-
 }: {
   assets: Asset[];
   emptyLabel?: string;
@@ -5457,8 +5455,7 @@ function OutputStrip({
   onSelect: (asset: Asset) => void;
   onQuickApprove?: (asset: Asset) => void;
   onQuickReject?: (asset: Asset) => void;
-  onUseAsFrame?: (asset: Asset, slot: "first" | "last") => void;
-  canUseLastFrame?: boolean;
+
 }) {
   if (!assets.length && !pending) {
     return (
