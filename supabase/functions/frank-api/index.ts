@@ -253,7 +253,18 @@ async function lovableChat(messages: any[], model = "google/gemini-3-flash-previ
 
 
 const MODEL_MAP: Record<string, string> = {
-  // Kept only for the local placeholder — every visible model runs on Replicate.
+  // Kept only for the local placeholder.
+};
+
+// OpenRouter is now the primary provider for every image model that OpenRouter
+// actually serves. Models with no OpenRouter equivalent (Seedream, Riverflow,
+// Reve) and the whole upscaler path stay on Replicate.
+const OPENROUTER_IMAGE_MAP: Record<string, string> = {
+  "google-nb-pro": "google/gemini-3-pro-image",
+  "nano-banana-pro": "google/gemini-3-pro-image",
+  "google-nb-2": "google/gemini-3.1-flash-image",
+  "nano-banana-2": "google/gemini-3.1-flash-image",
+  "openai-gpt-image-2": "openai/gpt-5.4-image-2",
 };
 
 const REPLICATE_MAP: Record<string, string> = {
@@ -266,6 +277,7 @@ const REPLICATE_MAP: Record<string, string> = {
   "riverflow-2-pro": "sourceful/riverflow-2.0-pro",
   "seedream-5-pro": "bytedance/seedream-5-pro",
 };
+
 
 const VIDEO_REPLICATE_MAP: Record<string, string> = {
   "grok-imagine-video": "xai/grok-imagine-video",
