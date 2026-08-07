@@ -387,20 +387,21 @@ async function handleVideo(body: any, userId: string) {
   if (!prompt.trim()) throw new Error("Prompt is required");
 
   const modelId: string = body.model || "grok-imagine-video";
-  const slug = VIDEO_REPLICATE_MAP[modelId];
-  if (!slug) {
+  const caps = OPENROUTER_VIDEO_MAP[modelId];
+  if (!caps) {
     return {
       turn: null, status: "failed" as const,
       error: { code: "model_unavailable", message: `${modelId} is not a supported video model.` },
     };
   }
-  const key = getReplicateGatewayKey();
-  if (!key) {
+  const slug = caps.model;
+  if (!Deno.env.get("OPENROUTER_API_KEY")) {
     return {
       turn: null, status: "blocked" as const,
-      error: { code: "missing_key", env_vars: ["REPLICATE_API_KEY"], message: "Replicate is not connected yet." },
+      error: { code: "missing_key", env_vars: ["OPENROUTER_API_KEY"], message: "OpenRouter is not connected yet." },
     };
   }
+
 
   const reqSettings: any = body.settings || {};
   const turnId = crypto.randomUUID();
