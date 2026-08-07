@@ -290,84 +290,92 @@ const REPLICATE_MAP: Record<string, string> = {
 
 
 
-const VIDEO_REPLICATE_MAP: Record<string, string> = {
-  "grok-imagine-video": "xai/grok-imagine-video",
-  "grok-imagine-video-1-5": "xai/grok-imagine-video-1.5",
-  "dreamina-seedance-2": "bytedance/seedance-2.0",
-  "happyhorse-1-0": "alibaba/happyhorse-1.0",
-  "wan-2-7-i2v": "wan-video/wan-2.7-i2v",
-  "hailuo-2-3": "minimax/hailuo-2.3",
+// Video models on OpenRouter, with the capability envelope each one actually
+// accepts (verified against GET /api/v1/videos/models).
+type VideoCaps = {
+  model: string;
+  resolutions: string[];
+  defaultResolution: string;
+  aspects: string[];
+  defaultAspect: string;
+  minDuration: number;
+  maxDuration: number;
+  defaultDuration: number;
+};
+
+const OPENROUTER_VIDEO_MAP: Record<string, VideoCaps> = {
+  "grok-imagine-video": {
+    model: "x-ai/grok-imagine-video",
+    resolutions: ["480p", "720p"],
+    defaultResolution: "720p",
+    aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3"],
+    defaultAspect: "16:9",
+    minDuration: 1, maxDuration: 15, defaultDuration: 5,
+  },
+  "grok-imagine-video-1-5": {
+    model: "x-ai/grok-imagine-video-1.5",
+    resolutions: ["480p", "720p", "1080p"],
+    defaultResolution: "720p",
+    aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "3:2", "2:3"],
+    defaultAspect: "16:9",
+    minDuration: 1, maxDuration: 15, defaultDuration: 5,
+  },
+  "dreamina-seedance-2": {
+    model: "bytedance/seedance-2.0",
+    resolutions: ["480p", "720p", "1080p", "4K"],
+    defaultResolution: "1080p",
+    aspects: ["1:1", "3:4", "9:16", "4:3", "16:9", "21:9", "9:21"],
+    defaultAspect: "16:9",
+    minDuration: 3, maxDuration: 15, defaultDuration: 5,
+  },
+  "happyhorse-1-0": {
+    model: "alibaba/happyhorse-1.1",
+    resolutions: ["720p", "1080p"],
+    defaultResolution: "1080p",
+    aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9", "9:21"],
+    defaultAspect: "16:9",
+    minDuration: 3, maxDuration: 15, defaultDuration: 5,
+  },
+  "wan-2-7-i2v": {
+    model: "alibaba/wan-2.7",
+    resolutions: ["720p", "1080p"],
+    defaultResolution: "1080p",
+    aspects: ["16:9", "9:16", "1:1", "4:3", "3:4"],
+    defaultAspect: "16:9",
+    minDuration: 2, maxDuration: 15, defaultDuration: 5,
+  },
+  "hailuo-2-3": {
+    model: "minimax/hailuo-2.3",
+    resolutions: ["1080p"],
+    defaultResolution: "1080p",
+    aspects: ["16:9"],
+    defaultAspect: "16:9",
+    minDuration: 6, maxDuration: 10, defaultDuration: 6,
+  },
 };
 
 function pick<T>(value: T | undefined, allowed: T[], fallback: T): T {
   return value !== undefined && allowed.includes(value) ? value : fallback;
 }
 
-function buildVideoInput(
-  slug: string,
-  prompt: string,
-  opts: {
-    aspect_ratio?: string;
-    duration?: number;
-    resolution?: string;
-    image?: string;
-    last_frame?: string;
-  },
-): Record<string, unknown> {
-  const input: Record<string, unknown> = { prompt };
+// Normalise the client's settings onto what the chosen model accepts.
+function clampVideoSettings(
+  caps: VideoCaps,
+  opts: { aspect_ratio?: string; duration?: number; resolution?: string },
+): { aspectRatio: string; resolution: string; duration: number } {
+  const requestedRes = String(opts.resolution ?? "").toLowerCase() === "4k"
+    ? "4K"
+    : String(opts.resolution ?? "");
   const duration = Number(opts.duration);
-  const clamp = (min: number, max: number, fallback: number) =>
-    Number.isFinite(duration) && duration >= min && duration <= max ? Math.round(duration) : fallback;
-
-  if (slug === "xai/grok-imagine-video" || slug === "xai/grok-imagine-video-1.5") {
-    const aspects = ["auto", "16:9", "4:3", "1:1", "9:16", "3:4", "3:2", "2:3"];
-    input.duration = clamp(1, 15, 5);
-    input.resolution = pick(opts.resolution, ["480p", "720p"], "720p");
-    input.aspect_ratio = pick(opts.aspect_ratio, aspects, "auto");
-    if (opts.image) input.image = opts.image;
-    return input;
-  }
-  if (slug === "bytedance/seedance-2.0") {
-    const aspects = ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "9:21", "adaptive"];
-    input.duration = clamp(1, 15, 5);
-    input.resolution = pick(opts.resolution, ["480p", "720p", "1080p", "4k"], "1080p");
-    input.generate_audio = true;
-    if (opts.image) {
-      input.image = opts.image;
-      if (opts.last_frame) input.last_frame_image = opts.last_frame;
-      input.aspect_ratio = "adaptive";
-    } else {
-      input.aspect_ratio = pick(opts.aspect_ratio, aspects, "16:9");
-    }
-    return input;
-  }
-  if (slug === "alibaba/happyhorse-1.0") {
-    input.duration = clamp(3, 15, 5);
-    input.resolution = pick(opts.resolution, ["720p", "1080p"], "1080p");
-    if (opts.image) input.image = opts.image;
-    else input.aspect_ratio = pick(opts.aspect_ratio, ["16:9", "9:16", "1:1", "4:3", "3:4"], "16:9");
-    return input;
-  }
-  if (slug === "wan-video/wan-2.7-i2v") {
-    input.duration = clamp(2, 15, 5);
-    input.resolution = pick(opts.resolution, ["720p", "1080p"], "1080p");
-    if (opts.image) input.first_frame = opts.image;
-    if (opts.last_frame) input.last_frame = opts.last_frame;
-    return input;
-  }
-  if (slug === "minimax/hailuo-2.3") {
-    // 1080p supports 6s only; 10s is 768p only.
-    let resolution = pick(opts.resolution, ["768p", "1080p"], "1080p");
-    let clip = [6, 10].includes(Math.round(duration)) ? Math.round(duration) : 6;
-    if (clip === 10) resolution = "768p";
-    if (resolution === "1080p") clip = 6;
-    input.duration = clip;
-    input.resolution = resolution;
-    if (opts.image) input.first_frame_image = opts.image;
-    return input;
-  }
-  return input;
+  return {
+    aspectRatio: pick(opts.aspect_ratio, caps.aspects, caps.defaultAspect),
+    resolution: pick(requestedRes, caps.resolutions, caps.defaultResolution),
+    duration: Number.isFinite(duration) && duration >= caps.minDuration && duration <= caps.maxDuration
+      ? Math.round(duration)
+      : caps.defaultDuration,
+  };
 }
+
 
 
 async function handleVideo(body: any, userId: string) {
