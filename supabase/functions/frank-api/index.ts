@@ -892,6 +892,101 @@ function imageRefParts(urls: string[]): Array<Record<string, unknown>> {
   return urls.map((url) => ({ type: "image_url", image_url: { url } }));
 }
 
+// ---- Troubleshooting: the exact request body we sent to the provider --------
+// Stored on the turn so the UI can show it behind a "JSON" chip. Credential-ish
+// keys are stripped and inline data URLs are collapsed to short descriptors so
+// the record stays readable and small.
+function describeInlineImage(url: string, index: number): string {
+  const m = /^data:([^;,]+);base64,(.*)$/i.exec(url);
+  if (!m) return `ref${index + 1}: ${url.slice(0, 120)}`;
+  const bytes = Math.floor((m[2]?.length ?? 0) * 0.75);
+  const kb = bytes >= 1024 ? `${Math.round(bytes / 1024)} KB` : `${bytes} B`;
+  return `ref${index + 1}: ${m[1]}, ${kb}`;
+}
+
+function redactProviderPayload(value: unknown, key = ""): unknown {
+  if (/api[_-]?key|token|secret|authorization|bearer|password|credential/i.test(key)) {
+    return "[redacted]";
+  }
+  if (typeof value === "string") {
+    return value.startsWith("data:") ? describeInlineImage(value, 0) : value;
+  }
+  if (Array.isArray(value)) {
+    if (key === "input_references" || key === "frame_images" || key === "reference_images") {
+      return value.map((item, i) => {
+        const url = typeof item === "string"
+          ? item
+          : String((item as any)?.image_url?.url ?? (item as any)?.url ?? "");
+        const label = describeInlineImage(url, i);
+        const frameType = typeof item === "object" && item ? (item as any).frame_type : undefined;
+        return frameType ? `${label} (${frameType})` : label;
+      });
+    }
+    return value.map((item) => redactProviderPayload(item));
+  }
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, redactProviderPayload(v, k)]),
+    );
+  }
+  return value;
+}
+
+function providerRequestRecord(endpoint: string, payload: Record<string, unknown>) {
+  return { endpoint, sent_at: nowIso(), body: redactProviderPayload(payload) };
+}
+
+// ---- Real pixel dimensions, read out of the returned file's header ----------
+function imageDimensions(bytes: Uint8Array, mime = ""): { width: number; height: number } | null {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  // PNG: 8-byte signature, then IHDR with width/height as big-endian uint32.
+  if (bytes.length > 24 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+    return { width: view.getUint32(16), height: view.getUint32(20) };
+  }
+  // GIF
+  if (bytes.length > 10 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
+    return { width: view.getUint16(6, true), height: view.getUint16(8, true) };
+  }
+  // JPEG: walk the markers to the first SOFn frame header.
+  if (bytes.length > 4 && bytes[0] === 0xff && bytes[1] === 0xd8) {
+    let offset = 2;
+    while (offset + 9 < bytes.length) {
+      if (bytes[offset] !== 0xff) { offset++; continue; }
+      const marker = bytes[offset + 1];
+      if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) { offset += 2; continue; }
+      const length = view.getUint16(offset + 2);
+      const isSof = marker >= 0xc0 && marker <= 0xcf
+        && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
+      if (isSof) {
+        return { height: view.getUint16(offset + 5), width: view.getUint16(offset + 7) };
+      }
+      offset += 2 + length;
+    }
+    return null;
+  }
+  // WebP: RIFF container with VP8 / VP8L / VP8X chunks.
+  if (
+    bytes.length > 30 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46
+    && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50
+  ) {
+    const chunk = String.fromCharCode(bytes[12], bytes[13], bytes[14], bytes[15]);
+    if (chunk === "VP8 ") {
+      return { width: view.getUint16(26, true) & 0x3fff, height: view.getUint16(28, true) & 0x3fff };
+    }
+    if (chunk === "VP8L") {
+      const b = view.getUint32(21, true);
+      return { width: (b & 0x3fff) + 1, height: ((b >> 14) & 0x3fff) + 1 };
+    }
+    if (chunk === "VP8X") {
+      const w = 1 + (bytes[24] | (bytes[25] << 8) | (bytes[26] << 16));
+      const h = 1 + (bytes[27] | (bytes[28] << 8) | (bytes[29] << 16));
+      return { width: w, height: h };
+    }
+  }
+  return mime ? null : null;
+}
+
+
 // Dedicated image endpoint. `n` is honoured natively where the model supports it.
 async function openrouterImage(
   prompt: string,
