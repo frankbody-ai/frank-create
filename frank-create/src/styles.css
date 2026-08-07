@@ -6154,38 +6154,6 @@ input:focus, textarea:focus, select:focus {
   }
 }
 
-@media (max-width: 920px) {
-  .studio-shell.guided-studio.settings-rail-open {
-    height: auto;
-    min-height: 100vh;
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-rows: auto auto auto !important;
-    overflow: visible;
-  }
-
-  .studio-shell.guided-studio.settings-rail-open .app-sidebar {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-    width: 100%;
-    max-width: none;
-    height: auto;
-  }
-
-  .studio-shell.guided-studio.settings-rail-open .studio-settings-rail {
-    grid-column: 1 !important;
-    grid-row: 2 !important;
-    width: 100%;
-    height: auto;
-    max-height: none;
-  }
-
-  .studio-shell.guided-studio.settings-rail-open .conversation-column {
-    grid-column: 1 !important;
-    grid-row: 3 !important;
-    width: 100%;
-    height: auto;
-  }
-}
 
 
 /* ---- Studio rail (image + video) ---- */
@@ -6765,96 +6733,37 @@ input:focus, textarea:focus, select:focus {
   grid-row: 2;
 }
 
-/* ---- Video frame slots (first / last frame) ---- */
-.frame-slots-block .frame-slots {
+/* ---- Video frame note (derived from the reference dock) ---- */
+.video-frame-note {
+  flex: 1 1 100%;
+  margin: 4px 0 0;
   display: flex;
-  gap: 8px;
-}
-.frame-slot {
-  position: relative;
-  flex: 1 1 0;
-  min-width: 0;
-}
-.frame-slot-well {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  border: 1px dashed rgba(48, 48, 48, 0.35);
-  border-radius: 8px;
-  background: #fff;
-  padding: 0;
-  overflow: hidden;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  color: var(--ink);
-}
-.frame-slot-well img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.frame-slot.armed .frame-slot-well {
-  outline: 2px solid #ffb6a5;
-  outline-offset: 1px;
-  border-style: solid;
-}
-.frame-slot.filled .frame-slot-well {
-  border-style: solid;
-}
-.frame-slot.disabled .frame-slot-well {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.frame-slot-empty {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  text-align: center;
-  padding: 4px;
-  opacity: 0.7;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: 0.78;
 }
-.frame-slot-label {
-  display: block;
-  margin-top: 4px;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.75;
-}
-.frame-slot-clear {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 18px;
-  height: 18px;
+.video-frame-note strong {
+  font-weight: 600;
+  background: rgba(17, 17, 17, 0.08);
   border-radius: 999px;
-  border: none;
-  background: var(--ink);
-  color: #ffefea;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
+  padding: 1px 6px;
 }
-.output-tile-frames {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-}
-.output-tile-frames button {
-  flex: 1 1 0;
+.video-frame-swap {
   border: 1px solid rgba(48, 48, 48, 0.25);
   background: #fff;
   color: var(--ink);
   border-radius: 999px;
+  font: inherit;
   font-size: 10px;
-  padding: 2px 6px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 9px;
   cursor: pointer;
 }
-.output-tile-frames button:hover {
-  background: #ffefea;
+.video-frame-swap:hover {
+  background: rgba(17, 17, 17, 0.06);
 }
 
 /* ---- Admin: Prompt Generator instructions ---- */
@@ -8659,3 +8568,87 @@ body {
   white-space: nowrap;
 }
 .prompt-mention-option--empty { opacity: 0.85; }
+
+/* ---- narrow desktop (1024px – 1180px) ------------------------------
+   The left sidebar is never squeezed. Only the centre column gives up
+   width; the settings rail narrows slightly. Below 1024px the app shows
+   the small-screen notice instead. */
+@media (min-width: 1024px) and (max-width: 1180px) {
+  .studio-shell.guided-studio.settings-rail-open {
+    grid-template-columns: 216px minmax(0, 1fr) 232px !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    height: 100vh;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  .studio-shell.guided-studio .conversation-column {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: auto;
+    min-width: 0;
+    padding-inline: 18px !important;
+  }
+
+  .studio-shell.guided-studio.settings-rail-open .studio-settings-rail {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    width: auto;
+    max-width: none;
+  }
+
+  .studio-shell.guided-studio .conversation-column > *,
+  .studio-shell.guided-studio .composer,
+  .studio-shell.guided-studio .composer * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .studio-shell.guided-studio .composer-actions,
+  .studio-shell.guided-studio .composer-action-group,
+  .studio-shell.guided-studio .brief-card-head {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .studio-shell.guided-studio .studio-topbar h2 {
+    font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+  }
+}
+
+/* ── Small screen gate ─────────────────────────────────────────── */
+.small-screen-notice { display: none; }
+@media (max-width: 1023px) {
+  .small-screen-notice {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: var(--surface-app, #f7f4f2);
+  }
+  .small-screen-notice-card {
+    max-width: 420px;
+    width: 100%;
+    display: grid;
+    gap: 12px;
+    text-align: center;
+    padding: 28px 24px;
+    border-radius: 20px;
+    border: 1px solid var(--line-soft, rgba(0,0,0,0.08));
+    background: var(--surface-card, #fff);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
+  }
+  .small-screen-notice-eyebrow,
+  .small-screen-notice-foot {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted, #6b6b6b);
+  }
+  .small-screen-notice-card h2 { margin: 0; font-size: 22px; line-height: 1.2; }
+  .small-screen-notice-card p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-muted, #6b6b6b); }
+  #root > *:not(.small-screen-notice) { display: none !important; }
+}
+
