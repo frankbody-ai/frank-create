@@ -68,8 +68,8 @@ export function StudioRail(props: StudioRailProps) {
     onPresetChange, fieldErrors, referenceCount, onReset,
     compareMedia = "image", onCompareMediaChange, compareModelBId, onCompareModelBChange,
     compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel,
-    videoFirstFrame = null, videoLastFrame = null, armedFrameSlot = null,
-    onArmFrameSlot, onClearFrameSlot, onDropFrameAsset
+    videoFirstFrame = null, videoLastFrame = null
+
   } = props;
 
   const isCompare = mediaKind === "compare";
