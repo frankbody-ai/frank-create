@@ -6837,18 +6837,15 @@ input:focus, textarea:focus, select:focus {
 }
 .reference-picker-body {
   overflow: auto;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-content: start;
+  padding-right: 4px;
 }
-.reference-picker-section-label {
-  font-family: var(--font-body);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  opacity: 0.6;
-  padding-top: 4px;
+.reference-picker-body > .reference-picker-grid {
+  flex: 1 1 auto;
 }
+
 .reference-picker-header h3 {
   margin: 0 0 2px;
   font-size: 1.05rem;
