@@ -1318,10 +1318,12 @@ async function handleInference(body: any, userId: string) {
         prediction_ids: predictionIds,
         requested_count: count,
         partial_errors: partialErrors.length ? partialErrors : undefined,
+        provider_request: providerRequest,
         started_at: nowIso(),
       };
       await sb.from("messages").update({ settings_snapshot_json: runningSnapshot }).eq("id", turnId);
       return {
+
         turn: rowToTurn({
           id: turnId, session_id: sessionId, role: "user",
           message_type: settingsSnapshot.kind, prompt_text: prompt,
