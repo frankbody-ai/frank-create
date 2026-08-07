@@ -11,6 +11,21 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Off until we know the user hasn't asked for reduced motion / data saving —
+  // the poster is a faithful still of the clip either way.
+  const [motionOk, setMotionOk] = useState(false);
+
+  useEffect(() => {
+    const saveData = Boolean(
+      (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData,
+    );
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setMotionOk(!query.matches && !saveData);
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, []);
+
 
   useEffect(() => {
     let mounted = true;
