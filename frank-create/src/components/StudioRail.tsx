@@ -4,7 +4,6 @@ import { estimateVideoCost, filterSizesForAspect, maxCountForModel, modelRateLab
 import type { StudioAdjustment, StudioFieldErrors } from "../lib/studio";
 import { AspectPreview } from "./AspectPreview";
 
-import type { Asset } from "../lib/types";
 
 export type StudioMediaKind = "image" | "video" | "compare";
 
@@ -39,9 +38,6 @@ export interface StudioRailProps {
   compareApproved?: boolean;
   onCompareApprovedChange?: (approved: boolean) => void;
   compareCostLabel?: string | null;
-  /** Video: frames derived from the reference dock (ref #1, ref #2). */
-  videoFirstFrame?: Asset | null;
-  videoLastFrame?: Asset | null;
 
 }
 
@@ -67,8 +63,7 @@ export function StudioRail(props: StudioRailProps) {
     settings, onSettingsChange, onAspectChange, presets, selectedPresetKey,
     onPresetChange, fieldErrors, referenceCount, onReset,
     compareMedia = "image", onCompareMediaChange, compareModelBId, onCompareModelBChange,
-    compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel,
-    videoFirstFrame = null, videoLastFrame = null
+    compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel
 
   } = props;
 
@@ -373,7 +368,7 @@ export function StudioRail(props: StudioRailProps) {
 
         {(() => {
           const hasPreview = /^\d+(?:\.\d+)?\s*[:x/]\s*\d+(?:\.\d+)?$/i.test(settings.aspect_ratio ?? "");
-          const needsFrameError = Boolean(isVideo && model?.requires_source_image && !videoFirstFrame);
+          const needsFrameError = Boolean(isVideo && model?.requires_source_image && referenceCount === 0);
           if (!hasPreview && !fieldErrors.references && !needsFrameError) return null;
           return (
             <section className="rail-block">
@@ -388,7 +383,7 @@ export function StudioRail(props: StudioRailProps) {
               {fieldErrors.references ? <p className="field-error" role="alert">{fieldErrors.references}</p> : null}
               {needsFrameError ? (
                 <p className="field-error" role="alert">
-                  {model?.short_label ?? model?.label} needs a source frame — fill the frame slot above.
+                  {model?.short_label ?? model?.label} only runs image-to-video — attach a reference image in the brief.
                 </p>
               ) : null}
             </section>
