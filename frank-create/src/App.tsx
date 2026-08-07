@@ -511,7 +511,9 @@ export default function App() {
       }
 
       setSettingsOpen(false);
+      setLightboxAsset(null);
     }
+
 
     window.addEventListener("keydown", handleDrawerKeyDown);
     return () => window.removeEventListener("keydown", handleDrawerKeyDown);
@@ -4569,7 +4571,7 @@ export default function App() {
 
       {lightboxAsset ? (
         <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setLightboxAsset(null)}>
-          <div className="lightbox-inner" onClick={(event) => event.stopPropagation()}>
+          <div className="lightbox-inner is-viewer" onClick={(event) => event.stopPropagation()}>
             <button className="lightbox-close" type="button" onClick={() => setLightboxAsset(null)} aria-label="Close preview">
               <XCircle size={18} />
             </button>
@@ -5150,8 +5152,17 @@ function AssetPreviewMedia({
   fallbackIconSize?: number;
 }) {
   if (!asset.preview_url) {
+    if (controls) {
+      return (
+        <div className="asset-preview-placeholder">
+          <ImageIcon size={fallbackIconSize} />
+          <span>{asset.title}</span>
+        </div>
+      );
+    }
     return <ImageIcon size={fallbackIconSize} />;
   }
+
 
   if (isPlayableVideoAsset(asset)) {
     return (
