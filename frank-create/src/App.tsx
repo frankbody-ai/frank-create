@@ -5150,11 +5150,13 @@ function formatCount(count: number, singular: string, plural = `${singular}s`) {
 function AssetPreviewMedia({
   asset,
   controls = false,
-  fallbackIconSize = 24
+  fallbackIconSize = 24,
+  variant = "full"
 }: {
   asset: Asset;
   controls?: boolean;
   fallbackIconSize?: number;
+  variant?: "thumb" | "full";
 }) {
   if (!asset.preview_url) {
     if (controls) {
@@ -5168,12 +5170,13 @@ function AssetPreviewMedia({
     return <ImageIcon size={fallbackIconSize} />;
   }
 
+  const isThumb = variant === "thumb";
 
   if (isPlayableVideoAsset(asset)) {
     return (
       <video
         aria-label={asset.title}
-        autoPlay={!controls}
+        autoPlay={!controls && !isThumb}
         className="asset-preview-media"
         controls={controls}
         loop
@@ -5185,8 +5188,33 @@ function AssetPreviewMedia({
     );
   }
 
+  if (isThumb) {
+    return <AssetThumbImage asset={asset} />;
+  }
+
   return <img className="asset-preview-media" src={asset.preview_url} alt={asset.title} />;
 }
+
+function AssetThumbImage({ asset }: { asset: Asset }) {
+  const full = asset.preview_url ?? "";
+  const [src, setSrc] = useState(() => thumbnailUrl(full, 320, 40, "webp") || full);
+  useEffect(() => {
+    setSrc(thumbnailUrl(full, 320, 40, "webp") || full);
+  }, [full]);
+  return (
+    <img
+      className="asset-preview-media"
+      src={src}
+      alt={asset.title}
+      loading="lazy"
+      decoding="async"
+      onError={() => {
+        if (full && src !== full) setSrc(full);
+      }}
+    />
+  );
+}
+
 
 function MaskPainterDialog({
   asset,
