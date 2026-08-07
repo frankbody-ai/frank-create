@@ -786,6 +786,110 @@ async function lovableImage(
   throw new Error(`Lovable AI returned no image data. ${JSON.stringify(j).slice(0, 300)}`);
 }
 
+// ---- OpenRouter (primary image provider) ----
+const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
+
+async function openrouterImage(
+  prompt: string,
+  referenceImageUrls: string[] = [],
+  opts: { model: string; aspectRatio?: string; size?: string; thinkingBudget?: number } = { model: "google/gemini-3.1-flash-image" },
+): Promise<{ b64?: string; url?: string; mime: string }> {
+  const key = Deno.env.get("OPENROUTER_API_KEY");
+  if (!key) throw new ProviderRunError("OpenRouter is not configured (missing OPENROUTER_API_KEY).", "auth_failed", false);
+
+  const hints: string[] = [];
+  if (opts.aspectRatio && opts.aspectRatio !== "auto" && /^\d+\s*:\s*\d+$/.test(opts.aspectRatio)) {
+    hints.push(`The final image canvas must be exactly ${opts.aspectRatio} aspect ratio. Do not use a square canvas unless ${opts.aspectRatio} is 1:1.`);
+  }
+  if (opts.size && ["1K", "2K", "4K"].includes(opts.size)) hints.push(`Output resolution: ${opts.size}.`);
+  const fullText = hints.length ? `${prompt}\n\nOutput constraints: ${hints.join(" ")}` : prompt;
+
+  const content: any[] = [{ type: "text", text: fullText }];
+  for (const url of referenceImageUrls) content.push({ type: "image_url", image_url: { url } });
+
+  const payload: Record<string, unknown> = {
+    model: opts.model,
+    messages: [{ role: "user", content }],
+    modalities: ["image", "text"],
+  };
+  const budget = Number(opts.thinkingBudget ?? 0);
+  if (budget > 0 && opts.model.includes("gemini-3-pro")) {
+    payload.reasoning = { effort: budget >= 5000 ? "high" : "low" };
+  }
+
+  let res: Response | undefined;
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://frank-create.lovable.app",
+          "X-Title": "autosolutions OS",
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      lastErr = err;
+      if (attempt === 2) throw new ProviderRunError(`OpenRouter network error: ${errMessage(err)}`, "provider_unavailable", true);
+      await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+      continue;
+    }
+    if (res.ok) break;
+    if (res.status === 429 || res.status >= 500) {
+      const text = await res.text();
+      lastErr = text;
+      console.warn("[frank-api] openrouter:transient", { model: opts.model, status: res.status, body: text.slice(0, 400) });
+      if (attempt === 2) {
+        throw new ProviderRunError(
+          `OpenRouter is busy (${res.status}). Try again in a moment.`,
+          res.status === 429 ? "rate_limited" : "provider_unavailable",
+          true,
+          res.status,
+          text,
+        );
+      }
+      await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+      continue;
+    }
+    const text = await res.text();
+    console.error("[frank-api] openrouter:failed", { model: opts.model, status: res.status, body: text.slice(0, 800) });
+    const msg = extractProviderMessage(text);
+    if (res.status === 401 || res.status === 403) throw new ProviderRunError(`OpenRouter auth failed: ${msg}`, "auth_failed", false, res.status, text);
+    if (res.status === 402) throw new ProviderRunError("OpenRouter credits exhausted. Top up the OpenRouter account.", "quota_exhausted", false, res.status, text);
+    if (res.status === 400) throw new ProviderRunError(`Invalid request for ${opts.model}: ${msg}`, "invalid_params", false, res.status, text);
+    throw new ProviderRunError(`OpenRouter error ${res.status}: ${msg}`, "provider_error", false, res.status, text);
+  }
+  if (!res || !res.ok) throw new ProviderRunError(`OpenRouter unreachable: ${errMessage(lastErr)}`, "provider_unavailable", true);
+
+  const j: any = await res.json();
+  if (j?.error) {
+    throw new ProviderRunError(`OpenRouter error: ${j.error?.message || JSON.stringify(j.error).slice(0, 200)}`, "provider_error", true, undefined, JSON.stringify(j).slice(0, 800));
+  }
+  const msgOut = j?.choices?.[0]?.message;
+  const images = msgOut?.images;
+  if (Array.isArray(images)) {
+    for (const img of images) {
+      const url: string = img?.image_url?.url || img?.url || "";
+      const m = String(url).match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);
+      if (m) return { b64: m[2], mime: m[1].toLowerCase() };
+      if (url) return { url, mime: "image/png" };
+    }
+  }
+  const refusal = typeof msgOut?.content === "string" ? msgOut.content.slice(0, 300) : "";
+  throw new ProviderRunError(
+    refusal
+      ? `The model returned text instead of an image: ${refusal}`
+      : `OpenRouter returned no image data. ${JSON.stringify(j).slice(0, 300)}`,
+    refusal ? "content_filtered" : "provider_error",
+    !refusal,
+  );
+}
+
+
+
 async function loadReferenceDataUrls(assetIds: string[], userId: string): Promise<string[]> {
   if (!assetIds.length) return [];
   const sb = supabase();
