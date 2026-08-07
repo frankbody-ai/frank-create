@@ -113,7 +113,14 @@ import {
   resolveForModel,
   groupCompareRows,
   parseCompareMeta,
-  estimateVideoCost
+  estimateVideoCost,
+  composeReferencePrompt,
+  referenceTagFor,
+  taggedReferences,
+  insertTagAtCaret,
+  unknownReferenceTags,
+  buildReferenceManifest,
+  expandReferenceTags
 } from "./lib/studio";
 import type { StudioFieldErrors } from "./lib/studio";
 
@@ -388,6 +395,8 @@ export default function App() {
   const [referenceLibrary, setReferenceLibrary] = useState<Asset[]>([]);
   const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
   const referencePickerInputRef = useRef<HTMLInputElement | null>(null);
+  const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const [hoveredReferenceTag, setHoveredReferenceTag] = useState<string | null>(null);
 
   const [compareBaseAsset, setCompareBaseAsset] = useState<Asset | null>(null);
   const [compareTargetAsset, setCompareTargetAsset] = useState<Asset | null>(null);
@@ -3921,6 +3930,7 @@ export default function App() {
           ) : null}
 
           <textarea
+            ref={promptInputRef}
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
             onPaste={handlePromptPaste}
