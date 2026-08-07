@@ -4441,7 +4441,7 @@ export default function App() {
         </div>
       ) : null}
 
-      {referencePickerOpen ? (
+      {referencePickerOpen ? createPortal(
         <div
           className="reference-picker-overlay"
           role="dialog"
