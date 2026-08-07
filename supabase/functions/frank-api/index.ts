@@ -775,8 +775,12 @@ async function handleEnhance(body: any, userId: string) {
   const assetId = crypto.randomUUID();
   const ext = media === "video" ? "mp4" : (mime.split("/")[1] || "png");
   const storagePath = `${sessionId}/${assetId}.${ext}`;
-  const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, { contentType: mime, upsert: false });
-  if (up.error) return await failTurn("storage_failed", up.error.message);
+  let stored: StoredResult;
+  try {
+    stored = await storeOrFallback({ storagePath, bytes, mime, remoteUrl: outputUrl });
+  } catch (err) {
+    return await failTurn("storage_failed", err instanceof Error ? err.message : String(err));
+  }
 
   const assetIns = await sb.from("assets").insert({
     id: assetId,
@@ -796,7 +800,9 @@ async function handleEnhance(body: any, userId: string) {
       enhance_settings: reqSettings,
       bytes: bytes.byteLength,
       ...(media === "image" ? (imageDimensions(bytes, mime) ?? {}) : {}),
+      ...stored.meta,
     },
+
 
   }).select().single();
   if (assetIns.error) return await failTurn("db_failed", assetIns.error.message);
