@@ -70,7 +70,7 @@ export function PromptAgentTab() {
     setStatus(null);
     setError(null);
     try {
-      const res = await savePromptAgentConfig({ persona, craftMethod, blueprint, rules, skills });
+      const res = await savePromptAgentConfig({ persona, craftMethod, conversationProtocol, blueprint, rules, skills });
       apply(res.config);
       setUpdatedAt(res.config.updatedAt ?? null);
       setStatus("Saved — the Prompt Generator uses this on the next message.");
