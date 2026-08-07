@@ -1260,9 +1260,11 @@ async function handleInference(body: any, userId: string) {
             size: reqSettings.image_size || reqSettings.size,
             quality: reqSettings.quality,
             n: nativeN ? count : 1,
+            onRequest: (record) => { providerRequest = record; },
           })
         )
       );
+
       for (const result of results) {
         if (result.status === "fulfilled") generatedImages.push(...result.value);
         else {
