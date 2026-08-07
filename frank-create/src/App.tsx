@@ -489,18 +489,35 @@ export default function App() {
   const videoAbortRef = useRef<AbortController | null>(null);
   const generateAbortRef = useRef<AbortController | null>(null);
 
+  // Always-fresh view of the pending cards for interval/event callbacks.
+  const inflightRef = useRef<InflightGen[]>([]);
+  useEffect(() => { inflightRef.current = inflightGens; }, [inflightGens]);
+
+  // Ticks once a second while something is pending so the card can show elapsed time.
+  const [pendingTick, setPendingTick] = useState(Date.now());
+  useEffect(() => {
+    if (!inflightGens.length) return;
+    setPendingTick(Date.now());
+    const iv = window.setInterval(() => setPendingTick(Date.now()), 1000);
+    return () => window.clearInterval(iv);
+  }, [inflightGens.length]);
+
   // Watchdog: a dropped connection or a provider that never answers used to leave
-  // the pending card spinning forever. After RUN_TIMEOUT_MS we abort the request,
-  // clear the pending cards and surface a retryable error instead.
+  // the pending card spinning forever. After RUN_TIMEOUT_MS we re-check the server
+  // first (the round may well have landed), then abort and surface a retryable error.
   const RUN_TIMEOUT_MS = 12 * 60 * 1000;
   useEffect(() => {
     if (!inflightGens.length) return;
+    let disposed = false;
     const timer = window.setInterval(() => {
       const cutoff = Date.now() - RUN_TIMEOUT_MS;
-      setInflightGens((current) => {
-        const stale = current.filter((g) => g.startedAt <= cutoff);
-        if (!stale.length) return current;
-        const remaining = current.filter((g) => g.startedAt > cutoff);
+      if (!inflightRef.current.some((g) => g.startedAt <= cutoff)) return;
+      void (async () => {
+        // Never fail a run that actually finished server-side.
+        await settleFinishedRunsFromServer();
+        if (disposed) return;
+        const stale = inflightRef.current.filter((g) => g.startedAt <= cutoff);
+        if (!stale.length) return;
         try { generateAbortRef.current?.abort(); } catch { /* already settled */ }
         try { videoAbortRef.current?.abort(); } catch { /* already settled */ }
         setGenError({
@@ -509,16 +526,21 @@ export default function App() {
           retryable: true,
         });
         setGenErrorOpen(true);
-        if (!remaining.length) {
-          setBusy(false);
-          setGenPhase("idle");
-          setStatusText("Run timed out. Ready when you are.");
-        }
-        return remaining;
-      });
+        const staleIds = new Set(stale.map((g) => g.id));
+        setInflightGens((current) => {
+          const remaining = current.filter((g) => !staleIds.has(g.id));
+          if (!remaining.length) {
+            setBusy(false);
+            setGenPhase("idle");
+            setStatusText("Run timed out. Ready when you are.");
+          }
+          return remaining;
+        });
+      })();
     }, 15000);
-    return () => window.clearInterval(timer);
+    return () => { disposed = true; window.clearInterval(timer); };
   }, [inflightGens.length]);
+
   // Set by "Switch model and retry": once the picker has re-rendered on the new
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
