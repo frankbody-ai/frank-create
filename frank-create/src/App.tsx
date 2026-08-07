@@ -5445,8 +5445,8 @@ function OutputStrip({
   onSelect,
   onQuickApprove,
   onQuickReject,
-  onUseAsFrame,
-  canUseLastFrame = false
+  onQuickReject
+
 }: {
   assets: Asset[];
   emptyLabel?: string;
@@ -5534,7 +5534,6 @@ function OutputStrip({
             ) : null}
           </div>
 
-          </div>
         );
       })}
       {Array.from({ length: skeletonCount }).map((_, index) => (
