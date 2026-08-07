@@ -5822,11 +5822,6 @@ input:focus, textarea:focus, select:focus {
 .sidebar-session-row.active .sidebar-session-icon:hover {
   background: rgba(255, 255, 255, 0.18);
 }
-.sidebar-nav-account {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .sidebar-bottom-divider {
   margin: 10px 12px 8px;
@@ -6038,7 +6033,6 @@ input:focus, textarea:focus, select:focus {
   }
 
   .guided-header.app-sidebar .sidebar-section-label,
-  .guided-header.app-sidebar .sidebar-nav-account,
   .guided-header.app-sidebar .sidebar-soon-tag {
     display: none;
   }
@@ -7227,19 +7221,6 @@ body {
   margin-top: auto;
 }
 
-.sidebar-nav-account {
-  flex-shrink: 0;
-  padding: 12px 10px 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--font-mono);
-  font-size: var(--text-caption);
-  font-weight: var(--weight-light);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--muted);
-}
 
 .sidebar-footer,
 .sidebar-session-card {
