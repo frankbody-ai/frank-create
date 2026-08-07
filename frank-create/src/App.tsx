@@ -511,7 +511,9 @@ export default function App() {
       }
 
       setSettingsOpen(false);
+      setLightboxAsset(null);
     }
+
 
     window.addEventListener("keydown", handleDrawerKeyDown);
     return () => window.removeEventListener("keydown", handleDrawerKeyDown);
