@@ -5620,6 +5620,12 @@ function OutputStrip({
               <AssetPreviewMedia asset={asset} fallbackIconSize={24} variant="thumb" />
               <span>{assetStatusCopy(status)}</span>
             </button>
+            {asset.width && asset.height ? (
+              <span className="output-tile-resolution" title="Resolution returned by the provider">
+                {asset.width} × {asset.height}
+              </span>
+            ) : null}
+
             {(onQuickApprove || onQuickReject) && asset.kind !== "reference" && asset.kind !== "mask" ? (
               <div className="output-tile-quick" onClick={(e) => e.stopPropagation()}>
                 {onQuickApprove ? (
