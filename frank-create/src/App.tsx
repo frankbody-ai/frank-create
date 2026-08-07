@@ -4127,10 +4127,16 @@ export default function App() {
             </div>
           ) : null}
 
+          <div className="prompt-mention-wrap">
           <textarea
             ref={promptInputRef}
             value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
+            onChange={(event) => {
+              setPrompt(event.target.value);
+              syncMention(event.target.value, event.target.selectionStart);
+            }}
+            onClick={(event) => syncMention(prompt, event.currentTarget.selectionStart)}
+            onBlur={() => window.setTimeout(closeMention, 120)}
             onPaste={handlePromptPaste}
             onDragOver={handlePromptDragOver}
             onDrop={handlePromptDrop}
@@ -4139,10 +4145,74 @@ export default function App() {
                 event.preventDefault();
                 if (prompt.trim()) void handleGenerate();
                 else if (!prompt.trim()) setStatusText("Enter a prompt to generate.");
+                return;
+              }
+              if (!mentionOpen) return;
+              if (event.key === "Escape") {
+                event.preventDefault();
+                closeMention();
+                return;
+              }
+              if (!mentionSuggestions.length) return;
+              if (event.key === "ArrowDown") {
+                event.preventDefault();
+                setMentionIndex((i) => (i + 1) % mentionSuggestions.length);
+              } else if (event.key === "ArrowUp") {
+                event.preventDefault();
+                setMentionIndex((i) => (i - 1 + mentionSuggestions.length) % mentionSuggestions.length);
+              } else if (event.key === "Enter" || event.key === "Tab") {
+                event.preventDefault();
+                if (activeMention) applyMention(activeMention.tag);
               }
             }}
-            placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Cmd/Ctrl+Enter to generate. Paste or drop an image to attach as reference."
+            placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Type @ to point at a reference. Cmd/Ctrl+Enter to generate."
           />
+          {mentionOpen ? (
+            <div className="prompt-mention-popover" role="listbox" aria-label="Reference tags">
+              {mentionSuggestions.length ? (
+                mentionSuggestions.map((option, i) => (
+                  <button
+                    key={option.tag}
+                    type="button"
+                    role="option"
+                    aria-selected={activeMention?.tag === option.tag}
+                    className={`prompt-mention-option${activeMention?.tag === option.tag ? " is-active" : ""}`}
+                    onMouseEnter={() => {
+                      setMentionIndex(i);
+                      setHoveredReferenceTag(option.tag);
+                    }}
+                    onMouseLeave={() => setHoveredReferenceTag(null)}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => applyMention(option.tag)}
+                  >
+                    {option.preview ? (
+                      <img src={option.preview} alt="" />
+                    ) : (
+                      <span className="prompt-mention-thumb-fallback">
+                        <Paperclip size={12} />
+                      </span>
+                    )}
+                    <strong>{option.tag}</strong>
+                    <span>{option.title}</span>
+                  </button>
+                ))
+              ) : (
+                <button
+                  type="button"
+                  className="prompt-mention-option prompt-mention-option--empty"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    closeMention();
+                    void openReferencePicker();
+                  }}
+                >
+                  <span>No references loaded — add references</span>
+                </button>
+              )}
+            </div>
+          ) : null}
+          </div>
+
 
 
 
