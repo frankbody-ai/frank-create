@@ -384,20 +384,29 @@ export function StudioRail(props: StudioRailProps) {
           <p className="rail-hint">Appended as an editable paragraph to your brief.</p>
         </section>
 
-        <section className="rail-block">
-          <AspectPreview
-            aspect={settings.aspect_ratio}
-            size={isVideo ? settings.video_resolution : (sizes.length ? settings.image_size : undefined)}
-            label={model?.short_label ?? model?.label}
-            count={isVideo ? 1 : settings.count}
-          />
-          {fieldErrors.references ? <p className="field-error" role="alert">{fieldErrors.references}</p> : null}
-          {isVideo && model?.requires_source_image && !videoFirstFrame ? (
-            <p className="field-error" role="alert">
-              {model.short_label ?? model.label} needs a source frame — fill the frame slot above.
-            </p>
-          ) : null}
-        </section>
+        {(() => {
+          const hasPreview = /^\d+(?:\.\d+)?\s*[:x/]\s*\d+(?:\.\d+)?$/i.test(settings.aspect_ratio ?? "");
+          const needsFrameError = Boolean(isVideo && model?.requires_source_image && !videoFirstFrame);
+          if (!hasPreview && !fieldErrors.references && !needsFrameError) return null;
+          return (
+            <section className="rail-block">
+              {hasPreview ? (
+                <AspectPreview
+                  aspect={settings.aspect_ratio}
+                  size={isVideo ? settings.video_resolution : (sizes.length ? settings.image_size : undefined)}
+                  label={model?.short_label ?? model?.label}
+                  count={isVideo ? 1 : settings.count}
+                />
+              ) : null}
+              {fieldErrors.references ? <p className="field-error" role="alert">{fieldErrors.references}</p> : null}
+              {needsFrameError ? (
+                <p className="field-error" role="alert">
+                  {model?.short_label ?? model?.label} needs a source frame — fill the frame slot above.
+                </p>
+              ) : null}
+            </section>
+          );
+        })()}
 
         <button className="rail-reset" type="button" onClick={onReset}>
           <RotateCcw size={14} />
