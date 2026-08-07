@@ -4642,7 +4642,15 @@ export default function App() {
               <XCircle size={18} />
             </button>
             <AssetPreviewMedia asset={lightboxAsset} fallbackIconSize={42} controls />
+            <div className="lightbox-meta">
+              {lightboxAsset.aspect_ratio ? <span>{formatAspectChip(lightboxAsset.aspect_ratio)}</span> : null}
+              {lightboxAsset.width && lightboxAsset.height ? (
+                <span title="Resolution returned by the provider">{lightboxAsset.width} × {lightboxAsset.height}</span>
+              ) : null}
+              {lightboxAsset.model ? <span>{modelName(config, lightboxAsset.model)}</span> : null}
+            </div>
             <div className="lightbox-actions">
+
               <button
                 type="button"
                 onClick={() => {
