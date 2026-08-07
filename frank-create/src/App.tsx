@@ -1985,7 +1985,9 @@ export default function App() {
 
     if (createdAssets.length) {
       setAssets((current) => [...createdAssets, ...current]);
-      setActiveReferenceIds((current) => Array.from(new Set([...current, ...createdAssets.map((asset) => asset.id)])));
+      if (attach) {
+        setActiveReferenceIds((current) => Array.from(new Set([...current, ...createdAssets.map((asset) => asset.id)])));
+      }
     }
     if (failedUploads.length && createdAssets.length) {
       setStatusText(`${createdAssets.length} reference${createdAssets.length === 1 ? "" : "s"} locked. ${failedUploads.length} upload${failedUploads.length === 1 ? "" : "s"} failed.`);
@@ -1994,7 +1996,9 @@ export default function App() {
     } else if (createdAssets.length) {
       setStatusText("Reference locked. Nice.");
     }
+    return createdAssets;
   }
+
 
   function imagesFromClipboard(data: DataTransfer | null | undefined) {
     const items = Array.from(data?.items ?? []);
