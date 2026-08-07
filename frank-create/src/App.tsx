@@ -5150,8 +5150,17 @@ function AssetPreviewMedia({
   fallbackIconSize?: number;
 }) {
   if (!asset.preview_url) {
+    if (controls) {
+      return (
+        <div className="asset-preview-placeholder">
+          <ImageIcon size={fallbackIconSize} />
+          <span>{asset.title}</span>
+        </div>
+      );
+    }
     return <ImageIcon size={fallbackIconSize} />;
   }
+
 
   if (isPlayableVideoAsset(asset)) {
     return (
