@@ -4065,7 +4065,6 @@ export default function App() {
                   onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
                 />
 
-                />
                 </div>
                 </div>
 
