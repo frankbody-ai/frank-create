@@ -647,6 +647,9 @@ export interface Asset {
   file_path?: string;
   preview_url?: string;
   remote_url?: string;
+  /** True when the file was too large to store, so the URL above is temporary. */
+  storage_missing?: boolean;
+  temporary_url?: boolean;
   /** Real pixel size of the file the provider returned. */
   width?: number;
   height?: number;
