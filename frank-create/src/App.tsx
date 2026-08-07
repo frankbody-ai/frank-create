@@ -872,42 +872,28 @@ export default function App() {
     }
   }
 
-  const videoFirstFrame = useMemo(
-    () => assets.find((asset) => asset.id === videoFirstFrameId) ?? null,
-    [assets, videoFirstFrameId]
-  );
-  const videoLastFrame = useMemo(
-    () => assets.find((asset) => asset.id === videoLastFrameId) ?? null,
-    [assets, videoLastFrameId]
-  );
+  // Frames are derived from the reference dock: ref #1 is the first frame and,
+  // when the model accepts an end frame, ref #2 is the last frame.
+  const videoFirstFrame = referenceAssets[0] ?? null;
+  const videoLastFrame = referenceAssets[1] ?? null;
 
   function clearReferenceDock() {
     setActiveReferenceIds([]);
     setReferencePreviewAsset(null);
-    setVideoFirstFrameId(null);
-    setVideoLastFrameId(null);
-    setArmedFrameSlot(null);
   }
 
-  function assignFrameSlot(slot: "first" | "last", assetId: string) {
-    const asset = assets.find((item) => item.id === assetId);
-    if (!asset || asset.media_type === "video") {
-      setStatusText("Frames must be still images.");
-      return;
-    }
-    if (slot === "last") {
-      if (!videoFirstFrameId) {
-        setStatusText("Pick a first frame before the last frame.");
-        return;
-      }
-      setVideoLastFrameId(asset.id);
-      setStatusText(`Last frame set — ${asset.title}.`);
-    } else {
-      setVideoFirstFrameId(asset.id);
-      setStatusText(`First frame set — ${asset.title}.`);
-    }
-    setArmedFrameSlot(null);
+  function swapFrameOrder() {
+    setActiveReferenceIds((current) => {
+      if (current.length < 2) return current;
+      const next = [...current];
+      const [a, b] = [next[0], next[1]];
+      next[0] = b;
+      next[1] = a;
+      return next;
+    });
+    setStatusText("Swapped the start and end frames.");
   }
+
 
 
   const baseFieldErrors = useMemo(
