@@ -3982,6 +3982,32 @@ export default function App() {
                       {timeLabel ? <span title={timeLabel}>{timeLabel}</span> : null}
                       <span>{turn.status}</span>
                       {turn.frank_body_mode ? <span>Frank Body Mode</span> : <span>User prompt</span>}
+                      {turnAspect(turn) ? <span className="turn-chip-aspect">{formatAspectChip(turnAspect(turn))}</span> : null}
+                      {(() => {
+                        // Real returned pixel size, read from the delivered file.
+                        const sizes = Array.from(new Set(
+                          displayOutputAssets
+                            .filter((a) => a.turn_id === turn.id && a.width && a.height)
+                            .map((a) => `${a.width} × ${a.height}`),
+                        ));
+                        if (!sizes.length) return null;
+                        return (
+                          <span className="turn-chip-resolution" title="Resolution returned by the provider">
+                            {sizes.join(" · ")}
+                          </span>
+                        );
+                      })()}
+                      {turn.provider_request_json ? (
+                        <button
+                          type="button"
+                          className="turn-chip-json"
+                          onClick={() => setPayloadTurnId(turn.id)}
+                          title="Show the JSON body sent to the provider"
+                        >
+                          JSON
+                        </button>
+                      ) : null}
+
                       <button
                         type="button"
                         className="turn-copy-prompt"
