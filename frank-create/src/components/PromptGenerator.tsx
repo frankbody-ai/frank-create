@@ -41,6 +41,58 @@ function extractPrompts(text: string): string[] {
   return blocks;
 }
 
+type AgentPhase = "discovery" | "final" | "unknown";
+
+/**
+ * The agent labels every reply with DISCOVERY or FINAL PROMPT on the first line
+ * (see the conversation protocol in the prompt agent config). We read that label
+ * to decide whether a reply is a question round or the deliverable, then strip it
+ * so the user never sees the marker.
+ */
+function parseAgentReply(content: string): { phase: AgentPhase; body: string } {
+  const trimmed = content.trim();
+  const firstBreak = trimmed.indexOf("\n");
+  const head = (firstBreak === -1 ? trimmed : trimmed.slice(0, firstBreak)).trim();
+  const normalized = head.replace(/[*_#`:—-]/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
+  const rest = (firstBreak === -1 ? "" : trimmed.slice(firstBreak + 1)).trim();
+  if (normalized === "DISCOVERY") return { phase: "discovery", body: rest || trimmed };
+  if (normalized === "FINAL PROMPT" || normalized === "FINAL") return { phase: "final", body: rest || trimmed };
+  // Unlabelled reply: a fenced block means it delivered a prompt.
+  return { phase: extractPrompts(trimmed).length ? "final" : "unknown", body: trimmed };
+}
+
+/** Renders the reply body, pulling numbered question runs out into a real list. */
+function AgentBody({ text }: { text: string }) {
+  const lines = text.split("\n");
+  const chunks: { type: "text" | "list"; lines: string[] }[] = [];
+  for (const line of lines) {
+    const isItem = /^\s*\d+[.)]\s+\S/.test(line);
+    const last = chunks[chunks.length - 1];
+    const type = isItem ? "list" : "text";
+    if (last && last.type === type) last.lines.push(line);
+    else chunks.push({ type, lines: [line] });
+  }
+  return (
+    <div className="prompt-agent-msg-body">
+      {chunks.map((chunk, index) =>
+        chunk.type === "list" ? (
+          <ol className="prompt-agent-questions" key={index}>
+            {chunk.lines.map((line, i) => (
+              <li key={i}>{line.replace(/^\s*\d+[.)]\s+/, "")}</li>
+            ))}
+          </ol>
+        ) : (
+        ) : chunk.lines.join("\n").trim() ? (
+          <p key={index}>{chunk.lines.join("\n").trim()}</p>
+        ) : null
+
+        )
+      )}
+    </div>
+  );
+}
+
+
 export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const [skill, setSkill] = useState("brief-to-prompt");
   const [SKILLS, setSkills] = useState(FALLBACK_SKILLS);
@@ -190,10 +242,21 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
             </div>
           ) : (
             messages.map((message, index) => {
-              const prompts = message.role === "assistant" ? extractPrompts(message.content) : [];
+              const parsed =
+                message.role === "assistant"
+                  ? parseAgentReply(message.content)
+                  : { phase: "unknown" as AgentPhase, body: message.content };
+              const prompts = parsed.phase === "discovery" ? [] : extractPrompts(parsed.body);
               return (
                 <div key={index} className={`prompt-agent-msg ${message.role}`}>
-                  <p className="prompt-agent-msg-role">{message.role === "user" ? "You" : "Agent"}</p>
+                  <p className="prompt-agent-msg-role">
+                    {message.role === "user" ? "You" : "Agent"}
+                    {message.role === "assistant" && parsed.phase !== "unknown" ? (
+                      <span className={`prompt-agent-phase ${parsed.phase}`}>
+                        {parsed.phase === "discovery" ? "Discovery" : "Final prompt"}
+                      </span>
+                    ) : null}
+                  </p>
                   {message.images?.length ? (
                     <div className="prompt-agent-msg-refs">
                       {message.images.map((src, i) => (
@@ -201,7 +264,13 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
                       ))}
                     </div>
                   ) : null}
-                  {message.content ? <div className="prompt-agent-msg-body">{message.content}</div> : null}
+                  {parsed.body ? (
+                    message.role === "assistant" ? (
+                      <AgentBody text={parsed.body} />
+                    ) : (
+                      <div className="prompt-agent-msg-body">{parsed.body}</div>
+                    )
+                  ) : null}
                   {prompts.map((value, i) => (
                     <div className="prompt-agent-actions" key={i}>
                       <button type="button" className="pc-primary-btn" onClick={() => onUsePrompt?.(value)}>
@@ -212,9 +281,26 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
                       </button>
                     </div>
                   ))}
+                  {message.role === "assistant" && parsed.phase === "discovery" && index === messages.length - 1 ? (
+                    <div className="prompt-agent-actions">
+                      <button
+                        type="button"
+                        className="pc-secondary-btn"
+                        disabled={busy}
+                        onClick={() =>
+                          void send(
+                            "Draft it now — fill any remaining gaps with sensible defaults and list the assumptions you locked."
+                          )
+                        }
+                      >
+                        <Wand2 size={14} /> Draft it now
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               );
             })
+
           )}
           {busy ? (
             <div className="prompt-agent-msg assistant">

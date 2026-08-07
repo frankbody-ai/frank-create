@@ -457,6 +457,7 @@ export type Database = {
       prompt_agent_config: {
         Row: {
           blueprint: string
+          conversation_protocol: string
           craft_method: string
           created_at: string
           id: number
@@ -467,6 +468,7 @@ export type Database = {
         }
         Insert: {
           blueprint?: string
+          conversation_protocol?: string
           craft_method?: string
           created_at?: string
           id?: number
@@ -477,6 +479,7 @@ export type Database = {
         }
         Update: {
           blueprint?: string
+          conversation_protocol?: string
           craft_method?: string
           created_at?: string
           id?: number

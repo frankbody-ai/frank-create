@@ -6361,6 +6361,22 @@ input:focus, textarea:focus, select:focus {
   border-radius: 12px; padding: 12px 14px;
 }
 .prompt-agent-msg.user .prompt-agent-msg-body { background: var(--ink); color: #FFEFEA; border-color: var(--ink); }
+.prompt-agent-msg-role { display: flex; align-items: center; gap: 8px; }
+.prompt-agent-phase {
+  font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 999px; border: 1px solid var(--muted-20);
+  color: rgba(48, 48, 48, 0.7); background: rgba(255, 255, 255, 0.6);
+}
+.prompt-agent-phase.final { border-color: var(--ink); color: var(--ink); }
+.prompt-agent-msg.assistant .prompt-agent-msg-body > p { margin: 0 0 8px; white-space: pre-wrap; }
+.prompt-agent-msg.assistant .prompt-agent-msg-body > p:last-child { margin-bottom: 0; }
+.prompt-agent-questions {
+  margin: 4px 0 10px; padding-left: 20px; display: grid; gap: 6px;
+  white-space: normal;
+}
+.prompt-agent-questions:last-child { margin-bottom: 0; }
+.prompt-agent-questions li { line-height: 1.5; }
+
 .prompt-agent-typing { display: inline-flex; align-items: center; gap: 8px; color: rgba(48, 48, 48, 0.7); }
 .prompt-agent-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .prompt-agent-error { margin: 0; font-size: 12px; color: #b3261e; }

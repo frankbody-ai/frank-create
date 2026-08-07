@@ -24,6 +24,7 @@ export function PromptAgentTab() {
   const [defaults, setDefaults] = useState<Defaults | null>(null);
   const [persona, setPersona] = useState("");
   const [craftMethod, setCraftMethod] = useState("");
+  const [conversationProtocol, setConversationProtocol] = useState("");
   const [blueprint, setBlueprint] = useState("");
   const [rules, setRules] = useState("");
   const [skills, setSkills] = useState<PromptAgentSkillConfig[]>([]);
@@ -32,10 +33,12 @@ export function PromptAgentTab() {
   function apply(cfg: PromptAgentConfig | Defaults) {
     setPersona(cfg.persona);
     setCraftMethod(cfg.craftMethod);
+    setConversationProtocol(cfg.conversationProtocol ?? "");
     setBlueprint(cfg.blueprint);
     setRules(cfg.rules);
     setSkills(cfg.skills.map((s) => ({ ...s })));
   }
+
 
   useEffect(() => {
     let alive = true;
@@ -67,7 +70,7 @@ export function PromptAgentTab() {
     setStatus(null);
     setError(null);
     try {
-      const res = await savePromptAgentConfig({ persona, craftMethod, blueprint, rules, skills });
+      const res = await savePromptAgentConfig({ persona, craftMethod, conversationProtocol, blueprint, rules, skills });
       apply(res.config);
       setUpdatedAt(res.config.updatedAt ?? null);
       setStatus("Saved — the Prompt Generator uses this on the next message.");
@@ -146,6 +149,15 @@ export function PromptAgentTab() {
           onReset={defaults ? () => setCraftMethod(defaults.craftMethod) : undefined}
           rows={14}
         />
+        <Field
+          label="Conversation protocol"
+          hint="How the agent runs the discovery → final prompt conversation: when to ask clarifying questions, and when it is allowed to draft."
+          value={conversationProtocol}
+          onChange={setConversationProtocol}
+          onReset={defaults ? () => setConversationProtocol(defaults.conversationProtocol) : undefined}
+          rows={14}
+        />
+
         <Field
           label="Production prompt blueprint"
           hint="The section-by-section structure the final prompt follows."
