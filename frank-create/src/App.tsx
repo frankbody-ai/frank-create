@@ -4549,9 +4549,10 @@ export default function App() {
                     type="button"
                     className="reference-picker-upload"
                     onClick={() => referencePickerInputRef.current?.click()}
+                    disabled={referencePickerBusy}
                   >
                     <Upload size={22} />
-                    <strong>Upload from computer</strong>
+                    <strong>{referencePickerBusy ? "Uploading…" : "Upload from computer"}</strong>
                     <span>PNG, JPG or WEBP · you can also paste or drop</span>
                   </button>
                   {referenceLibrary.length ? (
@@ -4562,10 +4563,8 @@ export default function App() {
                         active={referenceAssets.some(
                           (ref) => ref.id === asset.id || ref.source_asset_id === asset.id
                         )}
-                        onPick={async () => {
-                          await useAssetAsReference(asset);
-                          setReferencePickerOpen(false);
-                        }}
+                        selected={referencePickerSelection.includes(asset.id)}
+                        onPick={() => togglePickerSelection(asset)}
                       />
                     ))
                   ) : null}
@@ -4577,6 +4576,26 @@ export default function App() {
                 </div>
               ) : null}
             </div>
+            <footer className="reference-picker-footer">
+              <span className="reference-picker-count">
+                {referencePickerSelection.length} of {referencePickerLimit} selected
+                {referencePickerNote ? <em> · {referencePickerNote}</em> : null}
+              </span>
+              <div className="reference-picker-footer-actions">
+                <button type="button" className="ghost-button" onClick={() => setReferencePickerOpen(false)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={!referencePickerSelection.length || referencePickerBusy}
+                  onClick={() => void confirmReferencePickerSelection()}
+                >
+                  {referencePickerBusy ? "Working…" : `Add references${referencePickerSelection.length ? ` (${referencePickerSelection.length})` : ""}`}
+                </button>
+              </div>
+            </footer>
+
 
           </div>
         </div>,
