@@ -8634,7 +8634,7 @@ body {
    the small-screen notice instead. */
 @media (min-width: 1024px) and (max-width: 1180px) {
   .studio-shell.guided-studio.settings-rail-open {
-    grid-template-columns: var(--sidebar-w, 220px) minmax(0, 1fr) 232px !important;
+    grid-template-columns: 216px minmax(0, 1fr) 232px !important;
     grid-template-rows: minmax(0, 1fr) !important;
     height: 100vh;
     min-height: 100vh;
