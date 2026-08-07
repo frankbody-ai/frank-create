@@ -2583,7 +2583,7 @@ export default function App() {
   // Pull turns + assets for the active session and merge them into local state
   // without dropping anything already on screen.
   async function reconcileSessionAssets() {
-    if (connection !== "online" || !activeSession) return;
+    if (connection !== "online" || !activeSession) return null;
     try {
       const [turnResult, assetResult] = await Promise.all([
         listTurns(activeSession.id),
@@ -2604,10 +2604,68 @@ export default function App() {
             new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
         );
       });
+      return { turns: turnResult.turns, assets: assetResult.assets };
     } catch {
       /* reconcile is best-effort */
+      return null;
     }
   }
+
+  // The provider work is persisted server-side before the HTTP call returns, so a
+  // dropped/timed-out response used to leave the pending card spinning even though
+  // the round had finished. Re-read the session and settle any local pending card
+  // whose round already landed. Returns the number of cards settled.
+  async function settleFinishedRunsFromServer() {
+    const snapshot = await reconcileSessionAssets();
+    if (!snapshot) return 0;
+
+    const pending = inflightRef.current;
+    if (!pending.length) return 0;
+
+    const claimed = new Set<string>();
+    const settledIds: string[] = [];
+    let newestAsset: Asset | undefined;
+
+    for (const gen of pending) {
+      const match = snapshot.turns.find((turn) => {
+        if (claimed.has(turn.id)) return false;
+        if (turn.status === "queued" || turn.status === "running") return false;
+        if (turn.model !== gen.modelId) return false;
+        // Allow a little clock skew between the browser and the backend.
+        if (new Date(turn.created_at).getTime() < gen.startedAt - 15000) return false;
+        const done =
+          turn.status === "failed" ||
+          turn.status === "blocked" ||
+          snapshot.assets.some((asset) => asset.turn_id === turn.id);
+        return done;
+      });
+      if (!match) continue;
+      claimed.add(match.id);
+      settledIds.push(gen.id);
+      const asset = snapshot.assets.find((item) => item.turn_id === match.id);
+      if (asset && !newestAsset) newestAsset = asset;
+    }
+
+    if (!settledIds.length) return 0;
+
+    const settled = new Set(settledIds);
+    setInflightGens((current) => {
+      const remaining = current.filter((gen) => !settled.has(gen.id));
+      if (!remaining.length) {
+        setBusy(false);
+        setGenPhase("completed");
+        setStatusText(
+          newestAsset
+            ? "Round landed while you were waiting — picks are ready."
+            : "Round closed out on the server.",
+        );
+      }
+      return remaining;
+    });
+    if (newestAsset) setSelectedAsset(newestAsset);
+    return settledIds.length;
+  }
+
 
 
   async function handleVideoGenerate() {
