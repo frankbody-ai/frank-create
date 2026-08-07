@@ -4093,89 +4093,90 @@ export default function App() {
                 </span>
               )}
             </div>
-            {referenceAssets.length ? (
-              <p className="reference-tag-hint">
-                Reference tags:{" "}
-                {taggedReferences(referenceAssets).map((ref, i) => (
-                  <span key={ref.tag}>
-                    {i ? ", " : ""}
-                    <button
-                      type="button"
-                      className="reference-tag-hint-chip"
-                      onMouseEnter={() => setHoveredReferenceTag(ref.tag)}
-                      onMouseLeave={() => setHoveredReferenceTag(null)}
-                      onClick={() => insertReferenceTag(ref.tag)}
-                    >
-                      {ref.tag}
-                    </button>{" "}
-                    {ref.title}
-                  </span>
-                ))}
-                {" "}— use them in the prompt to point at one image.
-                {unknownReferenceTags(prompt, referenceAssets.length).length ? (
-                  <strong className="reference-tag-hint-warn">
-                    {" "}Unknown tag{unknownReferenceTags(prompt, referenceAssets.length).length === 1 ? "" : "s"}:{" "}
-                    {unknownReferenceTags(prompt, referenceAssets.length).join(", ")}
-                  </strong>
-                ) : null}
-              </p>
-            ) : null}
-            {editSourceAsset && selectedModel?.capabilities.masked_edit ? (
-              <>
-                <button className="upload-button mask-paint-button" type="button" onClick={() => setMaskPainterAsset(editSourceAsset)}>
-                  <Paintbrush size={16} />
-                  Paint mask
+            <div className="composer-action-group">
+              {editSourceAsset && selectedModel?.capabilities.masked_edit ? (
+                <>
+                  <button className="upload-button mask-paint-button" type="button" onClick={() => setMaskPainterAsset(editSourceAsset)}>
+                    <Paintbrush size={16} />
+                    Paint mask
+                  </button>
+                  <label className="upload-button mask-upload-button">
+                    <Box size={16} />
+                    Mask
+                    <input aria-label="Upload edit mask" type="file" accept="image/png,image/webp,image/jpeg" onChange={handleMaskUpload} />
+                  </label>
+                </>
+              ) : null}
+              {maskAsset ? (
+                <button className="mask-chip" type="button" onClick={() => setMaskAsset(null)} title="Clear edit mask">
+                  {maskAsset.preview_url ? <img src={maskAsset.preview_url} alt="" aria-hidden="true" /> : <Box size={14} />}
+                  <span>Mask {maskAsset.title}</span>
+                  <XCircle size={14} />
                 </button>
-                <label className="upload-button mask-upload-button">
-                  <Box size={16} />
-                  Mask
-                  <input aria-label="Upload edit mask" type="file" accept="image/png,image/webp,image/jpeg" onChange={handleMaskUpload} />
-                </label>
-              </>
-            ) : null}
-            {maskAsset ? (
-              <button className="mask-chip" type="button" onClick={() => setMaskAsset(null)} title="Clear edit mask">
-                {maskAsset.preview_url ? <img src={maskAsset.preview_url} alt="" aria-hidden="true" /> : <Box size={14} />}
-                <span>Mask {maskAsset.title}</span>
-                <XCircle size={14} />
+              ) : null}
+              {!settingsRailOpen ? (
+                <button className="secondary-button" type="button" onClick={() => setSettingsRailOpen(true)}>
+                  <SlidersHorizontal size={16} />
+                  Setup
+                </button>
+              ) : null}
+              <button className="secondary-button remix-button" type="button" onClick={handlePromptRemix} disabled={remixBusy}>
+                {remixBusy ? <RefreshCw className="spin" size={16} /> : <Sparkles size={16} />}
+                Brief remix
               </button>
-            ) : null}
-            {!settingsRailOpen ? (
-              <button className="secondary-button" type="button" onClick={() => setSettingsRailOpen(true)}>
-                <SlidersHorizontal size={16} />
-                Setup
+              <button
+                className="secondary-button danger-button composer-cancel-button"
+                type="button"
+                onClick={requestCancelCurrentSession}
+                disabled={!activeSession}
+              >
+                <XCircle size={16} />
+                Cancel session
               </button>
-            ) : null}
-            <button className="secondary-button remix-button" type="button" onClick={handlePromptRemix} disabled={remixBusy}>
-              {remixBusy ? <RefreshCw className="spin" size={16} /> : <Sparkles size={16} />}
-              Brief remix
-            </button>
-
-            <button
-              className="primary-button"
-              type="submit"
-              disabled={!prompt.trim() || hasStudioFieldErrors(fieldErrors)}
-              title={
-                !prompt.trim()
-                  ? "Enter a prompt to generate"
-                  : hasStudioFieldErrors(fieldErrors)
-                    ? "Fix the highlighted settings before generating"
-                    : undefined
-              }
-            >
-              <Wand2 size={18} />
-              {primaryActionLabel}
-            </button>
-            <button
-              className="secondary-button danger-button composer-cancel-button"
-              type="button"
-              onClick={requestCancelCurrentSession}
-              disabled={!activeSession}
-            >
-              <XCircle size={16} />
-              Cancel session
-            </button>
+              <button
+                className="primary-button"
+                type="submit"
+                disabled={!prompt.trim() || hasStudioFieldErrors(fieldErrors)}
+                title={
+                  !prompt.trim()
+                    ? "Enter a prompt to generate"
+                    : hasStudioFieldErrors(fieldErrors)
+                      ? "Fix the highlighted settings before generating"
+                      : undefined
+                }
+              >
+                <Wand2 size={18} />
+                {primaryActionLabel}
+              </button>
+            </div>
           </div>
+          {referenceAssets.length ? (
+            <p className="reference-tag-hint">
+              Reference tags:{" "}
+              {taggedReferences(referenceAssets).map((ref, i) => (
+                <span key={ref.tag}>
+                  {i ? ", " : ""}
+                  <button
+                    type="button"
+                    className="reference-tag-hint-chip"
+                    onMouseEnter={() => setHoveredReferenceTag(ref.tag)}
+                    onMouseLeave={() => setHoveredReferenceTag(null)}
+                    onClick={() => insertReferenceTag(ref.tag)}
+                  >
+                    {ref.tag}
+                  </button>{" "}
+                  {ref.title}
+                </span>
+              ))}
+              {" "}— use them in the prompt to point at one image.
+              {unknownReferenceTags(prompt, referenceAssets.length).length ? (
+                <strong className="reference-tag-hint-warn">
+                  {" "}Unknown tag{unknownReferenceTags(prompt, referenceAssets.length).length === 1 ? "" : "s"}:{" "}
+                  {unknownReferenceTags(prompt, referenceAssets.length).join(", ")}
+                </strong>
+              ) : null}
+            </p>
+          ) : null}
         </form>
 
 
