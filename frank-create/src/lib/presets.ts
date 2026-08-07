@@ -63,10 +63,12 @@ export const fallbackConfig: FrankConfig = {
     }
   ],
   providers: [
+    { key: "openrouter", label: "OpenRouter", type: "api", status: "curated" },
     { key: "google", label: "Gemini / Nano Banana", type: "api", status: "curated" },
     { key: "replicate", label: "Replicate", type: "api", status: "curated" },
     { key: "openai", label: "OpenAI image/edit", type: "api", status: "curated" }
   ],
+
   models: [
     {
       id: "google-nb-pro",
