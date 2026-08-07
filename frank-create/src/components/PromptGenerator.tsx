@@ -81,12 +81,10 @@ function AgentBody({ text }: { text: string }) {
               <li key={i}>{line.replace(/^\s*\d+[.)]\s+/, "")}</li>
             ))}
           </ol>
-        ) : (
         ) : chunk.lines.join("\n").trim() ? (
           <p key={index}>{chunk.lines.join("\n").trim()}</p>
         ) : null
 
-        )
       )}
     </div>
   );
