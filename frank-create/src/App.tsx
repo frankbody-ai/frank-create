@@ -4007,11 +4007,14 @@ export default function App() {
             </button>
             <div className="reference-dock" aria-label="Reference images">
 
-              {referenceAssets.map((asset) => (
+              {referenceAssets.map((asset, refIndex) => {
+                const tag = referenceTagFor(refIndex);
+                return (
                 <div
                   key={asset.id}
-                  className="reference-thumb"
-                  title={asset.title}
+                  className={`reference-thumb${hoveredReferenceTag === tag ? " reference-thumb--tag-hover" : ""}`}
+                  title={`${tag} · ${asset.title}`}
+                  data-reference-tag={tag}
                   onClick={() => setReferencePreviewAsset(asset)}
                   role="button"
                   tabIndex={0}
@@ -4025,6 +4028,20 @@ export default function App() {
                   {asset.preview_url ? <img src={asset.preview_url} alt={asset.title} /> : <Paperclip size={15} />}
                   <button
                     type="button"
+                    className="reference-tag"
+                    title={`Insert ${tag} into the prompt`}
+                    aria-label={`Insert ${tag} for ${asset.title} into the prompt`}
+                    onMouseEnter={() => setHoveredReferenceTag(tag)}
+                    onMouseLeave={() => setHoveredReferenceTag(null)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      insertReferenceTag(tag);
+                    }}
+                  >
+                    {tag}
+                  </button>
+                  <button
+                    type="button"
                     className="reference-remove"
                     aria-label={`Remove ${asset.title}`}
                     title={`Remove ${asset.title}`}
@@ -4036,7 +4053,8 @@ export default function App() {
                     <X size={12} />
                   </button>
                 </div>
-              ))}
+                );
+              })}
               {referenceAssets.length ? (
                 <span className="reference-selection-count">
                   {referenceAssets.length} loaded · used in next run
