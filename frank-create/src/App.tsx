@@ -4569,7 +4569,7 @@ export default function App() {
 
       {lightboxAsset ? (
         <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setLightboxAsset(null)}>
-          <div className="lightbox-inner" onClick={(event) => event.stopPropagation()}>
+          <div className="lightbox-inner is-viewer" onClick={(event) => event.stopPropagation()}>
             <button className="lightbox-close" type="button" onClick={() => setLightboxAsset(null)} aria-label="Close preview">
               <XCircle size={18} />
             </button>
