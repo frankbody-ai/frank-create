@@ -412,6 +412,8 @@ export default function App() {
   const referencePickerInputRef = useRef<HTMLInputElement | null>(null);
   const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [hoveredReferenceTag, setHoveredReferenceTag] = useState<string | null>(null);
+  const [mentionState, setMentionState] = useState<{ start: number; query: string } | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
 
   const [compareBaseAsset, setCompareBaseAsset] = useState<Asset | null>(null);
   const [compareTargetAsset, setCompareTargetAsset] = useState<Asset | null>(null);
