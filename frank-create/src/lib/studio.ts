@@ -227,17 +227,31 @@ const IMAGE_COST_TIERS: Record<string, 1 | 2 | 3> = {
   "riverflow-2-5-pro": 3,
 };
 
-/** "$", "$$" or "$$$" for image models; null for video/upscale models. */
+/**
+ * Relative cost band for video models, 1 ($) to 3 ($$$), based on the average
+ * provider price per output second at comparable resolution and quality.
+ */
+const VIDEO_COST_TIERS: Record<string, 1 | 2 | 3> = {
+  "grok-imagine-video": 1,
+  "happyhorse-1-0": 2,
+  "wan-2-7-i2v": 2,
+  "grok-imagine-video-1-5": 2,
+  "dreamina-seedance-2": 3,
+  "hailuo-2-3": 3,
+};
+
+/** "$", "$$" or "$$$" for image/video models; null for upscale models. */
 export function modelCostBadge(model: StudioModel | undefined | null): string | null {
-  if (!model || isVideoModel(model)) return null;
+  if (!model || isUpscaleModel(model)) return null;
   const explicit = (model as StudioModel & { cost_tier?: number }).cost_tier;
   const tier =
     explicit && explicit >= 1 && explicit <= 3
       ? (Math.round(explicit) as 1 | 2 | 3)
-      : IMAGE_COST_TIERS[model.id];
+      : (isVideoModel(model) ? VIDEO_COST_TIERS[model.id] : IMAGE_COST_TIERS[model.id]);
   if (!tier) return null;
   return "$".repeat(tier);
 }
+
 
 
 /** Live estimate for the current duration / resolution selection. */
