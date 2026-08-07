@@ -3985,16 +3985,16 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .studio-shell.guided-studio .reference-dock {
-  flex: 1 1 190px;
-  min-width: 140px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .studio-shell.guided-studio .remix-button {
-  flex: 1 1 180px;
+  flex: 1 1 0;
   justify-content: center;
   background: transparent;
 }
@@ -4006,8 +4006,26 @@ body {
 }
 
 .studio-shell.guided-studio .composer-cancel-button {
-  margin-left: auto;
+  margin-left: 0;
+  flex: 1 1 0;
+  justify-content: center;
 }
+
+.composer-action-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 50%;
+  max-width: 50%;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.composer-action-group .primary-button {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
 
 .studio-shell.guided-studio .context-panel.inspector-drawer {
   position: fixed;
