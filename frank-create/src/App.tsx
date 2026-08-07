@@ -4581,6 +4581,35 @@ export default function App() {
   );
 }
 
+function ReferencePickerCard({
+  asset,
+  active,
+  onPick
+}: {
+  asset: Asset;
+  active: boolean;
+  onPick: () => void | Promise<void>;
+}) {
+  const thumb = thumbnailUrl(asset.preview_url || asset.remote_url, 280);
+  return (
+    <button
+      type="button"
+      className={`reference-picker-card${active ? " is-active" : ""}`}
+      onClick={() => { void onPick(); }}
+      title={asset.title}
+    >
+      {thumb ? (
+        <img src={thumb} alt={asset.title} loading="lazy" decoding="async" width={280} height={280} />
+      ) : (
+        <span className="reference-picker-card-fallback"><Paperclip size={18} /></span>
+      )}
+      <span className="reference-picker-card-title">{asset.title}</span>
+      {active ? <span className="reference-picker-card-flag">In use</span> : null}
+    </button>
+  );
+}
+
+
 function WalkthroughOverlay({
   anchor,
   step,
