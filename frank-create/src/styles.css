@@ -6914,8 +6914,37 @@ input:focus, textarea:focus, select:focus {
   font-size: 0.62rem;
   background: color-mix(in srgb, currentColor 14%, transparent);
 }
-.reference-picker-card.is-active { outline: 2px solid currentColor; }
-.reference-picker-empty {
+.reference-picker-card.is-active { outline: 2px solid currentColor; opacity: 0.55; cursor: default; }
+.reference-picker-card.is-selected {
+  outline: 2px solid var(--tenant-accent, currentColor);
+  outline-offset: -2px;
+}
+.reference-picker-card-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--tenant-accent, currentColor);
+  color: #fff;
+}
+.reference-picker-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  margin-top: 4px;
+  border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+.reference-picker-count { font-size: 0.72rem; opacity: 0.75; }
+.reference-picker-count em { font-style: normal; opacity: 0.9; }
+.reference-picker-footer-actions { display: flex; align-items: center; gap: 8px; }
+
   grid-column: 1 / -1;
   padding: 24px;
   font-size: 0.82rem;
