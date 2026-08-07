@@ -120,7 +120,8 @@ import {
   insertTagAtCaret,
   unknownReferenceTags,
   buildReferenceManifest,
-  expandReferenceTags
+  expandReferenceTags,
+  thumbnailUrl
 } from "./lib/studio";
 import type { StudioFieldErrors } from "./lib/studio";
 
