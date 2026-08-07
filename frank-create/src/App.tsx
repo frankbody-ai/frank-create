@@ -4522,35 +4522,46 @@ export default function App() {
                 </button>
               ) : null}
               <div className="action-compact-pile">
-                <button className="secondary-button remix-button" type="button" onClick={handlePromptRemix} disabled={remixBusy}>
+                <button
+                  className="secondary-button remix-button"
+                  type="button"
+                  onClick={handlePromptRemix}
+                  disabled={remixBusy}
+                  title="Brief remix"
+                  aria-label="Brief remix"
+                >
                   {remixBusy ? <RefreshCw className="spin" size={14} /> : <Sparkles size={14} />}
-                  Brief remix
+                  <span className="action-label">Brief remix</span>
                 </button>
                 <button
                   className="secondary-button danger-button composer-cancel-button"
                   type="button"
                   onClick={requestCancelCurrentSession}
                   disabled={!activeSession}
+                  title="Cancel"
+                  aria-label="Cancel"
                 >
-                  <XCircle size={14} />
-                  Cancel
+                  <X size={14} />
+                  <span className="action-label">Cancel</span>
                 </button>
               </div>
               <button
                 className="primary-button"
                 type="submit"
                 disabled={!prompt.trim() || hasStudioFieldErrors(fieldErrors)}
+                aria-label={primaryActionLabel}
                 title={
                   !prompt.trim()
                     ? "Enter a prompt to generate"
                     : hasStudioFieldErrors(fieldErrors)
                       ? "Fix the highlighted settings before generating"
-                      : undefined
+                      : primaryActionLabel
                 }
               >
                 <Wand2 size={18} />
-                {primaryActionLabel}
+                <span className="action-label">{primaryActionLabel}</span>
               </button>
+
             </div>
           </div>
           {referenceAssets.length ? (
