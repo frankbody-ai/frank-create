@@ -6154,38 +6154,6 @@ input:focus, textarea:focus, select:focus {
   }
 }
 
-@media (max-width: 920px) {
-  .studio-shell.guided-studio.settings-rail-open {
-    height: auto;
-    min-height: 100vh;
-    grid-template-columns: minmax(0, 1fr) !important;
-    grid-template-rows: auto auto auto !important;
-    overflow: visible;
-  }
-
-  .studio-shell.guided-studio.settings-rail-open .app-sidebar {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-    width: 100%;
-    max-width: none;
-    height: auto;
-  }
-
-  .studio-shell.guided-studio.settings-rail-open .studio-settings-rail {
-    grid-column: 1 !important;
-    grid-row: 2 !important;
-    width: 100%;
-    height: auto;
-    max-height: none;
-  }
-
-  .studio-shell.guided-studio.settings-rail-open .conversation-column {
-    grid-column: 1 !important;
-    grid-row: 3 !important;
-    width: 100%;
-    height: auto;
-  }
-}
 
 
 /* ---- Studio rail (image + video) ---- */
@@ -8659,3 +8627,176 @@ body {
   white-space: nowrap;
 }
 .prompt-mention-option--empty { opacity: 0.85; }
+
+/* ---- tablet layout (final override) --------------------------------
+   Keeps the three-track studio geometry usable between ~700px and
+   1180px: the left rail collapses to icons, the settings rail narrows,
+   and the centre column keeps a real working width. Below 700px the
+   settings rail stacks under the canvas instead of squeezing it. */
+@media (min-width: 700px) and (max-width: 1180px) {
+  .studio-shell.guided-studio {
+    grid-template-columns: 64px minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .studio-shell.guided-studio.settings-rail-open {
+    grid-template-columns: 64px minmax(0, 1fr) 224px !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    height: 100vh;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  .guided-header.app-sidebar {
+    width: 64px !important;
+    min-width: 64px;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    height: 100vh;
+    max-width: none;
+  }
+
+  .guided-header.app-sidebar .sidebar-nav-button,
+  .guided-header.app-sidebar .admin-sidebar-link,
+  .guided-header.app-sidebar .sidebar-feedback-button {
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0 !important;
+    font-size: 0 !important;
+    position: relative;
+  }
+
+  .guided-header.app-sidebar .sidebar-nav-button .sidebar-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 9px !important;
+  }
+
+  .guided-header.app-sidebar .sidebar-section-label,
+  .guided-header.app-sidebar .sidebar-soon-tag,
+  .guided-header.app-sidebar .sidebar-brand-block,
+  .guided-header.app-sidebar .sidebar-session-card p {
+    display: none;
+  }
+
+  .studio-shell.guided-studio .conversation-column {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: auto;
+    min-width: 0;
+    padding-inline: 18px !important;
+  }
+
+  .studio-shell.guided-studio.settings-rail-open .studio-settings-rail {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    width: auto;
+    max-width: none;
+  }
+
+  .studio-shell.guided-studio .studio-topbar h2 {
+    font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+  }
+}
+
+@media (max-width: 699px) {
+  .studio-shell.guided-studio,
+  .studio-shell.guided-studio.settings-rail-open {
+    grid-template-columns: 64px minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) auto !important;
+    height: 100vh;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  .guided-header.app-sidebar {
+    width: 64px !important;
+    min-width: 64px;
+    max-width: none;
+    grid-column: 1 !important;
+    grid-row: 1 / -1 !important;
+    height: 100%;
+  }
+
+  .guided-header.app-sidebar .sidebar-nav-button,
+  .guided-header.app-sidebar .admin-sidebar-link,
+  .guided-header.app-sidebar .sidebar-feedback-button {
+    justify-content: center;
+    gap: 0;
+    padding-inline: 0 !important;
+    font-size: 0 !important;
+    position: relative;
+  }
+
+  .guided-header.app-sidebar .sidebar-section-label,
+  .guided-header.app-sidebar .sidebar-soon-tag,
+  .guided-header.app-sidebar .sidebar-brand-block,
+  .guided-header.app-sidebar .sidebar-session-card {
+    display: none;
+  }
+
+  .studio-shell.guided-studio .conversation-column,
+  .studio-shell.guided-studio.settings-rail-open .conversation-column {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    width: auto;
+    min-width: 0;
+    height: auto;
+    min-height: 0;
+    padding-inline: 14px !important;
+    overflow-y: auto;
+  }
+
+  /* Rail becomes a stacked drawer under the scrolling canvas column. */
+  .studio-shell.guided-studio.settings-rail-open .studio-settings-rail {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    width: 100%;
+    height: auto;
+    max-height: 42vh;
+    overflow-y: auto;
+    border-left: 0;
+    border-top: 1px solid rgba(48, 48, 48, 0.12);
+    background: rgba(255, 255, 255, 0.94);
+  }
+}
+
+@media (max-width: 1180px) {
+  .guided-header.app-sidebar .sidebar-nav {
+    display: flex !important;
+    flex-direction: column;
+    padding: 8px 6px !important;
+  }
+
+  .guided-header.app-sidebar {
+    border-right: 1px solid var(--muted-20) !important;
+    border-bottom: 0 !important;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 1180px) {
+  .studio-shell.guided-studio .conversation-column > *,
+  .studio-shell.guided-studio .composer,
+  .studio-shell.guided-studio .composer * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .studio-shell.guided-studio .composer-actions {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .studio-shell.guided-studio .composer-action-group {
+    flex-wrap: wrap;
+  }
+
+  .studio-shell.guided-studio .brief-card-head {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+}
