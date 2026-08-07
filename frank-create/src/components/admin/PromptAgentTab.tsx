@@ -150,6 +150,15 @@ export function PromptAgentTab() {
           rows={14}
         />
         <Field
+          label="Conversation protocol"
+          hint="How the agent runs the discovery → final prompt conversation: when to ask clarifying questions, and when it is allowed to draft."
+          value={conversationProtocol}
+          onChange={setConversationProtocol}
+          onReset={defaults ? () => setConversationProtocol(defaults.conversationProtocol) : undefined}
+          rows={14}
+        />
+
+        <Field
           label="Production prompt blueprint"
           hint="The section-by-section structure the final prompt follows."
           value={blueprint}
