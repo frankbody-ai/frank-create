@@ -1289,11 +1289,14 @@ async function handleInference(body: any, userId: string) {
         size: reqSettings.image_size || reqSettings.size,
         reference_images: refUrls,
       };
+      const replicateBody = { version_or_model: replicateSlug, input: buildReplicateInput(replicateSlug, providerPrompt, input) };
+      providerRequest = providerRequestRecord(`POST https://api.replicate.com/v1/models/${replicateSlug}/predictions`, replicateBody);
       const created = await Promise.allSettled(
         Array.from({ length: count }, () =>
           createReplicatePrediction(replicateSlug, buildReplicateInput(replicateSlug, providerPrompt, input), replicateKey)
         )
       );
+
       const predictionIds: string[] = [];
       const createErrors: unknown[] = [];
       for (const result of created) {
