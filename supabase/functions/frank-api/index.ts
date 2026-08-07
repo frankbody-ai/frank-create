@@ -220,6 +220,9 @@ function rowToTurn(row: any): any {
       ? JSON.stringify(settings.partial_errors)
       : null,
     requested_count: typeof settings.requested_count === "number" ? settings.requested_count : null,
+    // Sanitised copy of the exact body we posted to the provider (JSON chip).
+    provider_request_json: settings.provider_request ? JSON.stringify(settings.provider_request) : null,
+
     created_at: row.created_at,
     updated_at: row.created_at,
   };
