@@ -2302,6 +2302,7 @@ export default function App() {
       prompt: prompt,
       aspect: settings.aspect_ratio,
       count: Math.max(1, settings.count),
+      startedAt: Date.now(),
     };
     setInflightGens((current) => [...current, inflightEntry]);
     const finishInflight = () => setInflightGens((current) => current.filter((g) => g.id !== inflightId));
