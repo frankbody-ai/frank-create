@@ -4015,15 +4015,31 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex: 0 0 50%;
-  max-width: 50%;
+  flex: 0 0 auto;
   min-width: 0;
   justify-content: flex-end;
 }
 
 .composer-action-group .primary-button {
-  flex: 1 1 0;
+  min-width: 132px;
   justify-content: center;
+}
+
+.action-compact-pile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.action-compact-pile .remix-button,
+.action-compact-pile .composer-cancel-button {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 0.75rem;
+  gap: 6px;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 
