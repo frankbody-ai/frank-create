@@ -4527,7 +4527,7 @@ export default function App() {
             </button>
             <header className="reference-picker-header">
               <h3>Add references</h3>
-              <p>Reuse an approved image, pick a previous upload, or upload from your computer.</p>
+              <p>Pick up to {referencePickerLimit} images — newest first. Uploads land here preselected.</p>
             </header>
             <input
               ref={referencePickerInputRef}
@@ -4535,11 +4535,9 @@ export default function App() {
               accept="image/*"
               multiple
               hidden
-              onChange={async (event) => {
-                await handleReferenceUpload(event);
-                setReferencePickerOpen(false);
-              }}
+              onChange={(event) => { void handlePickerUpload(event); }}
             />
+
             <div className="reference-picker-body">
               {referenceLibraryLoading ? (
                 <div className="reference-picker-empty">Loading your reference library…</div>
