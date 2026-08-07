@@ -3947,11 +3947,15 @@ export default function App() {
           {(() => {
             // Once the backend has a queued/running round of its own, that round card
             // IS the loading state — never show a second local card for the same run.
-            const hasLiveTurn = turns.some((t) => t.status === "queued" || t.status === "running");
             if (hasLiveTurn || !inflightGens.length) return null;
             return inflightGens.slice().reverse().map((gen) => {
             const p = aspectRatioParts(gen.aspect);
             const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
+            const waitedMs = Math.max(0, pendingTick - gen.startedAt);
+            const waitedSeconds = Math.floor(waitedMs / 1000);
+            const waitedLabel = waitedSeconds >= 60
+              ? `${Math.floor(waitedSeconds / 60)}m ${String(waitedSeconds % 60).padStart(2, "0")}s`
+              : `${waitedSeconds}s`;
             return (
               <article key={gen.id} className="turn-card turn-card-pending" aria-live="polite" aria-busy="true">
                 <div className="turn-card-body">
@@ -3966,10 +3970,20 @@ export default function App() {
                       <span>Running</span>
                       <span>{gen.aspect}</span>
                       <span>{gen.count} pick{gen.count === 1 ? "" : "s"}</span>
+                      {waitedSeconds >= 5 ? <span>{waitedLabel} elapsed</span> : null}
                     </div>
+                    {waitedMs > 90000 ? (
+                      <div className="turn-pending-recheck">
+                        <span>Taking longer than usual — the picks may already be saved.</span>
+                        <button type="button" onClick={() => void settleFinishedRunsFromServer()}>
+                          Check for results
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
                 </div>
+
                 <div className="turn-visual">
                 <div className="output-grid">
                   {Array.from({ length: gen.count }).map((_, i) => (
