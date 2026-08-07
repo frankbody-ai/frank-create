@@ -395,7 +395,11 @@ export default function App() {
   const [referenceDropActive, setReferenceDropActive] = useState(false);
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
   const [referenceLibrary, setReferenceLibrary] = useState<Asset[]>([]);
+  const [referencePickerSelection, setReferencePickerSelection] = useState<string[]>([]);
+  const [referencePickerBusy, setReferencePickerBusy] = useState(false);
+  const [referencePickerNote, setReferencePickerNote] = useState<string | null>(null);
   const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
+
 
   useEffect(() => {
     if (!referencePickerOpen) return;
