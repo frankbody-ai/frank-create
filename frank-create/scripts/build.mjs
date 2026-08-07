@@ -83,6 +83,17 @@ function runVite() {
   }
 }
 
+// The MCP Vite plugin emits its generated edge function inside this package;
+// mirror it into the repo-root functions dir the backend deploys from.
+function syncMcpFunction() {
+  const from = resolve(root, "supabase", "functions", "mcp", "index.ts");
+  const to = resolve(root, "..", "supabase", "functions", "mcp", "index.ts");
+  if (!existsSync(from)) return;
+  mkdirSync(dirname(to), { recursive: true });
+  copyFileSync(from, to);
+  console.log("Synced MCP edge function to supabase/functions/mcp/index.ts");
+}
+
 const tscOk = runTsc();
 if (!tscOk) {
   process.exit(1);
@@ -92,3 +103,5 @@ const viteOk = runVite();
 if (!viteOk) {
   process.exit(1);
 }
+
+syncMcpFunction();
