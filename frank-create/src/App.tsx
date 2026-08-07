@@ -5529,7 +5529,25 @@ function turnExpectedCount(turn: StudioTurn) {
   return Number.isFinite(raw) && raw > 0 ? Math.min(24, Math.floor(raw)) : 1;
 }
 
+/** Human label for the aspect chip; passes through provider enums like "match_input_image". */
+function formatAspectChip(value: string) {
+  if (!value) return "";
+  if (/^\d+(\.\d+)?\s*:\s*\d+(\.\d+)?$/.test(value)) return value.replace(/\s+/g, "");
+  return value.replace(/[_-]+/g, " ").toLowerCase();
+}
+
+/** Pretty-print the stored provider request body for the JSON chip modal. */
+function formatProviderPayload(turn?: StudioTurn) {
+  if (!turn?.provider_request_json) return "No request body was captured for this round.";
+  try {
+    return JSON.stringify(JSON.parse(turn.provider_request_json), null, 2);
+  } catch {
+    return turn.provider_request_json;
+  }
+}
+
 function turnAspect(turn: StudioTurn) {
+
   const parsed = parseJsonRecord(turn.settings_json) as { aspect_ratio?: unknown };
   return typeof parsed.aspect_ratio === "string" ? parsed.aspect_ratio : "";
 }
