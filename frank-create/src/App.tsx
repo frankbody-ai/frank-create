@@ -4050,7 +4050,9 @@ export default function App() {
                   onSelect={inspectAsset}
                   emptyLabel={studioMode === "approved-hot" ? "No approved picks in this round" : turnEmptyLabel(turn)}
                   pending={studioMode !== "approved-hot" && (turn.status === "queued" || turn.status === "running")}
-                  pendingCount={1}
+                  pendingCount={turnExpectedCount(turn)}
+                  pendingAspect={turnAspect(turn)}
+
 
                   selectedAssetId={selectedAsset?.id}
                   onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
