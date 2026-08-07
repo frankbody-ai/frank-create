@@ -159,7 +159,7 @@ export function StudioRail(props: StudioRailProps) {
                 return (
                   <option key={item.id} value={item.id} disabled={item.status === "disabled"}>
                     {(item.short_label ?? item.label)
-                      + (cost ? `  ${cost}` : "")
+                      + (cost ? ` | ${cost}` : "")
                       + (rate ? ` — ${rate}` : "")
                       + (item.price_tier === "cheapest" ? " · cheapest" : item.price_tier === "premium" ? " · premium" : "")
                       + (item.status === "disabled" ? " (soon)" : item.degraded ? " (provider issue)" : "")}
@@ -204,7 +204,7 @@ export function StudioRail(props: StudioRailProps) {
                   return (
                     <option key={item.id} value={item.id} disabled={item.status === "disabled"}>
                       {(item.short_label ?? item.label)
-                        + (cost ? `  ${cost}` : "")
+                        + (cost ? ` | ${cost}` : "")
                         + (rate ? ` — ${rate}` : "")
                         + (item.status === "disabled" ? " (soon)" : item.degraded ? " (provider issue)" : "")}
                     </option>
