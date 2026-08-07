@@ -4527,11 +4527,11 @@ export default function App() {
                   type="button"
                   onClick={handlePromptRemix}
                   disabled={remixBusy}
-                  title="Brief remix"
-                  aria-label="Brief remix"
+                  title="Brief Mix"
+                  aria-label="Brief Mix"
                 >
                   {remixBusy ? <RefreshCw className="spin" size={14} /> : <Sparkles size={14} />}
-                  <span className="action-label">Brief remix</span>
+                  <span className="action-label">Brief Mix</span>
                 </button>
                 <button
                   className="secondary-button danger-button composer-cancel-button"
