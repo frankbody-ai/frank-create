@@ -143,7 +143,7 @@ export const fallbackConfig: FrankConfig = {
       description: "ByteDance Seedream 4.5 via OpenRouter — photoreal product and campaign imagery, native multi-image batches.",
       capabilities: { generation: true, edit: true, masked_edit: false, video: false },
       allowed_aspect_ratios: ["1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3", "21:9"],
-      allowed_image_sizes: ["1K", "2K", "4K"],
+      allowed_image_sizes: ["2K", "4K"],
       reference_image_limit: 10,
       max_count: 6,
       cost_label: "premium",
