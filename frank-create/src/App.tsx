@@ -4531,7 +4531,7 @@ export default function App() {
                   aria-label="Brief Mix"
                 >
                   {remixBusy ? <RefreshCw className="spin" size={14} /> : <Sparkles size={14} />}
-                  <span className="action-label">Brief Mix</span>
+                  <span className="action-label">Brief Mix&nbsp;&nbsp;<br /></span>
                 </button>
                 <button
                   className="secondary-button danger-button composer-cancel-button"
