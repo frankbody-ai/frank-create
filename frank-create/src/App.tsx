@@ -395,8 +395,8 @@ export default function App() {
   const [referenceDropActive, setReferenceDropActive] = useState(false);
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
   const [referenceLibrary, setReferenceLibrary] = useState<Asset[]>([]);
-  const [referenceUploads, setReferenceUploads] = useState<Asset[]>([]);
   const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
+
   useEffect(() => {
     if (!referencePickerOpen) return;
     const previous = document.body.style.overflow;
@@ -1814,21 +1814,23 @@ export default function App() {
 
   function splitReferenceLibrary(pool: Asset[]) {
     const images = pool.filter((asset) => asset.media_type !== "video" && asset.kind !== "mask");
-    const approved = images.filter((asset) => asset.kind !== "reference" && asset.approval_status === "approved");
-    const seenUploads = new Set<string>();
-    const uploads = images
-      .filter((asset) => asset.kind === "reference")
+    const seen = new Set<string>();
+    const merged = images
       .slice()
-      .reverse()
+      .sort((a, b) => {
+        const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return tb - ta;
+      })
       .filter((asset) => {
         const key = asset.file_path || asset.remote_url || asset.id;
-        if (seenUploads.has(key)) return false;
-        seenUploads.add(key);
+        if (seen.has(key)) return false;
+        seen.add(key);
         return true;
       });
-    setReferenceLibrary(approved.slice().reverse());
-    setReferenceUploads(uploads);
+    setReferenceLibrary(merged);
   }
+
 
   async function openReferencePicker() {
     setReferencePickerOpen(true);
@@ -4470,66 +4472,43 @@ export default function App() {
               }}
             />
             <div className="reference-picker-body">
-              <div className="reference-picker-grid">
-                <button
-                  type="button"
-                  className="reference-picker-upload"
-                  onClick={() => referencePickerInputRef.current?.click()}
-                >
-                  <Upload size={22} />
-                  <strong>Upload from computer</strong>
-                  <span>PNG, JPG or WEBP · you can also paste or drop</span>
-                </button>
-              </div>
-
               {referenceLibraryLoading ? (
                 <div className="reference-picker-empty">Loading your reference library…</div>
               ) : (
-                <>
-                  <div className="reference-picker-section-label">
-                    Your uploads {referenceUploads.length ? `(${referenceUploads.length})` : ""}
-                  </div>
-                  {referenceUploads.length ? (
-                    <div className="reference-picker-grid">
-                      {referenceUploads.map((asset) => (
-                        <ReferencePickerCard
-                          key={asset.id}
-                          asset={asset}
-                          active={referenceAssets.some((ref) => ref.id === asset.id || ref.source_asset_id === asset.id)}
-                          onPick={async () => {
-                            await useAssetAsReference(asset);
-                            setReferencePickerOpen(false);
-                          }}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="reference-picker-empty">No uploads yet — anything you upload shows up here next time.</div>
-                  )}
-
-                  <div className="reference-picker-section-label">
-                    Approved generations {referenceLibrary.length ? `(${referenceLibrary.length})` : ""}
-                  </div>
+                <div className="reference-picker-grid">
+                  <button
+                    type="button"
+                    className="reference-picker-upload"
+                    onClick={() => referencePickerInputRef.current?.click()}
+                  >
+                    <Upload size={22} />
+                    <strong>Upload from computer</strong>
+                    <span>PNG, JPG or WEBP · you can also paste or drop</span>
+                  </button>
                   {referenceLibrary.length ? (
-                    <div className="reference-picker-grid">
-                      {referenceLibrary.map((asset) => (
-                        <ReferencePickerCard
-                          key={asset.id}
-                          asset={asset}
-                          active={referenceAssets.some((ref) => ref.source_asset_id === asset.id)}
-                          onPick={async () => {
-                            await useAssetAsReference(asset);
-                            setReferencePickerOpen(false);
-                          }}
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="reference-picker-empty">No approved images yet — approve a generation to reuse it here.</div>
-                  )}
-                </>
+                    referenceLibrary.map((asset) => (
+                      <ReferencePickerCard
+                        key={asset.id}
+                        asset={asset}
+                        active={referenceAssets.some(
+                          (ref) => ref.id === asset.id || ref.source_asset_id === asset.id
+                        )}
+                        onPick={async () => {
+                          await useAssetAsReference(asset);
+                          setReferencePickerOpen(false);
+                        }}
+                      />
+                    ))
+                  ) : null}
+                </div>
               )}
+              {!referenceLibraryLoading && !referenceLibrary.length ? (
+                <div className="reference-picker-empty">
+                  No reference images yet — upload one or approve a generation to reuse it here.
+                </div>
+              ) : null}
             </div>
+
           </div>
         </div>,
         document.body

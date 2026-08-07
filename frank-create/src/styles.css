@@ -6837,18 +6837,15 @@ input:focus, textarea:focus, select:focus {
 }
 .reference-picker-body {
   overflow: auto;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-content: start;
+  padding-right: 4px;
 }
-.reference-picker-section-label {
-  font-family: var(--font-body);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  opacity: 0.6;
-  padding-top: 4px;
+.reference-picker-body > .reference-picker-grid {
+  flex: 1 1 auto;
 }
+
 .reference-picker-header h3 {
   margin: 0 0 2px;
   font-size: 1.05rem;
@@ -6882,14 +6879,15 @@ input:focus, textarea:focus, select:focus {
   cursor: pointer;
   text-align: center;
   overflow: hidden;
+  aspect-ratio: 1 / 1;
 }
 .reference-picker-upload {
   border-style: dashed;
-  min-height: 126px;
 }
 .reference-picker-upload strong { font-size: 0.78rem; }
 .reference-picker-upload span { font-size: 0.65rem; opacity: 0.65; line-height: 1.3; }
 .reference-picker-card { padding: 0; }
+
 .reference-picker-card img {
   width: 100%;
   aspect-ratio: 1 / 1;
