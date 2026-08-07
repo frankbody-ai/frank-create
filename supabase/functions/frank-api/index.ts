@@ -1534,10 +1534,12 @@ async function persistImageAssets(args: {
     const mime = imageBytes.mime;
     const ext = mime.split("/")[1] || "png";
     const storagePath = `${args.sessionId}/${assetId}.${ext}`;
-    const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, {
-      contentType: mime, upsert: false,
+    const stored = await storeOrFallback({
+      storagePath,
+      bytes,
+      mime,
+      remoteUrl: img.url && /^https?:/i.test(img.url) ? img.url : undefined,
     });
-    if (up.error) throw up.error;
 
     const assetIns = await sb.from("assets").insert({
       id: assetId,
@@ -1563,8 +1565,10 @@ async function persistImageAssets(args: {
           bytes: bytes.byteLength,
           width: real?.width,
           height: real?.height,
+          ...stored.meta,
         };
       })(),
+
 
     }).select().single();
     if (assetIns.error) throw assetIns.error;
