@@ -4132,6 +4132,14 @@ export default function App() {
                           </span>
                         );
                       })()}
+                      {displayOutputAssets.some((a) => a.turn_id === turn.id && a.storage_missing) ? (
+                        <span
+                          className="turn-chip-resolution"
+                          title="This file was over the 20 MB storage limit, so it streams from the provider's temporary link. Save it now to keep it."
+                        >
+                          Temporary link
+                        </span>
+                      ) : null}
                       <button
                         type="button"
                         className="turn-chip-json"

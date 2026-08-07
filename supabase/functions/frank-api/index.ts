@@ -65,8 +65,79 @@ async function requireUser(req: Request): Promise<string> {
 }
 
 async function signed(path: string): Promise<string> {
+  if (!path) return "";
   const { data } = await supabase().storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24);
   return data?.signedUrl ?? "";
+}
+
+// The backend caps stored objects at 20 MB. Anything larger (4K video, big
+// upscales) still has a usable provider URL, so we keep the asset row and fall
+// back to that temporary URL instead of failing the whole run.
+const MAX_STORAGE_BYTES = 20 * 1024 * 1024;
+
+function isStorageSizeError(message: string): boolean {
+  const m = (message || "").toLowerCase();
+  return m.includes("exceeds the maximum allowed size") ||
+    m.includes("maximum allowed size") ||
+    m.includes("payload too large") ||
+    m.includes("entity too large") ||
+    m.includes("413");
+}
+
+type StoredResult = {
+  /** Metadata to merge into the asset row. */
+  meta: Record<string, unknown>;
+  /** True when the bytes are permanently stored. */
+  stored: boolean;
+};
+
+/**
+ * Upload bytes to storage, or fall back to the provider's temporary URL when
+ * the file is over the storage size cap. Throws only when neither works.
+ */
+async function storeOrFallback(args: {
+  storagePath: string;
+  bytes: Uint8Array;
+  mime: string;
+  /** Temporary provider URL used when the bytes cannot be stored. */
+  remoteUrl?: string;
+}): Promise<StoredResult> {
+  const sb = supabase();
+  const remote = (args.remoteUrl || "").startsWith("http") ? args.remoteUrl! : "";
+  const tooBig = args.bytes.byteLength > MAX_STORAGE_BYTES;
+
+  if (!tooBig) {
+    const up = await sb.storage.from(BUCKET).upload(args.storagePath, args.bytes, {
+      contentType: args.mime, upsert: false,
+    });
+    if (!up.error) return { meta: {}, stored: true };
+    const message = up.error.message || "Upload failed";
+    if (!isStorageSizeError(message) || !remote) throw up.error;
+    return {
+      stored: false,
+      meta: {
+        storage_missing: true,
+        storage_skip_reason: message,
+        remote_url: remote,
+        remote_url_expires: true,
+      },
+    };
+  }
+
+  if (!remote) {
+    throw new Error(
+      `File is ${(args.bytes.byteLength / 1048576).toFixed(1)} MB, over the 20 MB storage limit, and the provider gave no temporary URL.`,
+    );
+  }
+  return {
+    stored: false,
+    meta: {
+      storage_missing: true,
+      storage_skip_reason: `File is ${(args.bytes.byteLength / 1048576).toFixed(1)} MB, over the 20 MB storage limit.`,
+      remote_url: remote,
+      remote_url_expires: true,
+    },
+  };
 }
 
 const DEFAULT_MODEL = {
@@ -171,6 +242,9 @@ const DEFAULT_CONFIG = {
 
 function rowToAsset(row: any, signedUrl = ""): any {
   const meta = row.metadata_json || {};
+  // Oversized files were never stored, so the signed URL would 404 — serve the
+  // provider's temporary URL instead.
+  const url = meta.storage_missing && meta.remote_url ? String(meta.remote_url) : signedUrl;
   return {
     id: row.id,
     session_id: row.session_id,
@@ -182,12 +256,15 @@ function rowToAsset(row: any, signedUrl = ""): any {
     model: row.model_key || undefined,
     prompt: row.prompt_snapshot || undefined,
     file_path: row.storage_path,
-    preview_url: signedUrl,
-    remote_url: signedUrl,
+    preview_url: url,
+    remote_url: url,
+    storage_missing: !!meta.storage_missing,
+    temporary_url: !!meta.storage_missing,
     width: meta.width,
     height: meta.height,
     aspect_ratio: meta.aspect_ratio ?? undefined,
     bytes: meta.bytes ?? undefined,
+
 
     favorite: !!meta.favorite,
     approval_status: meta.approval_status || "review",
@@ -492,8 +569,12 @@ async function handleVideo(body: any, userId: string) {
   const bytes = new Uint8Array(await res.arrayBuffer());
   const assetId = crypto.randomUUID();
   const storagePath = `${sessionId}/${assetId}.mp4`;
-  const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, { contentType: mime, upsert: false });
-  if (up.error) return await failTurn("storage_failed", up.error.message);
+  let stored: StoredResult;
+  try {
+    stored = await storeOrFallback({ storagePath, bytes, mime, remoteUrl: videoUrl });
+  } catch (err) {
+    return await failTurn("storage_failed", err instanceof Error ? err.message : String(err));
+  }
 
   const assetIns = await sb.from("assets").insert({
     id: assetId,
@@ -513,7 +594,9 @@ async function handleVideo(body: any, userId: string) {
       resolution: reqSettings.video_resolution ?? null,
       bytes: bytes.byteLength,
       ...(returnedSize.width && returnedSize.height ? { width: returnedSize.width, height: returnedSize.height } : {}),
+      ...stored.meta,
     },
+
   }).select().single();
   if (assetIns.error) return await failTurn("db_failed", assetIns.error.message);
 
@@ -692,8 +775,12 @@ async function handleEnhance(body: any, userId: string) {
   const assetId = crypto.randomUUID();
   const ext = media === "video" ? "mp4" : (mime.split("/")[1] || "png");
   const storagePath = `${sessionId}/${assetId}.${ext}`;
-  const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, { contentType: mime, upsert: false });
-  if (up.error) return await failTurn("storage_failed", up.error.message);
+  let stored: StoredResult;
+  try {
+    stored = await storeOrFallback({ storagePath, bytes, mime, remoteUrl: outputUrl });
+  } catch (err) {
+    return await failTurn("storage_failed", err instanceof Error ? err.message : String(err));
+  }
 
   const assetIns = await sb.from("assets").insert({
     id: assetId,
@@ -713,7 +800,9 @@ async function handleEnhance(body: any, userId: string) {
       enhance_settings: reqSettings,
       bytes: bytes.byteLength,
       ...(media === "image" ? (imageDimensions(bytes, mime) ?? {}) : {}),
+      ...stored.meta,
     },
+
 
   }).select().single();
   if (assetIns.error) return await failTurn("db_failed", assetIns.error.message);
@@ -1445,10 +1534,12 @@ async function persistImageAssets(args: {
     const mime = imageBytes.mime;
     const ext = mime.split("/")[1] || "png";
     const storagePath = `${args.sessionId}/${assetId}.${ext}`;
-    const up = await sb.storage.from(BUCKET).upload(storagePath, bytes, {
-      contentType: mime, upsert: false,
+    const stored = await storeOrFallback({
+      storagePath,
+      bytes,
+      mime,
+      remoteUrl: img.url && /^https?:/i.test(img.url) ? img.url : undefined,
     });
-    if (up.error) throw up.error;
 
     const assetIns = await sb.from("assets").insert({
       id: assetId,
@@ -1474,8 +1565,10 @@ async function persistImageAssets(args: {
           bytes: bytes.byteLength,
           width: real?.width,
           height: real?.height,
+          ...stored.meta,
         };
       })(),
+
 
     }).select().single();
     if (assetIns.error) throw assetIns.error;
