@@ -1801,27 +1801,37 @@ export default function App() {
     setStatusText(`${asset.title} removed from references.`);
   }
 
+  function splitReferenceLibrary(pool: Asset[]) {
+    const images = pool.filter((asset) => asset.media_type !== "video" && asset.kind !== "mask");
+    const approved = images.filter((asset) => asset.kind !== "reference" && asset.approval_status === "approved");
+    const seenUploads = new Set<string>();
+    const uploads = images
+      .filter((asset) => asset.kind === "reference")
+      .slice()
+      .reverse()
+      .filter((asset) => {
+        const key = asset.file_path || asset.remote_url || asset.id;
+        if (seenUploads.has(key)) return false;
+        seenUploads.add(key);
+        return true;
+      });
+    setReferenceLibrary(approved.slice().reverse());
+    setReferenceUploads(uploads);
+  }
+
   async function openReferencePicker() {
     setReferencePickerOpen(true);
     if (connection !== "online") {
-      setReferenceLibrary(
-        assets.filter(
-          (asset) => !["reference", "mask"].includes(asset.kind) && asset.approval_status === "approved" && asset.media_type !== "video"
-        )
-      );
+      splitReferenceLibrary(assets);
       return;
     }
     setReferenceLibraryLoading(true);
     try {
-      const { assets: approved } = await listAssets({ approvalStatus: "approved" });
-      setReferenceLibrary((approved ?? []).filter((asset) => asset.media_type !== "video" && !["reference", "mask"].includes(asset.kind)));
+      const { assets: library } = await listAssets({});
+      splitReferenceLibrary(library ?? assets);
     } catch (err) {
-      console.error("[frank] approved library load failed", err);
-      setReferenceLibrary(
-        assets.filter(
-          (asset) => !["reference", "mask"].includes(asset.kind) && asset.approval_status === "approved" && asset.media_type !== "video"
-        )
-      );
+      console.error("[frank] reference library load failed", err);
+      splitReferenceLibrary(assets);
     } finally {
       setReferenceLibraryLoading(false);
     }
