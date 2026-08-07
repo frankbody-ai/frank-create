@@ -326,7 +326,7 @@ const OPENROUTER_VIDEO_MAP: Record<string, VideoCaps> = {
     defaultResolution: "1080p",
     aspects: ["1:1", "3:4", "9:16", "4:3", "16:9", "21:9", "9:21"],
     defaultAspect: "16:9",
-    minDuration: 3, maxDuration: 15, defaultDuration: 5,
+    minDuration: 4, maxDuration: 15, defaultDuration: 5,
   },
   "happyhorse-1-0": {
     model: "alibaba/happyhorse-1.0",
@@ -342,7 +342,7 @@ const OPENROUTER_VIDEO_MAP: Record<string, VideoCaps> = {
     defaultResolution: "1080p",
     aspects: ["16:9", "9:16", "1:1", "4:3", "3:4"],
     defaultAspect: "16:9",
-    minDuration: 2, maxDuration: 15, defaultDuration: 5,
+    minDuration: 2, maxDuration: 10, defaultDuration: 5,
   },
   "hailuo-2-3": {
     model: "minimax/hailuo-2.3",
