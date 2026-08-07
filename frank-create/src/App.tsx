@@ -1782,6 +1782,20 @@ export default function App() {
     setPrompt((current) => (current.trim() ? current : brief.prompt ?? ""));
   }
 
+  function insertReferenceTag(tag: string) {
+    const el = promptInputRef.current;
+    const caret = el ? (el.selectionStart ?? prompt.length) : prompt.length;
+    const { text, caret: nextCaret } = insertTagAtCaret(prompt, tag, caret);
+    setPrompt(text);
+    setStatusText(`${tag} added to the prompt.`);
+    requestAnimationFrame(() => {
+      const node = promptInputRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(nextCaret, nextCaret);
+    });
+  }
+
   function removeReferenceFromDock(asset: Asset) {
     detachReferences([asset], true);
     setStatusText(`${asset.title} removed from references.`);
