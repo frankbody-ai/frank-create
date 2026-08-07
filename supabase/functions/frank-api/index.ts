@@ -886,7 +886,13 @@ async function handleInference(body: any, userId: string) {
       ...normalizeReferenceUrls(body.reference_image_urls),
       ...(await loadReferenceDataUrls(refIds, userId)),
     ]);
-    const providerPrompt = refUrls.length ? withReferenceIdentityLock(prompt, refUrls.length) : prompt;
+    // The client composes a reference manifest (@ref1, @ref2 …) so a prompt can
+    // target one specific attached image. Trust it when present, otherwise fall
+    // back to the generic identity lock.
+    const clientProviderPrompt = typeof body.provider_prompt === "string" ? body.provider_prompt.trim() : "";
+    const providerPrompt = clientProviderPrompt
+      ? clientProviderPrompt
+      : (refUrls.length ? withReferenceIdentityLock(prompt, refUrls.length) : prompt);
     const replicateSlug = REPLICATE_MAP[modelId];
     if (replicateSlug) {
       const replicateKey = getReplicateGatewayKey();
