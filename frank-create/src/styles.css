@@ -4037,13 +4037,14 @@ body {
 .action-compact-pile .composer-cancel-button {
   min-height: 46px;
   min-width: 66px;
-  border-radius: 8px;
+  border-radius: var(--radius-pill);
   padding: 0 10px;
   font-size: 0.8rem;
   gap: 6px;
   justify-content: center;
   white-space: nowrap;
 }
+
 
 
 
