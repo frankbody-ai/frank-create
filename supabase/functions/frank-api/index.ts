@@ -256,27 +256,38 @@ const MODEL_MAP: Record<string, string> = {
   // Kept only for the local placeholder.
 };
 
-// OpenRouter is now the primary provider for every image model that OpenRouter
-// actually serves. Models with no OpenRouter equivalent (Seedream, Riverflow,
-// Reve) and the whole upscaler path stay on Replicate.
+// OpenRouter is the primary provider for every image and video model in the
+// roster, through its dedicated /v1/images and /v1/videos endpoints. Only the
+// upscaler path stays on Replicate.
 const OPENROUTER_IMAGE_MAP: Record<string, string> = {
   "google-nb-pro": "google/gemini-3-pro-image",
   "nano-banana-pro": "google/gemini-3-pro-image",
   "google-nb-2": "google/gemini-3.1-flash-image",
   "nano-banana-2": "google/gemini-3.1-flash-image",
-  "openai-gpt-image-2": "openai/gpt-5.4-image-2",
+  "openai-gpt-image-2": "openai/gpt-image-2",
+  "seedream-4-5": "bytedance-seed/seedream-4.5",
+  "flux-2-pro": "black-forest-labs/flux.2-pro",
+  "flux-2-max": "black-forest-labs/flux.2-max",
+  "riverflow-2-5-pro": "sourceful/riverflow-v2.5-pro",
+  "qwen-image-3-pro": "qwen/qwen-image-3-pro",
+  "krea-2-large": "krea/krea-2-large",
+  "mai-image-2-5-pro": "microsoft/mai-image-2.5-pro",
+  "grok-imagine-image": "x-ai/grok-imagine-image-quality",
 };
 
+// Models that accept n > 1 natively; everything else is fanned out as parallel
+// single-image calls.
+const OPENROUTER_NATIVE_N = new Set<string>([
+  "openai/gpt-image-2",
+  "bytedance-seed/seedream-4.5",
+  "qwen/qwen-image-3-pro",
+]);
+
 const REPLICATE_MAP: Record<string, string> = {
-  "google-nb-pro": "google/nano-banana-pro",
-  "nano-banana-pro": "google/nano-banana-pro",
-  "google-nb-2": "google/nano-banana-2",
-  "nano-banana-2": "google/nano-banana-2",
-  "openai-gpt-image-2": "openai/gpt-image-2",
-  "reve-2-1": "reve/reve-2.1",
-  "riverflow-2-pro": "sourceful/riverflow-2.0-pro",
-  "seedream-5-pro": "bytedance/seedream-5-pro",
+  // Image models all run on OpenRouter now; kept empty so the fallback branch
+  // stays wired for any future Replicate-only image model.
 };
+
 
 
 const VIDEO_REPLICATE_MAP: Record<string, string> = {
