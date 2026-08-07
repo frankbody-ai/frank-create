@@ -8763,3 +8763,17 @@ body {
     background: rgba(255, 255, 255, 0.94);
   }
 }
+
+@media (max-width: 1180px) {
+  .guided-header.app-sidebar .sidebar-nav {
+    display: flex !important;
+    flex-direction: column;
+    padding: 8px 6px !important;
+  }
+
+  .guided-header.app-sidebar {
+    border-right: 1px solid var(--muted-20) !important;
+    border-bottom: 0 !important;
+    overflow-y: auto;
+  }
+}
