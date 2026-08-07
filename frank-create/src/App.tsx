@@ -4406,7 +4406,7 @@ export default function App() {
           ) : null}
 
           <div
-            className={`composer-actions${referenceDropActive ? " reference-drop-active" : ""}`}
+            className={`composer-actions${referenceDropActive ? " reference-drop-active" : ""}${referenceAssets.length ? " composer-actions--icons" : ""}`}
             data-tour-id="reference-dock"
             data-tour-active={tourActive("reference-dock")}
             onDragOver={(event) => {
