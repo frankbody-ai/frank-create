@@ -5502,7 +5502,7 @@ function OutputStrip({
               onClick={() => onSelect(asset)}
               aria-label={`Open ${asset.title}`}
             >
-              <AssetPreviewMedia asset={asset} fallbackIconSize={24} />
+              <AssetPreviewMedia asset={asset} fallbackIconSize={24} variant="thumb" />
               <span>{assetStatusCopy(status)}</span>
             </button>
             {(onQuickApprove || onQuickReject) && asset.kind !== "reference" && asset.kind !== "mask" ? (
