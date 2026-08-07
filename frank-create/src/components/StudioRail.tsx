@@ -1,6 +1,6 @@
 import { Columns2, Film, Image as ImageIcon, RotateCcw } from "lucide-react";
 import type { PromptPreset, StudioModel, StudioSettings } from "../lib/types";
-import { estimateVideoCost, filterSizesForAspect, maxCountForModel, modelRateLabel } from "../lib/studio";
+import { estimateVideoCost, filterSizesForAspect, maxCountForModel, modelCostBadge, modelRateLabel } from "../lib/studio";
 import type { StudioAdjustment, StudioFieldErrors } from "../lib/studio";
 import { AspectPreview } from "./AspectPreview";
 
@@ -155,15 +155,18 @@ export function StudioRail(props: StudioRailProps) {
             >
               {models.map((item) => {
                 const rate = modelRateLabel(item);
+                const cost = modelCostBadge(item);
                 return (
                   <option key={item.id} value={item.id} disabled={item.status === "disabled"}>
                     {(item.short_label ?? item.label)
+                      + (cost ? `  ${cost}` : "")
                       + (rate ? ` — ${rate}` : "")
                       + (item.price_tier === "cheapest" ? " · cheapest" : item.price_tier === "premium" ? " · premium" : "")
                       + (item.status === "disabled" ? " (soon)" : item.degraded ? " (provider issue)" : "")}
                   </option>
                 );
               })}
+
             </select>
             <p className="rail-model-desc">{model?.description ?? ""}</p>
             <div className="rail-model-badges">
@@ -197,9 +200,11 @@ export function StudioRail(props: StudioRailProps) {
                 <option value="">— Pick a second model —</option>
                 {models.filter((item) => item.id !== model?.id).map((item) => {
                   const rate = modelRateLabel(item);
+                  const cost = modelCostBadge(item);
                   return (
                     <option key={item.id} value={item.id} disabled={item.status === "disabled"}>
                       {(item.short_label ?? item.label)
+                        + (cost ? `  ${cost}` : "")
                         + (rate ? ` — ${rate}` : "")
                         + (item.status === "disabled" ? " (soon)" : item.degraded ? " (provider issue)" : "")}
                     </option>

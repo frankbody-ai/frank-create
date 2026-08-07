@@ -8315,7 +8315,7 @@ body {
   align-items: center;
 }
 
-.studio-shell.guided-studio .thread-surface .turn-meta > span,
+.studio-shell.guided-studio .thread-surface .turn-meta > span:not(.turn-ref-strip),
 .studio-shell.guided-studio .thread-surface .turn-copy-prompt {
   display: inline-flex;
   align-items: center;
