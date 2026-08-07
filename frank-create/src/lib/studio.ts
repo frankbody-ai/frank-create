@@ -4,6 +4,7 @@ export interface BuildTurnRequestInput {
   sessionId?: string;
   modelId: string;
   prompt: string;
+  providerPrompt?: string;
   promptMode: "generate" | "edit" | "masked_edit";
   frankBodyMode?: boolean;
   presetKey?: string;
@@ -20,6 +21,7 @@ export function buildTurnRequest(input: BuildTurnRequestInput): TurnRequest {
     kind: input.promptMode,
     model: input.modelId,
     prompt: input.prompt.trim(),
+    provider_prompt: input.providerPrompt?.trim() || undefined,
     frank_body_mode: input.frankBodyMode ?? false,
     preset_key: input.presetKey,
     settings: input.settings,
@@ -584,4 +586,102 @@ export function groupCompareRows<T extends { id: string; settings_json?: string 
     rows.push(members);
   }
   return rows;
+}
+
+/* ---------------------------------------------------------------------------
+ * Reference tags (@ref1, @ref2 …)
+ *
+ * References are sent to every provider as an ordered URL array. Tags are
+ * derived from that same order so a prompt can point at one specific image.
+ * ------------------------------------------------------------------------ */
+
+export interface TaggedReference {
+  tag: string;
+  index: number;
+  title: string;
+}
+
+export function referenceTagFor(index: number) {
+  return `@ref${index + 1}`;
+}
+
+export function taggedReferences(
+  assets: { id?: string; title?: string }[]
+): TaggedReference[] {
+  return assets.map((asset, index) => ({
+    tag: referenceTagFor(index),
+    index: index + 1,
+    title: (asset.title || `reference ${index + 1}`).trim(),
+  }));
+}
+
+export function buildReferenceManifest(assets: { title?: string }[]) {
+  const tagged = taggedReferences(assets);
+  if (!tagged.length) return "";
+  return [
+    "REFERENCE IMAGE MANIFEST (attached in this exact order):",
+    ...tagged.map((ref) => `Reference image ${ref.index} (${ref.tag}) = ${ref.title}`),
+  ].join("\n");
+}
+
+/** Every @refN in the prompt becomes positional language no model can misread. */
+export function expandReferenceTags(prompt: string, assets: { title?: string }[]) {
+  const count = assets.length;
+  return prompt.replace(/@ref(\d+)\b/gi, (match, digits: string) => {
+    const n = Number(digits);
+    if (!Number.isFinite(n) || n < 1 || n > count) return match;
+    return `reference image ${n} (${referenceTagFor(n - 1)})`;
+  });
+}
+
+/** Tags used in the prompt that don't map to a loaded reference. */
+export function unknownReferenceTags(prompt: string, referenceCount: number) {
+  const found = new Set<string>();
+  for (const match of prompt.matchAll(/@ref(\d+)\b/gi)) {
+    const n = Number(match[1]);
+    if (!Number.isFinite(n) || n < 1 || n > referenceCount) found.add(`@ref${match[1]}`);
+  }
+  return Array.from(found);
+}
+
+export function promptUsesReferenceTags(prompt: string) {
+  return /@ref\d+\b/i.test(prompt);
+}
+
+/** Insert a tag at a caret position inside the prompt text. */
+export function insertTagAtCaret(prompt: string, tag: string, caret: number) {
+  const at = Math.max(0, Math.min(caret, prompt.length));
+  const before = prompt.slice(0, at);
+  const after = prompt.slice(at);
+  const lead = before && !/\s$/.test(before) ? " " : "";
+  const trail = after && !/^\s/.test(after) ? " " : "";
+  const text = `${before}${lead}${tag}${trail}${after}`;
+  return { text, caret: (before + lead + tag).length };
+}
+
+/**
+ * Full prompt sent to the provider: manifest + identity lock + expanded tags.
+ * `assets` order MUST match the reference_images URL order.
+ */
+export function composeReferencePrompt(
+  prompt: string,
+  assets: { title?: string }[]
+) {
+  const count = assets.length;
+  if (!count) return prompt;
+  const manifest = buildReferenceManifest(assets);
+  const tagged = promptUsesReferenceTags(prompt);
+  const lock = tagged
+    ? [
+        "Each tagged reference controls only the subject it is named for in the prompt; do not blend tagged references together.",
+        "References not referred to by a tag are general style, lighting, and context guidance only.",
+        "Keep every tagged subject clearly visible and recognizable, with its exact shape, colours, label layout, logo, and material taken from its own reference image.",
+      ]
+    : [
+        `Use the ${count} attached reference image${count === 1 ? "" : "s"} as strict product identity input.`,
+        "The product, packaging, logo, colors, label layout, shape, and material details must come from the reference image(s).",
+        "Do not invent or substitute a different object, brand, flavour, label, or packaging.",
+        "Keep the referenced product clearly visible and recognizable in the final image.",
+      ];
+  return [manifest, ...lock, expandReferenceTags(prompt, assets)].join("\n");
 }

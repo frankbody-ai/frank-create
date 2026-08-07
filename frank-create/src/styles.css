@@ -8305,3 +8305,54 @@ body {
 .studio-shell.guided-studio .empty-panel {
   background: var(--surface-panel);
 }
+
+/* Reference tags — @ref1, @ref2 … so a prompt can point at one image. */
+.reference-thumb {
+  position: relative;
+}
+.reference-thumb .reference-tag {
+  position: absolute;
+  left: 3px;
+  bottom: 3px;
+  z-index: 2;
+  border: 0;
+  cursor: pointer;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-family: var(--font-ui, inherit);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  color: #fff;
+  background: rgba(17, 17, 17, 0.82);
+}
+.reference-thumb .reference-tag:hover {
+  background: var(--tenant-accent, #111);
+}
+.reference-thumb--tag-hover {
+  outline: 2px solid var(--tenant-accent, #111);
+  outline-offset: 1px;
+}
+.reference-tag-hint {
+  flex: 1 1 100%;
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: 0.72;
+}
+.reference-tag-hint-chip {
+  border: 0;
+  background: rgba(17, 17, 17, 0.08);
+  border-radius: 999px;
+  padding: 1px 6px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.reference-tag-hint-chip:hover {
+  background: rgba(17, 17, 17, 0.16);
+}
+.reference-tag-hint-warn {
+  color: #b3261e;
+}

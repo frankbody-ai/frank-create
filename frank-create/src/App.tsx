@@ -113,7 +113,14 @@ import {
   resolveForModel,
   groupCompareRows,
   parseCompareMeta,
-  estimateVideoCost
+  estimateVideoCost,
+  composeReferencePrompt,
+  referenceTagFor,
+  taggedReferences,
+  insertTagAtCaret,
+  unknownReferenceTags,
+  buildReferenceManifest,
+  expandReferenceTags
 } from "./lib/studio";
 import type { StudioFieldErrors } from "./lib/studio";
 
@@ -388,6 +395,8 @@ export default function App() {
   const [referenceLibrary, setReferenceLibrary] = useState<Asset[]>([]);
   const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
   const referencePickerInputRef = useRef<HTMLInputElement | null>(null);
+  const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const [hoveredReferenceTag, setHoveredReferenceTag] = useState<string | null>(null);
 
   const [compareBaseAsset, setCompareBaseAsset] = useState<Asset | null>(null);
   const [compareTargetAsset, setCompareTargetAsset] = useState<Asset | null>(null);
@@ -1773,6 +1782,20 @@ export default function App() {
     setPrompt((current) => (current.trim() ? current : brief.prompt ?? ""));
   }
 
+  function insertReferenceTag(tag: string) {
+    const el = promptInputRef.current;
+    const caret = el ? (el.selectionStart ?? prompt.length) : prompt.length;
+    const { text, caret: nextCaret } = insertTagAtCaret(prompt, tag, caret);
+    setPrompt(text);
+    setStatusText(`${tag} added to the prompt.`);
+    requestAnimationFrame(() => {
+      const node = promptInputRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(nextCaret, nextCaret);
+    });
+  }
+
   function removeReferenceFromDock(asset: Asset) {
     detachReferences([asset], true);
     setStatusText(`${asset.title} removed from references.`);
@@ -2088,9 +2111,18 @@ export default function App() {
       return;
     }
 
-    const generationReferenceUrls = selectedReferenceAssets
-      .map(referenceUrlForGeneration)
-      .filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u));
+    const referencePairs = selectedReferenceAssets
+      .map((asset) => ({ asset, url: referenceUrlForGeneration(asset) }))
+      .filter((pair): pair is { asset: Asset; url: string } =>
+        typeof pair.url === "string" && /^https?:\/\//.test(pair.url));
+    const generationReferenceUrls = referencePairs.map((pair) => pair.url);
+    const generationReferenceAssets = referencePairs.map((pair) => pair.asset);
+    const unknownTags = unknownReferenceTags(prompt, generationReferenceAssets.length);
+    if (unknownTags.length) {
+      setStatusText(`${unknownTags.join(", ")} ${unknownTags.length === 1 ? "does" : "do"} not match a loaded reference. Remove the tag or add the image.`);
+      return;
+    }
+    const providerPrompt = composeReferencePrompt(prompt, generationReferenceAssets);
     if (selectedReferenceAssets.length && !generationReferenceUrls.length) {
       setStatusText("Reference images are still uploading. Try again in a moment.");
       return;
@@ -2124,6 +2156,7 @@ export default function App() {
       settings,
       referenceAssetIds: selectedReferenceAssets.map((asset) => asset.id),
       referenceImageUrls: generationReferenceUrls,
+      providerPrompt,
       editSourceAssetId: editSourceAsset?.id,
       maskAssetId: promptMode === "masked_edit" ? maskAsset?.id : undefined
     });
@@ -2143,7 +2176,7 @@ export default function App() {
         }
       }
       const invokeBody = {
-        prompt: composeReferenceLockedPrompt(request.prompt, generationReferenceUrls.length),
+        prompt: providerPrompt,
         count: settings.count,
         modelId: selectedModel.id,
         aspect_ratio: settings.aspect_ratio,
@@ -2424,6 +2457,12 @@ export default function App() {
     }
 
     const videoSettings = videoModel ? normalizeVideoSettings(settings, videoModel) : settings;
+    const videoProviderPrompt = composeVideoReferencePrompt(
+      prompt,
+      selectedReferenceAssets,
+      sourceAsset,
+      lastFrameAsset
+    );
     clearReferenceDock();
 
     const ctrl = new AbortController();
@@ -2458,7 +2497,8 @@ export default function App() {
         settings: videoSettings,
         source_asset_id: sourceAsset?.id,
         last_frame_asset_id: lastFrameAsset?.id,
-        reference_asset_ids: selectedReferenceAssets.map((asset) => asset.id)
+        reference_asset_ids: selectedReferenceAssets.map((asset) => asset.id),
+        provider_prompt: videoProviderPrompt
       }, { signal: ctrl.signal });
       setTurns((current) => [...current, result.turn]);
       if (result.status === "blocked") {
@@ -2523,9 +2563,17 @@ export default function App() {
     }
 
     const referenceCount = selectedReferenceAssets.length;
-    const generationReferenceUrls = selectedReferenceAssets
-      .map(referenceUrlForGeneration)
-      .filter((u): u is string => typeof u === "string" && /^https?:\/\//.test(u));
+    const comparePairs = selectedReferenceAssets
+      .map((asset) => ({ asset, url: referenceUrlForGeneration(asset) }))
+      .filter((pair): pair is { asset: Asset; url: string } =>
+        typeof pair.url === "string" && /^https?:\/\//.test(pair.url));
+    const generationReferenceUrls = comparePairs.map((pair) => pair.url);
+    const compareReferenceAssets = comparePairs.map((pair) => pair.asset);
+    const compareUnknownTags = unknownReferenceTags(prompt, compareReferenceAssets.length);
+    if (compareUnknownTags.length) {
+      setStatusText(`${compareUnknownTags.join(", ")} ${compareUnknownTags.length === 1 ? "does" : "do"} not match a loaded reference.`);
+      return;
+    }
     if (referenceCount && !generationReferenceUrls.length) {
       setStatusText("Reference images are still uploading. Try again in a moment.");
       return;
@@ -2563,8 +2611,9 @@ export default function App() {
         compare_group: groupId,
         compare_side: side
       };
-      const sideReferenceAssets = selectedReferenceAssets.slice(0, resolved.referenceLimit);
+      const sideReferenceAssets = compareReferenceAssets.slice(0, resolved.referenceLimit);
       const sideReferenceUrls = generationReferenceUrls.slice(0, resolved.referenceLimit);
+      const sideProviderPrompt = composeReferencePrompt(prompt, sideReferenceAssets);
 
       if (compareMedia === "video") {
         const sourceAsset = compareFirstFrame ?? undefined;
@@ -2579,7 +2628,8 @@ export default function App() {
           settings: sideSettings,
           source_asset_id: sourceAsset?.id,
           last_frame_asset_id: lastFrameAsset?.id,
-          reference_asset_ids: sideReferenceAssets.map((asset) => asset.id)
+          reference_asset_ids: sideReferenceAssets.map((asset) => asset.id),
+          provider_prompt: composeVideoReferencePrompt(prompt, sideReferenceAssets, sourceAsset, lastFrameAsset)
         });
       }
 
@@ -2592,7 +2642,8 @@ export default function App() {
         presetKey: selectedPresetKey ?? undefined,
         settings: sideSettings,
         referenceAssetIds: sideReferenceAssets.map((asset) => asset.id),
-        referenceImageUrls: sideReferenceUrls
+        referenceImageUrls: sideReferenceUrls,
+        providerPrompt: sideProviderPrompt
       });
       const started = await createInferenceTurn(request);
       if (started.status === "running") {
@@ -3921,6 +3972,7 @@ export default function App() {
           ) : null}
 
           <textarea
+            ref={promptInputRef}
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
             onPaste={handlePromptPaste}
@@ -3983,11 +4035,14 @@ export default function App() {
             </button>
             <div className="reference-dock" aria-label="Reference images">
 
-              {referenceAssets.map((asset) => (
+              {referenceAssets.map((asset, refIndex) => {
+                const tag = referenceTagFor(refIndex);
+                return (
                 <div
                   key={asset.id}
-                  className="reference-thumb"
-                  title={asset.title}
+                  className={`reference-thumb${hoveredReferenceTag === tag ? " reference-thumb--tag-hover" : ""}`}
+                  title={`${tag} · ${asset.title}`}
+                  data-reference-tag={tag}
                   onClick={() => setReferencePreviewAsset(asset)}
                   role="button"
                   tabIndex={0}
@@ -4001,6 +4056,20 @@ export default function App() {
                   {asset.preview_url ? <img src={asset.preview_url} alt={asset.title} /> : <Paperclip size={15} />}
                   <button
                     type="button"
+                    className="reference-tag"
+                    title={`Insert ${tag} into the prompt`}
+                    aria-label={`Insert ${tag} for ${asset.title} into the prompt`}
+                    onMouseEnter={() => setHoveredReferenceTag(tag)}
+                    onMouseLeave={() => setHoveredReferenceTag(null)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      insertReferenceTag(tag);
+                    }}
+                  >
+                    {tag}
+                  </button>
+                  <button
+                    type="button"
                     className="reference-remove"
                     aria-label={`Remove ${asset.title}`}
                     title={`Remove ${asset.title}`}
@@ -4012,7 +4081,8 @@ export default function App() {
                     <X size={12} />
                   </button>
                 </div>
-              ))}
+                );
+              })}
               {referenceAssets.length ? (
                 <span className="reference-selection-count">
                   {referenceAssets.length} loaded · used in next run
@@ -4023,6 +4093,33 @@ export default function App() {
                 </span>
               )}
             </div>
+            {referenceAssets.length ? (
+              <p className="reference-tag-hint">
+                Reference tags:{" "}
+                {taggedReferences(referenceAssets).map((ref, i) => (
+                  <span key={ref.tag}>
+                    {i ? ", " : ""}
+                    <button
+                      type="button"
+                      className="reference-tag-hint-chip"
+                      onMouseEnter={() => setHoveredReferenceTag(ref.tag)}
+                      onMouseLeave={() => setHoveredReferenceTag(null)}
+                      onClick={() => insertReferenceTag(ref.tag)}
+                    >
+                      {ref.tag}
+                    </button>{" "}
+                    {ref.title}
+                  </span>
+                ))}
+                {" "}— use them in the prompt to point at one image.
+                {unknownReferenceTags(prompt, referenceAssets.length).length ? (
+                  <strong className="reference-tag-hint-warn">
+                    {" "}Unknown tag{unknownReferenceTags(prompt, referenceAssets.length).length === 1 ? "" : "s"}:{" "}
+                    {unknownReferenceTags(prompt, referenceAssets.length).join(", ")}
+                  </strong>
+                ) : null}
+              </p>
+            ) : null}
             {editSourceAsset && selectedModel?.capabilities.masked_edit ? (
               <>
                 <button className="upload-button mask-paint-button" type="button" onClick={() => setMaskPainterAsset(editSourceAsset)}>
@@ -5971,15 +6068,22 @@ function referenceUrlForGeneration(asset: Asset) {
   return asset.remote_url || asset.preview_url || asset.file_path;
 }
 
-function composeReferenceLockedPrompt(prompt: string, referenceCount: number) {
-  if (!referenceCount) return prompt;
-  return [
-    `Use the ${referenceCount} attached reference image${referenceCount === 1 ? "" : "s"} as strict product identity input.`,
-    "The product, packaging, logo, colors, label layout, shape, and material details must come from the reference image(s).",
-    "Do not invent or substitute a different object, animal product, box, brand, flavour, label, or packaging. If the prompt says product/object/pack, it means the referenced Frank Body product.",
-    "Keep the referenced product clearly visible and recognizable in the final image.",
-    prompt,
-  ].join("\n");
+function composeVideoReferencePrompt(
+  prompt: string,
+  references: Asset[],
+  firstFrame?: Asset | null,
+  lastFrame?: Asset | null
+) {
+  const frames: string[] = [];
+  if (firstFrame) frames.push(`First frame (@first) = ${firstFrame.title}`);
+  if (lastFrame) frames.push(`Last frame (@last) = ${lastFrame.title}`);
+  let body = prompt
+    .replace(/@first\b/gi, "the first frame image (@first)")
+    .replace(/@last\b/gi, "the last frame image (@last)");
+  if (references.length) {
+    body = [buildReferenceManifest(references), expandReferenceTags(body, references)].join("\n");
+  }
+  return frames.length ? [...frames, body].join("\n") : body;
 }
 
 function fileToDataUrl(file: File) {
