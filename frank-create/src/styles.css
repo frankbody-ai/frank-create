@@ -6879,14 +6879,15 @@ input:focus, textarea:focus, select:focus {
   cursor: pointer;
   text-align: center;
   overflow: hidden;
+  aspect-ratio: 1 / 1;
 }
 .reference-picker-upload {
   border-style: dashed;
-  min-height: 126px;
 }
 .reference-picker-upload strong { font-size: 0.78rem; }
 .reference-picker-upload span { font-size: 0.65rem; opacity: 0.65; line-height: 1.3; }
 .reference-picker-card { padding: 0; }
+
 .reference-picker-card img {
   width: 100%;
   aspect-ratio: 1 / 1;
