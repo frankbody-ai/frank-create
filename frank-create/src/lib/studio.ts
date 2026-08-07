@@ -208,6 +208,38 @@ export function modelRateLabel(model: StudioModel | undefined | null): string | 
   return null;
 }
 
+/**
+ * Relative cost band for image models, 1 ($) to 3 ($$$), based on the average
+ * provider price per image at comparable output quality.
+ */
+const IMAGE_COST_TIERS: Record<string, 1 | 2 | 3> = {
+  "nano-banana-pro": 1,
+  "seedream-4-5": 1,
+  "grok-imagine-image": 1,
+  "google-nb-2": 2,
+  "openai-gpt-image-2": 2,
+  "flux-2-pro": 2,
+  "qwen-image-3-pro": 2,
+  "krea-2-large": 2,
+  "mai-image-2-5-pro": 2,
+  "google-nb-pro": 3,
+  "flux-2-max": 3,
+  "riverflow-2-5-pro": 3,
+};
+
+/** "$", "$$" or "$$$" for image models; null for video/upscale models. */
+export function modelCostBadge(model: StudioModel | undefined | null): string | null {
+  if (!model || isVideoModel(model)) return null;
+  const explicit = (model as StudioModel & { cost_tier?: number }).cost_tier;
+  const tier =
+    explicit && explicit >= 1 && explicit <= 3
+      ? (Math.round(explicit) as 1 | 2 | 3)
+      : IMAGE_COST_TIERS[model.id];
+  if (!tier) return null;
+  return "$".repeat(tier);
+}
+
+
 /** Live estimate for the current duration / resolution selection. */
 export function estimateVideoCost(
   model: StudioModel | undefined | null,
