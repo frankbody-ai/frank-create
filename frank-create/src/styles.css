@@ -1340,10 +1340,9 @@ select:focus {
   padding: 0;
   overflow: hidden;
   position: relative;
-  border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--white);
   flex: 0 0 auto;
+  cursor: pointer;
 }
 
 .reference-thumb img {
@@ -1351,6 +1350,7 @@ select:focus {
   height: 100%;
   object-fit: cover;
 }
+
 
 .reference-remove {
   position: absolute;
