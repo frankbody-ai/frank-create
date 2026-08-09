@@ -237,7 +237,9 @@ const VIDEO_COST_TIERS: Record<string, 1 | 2 | 3> = {
   "wan-2-7-i2v": 2,
   "grok-imagine-video-1-5": 2,
   "dreamina-seedance-2": 3,
+  "seedance-2-5": 2,
   "hailuo-2-3": 3,
+
 };
 
 /** "$", "$$" or "$$$" for image/video models; null for upscale models. */
