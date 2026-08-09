@@ -332,7 +332,9 @@ export const fallbackConfig: FrankConfig = {
       price_tier: "standard",
       configured: true,
       missing_env_vars: []
+    },
     {
+
       id: "seedance-2-5",
       label: "Seedance 2.5 (ByteDance)",
       short_label: "Seedance 2.5",
