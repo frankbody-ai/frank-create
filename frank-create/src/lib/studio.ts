@@ -254,6 +254,10 @@ export function modelCostBadge(model: StudioModel | undefined | null): string | 
   return "$".repeat(tier);
 }
 
+/** Models ByteDance/OpenRouter bill per video token, so per-second rates are estimates. */
+const TOKEN_METERED_VIDEO_MODELS = new Set(["seedance-2-5"]);
+
+
 
 
 /** Live estimate for the current duration / resolution selection. */
