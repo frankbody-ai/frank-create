@@ -79,6 +79,7 @@ describe("studio helpers", () => {
       "grok-imagine-image",
       "grok-imagine-video",
       "dreamina-seedance-2",
+      "seedance-2-5",
       "grok-imagine-video-1-5",
       "happyhorse-1-0",
       "wan-2-7-i2v",

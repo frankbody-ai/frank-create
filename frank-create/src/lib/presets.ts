@@ -338,6 +338,33 @@ export const fallbackConfig: FrankConfig = {
       missing_env_vars: []
     },
     {
+
+      id: "seedance-2-5",
+      label: "Seedance 2.5 (ByteDance)",
+      short_label: "Seedance 2.5",
+      provider: "openrouter",
+      provider_model: "bytedance/seedance-2.5",
+      media: "video",
+      status: "ready",
+      badge: "720p",
+      max_resolution_label: "720p",
+      description: "ByteDance Seedance 2.5 via OpenRouter — long-form storytelling up to 30s with native audio, first/last frame control and multimodal references. 480p / 720p.",
+      capabilities: { generation: true, edit: false, masked_edit: false, video: true },
+      allowed_aspect_ratios: ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9"],
+      allowed_image_sizes: [],
+      allowed_durations: [4, 6, 8, 10, 12, 15, 20, 25, 30],
+      allowed_resolutions: ["480p", "720p"],
+      supports_last_frame: true,
+      reference_image_limit: 9,
+      max_count: 1,
+      cost_label: "premium",
+      price_per_second_by_resolution: { "480p": 0.12, "720p": 0.27 },
+      price_tier: "standard",
+      configured: true,
+      missing_env_vars: []
+    },
+
+    {
       id: "grok-imagine-video-1-5",
       label: "Grok Imagine Video 1.5",
       short_label: "Grok 1.5",

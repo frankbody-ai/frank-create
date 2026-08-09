@@ -4132,16 +4132,23 @@ export default function App() {
                           </span>
                         );
                       })()}
-                      {turn.provider_request_json ? (
-                        <button
-                          type="button"
-                          className="turn-chip-json"
-                          onClick={() => setPayloadTurnId(turn.id)}
-                          title="Show the JSON body sent to the provider"
+                      {displayOutputAssets.some((a) => a.turn_id === turn.id && a.storage_missing) ? (
+                        <span
+                          className="turn-chip-resolution"
+                          title="This file was over the 20 MB storage limit, so it streams from the provider's temporary link. Save it now to keep it."
                         >
-                          JSON
-                        </button>
+                          Temporary link
+                        </span>
                       ) : null}
+                      <button
+                        type="button"
+                        className="turn-chip-json"
+                        onClick={() => setPayloadTurnId(turn.id)}
+                        title="Show the JSON body sent to the provider"
+                      >
+                        JSON
+                      </button>
+
 
                       <button
                         type="button"
@@ -4158,9 +4165,34 @@ export default function App() {
                         <Clipboard size={12} />
                         Copy prompt
                       </button>
-                      {parseJsonList(turn.reference_asset_ids_json).length ? (
-                        <span>{referenceCountLabel(parseJsonList(turn.reference_asset_ids_json).length)}</span>
-                      ) : null}
+                      {(() => {
+                        const refIds = parseJsonList(turn.reference_asset_ids_json);
+                        if (!refIds.length) return null;
+                        return (
+                          <span className="turn-ref-strip" title={referenceCountLabel(refIds.length)}>
+                            {refIds.map((refId, refIndex) => {
+                              const refAsset = assets.find((a) => a.id === refId);
+                              const tag = referenceTagFor(refIndex);
+                              return (
+                                <span
+                                  key={`${turn.id}-${refId}`}
+                                  className="turn-ref-thumb"
+                                  title={`${tag} · ${refAsset?.title ?? "reference"}`}
+                                  onClick={() => { if (refAsset) setReferencePreviewAsset(refAsset); }}
+                                  role={refAsset ? "button" : undefined}
+                                >
+                                  {refAsset?.preview_url ? (
+                                    <img src={refAsset.preview_url} alt={refAsset.title} loading="lazy" />
+                                  ) : (
+                                    <Paperclip size={12} />
+                                  )}
+                                </span>
+                              );
+                            })}
+                          </span>
+                        );
+                      })()}
+
                       {turnErrorCopy(turn) ? <span className="turn-error">{turnErrorCopy(turn)}</span> : null}
 
                       {(() => {
@@ -4399,7 +4431,7 @@ export default function App() {
           ) : null}
 
           <div
-            className={`composer-actions${referenceDropActive ? " reference-drop-active" : ""}`}
+            className={`composer-actions${referenceDropActive ? " reference-drop-active" : ""}${referenceAssets.length ? " composer-actions--icons" : ""}`}
             data-tour-id="reference-dock"
             data-tour-active={tourActive("reference-dock")}
             onDragOver={(event) => {
@@ -4515,35 +4547,46 @@ export default function App() {
                 </button>
               ) : null}
               <div className="action-compact-pile">
-                <button className="secondary-button remix-button" type="button" onClick={handlePromptRemix} disabled={remixBusy}>
+                <button
+                  className="secondary-button remix-button"
+                  type="button"
+                  onClick={handlePromptRemix}
+                  disabled={remixBusy}
+                  title="Brief Mix"
+                  aria-label="Brief Mix"
+                >
                   {remixBusy ? <RefreshCw className="spin" size={14} /> : <Sparkles size={14} />}
-                  Brief remix
+                  <span className="action-label">Brief Mix&nbsp;&nbsp;<br /></span>
                 </button>
                 <button
                   className="secondary-button danger-button composer-cancel-button"
                   type="button"
                   onClick={requestCancelCurrentSession}
                   disabled={!activeSession}
+                  title="Cancel"
+                  aria-label="Cancel"
                 >
-                  <XCircle size={14} />
-                  Cancel
+                  <X size={14} />
+                  <span className="action-label">Cancel</span>
                 </button>
               </div>
               <button
                 className="primary-button"
                 type="submit"
                 disabled={!prompt.trim() || hasStudioFieldErrors(fieldErrors)}
+                aria-label={primaryActionLabel}
                 title={
                   !prompt.trim()
                     ? "Enter a prompt to generate"
                     : hasStudioFieldErrors(fieldErrors)
                       ? "Fix the highlighted settings before generating"
-                      : undefined
+                      : primaryActionLabel
                 }
               >
                 <Wand2 size={18} />
-                {primaryActionLabel}
+                <span className="action-label">{primaryActionLabel}</span>
               </button>
+
             </div>
           </div>
           {referenceAssets.length ? (
@@ -5678,13 +5721,29 @@ function formatAspectChip(value: string) {
 
 /** Pretty-print the stored provider request body for the JSON chip modal. */
 function formatProviderPayload(turn?: StudioTurn) {
-  if (!turn?.provider_request_json) return "No request body was captured for this round.";
-  try {
-    return JSON.stringify(JSON.parse(turn.provider_request_json), null, 2);
-  } catch {
-    return turn.provider_request_json;
+  if (!turn) return "No request body was captured for this round.";
+  if (turn.provider_request_json) {
+    try {
+      return JSON.stringify(JSON.parse(turn.provider_request_json), null, 2);
+    } catch {
+      return turn.provider_request_json;
+    }
   }
+  // Still running (or captured before this feature existed): show the request as
+  // it was composed client-side, so the round can be troubleshot right away.
+  const settings = parseJsonRecord(turn.settings_json);
+  const pending = {
+    note: "Provider response not captured yet — this is the request composed for this round.",
+    model: turn.model,
+    prompt: turn.prompt,
+    settings,
+    reference_asset_ids: (() => {
+      try { return JSON.parse((turn as { reference_asset_ids_json?: string }).reference_asset_ids_json || "[]"); } catch { return []; }
+    })(),
+  };
+  return JSON.stringify(pending, null, 2);
 }
+
 
 function turnAspect(turn: StudioTurn) {
 

@@ -208,6 +208,58 @@ export function modelRateLabel(model: StudioModel | undefined | null): string | 
   return null;
 }
 
+/**
+ * Relative cost band for image models, 1 ($) to 3 ($$$), based on the average
+ * provider price per image at comparable output quality.
+ */
+const IMAGE_COST_TIERS: Record<string, 1 | 2 | 3> = {
+  "nano-banana-pro": 1,
+  "seedream-4-5": 1,
+  "grok-imagine-image": 1,
+  "google-nb-2": 2,
+  "openai-gpt-image-2": 2,
+  "flux-2-pro": 2,
+  "qwen-image-3-pro": 2,
+  "krea-2-large": 2,
+  "mai-image-2-5-pro": 2,
+  "google-nb-pro": 3,
+  "flux-2-max": 3,
+  "riverflow-2-5-pro": 3,
+};
+
+/**
+ * Relative cost band for video models, 1 ($) to 3 ($$$), based on the average
+ * provider price per output second at comparable resolution and quality.
+ */
+const VIDEO_COST_TIERS: Record<string, 1 | 2 | 3> = {
+  "grok-imagine-video": 1,
+  "happyhorse-1-0": 2,
+  "wan-2-7-i2v": 2,
+  "grok-imagine-video-1-5": 2,
+  "dreamina-seedance-2": 3,
+  "seedance-2-5": 2,
+  "hailuo-2-3": 3,
+
+};
+
+/** "$", "$$" or "$$$" for image/video models; null for upscale models. */
+export function modelCostBadge(model: StudioModel | undefined | null): string | null {
+  if (!model || isUpscaleModel(model)) return null;
+  const explicit = (model as StudioModel & { cost_tier?: number }).cost_tier;
+  const tier =
+    explicit && explicit >= 1 && explicit <= 3
+      ? (Math.round(explicit) as 1 | 2 | 3)
+      : (isVideoModel(model) ? VIDEO_COST_TIERS[model.id] : IMAGE_COST_TIERS[model.id]);
+  if (!tier) return null;
+  return "$".repeat(tier);
+}
+
+/** Models ByteDance/OpenRouter bill per video token, so per-second rates are estimates. */
+const TOKEN_METERED_VIDEO_MODELS = new Set(["seedance-2-5"]);
+
+
+
+
 /** Live estimate for the current duration / resolution selection. */
 export function estimateVideoCost(
   model: StudioModel | undefined | null,
@@ -225,8 +277,11 @@ export function estimateVideoCost(
   const byRes = model.price_per_second_by_resolution?.[resolution.toLowerCase()]
     ?? model.price_per_second_by_resolution?.[resolution];
   if (typeof byRes === "number") {
-    return `~${usd(byRes * duration)} · ${suffix} · ${usd(byRes)}/s`;
+    // Token-metered models have no fixed per-second rate — label the figure approximate.
+    const approx = TOKEN_METERED_VIDEO_MODELS.has(model.id);
+    return `${approx ? "approx. " : ""}~${usd(byRes * duration)} · ${suffix} · ${usd(byRes)}/s`;
   }
+
   if (model.price_per_second) {
     const low = model.price_per_second * duration;
     const high = (model.price_max_per_second ?? model.price_per_second) * duration;

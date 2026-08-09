@@ -107,6 +107,8 @@ export interface StudioModel {
   price_flat?: number;
   /** Video-only: exact USD prices keyed as `${duration}@${resolution}`. */
   price_table?: Record<string, number>;
+  /** Image-only: relative cost band, 1 ($) to 3 ($$$). */
+  cost_tier?: 1 | 2 | 3;
   /** Relative price band, drives the Cheapest / Premium badges. */
   price_tier?: "cheapest" | "standard" | "premium";
   configured?: boolean;
@@ -647,6 +649,9 @@ export interface Asset {
   file_path?: string;
   preview_url?: string;
   remote_url?: string;
+  /** True when the file was too large to store, so the URL above is temporary. */
+  storage_missing?: boolean;
+  temporary_url?: boolean;
   /** Real pixel size of the file the provider returned. */
   width?: number;
   height?: number;

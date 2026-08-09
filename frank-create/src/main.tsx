@@ -12,6 +12,7 @@ import { AdminFeedbackPage } from "./components/AdminFeedbackPage";
 import { AdminPortal } from "./components/AdminPortal";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { SmallScreenNotice } from "./components/SmallScreenNotice";
+import { OAuthConsentPage } from "./components/OAuthConsentPage";
 import { installErrorReporter } from "./lib/errorReporter";
 import "./styles.css";
 
@@ -26,6 +27,8 @@ function resolveRoute() {
   const isCliff = hashPath === "/cliff-access" || pathname === "/cliff-access";
   const isAdminFeedback = hashPath === "/admin/feedback" || pathname === "/admin/feedback";
   const isAdmin = hashPath === "/admin" || pathname === "/admin";
+  const isOAuthConsent =
+    hashPath === "/.lovable/oauth/consent" || pathname === "/.lovable/oauth/consent";
   const reviewMatch =
     hashPath.match(/^\/review\/([^/]+)$/) ?? pathname.match(/^\/review\/([^/]+)$/);
   return {
@@ -33,6 +36,7 @@ function resolveRoute() {
     isCliff,
     isAdmin,
     isAdminFeedback,
+    isOAuthConsent,
     reviewSessionId: reviewMatch ? decodeURIComponent(reviewMatch[1]) : null,
   };
 }
@@ -49,6 +53,7 @@ function Router() {
     };
   }, []);
 
+  if (route.isOAuthConsent) return <OAuthConsentPage />;
   if (route.isHealth)
     return (
       <>

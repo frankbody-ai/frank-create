@@ -1,9 +1,10 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 
 export default defineConfig({
   envDir: "..",
-  plugins: [react()],
+  plugins: [react(), mcpPlugin()],
   build: {
     outDir: "../dist",
     emptyOutDir: true

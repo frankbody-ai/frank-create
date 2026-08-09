@@ -1340,10 +1340,9 @@ select:focus {
   padding: 0;
   overflow: hidden;
   position: relative;
-  border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--white);
   flex: 0 0 auto;
+  cursor: pointer;
 }
 
 .reference-thumb img {
@@ -1351,6 +1350,7 @@ select:focus {
   height: 100%;
   object-fit: cover;
 }
+
 
 .reference-remove {
   position: absolute;
@@ -1381,9 +1381,6 @@ select:focus {
   transform: scale(1.1);
 }
 
-.reference-thumb {
-  cursor: pointer;
-}
 
 .reference-preview-inner {
   max-width: min(720px, 94vw);
@@ -4080,6 +4077,26 @@ body {
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
+}
+
+/* With references loaded the row runs out of width: collapse the three action
+   buttons into icon-only circles instead of wrapping onto a new line. */
+.composer-actions--icons .composer-action-group .action-label {
+  display: none;
+}
+
+.composer-actions--icons .composer-action-group .primary-button,
+.composer-actions--icons .action-compact-pile .remix-button,
+.composer-actions--icons .action-compact-pile .composer-cancel-button {
+  width: 46px;
+  min-width: 46px;
+  height: 46px;
+  min-height: 46px;
+  padding: 0;
+  gap: 0;
+  border-radius: 999px;
+  justify-content: center;
+  align-items: center;
 }
 
 .action-compact-pile .remix-button,
@@ -8298,7 +8315,7 @@ body {
   align-items: center;
 }
 
-.studio-shell.guided-studio .thread-surface .turn-meta > span,
+.studio-shell.guided-studio .thread-surface .turn-meta > span:not(.turn-ref-strip),
 .studio-shell.guided-studio .thread-surface .turn-copy-prompt {
   display: inline-flex;
   align-items: center;
@@ -8656,6 +8673,7 @@ body {
 /* ---- Round meta chips: aspect, returned resolution, provider JSON -------- */
 .turn-chip-aspect,
 .turn-chip-resolution,
+.turn-chip-json,
 .output-tile-resolution {
   display: inline-flex;
   align-items: center;
@@ -8672,20 +8690,11 @@ body {
 }
 
 .turn-chip-json {
-  display: inline-flex;
-  align-items: center;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  padding: 2px 9px;
-  border-radius: var(--radius-pill, 999px);
-  border: 1px solid var(--line-soft, rgba(15, 23, 42, 0.16));
-  background: transparent;
-  color: var(--text-secondary, rgba(15, 23, 42, 0.7));
   cursor: pointer;
 }
 
 .turn-chip-json:hover {
-  border-color: var(--line-strong, rgba(15, 23, 42, 0.32));
+  background: var(--surface-muted-hover, rgba(15, 23, 42, 0.08));
   color: var(--text-primary, #0f172a);
 }
 
@@ -8821,4 +8830,88 @@ body {
 
 .turn-pending-recheck button:hover {
   border-color: var(--line-strong, rgba(15, 23, 42, 0.32));
+}
+
+/* ---------- OAuth consent (MCP agent integrations) ---------- */
+.oauth-consent {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: var(--bg, #0d0f12);
+}
+.oauth-consent__card {
+  width: min(460px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px);
+  text-align: left;
+}
+.oauth-consent__logo { height: 26px; width: auto; opacity: 0.9; }
+.oauth-consent__title { margin: 0; font-size: 22px; font-weight: 600; }
+.oauth-consent__body { margin: 0; font-size: 14px; line-height: 1.55; opacity: 0.78; }
+.oauth-consent__actions { display: flex; gap: 10px; margin-top: 6px; }
+.oauth-consent__primary,
+.oauth-consent__secondary {
+  flex: 1;
+  padding: 11px 16px;
+  border-radius: var(--radius-pill, 999px);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.oauth-consent__primary { background: #fff; color: #111; }
+.oauth-consent__secondary {
+  background: transparent;
+  color: inherit;
+  border-color: rgba(255, 255, 255, 0.24);
+}
+.oauth-consent__primary:disabled,
+.oauth-consent__secondary:disabled { opacity: 0.55; cursor: not-allowed; }
+.oauth-consent__error { margin: 0; font-size: 13px; color: #ff8b8b; }
+
+.turn-ref-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.turn-ref-thumb {
+  width: 42px;
+  height: 42px;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.turn-ref-thumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  object-fit: cover;
 }
