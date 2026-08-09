@@ -237,7 +237,9 @@ const VIDEO_COST_TIERS: Record<string, 1 | 2 | 3> = {
   "wan-2-7-i2v": 2,
   "grok-imagine-video-1-5": 2,
   "dreamina-seedance-2": 3,
+  "seedance-2-5": 2,
   "hailuo-2-3": 3,
+
 };
 
 /** "$", "$$" or "$$$" for image/video models; null for upscale models. */
@@ -251,6 +253,10 @@ export function modelCostBadge(model: StudioModel | undefined | null): string | 
   if (!tier) return null;
   return "$".repeat(tier);
 }
+
+/** Models ByteDance/OpenRouter bill per video token, so per-second rates are estimates. */
+const TOKEN_METERED_VIDEO_MODELS = new Set(["seedance-2-5"]);
+
 
 
 
@@ -271,8 +277,11 @@ export function estimateVideoCost(
   const byRes = model.price_per_second_by_resolution?.[resolution.toLowerCase()]
     ?? model.price_per_second_by_resolution?.[resolution];
   if (typeof byRes === "number") {
-    return `~${usd(byRes * duration)} · ${suffix} · ${usd(byRes)}/s`;
+    // Token-metered models have no fixed per-second rate — label the figure approximate.
+    const approx = TOKEN_METERED_VIDEO_MODELS.has(model.id);
+    return `${approx ? "approx. " : ""}~${usd(byRes * duration)} · ${suffix} · ${usd(byRes)}/s`;
   }
+
   if (model.price_per_second) {
     const low = model.price_per_second * duration;
     const high = (model.price_max_per_second ?? model.price_per_second) * duration;

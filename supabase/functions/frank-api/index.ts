@@ -411,6 +411,16 @@ const OPENROUTER_VIDEO_MAP: Record<string, VideoCaps> = {
     defaultAspect: "16:9",
     minDuration: 4, maxDuration: 15, defaultDuration: 5,
   },
+  "seedance-2-5": {
+    model: "bytedance/seedance-2.5",
+    resolutions: ["480p", "720p"],
+    defaultResolution: "720p",
+    aspects: ["16:9", "4:3", "1:1", "3:4", "9:16", "21:9"],
+    defaultAspect: "16:9",
+    minDuration: 4, maxDuration: 30, defaultDuration: 5,
+  },
+
+
   "happyhorse-1-0": {
     model: "alibaba/happyhorse-1.0",
     resolutions: ["720p", "1080p"],
