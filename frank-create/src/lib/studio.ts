@@ -273,8 +273,11 @@ export function estimateVideoCost(
   const byRes = model.price_per_second_by_resolution?.[resolution.toLowerCase()]
     ?? model.price_per_second_by_resolution?.[resolution];
   if (typeof byRes === "number") {
-    return `~${usd(byRes * duration)} · ${suffix} · ${usd(byRes)}/s`;
+    // Token-metered models have no fixed per-second rate — label the figure approximate.
+    const approx = TOKEN_METERED_VIDEO_MODELS.has(model.id);
+    return `${approx ? "approx. " : ""}~${usd(byRes * duration)} · ${suffix} · ${usd(byRes)}/s`;
   }
+
   if (model.price_per_second) {
     const low = model.price_per_second * duration;
     const high = (model.price_max_per_second ?? model.price_per_second) * duration;
