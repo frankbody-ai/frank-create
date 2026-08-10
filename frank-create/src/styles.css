@@ -8915,3 +8915,38 @@ body {
   box-shadow: none;
   object-fit: cover;
 }
+
+/* Tenant theme picker in the rail footer. */
+.sidebar-theme {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 10px 8px;
+}
+.sidebar-theme-eyebrow {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-light);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--paper-700, var(--muted));
+}
+.sidebar-theme-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sidebar-theme-swatch {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid rgba(48, 48, 48, 0.15);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.sidebar-theme-swatch:hover {
+  transform: scale(1.12);
+}
+.sidebar-theme-swatch.active {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--ink);
+}

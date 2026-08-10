@@ -8,11 +8,12 @@
    to AmbientBackground so the blob floats over the ramp instead of hiding it. */
 :root{--tenant-accent:var(--accent);--tenant-tint:rgba(48,48,48,0.05);--tenant-border:var(--muted-25);--tenant-bar:var(--ink);--tenant-page:transparent;--tenant-blob:var(--accent-glow);--tenant-blob-bottom:var(--accent-glow);--tenant-blob-top:var(--canvas);--tenant-ambient:linear-gradient(to top,var(--tenant-blob-bottom),var(--tenant-blob-top));/* @kind color */}
 [data-tenant="frank"]{--tenant-accent:#F9ABAA;--tenant-tint:#FDF1F4;--tenant-border:#F3CBD6;--tenant-bar:#F6D3DC;--tenant-page:#FBF6F7;--tenant-blob:#F9C0B9;--tenant-blob-bottom:#F9C0B9;--tenant-blob-top:#FDEFE4}
-[data-tenant="snouts"]{--tenant-blob-bottom:var(--tenant-blob);--tenant-blob-top:var(--canvas);--tenant-accent:#FA4D0A;--tenant-tint:#FEF2EC;--tenant-border:#F8CDB8;--tenant-bar:#FBD5C1;--tenant-page:#FBF7F4;--tenant-blob:var(--accent-glow)}
-[data-tenant="coreiq"]{--tenant-blob-bottom:var(--tenant-blob);--tenant-blob-top:var(--canvas);--tenant-accent:#4E8C8A;--tenant-tint:#EEF6F5;--tenant-border:#C3DCDA;--tenant-bar:#CCE2E0;--tenant-page:#F5F8F8;--tenant-blob:var(--accent-glow)}
-[data-tenant="strength"]{--tenant-blob-bottom:var(--tenant-blob);--tenant-blob-top:var(--canvas);--tenant-accent:#C2410C;--tenant-tint:#FDF1EA;--tenant-border:#EFC9B2;--tenant-bar:#F0D0BC;--tenant-page:#FAF7F5;--tenant-blob:var(--accent-glow)}
-[data-tenant="ledgify"]{--tenant-blob-bottom:var(--tenant-blob);--tenant-blob-top:var(--canvas);--tenant-accent:#372F89;--tenant-tint:#F1F0F9;--tenant-border:#C8C4E2;--tenant-bar:#D0CDE8;--tenant-page:#F7F6FB;--tenant-blob:var(--accent-glow)}
-[data-tenant="enxgy"]{--tenant-blob-bottom:var(--tenant-blob);--tenant-blob-top:var(--canvas);--tenant-accent:#0E9CC0;--tenant-tint:#EDF8FB;--tenant-border:#B8E2ED;--tenant-bar:#C4E6F0;--tenant-page:#F4F9FB;--tenant-blob:var(--accent-glow)}
+[data-tenant="snouts"]{--tenant-accent:#FF4D00;--tenant-tint:#FFF1EB;--tenant-border:#FFCDB8;--tenant-bar:#FFD8C7;--tenant-page:#FFF8F5;--tenant-blob:#FF9466;--tenant-blob-bottom:#FFA680;--tenant-blob-top:#FFE4D9}
+[data-tenant="coreiq"]{--tenant-accent:#ED1B53;--tenant-tint:#FEEDF1;--tenant-border:#FABFCF;--tenant-bar:#FBCDD9;--tenant-page:#FFF7F9;--tenant-blob:#F47698;--tenant-blob-bottom:#F68DA9;--tenant-blob-top:#FCDDE5}
+[data-tenant="strength"]{--tenant-accent:#C90000;--tenant-tint:#FBEBEB;--tenant-border:#F0B8B8;--tenant-bar:#F3C7C7;--tenant-page:#FDF6F6;--tenant-blob:#DF6666;--tenant-blob-bottom:#E48080;--tenant-blob-top:#F7D9D9}
+[data-tenant="ledgify"]{--tenant-accent:#372F89;--tenant-tint:#EFEEF6;--tenant-border:#C7C5DE;--tenant-bar:#D3D1E5;--tenant-page:#F8F8FC;--tenant-blob:#8782B8;--tenant-blob-bottom:#9B97C4;--tenant-blob-top:#E1E0ED}
+[data-tenant="enxgy"]{--tenant-accent:#00C6E4;--tenant-tint:#EBFAFD;--tenant-border:#B8EFF7;--tenant-bar:#C7F2F9;--tenant-page:#F5FCFE;--tenant-blob:#66DDEF;--tenant-blob-bottom:#80E2F2;--tenant-blob-top:#D9F6FB}
+
 
 /* Product accents. A standalone product wearing the OS language differs by
    accent without leaving it. These carry no tenant identity — set

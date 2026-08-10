@@ -296,6 +296,7 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     target: "variant-controls",
     selectOutput: true
   },
+
   {
     title: "Edit and reuse",
     detail: "Edit with the selected model, paint a mask where supported, or reuse a good pick as a reference for the next round.",
@@ -320,7 +321,21 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   }
 ];
 
+// Official AutoSolutions OS tenant ambient ramps. Each theme re-tints the shell
+// gradient, the blurred blob and the accent from one brand colour.
+const TENANT_THEMES = [
+  { id: "frank", label: "frank body", hex: "#F9ABAA" },
+  { id: "snouts", label: "senior snouts", hex: "#FF4D00" },
+  { id: "coreiq", label: "coreiQ", hex: "#ED1B53" },
+  { id: "strength", label: "strength lab", hex: "#C90000" },
+  { id: "ledgify", label: "ledgify", hex: "#372F89" },
+  { id: "enxgy", label: "enxgy", hex: "#00C6E4" }
+] as const;
+
+type TenantThemeId = (typeof TENANT_THEMES)[number]["id"];
+
 export default function App() {
+
   const [config, setConfig] = useState<FrankConfig>(fallbackConfig);
   const [connection, setConnection] = useState<"checking" | "online" | "offline">("checking");
   const [projects, setProjects] = useState<Project[]>([]);
@@ -545,6 +560,23 @@ export default function App() {
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
   const [settingsRailOpen, setSettingsRailOpen] = useState(true);
+  const [tenantTheme, setTenantTheme] = useState<TenantThemeId>(() => {
+    try {
+      const stored = window.localStorage.getItem("frank-create.tenant-theme");
+      if (stored && TENANT_THEMES.some((theme) => theme.id === stored)) return stored as TenantThemeId;
+    } catch {
+      /* storage unavailable */
+    }
+    return "frank";
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("frank-create.tenant-theme", tenantTheme);
+    } catch {
+      /* storage unavailable */
+    }
+  }, [tenantTheme]);
+
   const [mediaKind, setMediaKind] = useState<"image" | "video" | "compare">("image");
 
   const [compareMedia, setCompareMedia] = useState<"image" | "video">("image");
@@ -3557,7 +3589,7 @@ export default function App() {
     <div
       className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${studioMode !== "preset-creator" && studioMode !== "prompt-generator" && studioMode !== "enhancer" && settingsRailOpen ? "settings-rail-open" : ""}`}
       data-provider-audit={providerAuditMode ? "open" : undefined}
-      data-tenant="frank"
+      data-tenant={tenantTheme}
     >
       <svg
         className="ambient-field"
@@ -3574,7 +3606,7 @@ export default function App() {
         <rect width="1280" height="832" fill="transparent" />
         <g filter="url(#ambient-blob-blur)" transform="translate(-300, 40) scale(1)">
           <path
-            fill="var(--tenant-accent)"
+            fill="var(--tenant-blob)"
             d="M-140 402c72-138 150-236 292-268 142-32 268 26 372 118 104 92 176 214 152 336-24 122-144 244-306 268-162 24-366-50-476-176-110-126-106-140-34-278Z"
           />
         </g>
@@ -3810,6 +3842,25 @@ export default function App() {
           ) : null}
 
           <div className="sidebar-bottom-divider" aria-hidden="true" />
+          <div className="sidebar-theme">
+            <span className="sidebar-theme-eyebrow">THEME</span>
+            <div className="sidebar-theme-swatches" role="radiogroup" aria-label="Workspace theme">
+              {TENANT_THEMES.map((theme) => (
+                <button
+                  key={theme.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={tenantTheme === theme.id}
+                  aria-label={`Use the ${theme.label} theme`}
+                  title={`${theme.label} · ${theme.hex}`}
+                  className={`sidebar-theme-swatch ${tenantTheme === theme.id ? "active" : ""}`}
+                  style={{ background: theme.hex }}
+                  onClick={() => setTenantTheme(theme.id)}
+                />
+              ))}
+            </div>
+          </div>
+
           <div data-tour-id="feedback-button" data-tour-active={tourActive("feedback-button")}>
             <FeedbackWidget variant="sidebar" />
           </div>
