@@ -3589,7 +3589,7 @@ export default function App() {
     <div
       className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${studioMode !== "preset-creator" && studioMode !== "prompt-generator" && studioMode !== "enhancer" && settingsRailOpen ? "settings-rail-open" : ""}`}
       data-provider-audit={providerAuditMode ? "open" : undefined}
-      data-tenant="frank"
+      data-tenant={tenantTheme}
     >
       <svg
         className="ambient-field"
