@@ -321,7 +321,21 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
   }
 ];
 
+// Official AutoSolutions OS tenant ambient ramps. Each theme re-tints the shell
+// gradient, the blurred blob and the accent from one brand colour.
+const TENANT_THEMES = [
+  { id: "frank", label: "frank body", hex: "#F9ABAA" },
+  { id: "snouts", label: "senior snouts", hex: "#FF4D00" },
+  { id: "coreiq", label: "coreiQ", hex: "#ED1B53" },
+  { id: "strength", label: "strength lab", hex: "#C90000" },
+  { id: "ledgify", label: "ledgify", hex: "#372F89" },
+  { id: "enxgy", label: "enxgy", hex: "#00C6E4" }
+] as const;
+
+type TenantThemeId = (typeof TENANT_THEMES)[number]["id"];
+
 export default function App() {
+
   const [config, setConfig] = useState<FrankConfig>(fallbackConfig);
   const [connection, setConnection] = useState<"checking" | "online" | "offline">("checking");
   const [projects, setProjects] = useState<Project[]>([]);
