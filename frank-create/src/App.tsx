@@ -3842,6 +3842,25 @@ export default function App() {
           ) : null}
 
           <div className="sidebar-bottom-divider" aria-hidden="true" />
+          <div className="sidebar-theme">
+            <span className="sidebar-theme-eyebrow">THEME</span>
+            <div className="sidebar-theme-swatches" role="radiogroup" aria-label="Workspace theme">
+              {TENANT_THEMES.map((theme) => (
+                <button
+                  key={theme.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={tenantTheme === theme.id}
+                  aria-label={`Use the ${theme.label} theme`}
+                  title={`${theme.label} · ${theme.hex}`}
+                  className={`sidebar-theme-swatch ${tenantTheme === theme.id ? "active" : ""}`}
+                  style={{ background: theme.hex }}
+                  onClick={() => setTenantTheme(theme.id)}
+                />
+              ))}
+            </div>
+          </div>
+
           <div data-tour-id="feedback-button" data-tour-active={tourActive("feedback-button")}>
             <FeedbackWidget variant="sidebar" />
           </div>
