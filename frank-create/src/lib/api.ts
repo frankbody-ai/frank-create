@@ -635,7 +635,7 @@ async function fetchJson<T>(path: string, init: RequestInit = {}) {
     } catch (err: any) {
       lastError = new Error(err?.message || "Network request failed");
       if (attempt < maxAttempts) {
-        await new Promise((r) => setTimeout(r, 400 * attempt));
+        await new Promise((r) => setTimeout(r, backoff(attempt)));
         continue;
       }
       throw lastError;
@@ -654,7 +654,7 @@ async function fetchJson<T>(path: string, init: RequestInit = {}) {
 
     lastError = new Error(apiErrorMessage(text, response.status));
     if (transient && attempt < maxAttempts) {
-      await new Promise((r) => setTimeout(r, 600 * attempt));
+      await new Promise((r) => setTimeout(r, backoff(attempt)));
       continue;
     }
     throw lastError;
