@@ -614,8 +614,11 @@ export async function uploadReferenceToStorage(
 
 async function fetchJson<T>(path: string, init: RequestInit = {}) {
   // The edge runtime occasionally answers 503 SUPABASE_EDGE_RUNTIME_SERVICE_DEGRADED
-  // while a container is cycling. Retry a couple of times before surfacing it.
-  const maxAttempts = 3;
+  // while a container is cycling — that cycle can last several seconds, so retry
+  // with exponential backoff + jitter instead of giving up after ~1s.
+  const maxAttempts = 5;
+  const backoff = (attempt: number) =>
+    Math.min(500 * 2 ** (attempt - 1), 4000) + Math.floor(Math.random() * 250);
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -632,7 +635,7 @@ async function fetchJson<T>(path: string, init: RequestInit = {}) {
     } catch (err: any) {
       lastError = new Error(err?.message || "Network request failed");
       if (attempt < maxAttempts) {
-        await new Promise((r) => setTimeout(r, 400 * attempt));
+        await new Promise((r) => setTimeout(r, backoff(attempt)));
         continue;
       }
       throw lastError;
@@ -651,7 +654,7 @@ async function fetchJson<T>(path: string, init: RequestInit = {}) {
 
     lastError = new Error(apiErrorMessage(text, response.status));
     if (transient && attempt < maxAttempts) {
-      await new Promise((r) => setTimeout(r, 600 * attempt));
+      await new Promise((r) => setTimeout(r, backoff(attempt)));
       continue;
     }
     throw lastError;
