@@ -545,6 +545,23 @@ export default function App() {
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
   const [settingsRailOpen, setSettingsRailOpen] = useState(true);
+  const [tenantTheme, setTenantTheme] = useState<TenantThemeId>(() => {
+    try {
+      const stored = window.localStorage.getItem("frank-create.tenant-theme");
+      if (stored && TENANT_THEMES.some((theme) => theme.id === stored)) return stored as TenantThemeId;
+    } catch {
+      /* storage unavailable */
+    }
+    return "frank";
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("frank-create.tenant-theme", tenantTheme);
+    } catch {
+      /* storage unavailable */
+    }
+  }, [tenantTheme]);
+
   const [mediaKind, setMediaKind] = useState<"image" | "video" | "compare">("image");
 
   const [compareMedia, setCompareMedia] = useState<"image" | "video">("image");
