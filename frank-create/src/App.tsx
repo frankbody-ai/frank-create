@@ -296,6 +296,7 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     target: "variant-controls",
     selectOutput: true
   },
+
   {
     title: "Edit and reuse",
     detail: "Edit with the selected model, paint a mask where supported, or reuse a good pick as a reference for the next round.",
