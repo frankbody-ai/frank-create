@@ -7201,14 +7201,14 @@ body {
   filter: none;
 }
 
-/* Counts: accent pill, label role, tabular. */
+/* Counts: white pill, label role, tabular. */
 .sidebar-badge {
   margin-left: auto;
   flex-shrink: 0;
   border-radius: var(--radius-pill);
   padding: 1px 6px;
-  background: var(--tenant-accent);
-  color: var(--text-on-accent);
+  background: var(--surface);
+  color: var(--ink);
   font-family: var(--font-mono);
   font-size: var(--text-caption);
   font-weight: var(--weight-light);
@@ -7219,8 +7219,8 @@ body {
 
 .sidebar-nav-button.active .sidebar-badge,
 .sidebar-nav-button:hover .sidebar-badge {
-  background: var(--tenant-accent);
-  color: var(--text-on-accent);
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .sidebar-soon-tag {
