@@ -3606,7 +3606,7 @@ export default function App() {
         <rect width="1280" height="832" fill="transparent" />
         <g filter="url(#ambient-blob-blur)" transform="translate(-300, 40) scale(1)">
           <path
-            fill="var(--tenant-accent)"
+            fill="var(--tenant-blob)"
             d="M-140 402c72-138 150-236 292-268 142-32 268 26 372 118 104 92 176 214 152 336-24 122-144 244-306 268-162 24-366-50-476-176-110-126-106-140-34-278Z"
           />
         </g>
