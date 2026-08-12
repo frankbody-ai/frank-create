@@ -607,9 +607,12 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
 
-    async function bootstrap() {
+    async function bootstrap(attempt = 1) {
       try {
-        await fetchHealth();
+        // The health probe is diagnostics only — a transient 503 from a cycling
+        // edge container must not knock the whole studio into offline mode.
+        await fetchHealth().catch(() => null);
+
         const freshConfig = mergeConfig(await fetchConfig());
         const sessionResult = await listSessions();
         let nextSession = chooseLaunchSession(sessionResult.sessions);
