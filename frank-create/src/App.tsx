@@ -680,6 +680,13 @@ export default function App() {
         if (cancelled) {
           return;
         }
+        // Ride out transient backend degradation before falling back to local mode.
+        if (attempt < 3) {
+          setStatusText("Backend is warming up — retrying…");
+          await new Promise((r) => setTimeout(r, attempt * 1500));
+          if (!cancelled) await bootstrap(attempt + 1);
+          return;
+        }
         const localSession = makeLocalSession();
         setSessions([localSession]);
       setActiveSession(localSession);
@@ -693,6 +700,7 @@ export default function App() {
         setStatusText("Preview backend offline. You can stage rounds here; live provider runs happen locally.");
       }
     }
+
 
     bootstrap();
     return () => {
