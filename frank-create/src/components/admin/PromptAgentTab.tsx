@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Banner, Button, Card, Checkbox, Spinner, TextField } from "../../ds";
 import {
   fetchPromptAgentConfig,
   savePromptAgentConfig,
@@ -29,6 +30,8 @@ export function PromptAgentTab() {
   const [rules, setRules] = useState("");
   const [skills, setSkills] = useState<PromptAgentSkillConfig[]>([]);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  /** What the form was last loaded or saved with — the baseline `dirty` compares against. */
+  const [loaded, setLoaded] = useState<Defaults | null>(null);
 
   function apply(cfg: PromptAgentConfig | Defaults) {
     setPersona(cfg.persona);
@@ -37,6 +40,14 @@ export function PromptAgentTab() {
     setBlueprint(cfg.blueprint);
     setRules(cfg.rules);
     setSkills(cfg.skills.map((s) => ({ ...s })));
+    setLoaded({
+      persona: cfg.persona,
+      craftMethod: cfg.craftMethod,
+      conversationProtocol: cfg.conversationProtocol ?? "",
+      blueprint: cfg.blueprint,
+      rules: cfg.rules,
+      skills: cfg.skills.map((s) => ({ ...s })),
+    });
   }
 
 
@@ -60,10 +71,19 @@ export function PromptAgentTab() {
     };
   }, []);
 
+  // Was `return true`, which meant Save was never disabled. Compare against the
+  // snapshot the form loaded with.
   const dirty = useMemo(() => {
-    if (!defaults) return false;
-    return true;
-  }, [defaults]);
+    if (!loaded) return false;
+    return (
+      persona !== loaded.persona ||
+      craftMethod !== loaded.craftMethod ||
+      conversationProtocol !== loaded.conversationProtocol ||
+      blueprint !== loaded.blueprint ||
+      rules !== loaded.rules ||
+      JSON.stringify(skills) !== JSON.stringify(loaded.skills)
+    );
+  }, [loaded, persona, craftMethod, conversationProtocol, blueprint, rules, skills]);
 
   async function onSave() {
     setSaving(true);
@@ -105,139 +125,144 @@ export function PromptAgentTab() {
     if (d) updateSkill(key, { ...d });
   }
 
-  if (loading) return <div className="admin-portal-loading">Loading prompt agent…</div>;
+  if (loading) {
+    return (
+      <Card>
+        <Spinner />
+      </Card>
+    );
+  }
 
   return (
-    <section className="prompt-agent-admin">
-      <header className="prompt-agent-admin-head">
-        <div>
-          <h2>Prompt Generator instructions</h2>
-          <p>
-            This is exactly what the agent runs on. Edits go live on the next message — no redeploy.
-            {updatedAt ? ` Last edited ${new Date(updatedAt).toLocaleString()}.` : " Currently running the shipped defaults."}
-          </p>
-        </div>
-        <div className="prompt-agent-admin-actions">
-          <button
-            className="admin-portal-btn ghost"
-            onClick={() => defaults && apply(defaults)}
-            disabled={!defaults || saving}
-          >Reset all to defaults</button>
-          <button className="admin-portal-btn" onClick={onSave} disabled={saving || !dirty}>
-            {saving ? "Saving…" : "Save changes"}
-          </button>
-        </div>
-      </header>
+    <>
+      <Banner tone="info" title="Edits go live on the next message">
+        <span>
+          This is exactly what the agent runs on — no redeploy.
+          {updatedAt
+            ? ` Last edited ${new Date(updatedAt).toLocaleString()}.`
+            : " Currently running the shipped defaults."}
+        </span>
+      </Banner>
 
-      {error ? <p className="prompt-agent-admin-error">{error}</p> : null}
-      {status ? <p className="prompt-agent-admin-ok">{status}</p> : null}
+      {error ? <Banner tone="critical" title="That didn't save">{error}</Banner> : null}
+      {status ? <Banner tone="success" title={status} /> : null}
 
-      <div className="prompt-agent-admin-fields">
-        <Field
-          label="Persona / role"
-          hint="Who the agent is and which models it writes for."
-          value={persona}
-          onChange={setPersona}
-          onReset={defaults ? () => setPersona(defaults.persona) : undefined}
-          rows={5}
-        />
-        <Field
-          label="Always-on craft method"
-          hint="The base operating method applied on every message, regardless of the selected skill."
-          value={craftMethod}
-          onChange={setCraftMethod}
-          onReset={defaults ? () => setCraftMethod(defaults.craftMethod) : undefined}
-          rows={14}
-        />
-        <Field
-          label="Conversation protocol"
-          hint="How the agent runs the discovery → final prompt conversation: when to ask clarifying questions, and when it is allowed to draft."
-          value={conversationProtocol}
-          onChange={setConversationProtocol}
-          onReset={defaults ? () => setConversationProtocol(defaults.conversationProtocol) : undefined}
-          rows={14}
-        />
-
-        <Field
-          label="Production prompt blueprint"
-          hint="The section-by-section structure the final prompt follows."
-          value={blueprint}
-          onChange={setBlueprint}
-          onReset={defaults ? () => setBlueprint(defaults.blueprint) : undefined}
-          rows={14}
-        />
-        <Field
-          label="Output rules"
-          hint="Hard rules appended last (code blocks, no aspect ratio in prompt, etc.)."
-          value={rules}
-          onChange={setRules}
-          onReset={defaults ? () => setRules(defaults.rules) : undefined}
-          rows={9}
-        />
+      <div className="agent-toolbar">
+        <Button
+          icon="arrow-path"
+          onClick={() => defaults && apply(defaults)}
+          disabled={!defaults || saving}
+        >
+          Reset all to defaults
+        </Button>
+        <Button variant="primary" onClick={onSave} loading={saving} disabled={saving || !dirty}>
+          Save changes
+        </Button>
       </div>
 
-      <div className="prompt-agent-admin-skills">
-        <div className="prompt-agent-admin-skills-head">
-          <h3>Skills ({skills.length})</h3>
-          <button className="admin-portal-btn ghost" onClick={addSkill}>+ Add skill</button>
-        </div>
-        {skills.map((skill, index) => (
-          <div className="prompt-agent-admin-skill" key={skill.key}>
-            <div className="prompt-agent-admin-skill-row">
-              <label>
-                <span>Label</span>
-                <input
-                  value={skill.label}
-                  onChange={(e) => updateSkill(skill.key, { label: e.target.value })}
-                />
-              </label>
-              <label>
-                <span>Key</span>
-                <input
-                  value={skill.key}
-                  onChange={(e) => {
-                    const next = slugify(e.target.value) || skill.key;
-                    setSkills((prev) => prev.map((s) => (s.key === skill.key ? { ...s, key: next } : s)));
-                  }}
-                />
-              </label>
-              <label className="prompt-agent-admin-skill-toggle">
-                <input
-                  type="checkbox"
-                  checked={skill.is_active}
-                  onChange={(e) => updateSkill(skill.key, { is_active: e.target.checked })}
-                />
-                <span>Show chip</span>
-              </label>
-              <div className="prompt-agent-admin-skill-btns">
-                <button
-                  className="admin-portal-btn ghost"
-                  onClick={() => resetSkill(skill.key)}
-                  disabled={!defaults?.skills.some((s) => s.key === skill.key)}
-                >Reset</button>
-                <button className="admin-portal-btn ghost" onClick={() => removeSkill(skill.key)}>Remove</button>
-              </div>
+      <Field
+        label="Persona and role"
+        hint="Who the agent is and which models it writes for."
+        value={persona}
+        onChange={setPersona}
+        onReset={defaults ? () => setPersona(defaults.persona) : undefined}
+        rows={5}
+      />
+      <Field
+        label="Always-on craft method"
+        hint="The base operating method applied on every message, whatever skill is selected."
+        value={craftMethod}
+        onChange={setCraftMethod}
+        onReset={defaults ? () => setCraftMethod(defaults.craftMethod) : undefined}
+        rows={14}
+      />
+      <Field
+        label="Conversation protocol"
+        hint="How the agent runs the discovery to final-prompt conversation: when to ask, when it may draft."
+        value={conversationProtocol}
+        onChange={setConversationProtocol}
+        onReset={defaults ? () => setConversationProtocol(defaults.conversationProtocol) : undefined}
+        rows={14}
+      />
+      <Field
+        label="Production prompt blueprint"
+        hint="The section-by-section structure the final prompt follows."
+        value={blueprint}
+        onChange={setBlueprint}
+        onReset={defaults ? () => setBlueprint(defaults.blueprint) : undefined}
+        rows={14}
+      />
+      <Field
+        label="Output rules"
+        hint="Hard rules appended last."
+        value={rules}
+        onChange={setRules}
+        onReset={defaults ? () => setRules(defaults.rules) : undefined}
+        rows={9}
+      />
+
+      <Card
+        title={`Skills (${skills.length})`}
+        subtitle="A skill adds one instruction on top of the always-on craft method. Inactive skills keep their text but lose their chip."
+        actions={
+          <Button size="micro" icon="plus" onClick={addSkill}>
+            Add skill
+          </Button>
+        }
+        padding="none"
+      >
+        {skills.map((skill) => (
+          <div className="agent-skill" key={skill.key}>
+            <div className="agent-skill__row">
+              <TextField
+                label="Label"
+                maxWidth={220}
+                value={skill.label}
+                onChange={(e) => updateSkill(skill.key, { label: e.target.value })}
+              />
+              <TextField
+                label="Key"
+                maxWidth={200}
+                value={skill.key}
+                onChange={(e) => {
+                  const next = slugify(e.target.value) || skill.key;
+                  setSkills((prev) => prev.map((s) => (s.key === skill.key ? { ...s, key: next } : s)));
+                }}
+              />
+              <Checkbox
+                label="Show chip"
+                checked={skill.is_active}
+                onChange={(e) => updateSkill(skill.key, { is_active: e.target.checked })}
+              />
+              <span className="agent-skill__spacer" />
+              <Button
+                size="micro"
+                icon="arrow-path"
+                onClick={() => resetSkill(skill.key)}
+                disabled={!defaults?.skills.some((s) => s.key === skill.key)}
+              >
+                Reset
+              </Button>
+              <Button size="micro" tone="critical" icon="trash" onClick={() => removeSkill(skill.key)}>
+                Remove
+              </Button>
             </div>
-            <label className="prompt-agent-admin-field">
-              <span>Chip hint</span>
-              <input
-                value={skill.hint}
-                onChange={(e) => updateSkill(skill.key, { hint: e.target.value })}
-              />
-            </label>
-            <label className="prompt-agent-admin-field">
-              <span>Instruction sent to the model</span>
-              <textarea
-                rows={5}
-                value={skill.instruction}
-                onChange={(e) => updateSkill(skill.key, { instruction: e.target.value })}
-              />
-            </label>
-            <input type="hidden" value={index} />
+            <TextField
+              label="Chip hint"
+              value={skill.hint}
+              onChange={(e) => updateSkill(skill.key, { hint: e.target.value })}
+            />
+            <TextField
+              label="Instruction sent to the model"
+              multiline
+              rows={5}
+              value={skill.instruction}
+              onChange={(e) => updateSkill(skill.key, { instruction: e.target.value })}
+            />
           </div>
         ))}
-      </div>
-    </section>
+      </Card>
+    </>
   );
 }
 
@@ -250,17 +275,25 @@ function Field(props: {
   onReset?: () => void;
 }) {
   return (
-    <div className="prompt-agent-admin-block">
-      <div className="prompt-agent-admin-block-head">
-        <div>
-          <strong>{props.label}</strong>
-          <span>{props.hint}</span>
-        </div>
-        {props.onReset ? (
-          <button className="admin-portal-btn ghost" onClick={props.onReset}>Reset to default</button>
-        ) : null}
-      </div>
-      <textarea rows={props.rows} value={props.value} onChange={(e) => props.onChange(e.target.value)} />
-    </div>
+    <Card
+      title={props.label}
+      subtitle={props.hint}
+      actions={
+        props.onReset ? (
+          <Button size="micro" icon="arrow-path" onClick={props.onReset}>
+            Reset to default
+          </Button>
+        ) : null
+      }
+    >
+      <TextField
+        label={props.label}
+        labelHidden
+        multiline
+        rows={props.rows}
+        value={props.value}
+        onChange={(e) => props.onChange(e.target.value)}
+      />
+    </Card>
   );
 }

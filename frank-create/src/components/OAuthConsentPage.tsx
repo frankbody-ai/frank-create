@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
+import { Banner, Button, Card, Spinner, Text } from "../ds";
 import { supabase } from "../lib/supabaseClient";
 import { lovable } from "../lib/lovableAuth";
-import designStudioLogo from "../assets/ds/art-ificial-design-studio.svg";
 
 type ClientInfo = { name?: string | null; client_id?: string | null } | null;
 
@@ -105,66 +105,70 @@ export function OAuthConsentPage() {
   const clientName = client?.name ?? "this app";
 
   return (
-    <main className="oauth-consent">
-      <div className="oauth-consent__card">
-        <img className="oauth-consent__logo" src={designStudioLogo} alt="art-ificial studio" />
-        {phase === "loading" && <p className="oauth-consent__body">Loading authorization request…</p>}
-
-        {phase === "signed-out" && (
-          <>
-            <h1 className="oauth-consent__title">Sign in to continue</h1>
-            <p className="oauth-consent__body">
-              Sign in to approve access for the app requesting your studio data.
-            </p>
-            <button className="oauth-consent__primary" type="button" onClick={signIn}>
-              Continue with Google
-            </button>
-          </>
-        )}
-
-        {phase === "ready" && (
-          <>
-            <h1 className="oauth-consent__title">Connect {clientName}</h1>
-            <p className="oauth-consent__body">
-              {clientName} is asking to use art-ificial studio as you. It will be able to read your
-              sessions and generated assets, change asset approvals, and file feedback on your behalf.
-            </p>
-            <div className="oauth-consent__actions">
-              <button
-                className="oauth-consent__primary"
-                type="button"
-                disabled={busy}
-                onClick={() => decide(true)}
-              >
-                Approve
-              </button>
-              <button
-                className="oauth-consent__secondary"
-                type="button"
-                disabled={busy}
-                onClick={() => decide(false)}
-              >
-                Deny
-              </button>
+    <main className="consent">
+      <div className="consent__card">
+        <span className="as-logo consent__logo" role="img" aria-label="AutoSolutions OS" />
+        <Card>
+          {phase === "loading" ? (
+            <div className="consent__loading">
+              <Spinner size="small" />
+              <Text tone="secondary">Loading the authorization request</Text>
             </div>
-          </>
-        )}
+          ) : null}
 
-        {phase === "error" && (
-          <>
-            <h1 className="oauth-consent__title">Authorization unavailable</h1>
-            <p className="oauth-consent__body">
-              This authorization request could not be loaded. It may have expired — start the
-              connection again from the app you were using.
-            </p>
-          </>
-        )}
+          {phase === "signed-out" ? (
+            <div className="consent__body">
+              <Text variant="headingLg" as="h1">
+                Sign in to continue
+              </Text>
+              <Text tone="secondary" as="p">
+                Sign in to approve access for the app requesting your studio data.
+              </Text>
+              <Button variant="primary" fullWidth onClick={signIn}>
+                Continue with Google
+              </Button>
+            </div>
+          ) : null}
 
-        {error && (
-          <p className="oauth-consent__error" role="alert">
-            {error}
-          </p>
-        )}
+          {phase === "ready" ? (
+            <div className="consent__body">
+              <Text variant="headingLg" as="h1">
+                Connect {clientName}
+              </Text>
+              <Text tone="secondary" as="p">
+                {clientName} is asking to use art-ificial design studio as you. It will be able to
+                read your sessions and generated assets, change asset approvals, and file feedback on
+                your behalf.
+              </Text>
+              <div className="consent__actions">
+                <Button disabled={busy} onClick={() => decide(false)}>
+                  Deny access
+                </Button>
+                <Button variant="primary" loading={busy} onClick={() => decide(true)}>
+                  Approve access
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          {phase === "error" ? (
+            <div className="consent__body">
+              <Text variant="headingLg" as="h1">
+                Authorization unavailable
+              </Text>
+              <Text tone="secondary" as="p">
+                This request couldn't be loaded. It may have expired — start the connection again
+                from the app you were using.
+              </Text>
+            </div>
+          ) : null}
+
+          {error ? (
+            <Banner tone="critical" title="Something went wrong">
+              <span>{error}</span>
+            </Banner>
+          ) : null}
+        </Card>
       </div>
     </main>
   );

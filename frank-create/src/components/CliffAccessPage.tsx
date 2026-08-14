@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Badge, Banner, Button, ButtonGroup, Card, DataTable, PageHeader, Text, TextField } from "../ds";
+import { Shell } from "../Shell";
 import { fetchHealth, fetchModels } from "../lib/api";
 import { supabase } from "../lib/supabaseClient";
 
@@ -261,137 +263,157 @@ export function CliffAccessPage() {
   };
 
   return (
-    <div className="frank-health-page" style={{ maxWidth: 900, margin: "0 auto", padding: 24 }}>
-      <header className="frank-health-header">
-        <h1>Cliff Access Checklist</h1>
-        <p className={`frank-health-overall ${ready ? "ok" : "bad"}`}>
-          {ready ? "READY to grant Cliff access" : `BLOCKED — ${totals.pass}/${totals.total} rows passing`}
-        </p>
-        <div className="frank-health-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <a href="#/health" target="_blank" rel="noreferrer">Open /health ↗</a>
-          <a href={`#/review/${encodeURIComponent(sampleSessionId)}`} target="_blank" rel="noreferrer">
-            Open sample review board ↗
-          </a>
+    <Shell screen="health" maxWidth="var(--content-max-width-one-column)">
+      <PageHeader
+        title="Cliff access checklist"
+        subtitle="Every row passing plus every live probe green is the definition of done. Export the report and attach it to the handover."
+        badge={
+          ready ? (
+            <Badge tone="success" icon="check-circle">Ready to grant access</Badge>
+          ) : (
+            <Badge tone="critical" icon="exclamation-circle">
+              {`${totals.pass} of ${totals.total} rows passing`}
+            </Badge>
+          )
+        }
+        actions={
+          <>
+            <Button icon="arrow-path" loading={running} onClick={runAllProbes}>
+              Re-run probes
+            </Button>
+            <Button icon="document-duplicate" onClick={copyPublished}>
+              Copy published URL
+            </Button>
+            <Button variant="primary" icon="arrow-down-tray" onClick={exportReport}>
+              Export JSON report
+            </Button>
+          </>
+        }
+      />
 
-          <button type="button" onClick={copyPublished}>Copy published URL</button>
-          <button type="button" onClick={runAllProbes} disabled={running}>
-            {running ? "Probing…" : "Re-run probes"}
-          </button>
-          <button type="button" onClick={exportReport}>Export JSON report</button>
-          <button type="button" onClick={resetChecklist}>Reset</button>
-          <a href="/">← Back to app</a>
+      <Card title="Read this first" subtitle="What Cliff needs to know before the first run.">
+        <ul className="prose-list">
+          <li>
+            <strong>Default model.</strong> Nano Banana Pro (<code>gemini-3-pro-image</code>) — best
+            quality, 4K, optional Frank Body Mode.
+          </li>
+          <li>
+            <strong>Fast iteration.</strong> Switch to Nano Banana 2 (<code>gemini-3.1-flash-image</code>)
+            for quick prompt and reference rounds.
+          </li>
+          <li>
+            <strong>Retouch path.</strong> Paint a mask, save it, then generate — that runs a masked
+            edit on the active output.
+          </li>
+          <li>
+            <strong>Handoff.</strong> Approve at least one output, then export the pack. Copy run brief
+            and download workflow JSON are safe to share; neither carries a secret.
+          </li>
+          <li>
+            <strong>Cloud build parity.</strong> This deployment runs through the Lovable AI Gateway, so
+            no key fields appear. Provider keys are only needed for the local studio via{" "}
+            <code>CLIFF_START_HERE.cmd</code>.
+          </li>
+        </ul>
+        <div className="cliff-links">
+          <Button url="#/health" target="_blank" icon="signal">
+            Open app health
+          </Button>
+          <Button
+            url={`#/review/${encodeURIComponent(sampleSessionId)}`}
+            target="_blank"
+            icon="users"
+          >
+            Open sample review board
+          </Button>
         </div>
-      </header>
+      </Card>
 
-      <section style={{ marginTop: 24, padding: 16, border: "1px solid #333", borderRadius: 8 }}>
-        <h2 style={{ fontSize: 16, marginTop: 0 }}>README for Cliff (read first)</h2>
-        <ul style={{ margin: 0, paddingLeft: 20, lineHeight: 1.6 }}>
-          <li>
-            <strong>Default model:</strong> Nano Banana Pro (<code>gemini-3-pro-image</code>) — best quality
-            + 4K + optional Frank Body Mode.
-          </li>
-          <li>
-            <strong>Fast iteration:</strong> switch to Nano Banana 2 (<code>gemini-3.1-flash-image</code>)
-            for quick prompt/reference rounds.
-          </li>
-          <li>
-            <strong>Retouch path:</strong> Mask painter → Save mask → Generate runs a masked edit on the
-            active output.
-          </li>
-          <li>
-            <strong>Handoff:</strong> Approve at least one output, then <em>Export Cliff Pack</em> for the
-            ZIP; <em>Copy run brief</em> and <em>Download workflow JSON</em> are safe to share (no secrets).
-          </li>
-          <li>
-            <strong>Cloud build parity note:</strong> This deployment uses the Lovable AI Gateway, so the
-            Provider Setup screen does not show key input fields. Gemini / OpenAI / Replicate keys are only
-            required when running the local Studio via <code>CLIFF_START_HERE.cmd</code>.
-          </li>
-          <li>
-            <strong>Deep links:</strong>{" "}
-            <a href="#/health" target="_blank" rel="noreferrer">/#/health</a> for backend status,{" "}
-            <a href={`#/review/${encodeURIComponent(sampleSessionId)}`} target="_blank" rel="noreferrer">
-              /#/review/{sampleSessionId}
-            </a>{" "}
-            for the shared review board.
-          </li>
-        </ul>
-      </section>
+      <Card
+        title="Sample session"
+        subtitle="Use a session that already has approved assets, so the first click lands on a populated board."
+      >
+        <TextField
+          label="Sample review session id"
+          value={sampleSessionId}
+          onChange={(e) => persistSampleSessionId(e.target.value)}
+          placeholder="Paste a session id that already has approved picks"
+          helpText="Stored in this browser only."
+          maxWidth={420}
+        />
+      </Card>
 
-      <section style={{ marginTop: 16, padding: 12, border: "1px solid #333", borderRadius: 8 }}>
-        <label style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13 }}>
-          <span style={{ minWidth: 160 }}>Sample review session id:</span>
-          <input
-            type="text"
-            value={sampleSessionId}
-            onChange={(e) => persistSampleSessionId(e.target.value)}
-            style={{ flex: 1, padding: "4px 8px" }}
-            placeholder="paste a pre-approved session id"
-          />
-        </label>
-        <p style={{ fontSize: 12, opacity: 0.7, margin: "6px 0 0" }}>
-          Persisted locally. Use the id of a session that already has approved assets so Cliff&apos;s first
-          click on “Open sample review board” lands on a populated contact sheet, not an empty state.
-        </p>
-      </section>
-
-
-      <section style={{ marginTop: 24 }}>
-        <h2 style={{ fontSize: 16, marginBottom: 8 }}>Live probes</h2>
-        <ul className="frank-health-list">
-          {(probes ?? []).map((p) => (
-            <li key={p.name} className={`frank-health-row ${p.ok ? "ok" : "bad"}`}>
-              <span className="frank-health-icon">{p.ok ? "✓" : "✗"}</span>
-              <span className="frank-health-name">{p.name}</span>
-              <span className="frank-health-detail">{p.error ? `error: ${p.error}` : p.detail ?? ""}</span>
-            </li>
-          ))}
-          {!probes && <li className="frank-health-row">Running…</li>}
-        </ul>
-      </section>
+      <Card title="Live probes" subtitle="Run against the deployment you are handing over." padding="none">
+        <DataTable
+          columns={[
+            { key: "check", title: "Probe" },
+            { key: "result", title: "Result" },
+            { key: "detail", title: "Detail" },
+          ]}
+          rows={(probes ?? []).map((p) => ({
+            id: p.name,
+            check: <Text fontWeight="medium">{p.name}</Text>,
+            result: p.ok ? <Badge tone="success">Pass</Badge> : <Badge tone="critical">Fail</Badge>,
+            detail: (
+              <Text tone={p.ok ? "secondary" : "critical"}>
+                {p.error ? `error: ${p.error}` : p.detail ?? "—"}
+              </Text>
+            ),
+          }))}
+          emptyState={<Text as="p" tone="secondary">Running probes.</Text>}
+        />
+      </Card>
 
       {PHASES.map((ph) => {
         const phasePass = ph.rows.filter((r) => state[r.id] === "pass").length;
         return (
-          <section key={ph.id} style={{ marginTop: 24 }}>
-            <h2 style={{ fontSize: 16, marginBottom: 8 }}>
-              {ph.label} — {phasePass}/{ph.rows.length}
-            </h2>
-            <ul className="frank-health-list">
+          <Card
+            key={ph.id}
+            title={ph.label}
+            subtitle={`${phasePass} of ${ph.rows.length} passing`}
+            padding="none"
+            actions={
+              <Button size="micro" icon="arrow-path" onClick={resetChecklist}>
+                Reset checklist
+              </Button>
+            }
+          >
+            <ul className="checklist">
               {ph.rows.map((r) => {
                 const status: RowStatus = state[r.id] ?? "pending";
                 return (
-                  <li
-                    key={r.id}
-                    className={`frank-health-row ${status === "pass" ? "ok" : status === "fail" ? "bad" : ""}`}
-                  >
-                    <span className="frank-health-icon">
-                      {status === "pass" ? "✓" : status === "fail" ? "✗" : "·"}
-                    </span>
-                    <span className="frank-health-name" style={{ flex: 1 }}>{r.label}</span>
-                    <span style={{ display: "flex", gap: 6 }}>
-                      <button type="button" onClick={() => setRow(r.id, "pass")} disabled={status === "pass"}>
+                  <li key={r.id} className={`checklist__row is-${status}`}>
+                    <Badge tone={status === "pass" ? "success" : status === "fail" ? "critical" : "neutral"}>
+                      {status === "pass" ? "Pass" : status === "fail" ? "Fail" : "Not run"}
+                    </Badge>
+                    <span className="checklist__label">{r.label}</span>
+                    <ButtonGroup variant="segmented">
+                      <Button size="micro" pressed={status === "pass"} onClick={() => setRow(r.id, "pass")}>
                         Pass
-                      </button>
-                      <button type="button" onClick={() => setRow(r.id, "fail")} disabled={status === "fail"}>
+                      </Button>
+                      <Button size="micro" pressed={status === "fail"} onClick={() => setRow(r.id, "fail")}>
                         Fail
-                      </button>
-                      <button type="button" onClick={() => setRow(r.id, "pending")} disabled={status === "pending"}>
-                        Reset
-                      </button>
-                    </span>
+                      </Button>
+                      <Button size="micro" pressed={status === "pending"} onClick={() => setRow(r.id, "pending")}>
+                        Clear
+                      </Button>
+                    </ButtonGroup>
                   </li>
                 );
               })}
             </ul>
-          </section>
+          </Card>
         );
       })}
 
-      <footer style={{ marginTop: 32, fontSize: 12, opacity: 0.7 }}>
-        Definition of done: every row passing + all live probes green. Then export the JSON report
-        and attach it to the Cliff handover.
-      </footer>
-    </div>
+      {!ready ? (
+        <Banner tone="info" title="Not ready to hand over yet">
+          <span>
+            {totals.total - totals.pass} row{totals.total - totals.pass === 1 ? "" : "s"} still need a
+            pass, and every live probe has to be green.
+          </span>
+        </Banner>
+      ) : null}
+    </Shell>
   );
 }

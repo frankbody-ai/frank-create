@@ -1,0 +1,29 @@
+/* ============================================================
+   AutoSolutions OS — Logo
+   ONE lockup, THREE locked sizes. Never scale it freehand, never
+   re-crop it, never recolour it. Source art is 3456×768 (exactly
+   4.5:1) with a transparent ground: assets/logo.png
+
+   The slot is the geometry that matters: it is exactly as wide as
+   the side navigation (240px) and as tall as the top bar (56px),
+   and the lockup sits centred inside it both ways.
+   ============================================================ */
+:root{
+--logo-aspect:4.5; /* @kind other */
+
+/* default — the app shell. 216×48 inside a 240×56 slot: 12px each side, 4px above and below. */
+--logo-width:13.5rem;  /* 216 */
+--logo-height:3rem;    /* 48  */
+
+/* compact — marketing nav, footers, dense headers. 144×32. */
+--logo-width-compact:9rem;  /* 144 */
+--logo-height-compact:2rem; /* 32  */
+
+/* large — marketing hero, covers, title slides. 288×64. */
+--logo-width-large:18rem;   /* 288 */
+--logo-height-large:4rem;   /* 64  */
+
+/* the slot the lockup is centred in */
+--logo-slot-width:var(--sidenav-width);  /* 240 */
+--logo-slot-height:var(--topbar-height); /* 56  */
+}

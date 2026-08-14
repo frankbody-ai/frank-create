@@ -1,4 +1,6 @@
-import { Columns2, Film, Image as ImageIcon, RotateCcw } from "lucide-react";
+import React from "react";
+
+import { Badge, Button, ButtonGroup, Card, Checkbox, Select, Text } from "../ds";
 import type { PromptPreset, StudioModel, StudioSettings } from "../lib/types";
 import { estimateVideoCost, filterSizesForAspect, maxCountForModel, modelCostBadge, modelRateLabel } from "../lib/studio";
 import type { StudioAdjustment, StudioFieldErrors } from "../lib/studio";
@@ -41,10 +43,13 @@ export interface StudioRailProps {
 
 }
 
+/** Long edge of the aspect thumbnail, in px. Matches --aspect-tile-cap in app.css. */
+const ASPECT_TILE_CAP = 30;
+
 function ratioBoxStyle(aspect: string) {
   const parts = /^(\d+(?:\.\d+)?)[:x](\d+(?:\.\d+)?)$/i.exec(aspect.trim());
   const ratio = parts ? Number(parts[1]) / Number(parts[2]) : 1;
-  const cap = 34;
+  const cap = ASPECT_TILE_CAP;
   const width = ratio >= 1 ? cap : Math.round(cap * ratio);
   const height = ratio >= 1 ? Math.round(cap / ratio) : cap;
   return { width: `${width}px`, height: `${height}px` };
@@ -85,321 +90,250 @@ export function StudioRail(props: StudioRailProps) {
 
 
 
+  const chip = (label: React.ReactNode, on: boolean, onClick: () => void, key?: string) => (
+    <button
+      key={key ?? String(label)}
+      type="button"
+      className={`filter-chip ${on ? "is-selected" : ""}`}
+      aria-pressed={on}
+      onClick={onClick}
+    >
+      {label}
+    </button>
+  );
+
   return (
-    <aside className="studio-settings-rail" aria-label="Studio settings">
-      <div className="rail-header">
-        <div className="rail-media-toggle" role="tablist" aria-label="Output media">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mediaKind === "image"}
-            className={mediaKind === "image" ? "active" : ""}
-            onClick={() => onMediaKindChange("image")}
-          >
-            <ImageIcon size={13} />
-            <span>Image</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mediaKind === "video"}
-            className={mediaKind === "video" ? "active" : ""}
-            onClick={() => onMediaKindChange("video")}
-          >
-            <Film size={13} />
-            <span>Video</span>
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={isCompare}
-            className={isCompare ? "active" : ""}
-            onClick={() => onMediaKindChange("compare")}
-            title="Run two models on the same brief and compare the results"
-          >
-            <Columns2 size={13} />
-            <span>Compare</span>
-          </button>
-        </div>
+    <Card padding="none" className="run-settings">
+      <div className="run-settings__head">
+        <ButtonGroup variant="segmented">
+          <Button pressed={mediaKind === "image"} onClick={() => onMediaKindChange("image")}>
+            Image
+          </Button>
+          <Button pressed={mediaKind === "video"} onClick={() => onMediaKindChange("video")}>
+            Video
+          </Button>
+          <Button pressed={isCompare} onClick={() => onMediaKindChange("compare")}>
+            Compare
+          </Button>
+        </ButtonGroup>
       </div>
 
-
-
-      <div className="rail-scroll">
+      <div className="run-settings__section">
         {isCompare ? (
-          <section className="rail-block">
-            <p className="rail-label">Compare on</p>
-            <div className="rail-chips">
-              {(["image", "video"] as const).map((kind) => (
-                <button
-                  key={kind}
-                  type="button"
-                  className={`rail-chip${compareMedia === kind ? " active" : ""}`}
-                  onClick={() => onCompareMediaChange?.(kind)}
-                >
-                  {kind === "image" ? "Images" : "Videos"}
-                </button>
-              ))}
+          <div className="run-settings__field">
+            <span className="run-settings__label">Compare on</span>
+            <div className="chip-row">
+              {chip("Images", compareMedia === "image", () => onCompareMediaChange?.("image"))}
+              {chip("Videos", compareMedia === "video", () => onCompareMediaChange?.("video"))}
             </div>
-            <p className="rail-hint">One output per side, same brief and settings — a clean A/B.</p>
-          </section>
+            <Text variant="bodySm" tone="secondary" as="p">
+              Compare runs one output per side from the same brief and settings.
+            </Text>
+          </div>
         ) : null}
-        <section className="rail-block">
-          <p className="rail-label">{isCompare ? "Model A" : "Model"}</p>
 
-          <div className="rail-model-card">
-            <select
-              aria-label="Model"
-              value={model?.id ?? ""}
-              onChange={(event) => onModelChange(event.target.value)}
-            >
-              {models.map((item) => {
-                const rate = modelRateLabel(item);
-                const cost = modelCostBadge(item);
+        <Select
+          label={isCompare ? "Model A" : "Model"}
+          value={model?.id ?? ""}
+          onChange={(event) => onModelChange(event.target.value)}
+          options={models.map((entry) => ({
+            value: entry.id,
+            label: [
+              entry.short_label || entry.label,
+              modelCostBadge(entry),
+              entry.status === "disabled" ? "(soon)" : entry.degraded ? "(provider issue)" : null,
+            ]
+              .filter(Boolean)
+              .join(" · "),
+          }))}
+          helpText={model?.description}
+        />
+
+        <div className="run-settings__badges">
+          {Array.from(
+            new Set([model?.badge, model?.max_resolution_label].filter(Boolean) as string[])
+          ).map((label) => (
+            <Badge key={label} tone="neutral">{label}</Badge>
+          ))}
+          {model?.reference_image_limit ? (
+            <Badge tone="neutral">{model.reference_image_limit} references</Badge>
+          ) : null}
+          {badge ? <Badge tone={model?.price_tier === "premium" ? "warning" : "success"}>{badge.label}</Badge> : null}
+        </div>
+
+        {model?.degraded && model.degraded_note ? (
+          <Text variant="bodySm" tone="warning" as="p">
+            {model.degraded_note}
+          </Text>
+        ) : null}
+
+        {isCompare ? (
+          <Select
+            label="Model B"
+            value={compareModelBId ?? ""}
+            onChange={(event) => onCompareModelBChange?.(event.target.value)}
+            error={fieldErrors.compare}
+            options={[{ value: "", label: "Pick a second model" }].concat(
+              models
+                .filter((entry) => entry.id !== model?.id)
+                .map((entry) => ({ value: entry.id, label: entry.short_label || entry.label }))
+            )}
+            helpText={modelB?.description}
+          />
+        ) : null}
+      </div>
+
+      {isCompare && pendingAdjustments.length ? (
+        <div className="run-settings__section">
+          <span className="run-settings__label">Settings to adjust</span>
+          {pendingAdjustments.map((entry) => (
+            <div key={entry.side} className="run-settings__adjust">
+              <Text variant="headingXs" as="h4">
+                {entry.modelLabel}
+              </Text>
+              <ul>
+                {entry.items.map((item) => (
+                  <li key={item.field}>
+                    {item.label}: {item.from} → <strong>{item.to}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <Checkbox
+            label="Use the closest supported settings"
+            checked={compareApproved}
+            onChange={(event) => onCompareApprovedChange?.(event.target.checked)}
+          />
+        </div>
+      ) : null}
+
+      <div className="run-settings__section">
+        {aspects.length ? (
+          <div className="run-settings__field">
+            <span className="run-settings__label">{isVideo ? "Video dimensions" : "Aspect ratio"}</span>
+            <div className="aspect-tiles">
+              {aspects.map((aspect) => {
+                const on = settings.aspect_ratio === aspect;
                 return (
-                  <option key={item.id} value={item.id} disabled={item.status === "disabled"}>
-                    {(item.short_label ?? item.label)
-                      + (cost ? ` | ${cost}` : "")
-                      + (rate ? ` — ${rate}` : "")
-                      + (item.price_tier === "cheapest" ? " · cheapest" : item.price_tier === "premium" ? " · premium" : "")
-                      + (item.status === "disabled" ? " (soon)" : item.degraded ? " (provider issue)" : "")}
-                  </option>
+                  <button
+                    key={aspect}
+                    type="button"
+                    className={`aspect-tile ${on ? "is-selected" : ""}`}
+                    aria-pressed={on}
+                    onClick={() => onAspectChange(aspect)}
+                  >
+                    <span className="aspect-tile__box" style={ratioBoxStyle(aspect)} aria-hidden="true" />
+                    <span className="aspect-tile__label as-tabular">{aspect}</span>
+                  </button>
                 );
               })}
-
-            </select>
-            <p className="rail-model-desc">{model?.description ?? ""}</p>
-            <div className="rail-model-badges">
-              <span>{model?.badge || (isVideo ? "video" : "image")}</span>
-              <span>{model?.reference_image_limit ?? 0} refs</span>
-              {isVideo ? <span>{durations.length ? `${durations[0]}–${durations[durations.length - 1]}s` : "auto"}</span> : null}
-              {badge ? <span className={badge.className}>{badge.label}</span> : null}
             </div>
-            {costEstimate ? (
-              <p className="rail-model-price">
-                <strong>{costEstimate}</strong>
-                {modelRateLabel(model) ? <span> · {modelRateLabel(model)}</span> : null}
-              </p>
-            ) : null}
-            {model?.degraded ? (
-              <p className="model-degraded-note">{model.degraded_note ?? "This model is failing upstream."}</p>
-            ) : null}
-
           </div>
-        </section>
-
-        {isCompare ? (
-          <section className="rail-block">
-            <p className="rail-label">Model B</p>
-            <div className="rail-model-card">
-              <select
-                aria-label="Model B"
-                value={modelB?.id ?? ""}
-                onChange={(event) => onCompareModelBChange?.(event.target.value)}
-              >
-                <option value="">— Pick a second model —</option>
-                {models.filter((item) => item.id !== model?.id).map((item) => {
-                  const rate = modelRateLabel(item);
-                  const cost = modelCostBadge(item);
-                  return (
-                    <option key={item.id} value={item.id} disabled={item.status === "disabled"}>
-                      {(item.short_label ?? item.label)
-                        + (cost ? ` | ${cost}` : "")
-                        + (rate ? ` — ${rate}` : "")
-                        + (item.status === "disabled" ? " (soon)" : item.degraded ? " (provider issue)" : "")}
-                    </option>
-                  );
-                })}
-              </select>
-              <p className="rail-model-desc">{modelB?.description ?? "Both sides run the same prompt at the same time."}</p>
-              {modelB ? (
-                <div className="rail-model-badges">
-                  <span>{modelB.badge || (isVideo ? "video" : "image")}</span>
-                  <span>{modelB.reference_image_limit ?? 0} refs</span>
-                  {tierBadge(modelB) ? <span className={tierBadge(modelB)!.className}>{tierBadge(modelB)!.label}</span> : null}
-                </div>
-              ) : null}
-              {modelB?.degraded ? (
-                <p className="model-degraded-note">{modelB.degraded_note ?? "This model is failing upstream."}</p>
-              ) : null}
-            </div>
-            {compareCostLabel ? <p className="rail-model-price"><strong>{compareCostLabel}</strong></p> : null}
-            {fieldErrors.compare ? <p className="field-error" role="alert">{fieldErrors.compare}</p> : null}
-          </section>
-        ) : null}
-
-        {isCompare && pendingAdjustments.length ? (
-          <section className="rail-block rail-adjustments">
-            <p className="rail-label">Settings to adjust</p>
-            {pendingAdjustments.map((entry) => (
-              <div className="rail-adjust-side" key={entry.side}>
-                <p className="rail-adjust-title">Side {entry.side} · {entry.modelLabel}</p>
-                <ul>
-                  {entry.items.map((item) => (
-                    <li key={`${entry.side}-${item.field}`}>
-                      <strong>{item.label}:</strong> {item.from} → {item.to}
-                      <span>{item.message}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-            <label className="rail-adjust-approve">
-              <input
-                type="checkbox"
-                checked={compareApproved}
-                onChange={(event) => onCompareApprovedChange?.(event.target.checked)}
-              />
-              Use the closest supported settings for both sides
-            </label>
-          </section>
-        ) : null}
-
-
-
-        {aspects.length ? (
-          <section className="rail-block">
-            <p className="rail-label">{isVideo ? "Video dimensions" : "Aspect ratio"}</p>
-            <div className="rail-tiles">
-              {aspects.map((aspect) => (
-                <button
-                  key={aspect}
-                  type="button"
-                  className={`rail-tile${settings.aspect_ratio === aspect ? " active" : ""}`}
-                  onClick={() => onAspectChange(aspect)}
-                >
-                  <span className="rail-tile-box" style={ratioBoxStyle(aspect)} aria-hidden="true" />
-                  <span className="rail-tile-label" title={aspect}>
-                    {aspect === "match_input_image" ? "match input" : aspect === "adaptive" ? "adaptive" : aspect}
-                  </span>
-                </button>
-              ))}
-            </div>
-            {fieldErrors.aspect ? <p className="field-error" role="alert">{fieldErrors.aspect}</p> : null}
-          </section>
         ) : null}
 
         {isVideo && durations.length ? (
-          <section className="rail-block">
-            <p className="rail-label">Duration</p>
-            <div className="rail-chips">
-              {durations.map((duration) => (
-                <button
-                  key={duration}
-                  type="button"
-                  className={`rail-chip${settings.duration === duration ? " active" : ""}`}
-                  onClick={() => onSettingsChange({ duration })}
-                >
-                  {duration}s
-                </button>
-              ))}
+          <div className="run-settings__field">
+            <span className="run-settings__label">Duration</span>
+            <div className="chip-row">
+              {durations.map((value) =>
+                chip(
+                  `${value}s`,
+                  settings.duration === value,
+                  () => onSettingsChange({ duration: value }),
+                  String(value)
+                )
+              )}
             </div>
-          </section>
+          </div>
         ) : null}
 
         {isVideo && resolutions.length ? (
-          <section className="rail-block">
-            <p className="rail-label">Quality</p>
-            <div className="rail-chips">
-              {resolutions.map((resolution) => (
-                <button
-                  key={resolution}
-                  type="button"
-                  className={`rail-chip${settings.video_resolution === resolution ? " active" : ""}`}
-                  onClick={() => onSettingsChange({ video_resolution: resolution })}
-                >
-                  {resolution}
-                </button>
-              ))}
+          <div className="run-settings__field">
+            <span className="run-settings__label">Quality</span>
+            <div className="chip-row">
+              {resolutions.map((value) =>
+                chip(
+                  value.toUpperCase(),
+                  settings.video_resolution === value,
+                  () => onSettingsChange({ video_resolution: value }),
+                  value
+                )
+              )}
             </div>
-          </section>
+          </div>
         ) : null}
 
         {!isVideo && sizes.length ? (
-          <section className="rail-block">
-            <p className="rail-label">Quality</p>
-            <div className="rail-chips">
-              {sizes.map((size) => (
-                <button
-                  key={size}
-                  type="button"
-                  className={`rail-chip${settings.image_size === size ? " active" : ""}`}
-                  onClick={() => onSettingsChange({ image_size: size })}
-                >
-                  {size}
-                </button>
-              ))}
+          <div className="run-settings__field">
+            <span className="run-settings__label">Resolution</span>
+            <div className="chip-row">
+              {sizes.map((value) =>
+                chip(value, settings.image_size === value, () => onSettingsChange({ image_size: value }), value)
+              )}
             </div>
-            {fieldErrors.size ? <p className="field-error" role="alert">{fieldErrors.size}</p> : null}
-          </section>
+          </div>
         ) : null}
 
-        {!isVideo ? (
-          <section className="rail-block">
-            <p className="rail-label">Generation count</p>
-            <div className="rail-chips">
-              {counts.map((count) => (
-                <button
-                  key={count}
-                  type="button"
-                  className={`rail-chip${settings.count === count ? " active" : ""}`}
-                  onClick={() => onSettingsChange({ count })}
-                >
-                  {count}
-                </button>
-              ))}
+        {counts.length > 1 ? (
+          <div className="run-settings__field">
+            <span className="run-settings__label">Picks per run</span>
+            <div className="chip-row">
+              {counts.map((value) =>
+                chip(
+                  String(value),
+                  settings.count === value,
+                  () => onSettingsChange({ count: value }),
+                  String(value)
+                )
+              )}
             </div>
-            {fieldErrors.count ? <p className="field-error" role="alert">{fieldErrors.count}</p> : null}
-          </section>
+          </div>
         ) : null}
-
-
-
-
-        <section className="rail-block">
-          <p className="rail-label">Style preset</p>
-          <select
-            aria-label="Style preset"
-            value={selectedPresetKey ?? ""}
-            onChange={(event) => onPresetChange(event.target.value || null)}
-          >
-            <option value="">— None —</option>
-            {presets.map((preset) => (
-              <option key={preset.key} value={preset.key}>{preset.label}</option>
-            ))}
-          </select>
-          <p className="rail-hint">Appended as an editable paragraph to your brief.</p>
-        </section>
-
-        {(() => {
-          const hasPreview = /^\d+(?:\.\d+)?\s*[:x/]\s*\d+(?:\.\d+)?$/i.test(settings.aspect_ratio ?? "");
-          const needsFrameError = Boolean(isVideo && model?.requires_source_image && referenceCount === 0);
-          if (!hasPreview && !fieldErrors.references && !needsFrameError) return null;
-          return (
-            <section className="rail-block">
-              {hasPreview ? (
-                <AspectPreview
-                  aspect={settings.aspect_ratio}
-                  size={isVideo ? settings.video_resolution : (sizes.length ? settings.image_size : undefined)}
-                  label={model?.short_label ?? model?.label}
-                  count={isVideo ? 1 : settings.count}
-                />
-              ) : null}
-              {fieldErrors.references ? <p className="field-error" role="alert">{fieldErrors.references}</p> : null}
-              {needsFrameError ? (
-                <p className="field-error" role="alert">
-                  {model?.short_label ?? model?.label} only runs image-to-video — attach a reference image in the brief.
-                </p>
-              ) : null}
-            </section>
-          );
-        })()}
-
-        <button className="rail-reset" type="button" onClick={onReset}>
-          <RotateCcw size={14} />
-          Reset to defaults
-        </button>
       </div>
-    </aside>
+
+      <div className="run-settings__section">
+        <Select
+          label="Style preset"
+          value={selectedPresetKey ?? ""}
+          onChange={(event) => onPresetChange(event.target.value || null)}
+          options={[{ value: "", label: "No preset" }].concat(
+            presets.map((preset) => ({ value: preset.key, label: preset.label }))
+          )}
+          helpText="Appended to the brief as an editable paragraph."
+        />
+
+        {settings.aspect_ratio ? (
+          <AspectPreview
+            aspect={settings.aspect_ratio}
+            size={settings.image_size}
+            label={model?.short_label || model?.label}
+            count={settings.count}
+          />
+        ) : null}
+
+        {fieldErrors.references ? (
+          <Text variant="bodySm" tone="critical" as="p">
+            {fieldErrors.references}
+          </Text>
+        ) : null}
+        {fieldErrors.compare ? (
+          <Text variant="bodySm" tone="critical" as="p">
+            {fieldErrors.compare}
+          </Text>
+        ) : null}
+      </div>
+
+      <div className="run-settings__foot">
+        <Text variant="bodySm" tone="secondary" numeric>
+          {isCompare
+            ? compareCostLabel ?? "Two runs, one per side"
+            : costEstimate ?? [modelCostBadge(model), modelRateLabel(model)].filter(Boolean).join(" · ")}
+        </Text>
+        <Button variant="plain" icon="arrow-path" onClick={onReset}>
+          Reset run settings
+        </Button>
+      </div>
+    </Card>
   );
 }

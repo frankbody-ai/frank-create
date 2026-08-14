@@ -1,0 +1,25 @@
+/* ============================================================
+   AutoSolutions OS — design system entry point.
+
+   Vendored from the `AutoSolutions OS Design System` export. Token sheets
+   and component stylesheets are verbatim; every deliberate change carries a
+   `PORT:` comment so a re-sync stays a diff rather than a rewrite.
+
+   Layer B (tokens/brand-marketing.css and ui_kits/marketing) is deliberately
+   NOT imported. The two layers are different languages and must not be mixed
+   in one view; this is a product surface.
+   ============================================================ */
+@import url("./tokens/fonts.css");
+@import url("./tokens/colors.css");
+@import url("./tokens/typography.css");
+@import url("./tokens/spacing.css");
+@import url("./tokens/shape.css");
+@import url("./tokens/elevation.css");
+@import url("./tokens/motion.css");
+@import url("./tokens/layout.css");
+@import url("./tokens/logo.css");
+@import url("./tokens/company.css");
+@import url("./tokens/app.css");
+@import url("./tokens/themes.css");
+@import url("./tokens/base.css");
+@import url("./components/components.css");

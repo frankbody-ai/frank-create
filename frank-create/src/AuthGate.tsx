@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS, hardSignOut } from "./lib/supabaseClient";
 import { lovable } from "./lib/lovableAuth";
-import designStudioLogo from "./assets/ds/art-ificial-design-studio.svg";
+import { Button, Spinner, Text } from "./ds";
 
 
 type Status = "loading" | "signed-out" | "denied" | "ready";
@@ -70,67 +70,69 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   if (status === "ready" && session) return <>{children}</>;
 
   return (
-    <div className="signin-shell">
-      <div className="signin-plate">
-        {motionOk && (
-          <video
-            aria-hidden="true"
-            className="signin-video"
-            src="/media/signin.mp4"
-            poster="/media/signin-poster.jpg"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-          />
-        )}
-        <div aria-hidden="true" className="signin-veil" />
-        <div aria-hidden="true" className="signin-gradient" />
-        <div aria-hidden="true" className="signin-glow" />
+    <div className="signin">
+      {motionOk && (
+        <video
+          aria-hidden="true"
+          className="signin__video"
+          src="/media/signin.mp4"
+          poster="/media/signin-poster.jpg"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+        />
+      )}
+      <div aria-hidden="true" className="signin__scrim" />
 
-        <div className="signin-stack">
-          <div className="signin-lockup">
-            <img
-              src="/brand/autosolutions-os-magenta.png"
-              alt="autosolutions OS"
-              className="signin-brand"
-            />
-            <div className="signin-name">art-ificial studio</div>
-            <div className="signin-kicker">THE UNMARKED GROUP</div>
-          </div>
+      <div className="signin__stack">
+        <div className="signin__lockup">
+          {/* The lockup carries the group line; it is part of the artwork. */}
+          <span className="as-logo signin__logo" role="img" aria-label="AutoSolutions OS" />
+          <span className="as-app as-app--design-studio" role="img" aria-label="art-ificial design studio" />
+        </div>
 
-          <div className="signin-card">
-            <div className="signin-card-head">
-              <h1 className="signin-card-title">Sign in</h1>
-              <p className="signin-card-sub">
-                use your frank body or autosolutions google account.
-              </p>
+        <div className="signin__card">
+          <Text variant="headingLg" as="h1">
+            Sign in
+          </Text>
+          <Text variant="bodyMd" tone="secondary" as="p">
+            Use your frank body or AutoSolutions Google account.
+          </Text>
+
+          {status === "loading" ? (
+            <div className="signin__loading">
+              <Spinner size="small" />
+              <Text variant="bodySm" tone="secondary">
+                Checking your session
+              </Text>
             </div>
+          ) : null}
 
-            {status === "loading" && <p className="signin-muted">Checking session.</p>}
+          {status === "signed-out" || status === "denied" ? (
+            <Button variant="primary" fullWidth onClick={() => void signIn()}>
+              Continue with Google
+            </Button>
+          ) : null}
 
-            {(status === "signed-out" || status === "denied") && (
-              <button onClick={signIn} className="signin-primary">
-                Continue with Google
-              </button>
-            )}
+          {status === "denied" ? (
+            <Button fullWidth onClick={() => void signOut()}>
+              Use a different account
+            </Button>
+          ) : null}
 
-            {status === "denied" && (
-              <button onClick={signOut} className="signin-secondary">
-                use a different account
-              </button>
-            )}
-
-            {error && <p className="signin-err">{error}</p>}
-
-            <p className="signin-foot">
-              allowed domains: {ALLOWED_EMAIL_DOMAINS.map((d) => "@" + d).join(", ")}
+          {error ? (
+            <p className="signin__error" role="alert">
+              {error}
             </p>
-          </div>
+          ) : null}
+
+          <Text variant="bodySm" tone="secondary" as="p">
+            Allowed domains: {ALLOWED_EMAIL_DOMAINS.map((d) => "@" + d).join(", ")}
+          </Text>
         </div>
       </div>
     </div>
   );
 }
-

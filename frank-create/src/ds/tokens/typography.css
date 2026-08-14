@@ -1,0 +1,56 @@
+/* ============================================================
+   AutoSolutions OS — Typography
+   Base body is 13px/20px at weight 450. Hierarchy comes from
+   weight and colour, not size. rem values assume a 16px root.
+   ============================================================ */
+:root{
+/* ---------- weights (the giveaway detail: 450/550/600/650) ---------- */
+--font-weight-regular:450;
+--font-weight-medium:550;
+--font-weight-semibold:600;
+--font-weight-bold:650;
+
+/* ---------- size scale ---------- */
+--font-size-275:.6875rem;/* 11 */
+--font-size-300:.75rem;  /* 12 */
+--font-size-325:.8125rem;/* 13 */
+--font-size-350:.875rem; /* 14 */
+--font-size-400:1rem;    /* 16 */
+--font-size-450:1.125rem;/* 18 */
+--font-size-500:1.25rem; /* 20 */
+--font-size-550:1.375rem;/* 22 */
+--font-size-600:1.5rem;  /* 24 */
+--font-size-750:1.875rem;/* 30 */
+--font-size-800:2rem;    /* 32 */
+--font-size-900:2.25rem; /* 36 */
+--font-size-1000:2.5rem; /* 40 */
+
+/* ---------- line-height scale ---------- */
+--font-line-height-300:.75rem; /* 12 */
+--font-line-height-400:1rem;   /* 16 */
+--font-line-height-500:1.25rem;/* 20 */
+--font-line-height-600:1.5rem; /* 24 */
+--font-line-height-700:1.75rem;/* 28 */
+--font-line-height-800:2rem;   /* 32 */
+--font-line-height-1000:2.5rem;/* 40 */
+--font-line-height-1200:3rem;  /* 48 */
+
+/* ---------- letter-spacing ---------- */
+--font-letter-spacing-normal:0;
+--font-letter-spacing-dense:-.00833em;
+--font-letter-spacing-denser:-.0166em;
+--font-letter-spacing-densest:-.0291em;
+
+/* ---------- applied ramp: what components actually use ---------- */
+--type-heading-3xl-size:var(--font-size-800);--type-heading-3xl-line:var(--font-line-height-1000);--type-heading-3xl-weight:var(--font-weight-bold);--type-heading-3xl-tracking:var(--font-letter-spacing-denser);
+--type-heading-2xl-size:var(--font-size-750);--type-heading-2xl-line:var(--font-line-height-1000);--type-heading-2xl-weight:var(--font-weight-bold);--type-heading-2xl-tracking:var(--font-letter-spacing-denser);
+--type-heading-xl-size:var(--font-size-600);--type-heading-xl-line:var(--font-line-height-800);--type-heading-xl-weight:var(--font-weight-bold);--type-heading-xl-tracking:var(--font-letter-spacing-dense);
+--type-heading-lg-size:var(--font-size-450);--type-heading-lg-line:var(--font-line-height-600);--type-heading-lg-weight:var(--font-weight-semibold);--type-heading-lg-tracking:var(--font-letter-spacing-dense);
+--type-heading-md-size:var(--font-size-350);--type-heading-md-line:var(--font-line-height-500);--type-heading-md-weight:var(--font-weight-semibold);--type-heading-md-tracking:var(--font-letter-spacing-normal);
+--type-heading-sm-size:var(--font-size-325);--type-heading-sm-line:var(--font-line-height-500);--type-heading-sm-weight:var(--font-weight-semibold);--type-heading-sm-tracking:var(--font-letter-spacing-normal);
+--type-heading-xs-size:var(--font-size-300);--type-heading-xs-line:var(--font-line-height-400);--type-heading-xs-weight:var(--font-weight-semibold);--type-heading-xs-tracking:var(--font-letter-spacing-normal);
+--type-body-lg-size:var(--font-size-350);--type-body-lg-line:var(--font-line-height-500);--type-body-lg-weight:var(--font-weight-regular);
+--type-body-md-size:var(--font-size-325);--type-body-md-line:var(--font-line-height-500);--type-body-md-weight:var(--font-weight-regular);
+--type-body-sm-size:var(--font-size-300);--type-body-sm-line:var(--font-line-height-400);--type-body-sm-weight:var(--font-weight-regular);
+--type-body-xs-size:var(--font-size-275);--type-body-xs-line:var(--font-line-height-300);--type-body-xs-weight:var(--font-weight-regular);
+}

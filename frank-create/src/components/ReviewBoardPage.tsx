@@ -1,5 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, Clock, Download, Loader2, RefreshCw, RotateCw, X } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+
+import {
+  Badge,
+  Banner,
+  Button,
+  Card,
+  DataTable,
+  Icon,
+  PageHeader,
+  Select,
+  Spinner,
+  Text,
+  TextField,
+  Thumbnail,
+} from "../ds";
+import type { DataTableColumn } from "../ds";
+import { Shell } from "../Shell";
+import { navigate } from "../nav";
+import { assetStatusCopy } from "../lib/frankWorkflow";
 import {
   assetDownloadUrl,
   createSessionHandoffStream,
@@ -12,7 +30,7 @@ import {
   type HandoffStage,
   type HandoffStreamStep,
 } from "../lib/api";
-import type { Asset } from "../lib/types";
+import type { ApprovalStatus, Asset } from "../lib/types";
 import { supabase } from "../lib/supabaseClient";
 
 
@@ -103,7 +121,30 @@ function advanceSteps(steps: StepState[], stepKey: string): StepState[] {
   }));
 }
 
-export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
+/** A review board belongs to one session; without one there is nothing to show. */
+export function ReviewBoardPage({ sessionId }: { sessionId: string | null }) {
+  if (!sessionId) {
+    return (
+      <Shell screen="review" maxWidth="var(--content-max-width-one-column)">
+        <PageHeader title="Review board" subtitle="A review board belongs to one session." />
+        <Card>
+          <div className="empty-state">
+            <Text as="p" tone="secondary">
+              Open a session in the studio, then come back — the board shows that session's picks
+              and its audit trail.
+            </Text>
+            <Button variant="primary" icon="bolt" onClick={() => navigate("studio")}>
+              Go to studio
+            </Button>
+          </div>
+        </Card>
+      </Shell>
+    );
+  }
+  return <ReviewBoard sessionId={sessionId} />;
+}
+
+function ReviewBoard({ sessionId }: { sessionId: string }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [manifest, setManifest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -301,21 +342,21 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
     pushToast({ kind: "success", text: `Downloaded ${filename}` });
   }
 
-  async function setStatus(asset: Asset, status: "approved" | "rejected" | "pending") {
+  async function setStatus(asset: Asset, status: ApprovalStatus) {
     const prevStatus = asset.approval_status;
     setPendingAssetId(asset.id);
     setBoard((b) => b ? {
       ...b,
-      assets: b.assets.map((a) => a.id === asset.id ? { ...a, approval_status: status } as Asset : a),
+      assets: b.assets.map((a) => a.id === asset.id ? { ...a, approval_status: status } : a),
     } : b);
     try {
-      await updateAsset(asset.id, { approval_status: status } as any);
-      pushToast({ kind: "success", text: `Marked "${asset.title || "asset"}" as ${status}.` });
+      await updateAsset(asset.id, { approval_status: status });
+      pushToast({ kind: "success", text: `"${asset.title || "Untitled"}" is now ${assetStatusCopy(status).toLowerCase().replace(/\.$/, "")}.` });
       void loadEvents();
     } catch (e: any) {
       setBoard((b) => b ? {
         ...b,
-        assets: b.assets.map((a) => a.id === asset.id ? { ...a, approval_status: prevStatus } as Asset : a),
+        assets: b.assets.map((a) => a.id === asset.id ? { ...a, approval_status: prevStatus } : a),
       } : b);
       pushToast({ kind: "error", text: `Update failed: ${e?.message || "unknown error"}. Reverted.` });
       void load();
@@ -393,244 +434,348 @@ export function ReviewBoardPage({ sessionId }: { sessionId: string }) {
   const all = board?.assets ?? [];
   const approved = all.filter((a) => a.approval_status === "approved");
   const rejected = all.filter((a) => a.approval_status === "rejected");
-  const pending = all.filter((a) => a.approval_status !== "approved" && a.approval_status !== "rejected");
+  const inReview = all.filter((a) => a.approval_status !== "approved" && a.approval_status !== "rejected");
+
+  const sections: BoardSection[] = [
+    {
+      key: "approved",
+      title: "Approved",
+      subtitle: "Signed off. Revert one to send it back to review.",
+      assets: approved,
+      emptyText: "No approved assets yet.",
+      onApprove: null,
+      onReject: (a) => void setStatus(a, "review"),
+      rejectLabel: "Revert",
+    },
+    {
+      key: "review",
+      title: "In review",
+      subtitle: "Waiting on a decision.",
+      assets: inReview,
+      emptyText: "No assets in review.",
+      onApprove: (a) => void setStatus(a, "approved"),
+      onReject: (a) => void setStatus(a, "rejected"),
+    },
+    {
+      key: "rejected",
+      title: "Rejected",
+      subtitle: "Kept for the audit trail, excluded from the handoff.",
+      assets: rejected,
+      emptyText: "No rejected assets.",
+      onApprove: (a) => void setStatus(a, "approved"),
+      onReject: null,
+    },
+  ];
+
+  const downloadsBlocked = !handoffData?.valid;
 
   return (
-    <div className="frank-review-page" style={{ maxWidth: 1100, margin: "0 auto", padding: 24, position: "relative" }}>
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
-        <div>
-          <a href="/" style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "inherit", textDecoration: "none", marginBottom: 8 }}>
-            <ArrowLeft size={16} /> Back to studio
-          </a>
-          <h1 style={{ margin: 0 }}>Review board</h1>
-          <p style={{ margin: "4px 0 0", opacity: 0.7, fontSize: 13 }}>
-            Session {sessionId} · generated {board?.generated_at ? new Date(board.generated_at).toLocaleString() : "—"}
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" onClick={() => void load()} disabled={loading} style={btn}>
-            {loading ? <Loader2 size={14} className="frank-spin" /> : <RefreshCw size={14} />}
-            {loading ? "Loading…" : "Refresh"}
-          </button>
-          <button type="button" onClick={() => void runHandoff()} disabled={handoffBusy} style={btnPrimary}>
-            {handoffBusy ? <Loader2 size={14} className="frank-spin" /> : <Download size={14} />}
-            {handoffBusy ? "Packaging…" : "Generate handoff"}
-          </button>
-        </div>
-      </header>
+    <Shell screen="review" sessionId={sessionId}>
+      <PageHeader
+        title="Review board"
+        subtitle={`Session ${sessionId.slice(0, 8)} · generated ${
+          board?.generated_at ? new Date(board.generated_at).toLocaleString() : "—"
+        }`}
+        backAction={() => navigate("studio")}
+        actions={
+          <>
+            <Button icon="arrow-path" loading={loading} onClick={() => void load()}>
+              Refresh board
+            </Button>
+            <Button
+              variant="primary"
+              icon="arrow-down-tray"
+              loading={handoffBusy}
+              onClick={() => void runHandoff()}
+            >
+              Generate handoff
+            </Button>
+          </>
+        }
+      />
 
-      {error ? <p style={{ color: "#c0392b" }}>Error: {error}</p> : null}
+      {error ? (
+        <Banner
+          tone="critical"
+          title="The board didn't load"
+          action={<Button onClick={() => void load()}>Try again</Button>}
+        >
+          <span>{error}</span>
+        </Banner>
+      ) : null}
 
       {handoffData ? (
-        <div style={{ marginBottom: 8 }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <button
-              type="button"
-              style={{ ...btn, opacity: handoffData.valid ? 1 : 0.45, cursor: handoffData.valid ? "pointer" : "not-allowed" }}
-              disabled={!handoffData.valid}
-              title={handoffData.valid ? "Download JSON manifest" : "Blocked — fix schema issues first"}
-              onClick={() => handoffData.valid && void runDownload(`handoff-${sessionId}.json`, "application/json", () => JSON.stringify(handoffData.json, null, 2))}
+        <Card
+          title="Handoff package"
+          subtitle="Schema frank-create.handoff, version 1. Downloads unlock once the manifest validates."
+        >
+          <div className="handoff-actions">
+            <Button
+              icon="arrow-down-tray"
+              disabled={downloadsBlocked}
+              onClick={() =>
+                void runDownload(`handoff-${sessionId}.json`, "application/json", () =>
+                  JSON.stringify(handoffData.json, null, 2)
+                )
+              }
             >
-              <Download size={14} /> Download JSON
-            </button>
-            <button
-              type="button"
-              style={{ ...btn, opacity: handoffData.valid ? 1 : 0.45, cursor: handoffData.valid ? "pointer" : "not-allowed" }}
-              disabled={!handoffData.valid}
-              title={handoffData.valid ? "Download CSV summary" : "Blocked — fix schema issues first"}
-              onClick={() => handoffData.valid && void runDownload(`handoff-${sessionId}.csv`, "text/csv", () => handoffData.csv)}
+              Download JSON
+            </Button>
+            <Button
+              icon="arrow-down-tray"
+              disabled={downloadsBlocked}
+              onClick={() => void runDownload(`handoff-${sessionId}.csv`, "text/csv", () => handoffData.csv)}
             >
-              <Download size={14} /> Download CSV
-            </button>
-            <button type="button" style={btn} onClick={() => handoffData.json && void navigator.clipboard.writeText(JSON.stringify(handoffData.json, null, 2))}>
+              Download CSV
+            </Button>
+            <Button
+              icon="document-duplicate"
+              onClick={() =>
+                handoffData.json && void navigator.clipboard.writeText(JSON.stringify(handoffData.json, null, 2))
+              }
+            >
               Copy JSON
-            </button>
+            </Button>
             {resumeState ? (
-              <button
-                type="button"
-                style={btn}
+              <Button
+                icon="arrow-path"
                 disabled={handoffBusy}
-                onClick={() => void runHandoff({ fromStage: resumeState.fromStage, snapshot: resumeState.snapshot })}
-                title={`Retry from stage: ${resumeState.fromStage}`}
+                onClick={() =>
+                  void runHandoff({ fromStage: resumeState.fromStage, snapshot: resumeState.snapshot })
+                }
               >
-                <RotateCw size={14} /> Retry from {resumeState.fromStage}
-              </button>
+                Retry from {resumeState.fromStage}
+              </Button>
             ) : null}
           </div>
+
           {handoffData.issues.length ? (
-            <div style={{
-              marginTop: 10, padding: 10, borderRadius: 8,
-              background: "#fdecec", border: "1px solid #e29a9a", color: "#8a1e1e", fontSize: 12,
-            }}>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                Downloads blocked — {handoffData.issues.length} manifest schema issue{handoffData.issues.length > 1 ? "s" : ""}:
+            <div className="schema-issues">
+              <div className="schema-issues__head">
+                <Icon source="exclamation-circle" size={16} tone="critical" />
+                <Text fontWeight="medium">
+                  Downloads blocked — {handoffData.issues.length} manifest schema issue
+                  {handoffData.issues.length > 1 ? "s" : ""}
+                </Text>
               </div>
-              <ul style={{ margin: "0 0 0 18px", padding: 0 }}>
-                {handoffData.issues.slice(0, 25).map((i, k) => <li key={k}><code>{i}</code></li>)}
-                {handoffData.issues.length > 25 ? <li>… and {handoffData.issues.length - 25} more</li> : null}
+              <ul>
+                {handoffData.issues.slice(0, 25).map((issue, k) => (
+                  <li key={k}>
+                    <code>{issue}</code>
+                  </li>
+                ))}
+                {handoffData.issues.length > 25 ? (
+                  <li>and {handoffData.issues.length - 25} more</li>
+                ) : null}
               </ul>
+              <Text variant="bodySm" tone="secondary" as="p">
+                Every asset needs id, title, media_type, approval_status and blueprint. Fix the source
+                rows, then retry from build_manifest.
+              </Text>
             </div>
           ) : (
-            <div style={{ marginTop: 6, fontSize: 12, color: "#1e6b34" }}>Schema v1 · validated</div>
+            <div className="schema-issues__head">
+              <Icon source="check-circle" size={16} tone="success" />
+              <Text tone="success">
+                Schema v1 validated · {all.length} assets · {approved.length} approved
+              </Text>
+            </div>
           )}
-        </div>
+        </Card>
       ) : null}
 
+      {sections.map((section) => (
+        <Card
+          key={section.key}
+          title={`${section.title} (${section.assets.length})`}
+          subtitle={section.subtitle}
+        >
+          <AssetGrid
+            assets={section.assets}
+            events={eventsByAsset}
+            emptyText={section.emptyText}
+            pendingId={pendingAssetId}
+            onApprove={section.onApprove}
+            onReject={section.onReject}
+            rejectLabel={section.rejectLabel}
+          />
+        </Card>
+      ))}
 
-      <section style={{ marginTop: 12 }}>
-        <h2 style={sectionH}>Approved ({approved.length})</h2>
-        <AssetGrid
-          assets={approved} events={eventsByAsset} emptyText="No approved assets yet."
-          pendingId={pendingAssetId} onApprove={null} onReject={(a) => void setStatus(a, "pending")} rejectLabel="Revert"
-        />
-      </section>
-
-      <section style={{ marginTop: 32 }}>
-        <h2 style={sectionH}>Pending ({pending.length})</h2>
-        <AssetGrid
-          assets={pending} events={eventsByAsset} emptyText="No pending assets."
-          pendingId={pendingAssetId} onApprove={(a) => void setStatus(a, "approved")} onReject={(a) => void setStatus(a, "rejected")}
-        />
-      </section>
-
-      <section style={{ marginTop: 32 }}>
-        <h2 style={sectionH}>Rejected ({rejected.length})</h2>
-        <AssetGrid
-          assets={rejected} events={eventsByAsset} emptyText="No rejected assets."
-          pendingId={pendingAssetId} onApprove={(a) => void setStatus(a, "approved")} onReject={null}
-        />
-      </section>
-
-      <section style={{ marginTop: 32 }}>
-        <h2 style={sectionH}>Audit trail ({filteredEvents.length}/{events.length})</h2>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 }}>
-          {["approved", "rejected", "pending"].map((t) => {
-            const on = fltTransitions.has(t);
-            return (
-              <button key={t} type="button" onClick={() => toggleTransition(t)} style={{
-                ...chipBtn, background: on ? "#111" : "#fff", color: on ? "#fff" : "inherit", borderColor: on ? "#111" : "rgba(0,0,0,0.15)",
-              }}>{t}</button>
-            );
-          })}
-          <select value={fltAsset} onChange={(e) => setFltAsset(e.target.value)} style={selectStyle}>
-            <option value="">All assets</option>
-            {Object.entries(assetTitles).map(([id, t]) => <option key={id} value={id}>{t}</option>)}
-          </select>
-          <select value={fltActor} onChange={(e) => setFltActor(e.target.value)} style={selectStyle}>
-            <option value="">All actors</option>
-            {actors.map((a) => <option key={a} value={a}>{a.slice(0, 8)}…</option>)}
-          </select>
-          <input type="date" value={fltFrom} onChange={(e) => setFltFrom(e.target.value)} style={selectStyle} />
-          <input type="date" value={fltTo} onChange={(e) => setFltTo(e.target.value)} style={selectStyle} />
-          <input type="text" placeholder="Search title/note" value={fltQuery} onChange={(e) => setFltQuery(e.target.value)} style={{ ...selectStyle, minWidth: 160 }} />
-          <button type="button" onClick={clearFilters} style={{ ...chipBtn, borderStyle: "dashed" }}>Clear</button>
+      <Card
+        title="Audit trail"
+        subtitle={`${filteredEvents.length} of ${events.length} events`}
+        padding="none"
+      >
+        <div className="audit-filters">
+          {(["approved", "rejected", "review"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              className={`filter-chip ${fltTransitions.has(t) ? "is-selected" : ""}`}
+              aria-pressed={fltTransitions.has(t)}
+              onClick={() => toggleTransition(t)}
+            >
+              {t}
+            </button>
+          ))}
+          <Select
+            label="Asset"
+            labelHidden
+            maxWidth={180}
+            value={fltAsset}
+            onChange={(e) => setFltAsset(e.target.value)}
+            options={[{ value: "", label: "All assets" }].concat(
+              Object.entries(assetTitles).map(([id, t]) => ({ value: id, label: t }))
+            )}
+          />
+          <Select
+            label="Actor"
+            labelHidden
+            maxWidth={180}
+            value={fltActor}
+            onChange={(e) => setFltActor(e.target.value)}
+            options={[{ value: "", label: "All actors" }].concat(
+              actors.map((a) => ({ value: a, label: `${a.slice(0, 8)}…` }))
+            )}
+          />
+          <TextField
+            label="From"
+            labelHidden
+            type="date"
+            maxWidth={150}
+            value={fltFrom}
+            onChange={(e) => setFltFrom(e.target.value)}
+          />
+          <TextField
+            label="To"
+            labelHidden
+            type="date"
+            maxWidth={150}
+            value={fltTo}
+            onChange={(e) => setFltTo(e.target.value)}
+          />
+          <TextField
+            label="Search title or note"
+            labelHidden
+            icon="magnifying-glass"
+            placeholder="Search title or note"
+            maxWidth={190}
+            value={fltQuery}
+            onChange={(e) => setFltQuery(e.target.value)}
+          />
+          <Button variant="plain" onClick={clearFilters}>
+            Clear filters
+          </Button>
         </div>
-        {filteredEvents.length ? (
-          <div style={{ overflowX: "auto", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8 }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-              <thead style={{ background: "rgba(0,0,0,0.03)" }}>
-                <tr>
-                  {(["time", "asset", "actor", "transition"] as const).map((col) => (
-                    <th key={col} onClick={() => toggleSort(col)} style={thStyle}>
-                      {col} {sortBy === col ? (sortDir === "asc" ? "▲" : "▼") : ""}
-                    </th>
-                  ))}
-                  <th style={thStyle}>note</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEvents.map((e) => (
-                  <tr key={e.id} style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-                    <td style={tdStyle}>{new Date(e.created_at).toLocaleString()}</td>
-                    <td style={tdStyle}>{assetTitles[e.asset_id] || e.asset_id.slice(0, 8)}</td>
-                    <td style={tdStyle}>{e.user_id ? `${e.user_id.slice(0, 8)}…` : "—"}</td>
-                    <td style={tdStyle}>{e.prev_status ?? "—"} → <strong>{e.new_status}</strong></td>
-                    <td style={tdStyle}>{e.note || ""}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p style={{ opacity: 0.6, fontSize: 13 }}>No audit events match the current filters.</p>
-        )}
-      </section>
+        <DataTable
+          columns={AUDIT_COLUMNS}
+          rows={filteredEvents.map((e) => ({
+            id: e.id,
+            when: new Date(e.created_at).toLocaleString(),
+            asset: assetTitles[e.asset_id] || e.asset_id.slice(0, 8),
+            actor: e.user_id ? `${e.user_id.slice(0, 8)}…` : "—",
+            transition: (
+              <span>
+                <Text tone="secondary">{e.prev_status ?? "null"} → </Text>
+                <Text fontWeight="semibold">{e.new_status}</Text>
+              </span>
+            ),
+            note: e.note || "—",
+          }))}
+          emptyState={
+            <Text as="p" tone="secondary">
+              {events.length
+                ? "No audit event matches these filters."
+                : "No approval decisions recorded for this session yet."}
+            </Text>
+          }
+        />
+      </Card>
 
       {manifest ? (
-        <section style={{ marginTop: 32 }}>
-          <h2 style={sectionH}>Sync manifest</h2>
-          <pre style={{ background: "rgba(0,0,0,0.04)", padding: 12, borderRadius: 8, overflow: "auto", fontSize: 12 }}>
-            {JSON.stringify(manifest, null, 2)}
-          </pre>
-        </section>
+        <Card title="Sync manifest" subtitle="What the backend returns for this session.">
+          <pre className="code-block">{JSON.stringify(manifest, null, 2)}</pre>
+        </Card>
       ) : null}
 
-      {/* Toasts */}
-      <div style={{ position: "fixed", bottom: 20, right: 20, display: "flex", flexDirection: "column", gap: 8, zIndex: 60, minWidth: 260 }}>
+      <div className="toast-stack">
         {toasts.map((t) => {
-          const bg = t.kind === "error" ? "#fdecec" : t.kind === "success" ? "#e6f7ec" : t.kind === "progress" ? "#f4f4f5" : "#eef2ff";
-          const fg = t.kind === "error" ? "#8a1e1e" : t.kind === "success" ? "#1e6b34" : t.kind === "progress" ? "#333" : "#1e3a8a";
-          const bd = t.kind === "error" ? "#e29a9a" : t.kind === "success" ? "#8fce9d" : t.kind === "progress" ? "#d4d4d8" : "#a5b4fc";
           const elapsed = t.startedAt ? Math.max(0, Math.floor((nowTick - t.startedAt) / 1000)) : 0;
           const pct = Math.round((t.progress ?? 0) * 100);
           return (
-            <div key={t.id} style={{
-              padding: "10px 12px", borderRadius: 8, fontSize: 13, maxWidth: 380,
-              background: bg, color: fg, border: `1px solid ${bd}`,
-              boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-              display: "flex", flexDirection: "column", gap: 6,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  {t.kind === "progress" ? <Loader2 size={13} className="frank-spin" /> : null}
-                  <span>{t.text}</span>
-                </div>
-                <button type="button" onClick={() => dismissToast(t.id)} aria-label="Dismiss" style={dismissBtn}>×</button>
+            <div key={t.id} className={`toast toast--${t.kind}`} role="status">
+              <div className="toast__head">
+                {t.kind === "progress" ? <Spinner size="small" /> : null}
+                <span className="toast__text">{t.text}</span>
+                <button type="button" className="toast__dismiss" onClick={() => dismissToast(t.id)} aria-label="Dismiss">
+                  <Icon source="x-mark" size={16} tone="inherit" />
+                </button>
               </div>
               {t.kind === "progress" && typeof t.progress === "number" ? (
-                <div style={{ height: 4, background: "rgba(0,0,0,0.08)", borderRadius: 2, overflow: "hidden" }}>
-                  <div style={{ width: `${pct}%`, height: "100%", background: "#111", transition: "width 0.25s" }} />
+                <div className="toast__track">
+                  <div className="toast__bar" style={{ width: `${pct}%` }} />
                 </div>
               ) : null}
               {t.steps ? (
-                <ul style={{ listStyle: "none", margin: 0, padding: 0, fontSize: 11 }}>
-                  {t.steps.map((s) => (
-                    <li key={s.key} style={{ display: "flex", alignItems: "center", gap: 6, padding: "1px 0", opacity: s.status === "pending" ? 0.5 : 1 }}>
-                      {s.status === "done" ? <Check size={11} color="#1e6b34" /> :
-                       s.status === "active" ? <Loader2 size={11} className="frank-spin" /> :
-                       <span style={{ width: 11, height: 11, display: "inline-block", borderRadius: "50%", border: "1px solid currentColor", opacity: 0.4 }} />}
-                      <span>{s.label}</span>
+                <ul className="toast__steps">
+                  {t.steps.map((step) => (
+                    <li key={step.key} className={`toast__step is-${step.status}`}>
+                      <span className="toast__dot" aria-hidden="true" />
+                      <span>{step.label}</span>
                     </li>
                   ))}
                 </ul>
               ) : null}
               {t.kind === "progress" ? (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, fontSize: 11, opacity: 0.75 }}>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><Clock size={11} /> {elapsed}s elapsed</span>
+                <div className="toast__foot">
+                  <span className="as-tabular">{elapsed}s elapsed</span>
                   {t.onCancel ? (
-                    <button type="button" onClick={() => t.onCancel?.()} style={miniBtn}>Cancel</button>
+                    <Button size="micro" onClick={() => t.onCancel?.()}>
+                      Cancel
+                    </Button>
                   ) : null}
                 </div>
               ) : null}
               {t.onRetry ? (
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button type="button" onClick={() => { dismissToast(t.id); t.onRetry?.(); }} style={miniBtn}>
-                    <RotateCw size={11} /> Retry
-                  </button>
+                <div className="toast__foot toast__foot--end">
+                  <Button size="micro" icon="arrow-path" onClick={() => { dismissToast(t.id); t.onRetry?.(); }}>
+                    Retry
+                  </Button>
                 </div>
               ) : null}
             </div>
           );
         })}
       </div>
-
-      <style>{`
-        @keyframes frank-spin { to { transform: rotate(360deg); } }
-        .frank-spin { animation: frank-spin 0.9s linear infinite; }
-      `}</style>
-    </div>
+    </Shell>
   );
 }
+
+interface BoardSection {
+  key: string;
+  title: string;
+  subtitle: string;
+  assets: Asset[];
+  emptyText: string;
+  onApprove: ((a: Asset) => void) | null;
+  onReject: ((a: Asset) => void) | null;
+  rejectLabel?: string;
+}
+
+const AUDIT_COLUMNS: DataTableColumn[] = [
+  { key: "when", title: "Time" },
+  { key: "asset", title: "Asset" },
+  { key: "actor", title: "Actor" },
+  { key: "transition", title: "Transition" },
+  { key: "note", title: "Note" },
+];
+
+const STATUS_TONE: Record<ApprovalStatus, "success" | "critical" | "neutral"> = {
+  approved: "success",
+  rejected: "critical",
+  review: "neutral",
+};
 
 function AssetGrid({
   assets, emptyText, pendingId, onApprove, onReject, rejectLabel, events,
@@ -643,95 +788,74 @@ function AssetGrid({
   rejectLabel?: string;
   events: Record<string, AuditEvent[]>;
 }) {
-  if (!assets.length) return <p style={{ opacity: 0.6, fontSize: 13 }}>{emptyText}</p>;
+  if (!assets.length) {
+    return (
+      <Text as="p" tone="secondary">
+        {emptyText}
+      </Text>
+    );
+  }
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 }}>
+    <div className="board-grid">
       {assets.map((a) => {
         const busy = pendingId === a.id;
         const audit = events[a.id] || [];
+        const status = a.approval_status;
         return (
-          <div key={a.id} style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10, overflow: "hidden", background: "#fff", opacity: busy ? 0.6 : 1, transition: "opacity 0.15s" }}>
-            <a href={assetDownloadUrl(a.id)} target="_blank" rel="noreferrer" style={{ display: "block", color: "inherit", textDecoration: "none" }}>
+          <article key={a.id} className={`board-card ${busy ? "is-busy" : ""}`}>
+            <a
+              className="board-card__media"
+              href={assetDownloadUrl(a.id)}
+              target="_blank"
+              rel="noreferrer"
+            >
               {a.preview_url ? (
-                <img src={a.preview_url} alt={a.title} style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", display: "block" }} />
+                <img src={a.preview_url} alt={a.title || "Untitled pick"} />
               ) : (
-                <div style={{ width: "100%", aspectRatio: "1 / 1", background: "rgba(0,0,0,0.05)" }} />
+                <span className="board-card__placeholder" aria-hidden="true" />
               )}
-              <div style={{ padding: "10px 10px 6px" }}>
-                <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {a.title || "Untitled"}
-                </div>
-                <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>{a.approval_status ?? "pending"}</div>
-              </div>
             </a>
-            {(onApprove || onReject) ? (
-              <div style={{ display: "flex", gap: 6, padding: "0 10px 6px" }}>
-                {onApprove ? (
-                  <button type="button" disabled={busy} onClick={() => onApprove(a)} style={{ ...btnSmall, background: "#e6f7ec", borderColor: "#8fce9d", color: "#1e6b34" }}>
-                    {busy ? <Loader2 size={12} className="frank-spin" /> : <Check size={12} />} Approve
-                  </button>
-                ) : null}
-                {onReject ? (
-                  <button type="button" disabled={busy} onClick={() => onReject(a)} style={{ ...btnSmall, background: "#fdecec", borderColor: "#e29a9a", color: "#8a1e1e" }}>
-                    {busy ? <Loader2 size={12} className="frank-spin" /> : <X size={12} />} {rejectLabel ?? "Reject"}
-                  </button>
-                ) : null}
+            <div className="board-card__body">
+              <Text fontWeight="medium" truncate>
+                {a.title || "Untitled"}
+              </Text>
+              <div className="board-card__meta">
+                <Badge tone={STATUS_TONE[status] ?? "neutral"}>{assetStatusCopy(status)}</Badge>
+                {a.favorite ? <Icon source="star" size={16} tone="caution" label="Favourite" /> : null}
               </div>
-            ) : null}
-            {audit.length ? (
-              <details style={{ borderTop: "1px solid rgba(0,0,0,0.06)", padding: "6px 10px 8px" }}>
-                <summary style={{ fontSize: 11, opacity: 0.7, cursor: "pointer" }}>
-                  Audit trail ({audit.length})
-                </summary>
-                <ul style={{ margin: "6px 0 0", padding: 0, listStyle: "none", fontSize: 11, opacity: 0.8 }}>
-                  {audit.slice(0, 6).map((e) => (
-                    <li key={e.id} style={{ display: "flex", justifyContent: "space-between", gap: 6, padding: "2px 0" }}>
-                      <span>{e.prev_status ?? "—"} → <strong>{e.new_status}</strong></span>
-                      <span style={{ opacity: 0.6 }}>{new Date(e.created_at).toLocaleString()}</span>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            ) : null}
-          </div>
+              {onApprove || onReject ? (
+                <div className="board-card__actions">
+                  {onApprove ? (
+                    <Button size="micro" icon="check" disabled={busy} onClick={() => onApprove(a)}>
+                      Approve
+                    </Button>
+                  ) : null}
+                  {onReject ? (
+                    <Button size="micro" tone="critical" icon="x-mark" disabled={busy} onClick={() => onReject(a)}>
+                      {rejectLabel ?? "Reject"}
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
+              {audit.length ? (
+                <details className="board-card__audit">
+                  <summary>Audit trail ({audit.length})</summary>
+                  <ul>
+                    {audit.slice(0, 6).map((e) => (
+                      <li key={e.id}>
+                        <span>
+                          {e.prev_status ?? "null"} → <strong>{e.new_status}</strong>
+                        </span>
+                        <span className="as-tabular">{new Date(e.created_at).toLocaleString()}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
+            </div>
+          </article>
         );
       })}
     </div>
   );
 }
-
-const btn: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", gap: 6,
-  padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.15)",
-  background: "#fff", cursor: "pointer", fontSize: 13,
-};
-const btnPrimary: React.CSSProperties = { ...btn, background: "#111", color: "#fff", borderColor: "#111" };
-const btnSmall: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
-  flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid rgba(0,0,0,0.15)",
-  background: "#fff", cursor: "pointer", fontSize: 12,
-};
-const miniBtn: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", gap: 4,
-  padding: "3px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,0.2)",
-  background: "#fff", cursor: "pointer", fontSize: 11, color: "inherit",
-};
-const dismissBtn: React.CSSProperties = {
-  background: "transparent", border: "none", cursor: "pointer",
-  color: "inherit", fontSize: 16, lineHeight: 1, opacity: 0.6,
-};
-const sectionH: React.CSSProperties = { fontSize: 14, textTransform: "uppercase", letterSpacing: 0.5, opacity: 0.7, margin: "0 0 12px" };
-const chipBtn: React.CSSProperties = {
-  padding: "4px 10px", borderRadius: 999, border: "1px solid rgba(0,0,0,0.15)",
-  background: "#fff", cursor: "pointer", fontSize: 12, textTransform: "capitalize",
-};
-const selectStyle: React.CSSProperties = {
-  padding: "5px 8px", borderRadius: 6, border: "1px solid rgba(0,0,0,0.15)",
-  background: "#fff", fontSize: 12,
-};
-const thStyle: React.CSSProperties = {
-  textAlign: "left", padding: "6px 10px", cursor: "pointer",
-  fontSize: 11, textTransform: "uppercase", letterSpacing: 0.4, opacity: 0.7,
-  userSelect: "none",
-};
-const tdStyle: React.CSSProperties = { padding: "6px 10px", verticalAlign: "top" };

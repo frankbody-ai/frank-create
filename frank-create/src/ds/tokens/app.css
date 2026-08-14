@@ -1,0 +1,20 @@
+/* ============================================================
+   AutoSolutions OS — App labels
+   The applications inside the hub. Each label is generated
+   artwork at 1234×372 (3.32:1) — the same box as a company
+   mark, so the two read as a matched pair in the shell.
+   Set in Inter Display SemiBold ink at ONE cap height across
+   the whole set, behind the magenta pipe borrowed from the
+   autosolutions|OS lockup. Transparent ground: light surfaces.
+   ============================================================ */
+:root{
+--app-aspect:3.32; /* @kind other */
+/* Labels are wordmarks: one shared cap height, width follows the word. */
+--app-label-height:1.5625rem;         /* 25 — the nav plate */
+--app-label-height-compact:1.3125rem; /* 21 — switcher rows, lists */
+--app-height:3rem;         /* 48 — the nav plate */
+--app-width:9.9375rem;     /* 159 */
+--app-height-compact:2rem; /* 32 — switcher rows, lists */
+--app-width-compact:6.625rem;/* 106 */
+--brand-magenta:#FC3CF4;
+}

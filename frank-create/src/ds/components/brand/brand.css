@@ -1,0 +1,26 @@
+/* ============================================================
+   Brand marks — the OS lockup, the tenant company mark, the app label.
+   Class names match the design system exactly (.as-app--<id>,
+   .as-company--<id>), so markup copied from the system works unchanged.
+
+   PORT: art is served from /public/brand, and the set is trimmed to what
+   this app ships — frank body is the only tenant and art-ificial design
+   studio is the only app. To add another, drop the PNG into
+   public/brand/{companies,apps}/ and add one line here; the aspect-ratio
+   comes from the source art at 1234×372 for a company mark, and from the
+   wordmark's own width for an app label.
+
+   Labels are WORDMARKS: one shared cap height, width follows the word.
+   Never set an explicit width on .as-app — the per-label aspect-ratio does
+   it, and a fixed width is what makes a switcher menu look ragged.
+   ============================================================ */
+.as-logo{display:block;flex:0 0 auto;background:center/contain no-repeat url("/brand/logo.png")}
+.as-logo-slot{display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:var(--logo-slot-width);height:var(--logo-slot-height)}
+
+.as-company{display:block;flex:0 0 auto;background-position:center;background-size:contain;background-repeat:no-repeat}
+.as-company--frankbody{background-image:url("/brand/companies/frankbody.png")}
+.as-company--frankbody.as-company--plain{background-image:url("/brand/companies/frankbody-plain.png")}
+
+.as-app{display:block;flex:0 0 auto;height:var(--app-label-height);width:auto;background-position:left center;background-size:contain;background-repeat:no-repeat}
+.as-app--compact{height:var(--app-label-height-compact)}
+.as-app--design-studio{aspect-ratio:8.2214;background-image:url("/brand/apps/design-studio-label.png")}

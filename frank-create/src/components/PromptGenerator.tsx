@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Send, Sparkles, Copy, Wand2, RotateCcw, Loader2, ImagePlus, X } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Badge, Button, Card, IconButton, PageHeader, Spinner, Text, TextField } from "../ds";
 import { promptAgentChat, fetchPromptAgentConfig } from "../lib/api";
 
 interface Props {
@@ -185,58 +185,54 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const activeSkill = SKILLS.find((s) => s.key === skill) ?? SKILLS[0];
 
   return (
-    <main className="conversation-column prompt-agent-view">
-      <header className="studio-topbar">
-        <div>
-          <p className="eyebrow">Agent</p>
-          <h2>Prompt Generator</h2>
-          <p className="studio-topbar-copy">
-            Craft Image Prompts skill is always on — every message is worked through the reference-led
-            blueprint. Runs on GPT-5.6 Sol via Lovable AI.
-          </p>
-        </div>
-        <div className="studio-topbar-right">
-          <button
-            type="button"
-            className="pc-secondary-btn"
+    <>
+      <PageHeader
+        title="Prompt generator"
+        subtitle="Describe the outcome and the agent assembles the prompt. Runs on GPT-5.6 Sol via Lovable AI."
+        actions={
+          <Button
+            icon="arrow-path"
+            disabled={busy || !messages.length}
             onClick={() => {
               setMessages([]);
               setAttachments([]);
               setError(null);
               inputRef.current?.focus();
             }}
-            disabled={busy || !messages.length}
           >
-            <RotateCcw size={14} /> New chat
-          </button>
-        </div>
-      </header>
+            Start a new chat
+          </Button>
+        }
+      />
 
-      <section className="prompt-agent-shell">
-        <div className="prompt-agent-skills" role="group" aria-label="Agent skills">
+      <Card title="Skill" subtitle={activeSkill?.hint}>
+        <div className="skill-chips" role="group" aria-label="Agent skills">
           {SKILLS.map((item) => (
             <button
               key={item.key}
               type="button"
-              className={`prompt-agent-skill ${skill === item.key ? "active" : ""}`}
+              className={`filter-chip ${skill === item.key ? "is-selected" : ""}`}
+              aria-pressed={skill === item.key}
               onClick={() => setSkill(item.key)}
               title={item.hint}
             >
-              <Sparkles size={12} />
               {item.label}
             </button>
           ))}
         </div>
-        <p className="prompt-agent-skill-hint">{activeSkill?.hint}</p>
+      </Card>
 
-        <div className="prompt-agent-thread" ref={scrollRef}>
+      <Card padding="none">
+        <div className="agent-thread" ref={scrollRef}>
           {messages.length === 0 ? (
-            <div className="pc-empty">
-              <Wand2 size={28} />
-              <strong>Describe what you want to shoot.</strong>
-              <span>
-                e.g. “Coffee scrub tub on wet tile, morning bathroom light, glossy skin, hero e-comm shot.”
-              </span>
+            <div className="empty-state empty-state--inset">
+              <Text variant="headingSm" as="h3">
+                Describe what you want to shoot
+              </Text>
+              <Text as="p" tone="secondary">
+                For example: coffee scrub tub on wet tile, morning bathroom light, glossy skin, hero
+                e-commerce shot.
+              </Text>
             </div>
           ) : (
             messages.map((message, index) => {
@@ -246,17 +242,19 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
                   : { phase: "unknown" as AgentPhase, body: message.content };
               const prompts = parsed.phase === "discovery" ? [] : extractPrompts(parsed.body);
               return (
-                <div key={index} className={`prompt-agent-msg ${message.role}`}>
-                  <p className="prompt-agent-msg-role">
-                    {message.role === "user" ? "You" : "Agent"}
+                <div key={index} className={`agent-msg agent-msg--${message.role}`}>
+                  <div className="agent-msg__role">
+                    <Text variant="headingXs" as="span">
+                      {message.role === "user" ? "You" : "Agent"}
+                    </Text>
                     {message.role === "assistant" && parsed.phase !== "unknown" ? (
-                      <span className={`prompt-agent-phase ${parsed.phase}`}>
+                      <Badge tone={parsed.phase === "discovery" ? "info" : "success"}>
                         {parsed.phase === "discovery" ? "Discovery" : "Final prompt"}
-                      </span>
+                      </Badge>
                     ) : null}
-                  </p>
+                  </div>
                   {message.images?.length ? (
-                    <div className="prompt-agent-msg-refs">
+                    <div className="agent-msg__refs">
                       {message.images.map((src, i) => (
                         <img key={i} src={src} alt={`Reference ${i + 1}`} />
                       ))}
@@ -266,24 +264,28 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
                     message.role === "assistant" ? (
                       <AgentBody text={parsed.body} />
                     ) : (
-                      <div className="prompt-agent-msg-body">{parsed.body}</div>
+                      <div className="agent-msg__body">{parsed.body}</div>
                     )
                   ) : null}
                   {prompts.map((value, i) => (
-                    <div className="prompt-agent-actions" key={i}>
-                      <button type="button" className="pc-primary-btn" onClick={() => onUsePrompt?.(value)}>
-                        <Wand2 size={14} /> Use in Studio
-                      </button>
-                      <button type="button" className="pc-secondary-btn" onClick={() => void copyPrompt(value)}>
-                        <Copy size={14} /> Copy prompt
-                      </button>
-                    </div>
+                    <React.Fragment key={i}>
+                      <pre className="code-block code-block--prompt">{value}</pre>
+                      <div className="agent-msg__actions">
+                        <Button variant="primary" icon="bolt" onClick={() => onUsePrompt?.(value)}>
+                          Send to Studio
+                        </Button>
+                        <Button icon="document-duplicate" onClick={() => void copyPrompt(value)}>
+                          Copy prompt
+                        </Button>
+                      </div>
+                    </React.Fragment>
                   ))}
-                  {message.role === "assistant" && parsed.phase === "discovery" && index === messages.length - 1 ? (
-                    <div className="prompt-agent-actions">
-                      <button
-                        type="button"
-                        className="pc-secondary-btn"
+                  {message.role === "assistant" &&
+                  parsed.phase === "discovery" &&
+                  index === messages.length - 1 ? (
+                    <div className="agent-msg__actions">
+                      <Button
+                        icon="bolt"
                         disabled={busy}
                         onClick={() =>
                           void send(
@@ -291,29 +293,32 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
                           )
                         }
                       >
-                        <Wand2 size={14} /> Draft it now
-                      </button>
+                        Draft it now
+                      </Button>
                     </div>
                   ) : null}
                 </div>
               );
             })
-
           )}
           {busy ? (
-            <div className="prompt-agent-msg assistant">
-              <p className="prompt-agent-msg-role">Agent</p>
-              <div className="prompt-agent-msg-body prompt-agent-typing">
-                <Loader2 size={14} className="spin" /> Thinking…
+            <div className="agent-msg agent-msg--assistant">
+              <div className="agent-msg__role">
+                <Text variant="headingXs" as="span">
+                  Agent
+                </Text>
+              </div>
+              <div className="agent-msg__body agent-msg__typing">
+                <Spinner size="small" /> Thinking
               </div>
             </div>
           ) : null}
         </div>
+      </Card>
 
-        {error ? <p className="prompt-agent-error">{error}</p> : null}
-
+      <Card>
         <form
-          className="prompt-agent-composer"
+          className="agent-composer"
           data-paste-scope="prompt-agent"
           onSubmit={(event) => {
             event.preventDefault();
@@ -321,36 +326,39 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
           }}
         >
           {attachments.length ? (
-            <div className="prompt-agent-attachments">
+            <div className="agent-attachments">
               {attachments.map((src, index) => (
-                <div className="prompt-agent-attachment" key={index}>
+                <div className="agent-attachment" key={index}>
                   <img src={src} alt={`Attached reference ${index + 1}`} />
-                  <button
-                    type="button"
-                    aria-label="Remove reference image"
+                  <IconButton
+                    icon="x-mark"
+                    label="Remove reference image"
+                    size="micro"
                     onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== index))}
-                  >
-                    <X size={12} />
-                  </button>
+                  />
                 </div>
               ))}
             </div>
           ) : null}
-          <textarea
-            ref={inputRef}
-            value={input}
+          <TextField
+            label="Message"
+            labelHidden
+            multiline
             rows={3}
-            placeholder="Brief the agent… (paste or drop reference images here)"
+            value={input}
+            inputRef={inputRef as never}
+            error={error ?? undefined}
+            placeholder="Brief the agent. Paste or drop reference images here."
             onChange={(event) => setInput(event.target.value)}
-            onPaste={(event) => {
+            onPaste={(event: React.ClipboardEvent) => {
               const files = Array.from(event.clipboardData?.files ?? []);
               if (files.length) {
                 event.preventDefault();
                 void addFiles(files);
               }
             }}
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => {
+            onDragOver={(event: React.DragEvent) => event.preventDefault()}
+            onDrop={(event: React.DragEvent) => {
               if (event.dataTransfer?.files?.length) {
                 event.preventDefault();
                 void addFiles(event.dataTransfer.files);
@@ -363,7 +371,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               }
             }}
           />
-          <div className="prompt-agent-composer-actions">
+          <div className="agent-composer__actions">
             <input
               ref={fileRef}
               type="file"
@@ -375,25 +383,29 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
                 event.target.value = "";
               }}
             />
-            <button
-              type="button"
-              className="pc-secondary-btn"
+            <Button
+              icon="photo"
               onClick={() => fileRef.current?.click()}
               disabled={busy || attachments.length >= MAX_ATTACHMENTS}
-              title="Attach reference images (or paste / drop them in the box)"
             >
-              <ImagePlus size={14} /> Reference image
-            </button>
-            <button
+              Attach reference
+            </Button>
+            <span className="agent-composer__spacer" />
+            <Text variant="bodySm" tone="secondary">
+              Up to {MAX_ATTACHMENTS} references
+            </Text>
+            <Button
+              variant="primary"
+              icon="paper-airplane"
               type="submit"
-              className="pc-primary-btn"
+              loading={busy}
               disabled={busy || (!input.trim() && !attachments.length)}
             >
-              <Send size={14} /> Send
-            </button>
+              Send message
+            </Button>
           </div>
         </form>
-      </section>
-    </main>
+      </Card>
+    </>
   );
 }
