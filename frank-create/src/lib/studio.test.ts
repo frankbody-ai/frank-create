@@ -161,7 +161,9 @@ describe("studio helpers", () => {
   it("flags too many reference images", () => {
     const grok = fallbackConfig.models.find((m) => m.id === "grok-imagine-image")!;
     const errors = validateStudioSettings(grok, { aspect_ratio: "1:1", image_size: "1K", count: 1 }, { referenceCount: 20 });
-    expect(errors.references).toMatch(/at most 4/);
+    // Assert against the model's declared limit so a roster update to match the
+    // provider's real capabilities doesn't require editing this test.
+    expect(errors.references).toMatch(new RegExp(`at most ${grok.reference_image_limit}`));
   });
 });
 
