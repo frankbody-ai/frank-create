@@ -8,13 +8,32 @@ import React from 'react';
  * and the ICONS_16 fallback set below are unchanged from the source.
  */
 
-const RAW = import.meta.glob('../icons/**/*.svg', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+/*
+ * The glob is relative to THIS file (src/ds/components/media/), so the set
+ * lives two levels up at src/ds/icons. `import.meta.glob` returns {} for a
+ * pattern that matches nothing rather than failing, which is how a wrong path
+ * here once shipped every icon as an empty box — hence the guard below and
+ * the Icon.test.tsx that asserts the set is populated.
+ */
+const RAW = import.meta.glob('../../icons/**/*.svg', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
 
 const SETS: Record<number, Record<string, string>> = { 16: {}, 20: {} };
 for (const path in RAW) {
   const m = /\/icons\/(16|20)\/(.+)\.svg$/.exec(path);
   if (m) SETS[Number(m[1])][m[2]] = RAW[path];
 }
+
+if (!Object.keys(SETS[20]).length) {
+  throw new Error(
+    '[ds] the icon set is empty — the glob in Icon.tsx matched no files. ' +
+      'Check that src/ds/icons/{16,20}/*.svg exist and that the glob is relative to this file.',
+  );
+}
+
+/** Every icon name the build inlined, both sizes merged. Used by the tests. */
+export const ICON_NAMES: string[] = Array.from(
+  new Set([...Object.keys(SETS[20]), ...Object.keys(SETS[16])]),
+).sort();
 
 export type IconTone = 'base' | 'secondary' | 'hover' | 'active' | 'disabled' | 'inverse'
   | 'success' | 'critical' | 'warning' | 'caution' | 'info' | 'highlight' | 'ai' | 'inherit';
