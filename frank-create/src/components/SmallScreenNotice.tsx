@@ -1,14 +1,26 @@
+import React from "react";
+
+import { Text } from "../ds";
+
+/**
+ * The gate itself is CSS: this always renders, and app.css shows it below
+ * 1024px while hiding every sibling of #root. Keep that mechanism — it is what
+ * makes the gate work before any JS measures anything.
+ */
 export function SmallScreenNotice() {
   return (
-    <div className="small-screen-notice" role="dialog" aria-modal="true" aria-live="polite">
-      <div className="small-screen-notice-card">
-        <span className="small-screen-notice-eyebrow">art-ificial studio</span>
-        <h2>Desktop only for now</h2>
-        <p>
-          Tablet and phone apps aren't ready yet — they're coming soon. For now, open the studio
-          on a laptop or desktop screen wider than 1024px.
-        </p>
-        <span className="small-screen-notice-foot">autosolutions | OS</span>
+    <div className="small-screen" role="dialog" aria-modal="true" aria-live="polite">
+      <div className="small-screen__card">
+        <span className="as-app as-app--design-studio" role="img" aria-label="art-ificial design studio" />
+        <Text variant="headingLg" as="h2">
+          Open this on a desktop
+        </Text>
+        <Text tone="secondary" as="p">
+          The studio is a dense console — it needs a screen wider than 1024px to lay out the
+          composer, the rounds feed and the run settings side by side. Tablet and phone layouts
+          aren't built yet.
+        </Text>
+        <span className="as-logo small-screen__logo" role="img" aria-label="AutoSolutions OS" />
       </div>
     </div>
   );

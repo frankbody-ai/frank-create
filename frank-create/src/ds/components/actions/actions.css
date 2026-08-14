@@ -1,0 +1,55 @@
+.as-btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-150);height:var(--control-height);min-height:var(--control-height);padding:var(--space-150) var(--space-350);border:0;border-radius:var(--radius-200);font-family:var(--font-sans);font-size:var(--font-size-300);line-height:var(--font-line-height-400);font-weight:var(--font-weight-medium);letter-spacing:0;text-decoration:none;white-space:nowrap;cursor:pointer;transition:background-color var(--motion-hover),box-shadow var(--motion-hover),color var(--motion-hover)}
+.as-btn:hover{text-decoration:none}
+.as-btn--full{width:100%}
+.as-btn--disclosure{padding:var(--space-150) var(--space-200) var(--space-150) var(--space-350)}
+.as-btn--icon{width:var(--control-height);padding:var(--space-100)}
+.as-btn--micro{height:1.5rem;min-height:1.5rem;padding:var(--space-050) var(--space-200)}
+.as-btn--micro.as-btn--icon{width:1.5rem;padding:var(--space-050)}
+.as-btn--large{height:var(--space-800);min-height:var(--space-800);padding:var(--space-150) var(--space-400);font-size:var(--font-size-325);line-height:var(--font-line-height-500)}
+.as-btn--large.as-btn--icon{width:var(--space-800);padding:var(--space-150)}
+
+.as-btn--primary{background-color:var(--color-bg-fill-brand);background-image:var(--button-primary-gradient);color:var(--color-text-brand-on-bg-fill);box-shadow:var(--button-primary-inset)}
+.as-btn--primary:hover{background-color:var(--color-bg-fill-brand-hover)}
+.as-btn--primary:active{background-color:var(--color-bg-fill-brand-active);box-shadow:var(--shadow-inset-200)}
+.as-btn--primary.as-btn--critical{background-color:var(--color-bg-fill-critical);color:var(--color-critical-text-on-fill);box-shadow:var(--button-critical-inset)}
+.as-btn--primary.as-btn--critical:hover{background-color:var(--color-bg-fill-critical-hover)}
+.as-btn--primary.as-btn--critical:active{background-color:var(--color-bg-fill-critical-active);box-shadow:var(--shadow-inset-200)}
+
+.as-btn--secondary{background-color:var(--color-bg-fill-tertiary);color:var(--color-text);box-shadow:var(--shadow-bevel-100)}
+.as-btn--secondary:hover{background-color:var(--color-bg-fill-tertiary-hover)}
+.as-btn--secondary:active{background-color:var(--color-bg-fill-tertiary-active);box-shadow:var(--shadow-inset-100)}
+.as-btn--secondary.as-btn--critical{color:var(--color-critical-text-secondary)}
+
+.as-btn--tertiary{background-color:transparent;color:var(--color-text)}
+.as-btn--tertiary:hover{background-color:var(--color-bg-fill-transparent-hover)}
+.as-btn--tertiary:active{background-color:var(--color-bg-fill-transparent-active)}
+.as-btn--tertiary.is-selected{background-color:var(--color-bg-fill-transparent-secondary)}
+.as-btn--tertiary.as-btn--critical{color:var(--color-critical-text-secondary)}
+
+.as-btn--plain{background:none;height:auto;min-height:0;padding:0;border-radius:var(--radius-100);color:var(--color-text-link);font-size:var(--font-size-325);line-height:var(--font-line-height-500)}
+.as-btn--plain:hover{color:var(--color-text-link-hover);text-decoration:underline}
+.as-btn--plain.as-btn--critical{color:var(--color-critical-text-secondary)}
+
+.as-btn.is-disabled,.as-btn:disabled{background-color:var(--color-bg-fill-disabled);background-image:none;color:var(--color-text-disabled);box-shadow:none;cursor:default;pointer-events:none}
+.as-btn--primary.is-disabled,.as-btn--primary:disabled{background-color:var(--color-bg-fill-brand-disabled)}
+.as-btn--plain.is-disabled,.as-btn--plain:disabled{background:none}
+
+.as-btn__spinner{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;opacity:.6;animation:as-spin 700ms linear infinite}
+@keyframes as-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.as-btn__spinner{animation-duration:2s}}
+
+.as-btn-group{display:flex;align-items:center;gap:var(--button-group-gap);flex-wrap:wrap}
+.as-btn-group--segmented{gap:0}
+.as-btn-group--segmented>.as-btn{border-radius:0}
+.as-btn-group--segmented>.as-btn:first-child{border-start-start-radius:var(--radius-200);border-end-start-radius:var(--radius-200)}
+.as-btn-group--segmented>.as-btn:last-child{border-start-end-radius:var(--radius-200);border-end-end-radius:var(--radius-200)}
+.as-btn-group--segmented>.as-btn+.as-btn{margin-inline-start:1px}
+
+/* PORT: the shipped system sets `is-pressed` from Button's `pressed` prop but
+   styles it nowhere, so every toggle the design calls for — the Image / Video /
+   Compare segment, the upscaler's media pair, the checklist rows — rendered
+   with no on-state. Selection is a separate persistent state with its own
+   tokens, not a darker hover, so this is a fill change plus the weight shift
+   the nav already uses, never an opacity or a filter. */
+.as-btn.is-pressed{background:var(--color-bg-fill-brand);border-color:var(--color-border-brand);color:var(--color-text-brand-on-bg-fill);box-shadow:none;font-weight:var(--font-weight-medium)}
+.as-btn.is-pressed:hover{background:var(--color-bg-fill-brand-hover)}

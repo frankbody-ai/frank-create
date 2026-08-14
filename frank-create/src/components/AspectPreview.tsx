@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 
 interface AspectPreviewProps {
   aspect: string;
@@ -40,22 +40,24 @@ export function AspectPreview({ aspect, size, label, count }: AspectPreviewProps
 
   return (
     <div className="aspect-preview" data-orientation={orientation} aria-label={`Preview of ${aspect} canvas`}>
-      <div className="aspect-preview-stage">
-        <div className="aspect-preview-frame" style={{ aspectRatio: cssRatio }}>
-          <span className="aspect-preview-ratio">{aspect}</span>
+      <div className="aspect-preview__stage">
+        <div className="aspect-preview__frame" style={{ aspectRatio: cssRatio }}>
+          <span className="aspect-preview__ratio as-tabular">{aspect}</span>
           {sizePx ? (
-            <span className="aspect-preview-size">{sizePx.w}×{sizePx.h}</span>
+            <span className="aspect-preview__size as-tabular">{sizePx.w}×{sizePx.h}</span>
           ) : null}
         </div>
       </div>
-      <div className="aspect-preview-meta">
-        <span className="aspect-preview-orient">{orientation}</span>
+      <div className="aspect-preview__meta">
+        <span className="aspect-preview__orient">{orientation}</span>
         {typeof count === "number" && count > 0 ? (
-          <span className="aspect-preview-label">{count} pick{count === 1 ? "" : "s"}</span>
+          <span className="aspect-preview__label">{count} pick{count === 1 ? "" : "s"}</span>
         ) : null}
-        {label ? <span className="aspect-preview-label">{label}</span> : null}
+        {label ? <span className="aspect-preview__label">{label}</span> : null}
         {mismatch ? (
-          <span className="aspect-preview-warn" role="alert">Size doesn't match aspect — will letterbox/crop</span>
+          <span className="aspect-preview__warn" role="alert">
+            This resolution isn't {aspect}. Pick a matching resolution, or the provider will crop.
+          </span>
         ) : null}
       </div>
     </div>

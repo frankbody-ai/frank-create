@@ -1,0 +1,43 @@
+/* ============================================================
+   AutoSolutions OS — Layout, breakpoints, z-index
+   The 490px sm breakpoint is deliberate: it is the point at
+   which a phone can show a two-column form row.
+   ============================================================ */
+:root{
+--breakpoint-xs:0; /* @kind other */
+--breakpoint-sm:30.625rem;/* 490 */
+--breakpoint-md:48rem;    /* 768 */
+--breakpoint-lg:65rem;    /* 1040 */
+--breakpoint-xl:90rem;    /* 1440 */
+
+--topbar-height:3.5rem;   /* 56 */
+--sidenav-width:15rem;    /* 240 */
+--nav-appname-height:3rem;/* 48 — the reserved application-name plate at the top of the nav */
+--nav-appname-radius:var(--radius-200);
+--page-max-width:78.75rem;/* 1260 */
+--page-gutter:var(--space-400);
+--page-section-gap:var(--space-400);
+--content-max-width-one-column:62.5rem;/* 1000 */
+--content-sidebar-width:20rem;         /* 320 */
+
+--z-auto:auto; /* @kind other */
+/* sticky in-page */
+--z-100:100; /* @kind other */
+/* app chrome */
+--z-400:400; /* @kind other */
+/* backdrop */
+--z-510:510; /* @kind other */
+/* modal */
+--z-512:512; /* @kind other */
+--z-513:513; /* @kind other */
+/* popover */
+--z-514:514; /* @kind other */
+--z-515:515; /* @kind other */
+/* tooltip */
+--z-516:516; /* @kind other */
+--z-517:517; /* @kind other */
+--z-518:518; /* @kind other */
+--z-519:519; /* @kind other */
+/* toast */
+--z-520:520; /* @kind other */
+}

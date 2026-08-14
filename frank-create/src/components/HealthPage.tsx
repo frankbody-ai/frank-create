@@ -1,4 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+
+import { Badge, Button, Card, DataTable, PageHeader, Text } from "../ds";
+import type { DataTableColumn } from "../ds";
+import { Shell } from "../Shell";
 import { fetchHealth, fetchModels } from "../lib/api";
 import { supabase } from "../lib/supabaseClient";
 
@@ -87,72 +91,116 @@ async function runChecks(): Promise<CheckResult[]> {
   return results;
 }
 
+const COLUMNS: DataTableColumn[] = [
+  { key: "check", title: "Check" },
+  { key: "result", title: "Result" },
+  { key: "latency", title: "Latency", align: "end" },
+  { key: "detail", title: "Detail" },
+];
+
+/**
+ * Five checks, run on load. This is the one screen that renders without a
+ * session, so an operator can reach it when sign-in is what is broken.
+ */
 export function HealthPage() {
   const [results, setResults] = useState<CheckResult[] | null>(null);
   const [running, setRunning] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [search, setSearch] = useState("");
 
   const run = useCallback(async () => {
     setRunning(true);
-    const r = await runChecks();
-    setResults(r);
+    setResults(await runChecks());
     setRunning(false);
   }, []);
 
-  useEffect(() => {
-    run();
-  }, [run]);
+  useEffect(() => { void run(); }, [run]);
 
-  const allOk = results?.every((r) => r.ok) ?? false;
+  const failed = (results ?? []).filter((r) => !r.ok);
+  const allOk = results != null && failed.length === 0;
+
+  const report = {
+    generatedAt: new Date().toISOString(),
+    url: location.href,
+    userAgent: navigator.userAgent,
+    online: navigator.onLine,
+    failed: failed.map((r) => r.name),
+    results,
+  };
 
   async function copyReport() {
-    const report = {
-      generatedAt: new Date().toISOString(),
-      url: location.href,
-      userAgent: navigator.userAgent,
-      online: navigator.onLine,
-      results,
-    };
     try {
       await navigator.clipboard.writeText(JSON.stringify(report, null, 2));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      /* ignore */
+      /* clipboard blocked — the report is on screen either way */
     }
   }
 
-  return (
-    <div className="frank-health-page">
-      <header className="frank-health-header">
-        <h1>App Health</h1>
-        <p className={`frank-health-overall ${allOk ? "ok" : "bad"}`}>
-          {results == null
-            ? "Running checks…"
-            : allOk
-            ? "All systems operational"
-            : "One or more checks failed"}
-        </p>
-        <div className="frank-health-actions">
-          <button type="button" onClick={run} disabled={running}>
-            {running ? "Running…" : "Re-run checks"}
-          </button>
-          <button type="button" onClick={copyReport} disabled={!results}>
-            Copy report
-          </button>
-          <a href="/">← Back to app</a>
-        </div>
-      </header>
+  const query = search.trim().toLowerCase();
+  const visible = (results ?? []).filter(
+    (r) => !query || `${r.name} ${r.detail ?? ""} ${r.error ?? ""}`.toLowerCase().includes(query)
+  );
 
-      <ul className="frank-health-list">
-        {(results ?? []).map((r) => (
-          <li key={r.name} className={`frank-health-row ${r.ok ? "ok" : "bad"}`}>
-            <span className="frank-health-icon">{r.ok ? "✓" : "✗"}</span>
-            <span className="frank-health-name">{r.name}</span>
-            <span className="frank-health-latency">{r.latencyMs}ms</span>
-            <span className="frank-health-detail">
-              {r.error ? `error: ${r.error}` : r.detail ?? ""}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
+  const badge =
+    results == null
+      ? <Badge tone="neutral">Running checks</Badge>
+      : allOk
+        ? <Badge tone="success" icon="check-circle">All checks passed</Badge>
+        : <Badge tone="critical" icon="exclamation-circle">
+            {failed.length === 1 ? "One check failed" : `${failed.length} checks failed`}
+          </Badge>;
+
+  return (
+    <Shell
+      screen="health"
+      maxWidth="var(--content-max-width-one-column)"
+      search={search}
+      onSearchChange={setSearch}
+      searchPlaceholder="Search checks"
+    >
+      <PageHeader
+        title="App health"
+        subtitle="Five checks run on load. Copy the report into a bug before you escalate."
+        badge={badge}
+        actions={
+          <>
+            <Button icon="arrow-path" loading={running} onClick={() => void run()}>
+              Re-run checks
+            </Button>
+            <Button icon="document-duplicate" disabled={!results} onClick={() => void copyReport()}>
+              {copied ? "Copied" : "Copy report"}
+            </Button>
+          </>
+        }
+      />
+
+      <Card padding="none">
+        <DataTable
+          columns={COLUMNS}
+          rows={visible.map((r) => ({
+            id: r.name,
+            check: <Text fontWeight="medium">{r.name}</Text>,
+            result: r.ok ? <Badge tone="success">Pass</Badge> : <Badge tone="critical">Fail</Badge>,
+            latency: `${r.latencyMs} ms`,
+            detail: (
+              <Text tone={r.ok ? "secondary" : "critical"}>
+                {r.error ? `error: ${r.error}` : r.detail ?? "—"}
+              </Text>
+            ),
+          }))}
+          emptyState={
+            <Text as="p" tone="secondary">
+              {results == null ? "Running checks." : `No check matches "${search.trim()}".`}
+            </Text>
+          }
+        />
+      </Card>
+
+      <Card title="Report" subtitle="This is what Copy report puts on the clipboard.">
+        <pre className="code-block">{JSON.stringify(report, null, 2)}</pre>
+      </Card>
+    </Shell>
   );
 }

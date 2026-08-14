@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Design Studio">
+    <rect width="120" height="120" fill="#303030"></rect>
+    <rect x="36" y="36" width="48" height="48" rx="10" fill="#F1F1F1"></rect>
+    <path d="M60 46l-3.1 9.5a3 3 0 0 1-1.9 1.9L45.5 60l9.5 3.1a3 3 0 0 1 1.9 1.9L60 74l3.1-9.5a3 3 0 0 1 1.9-1.9L74.5 60l-9.5-3.1a3 3 0 0 1-1.9-1.9Z" fill="#303030"></path>
+  </svg>
+</template>
+<link rel="stylesheet" href="_ds/autosolutions-os-design-system-27c9557a-4750-47c0-9b23-31dad5741c00/styles.css">
+<script>window.AS_ICON_BASE = '_ds/autosolutions-os-design-system-27c9557a-4750-47c0-9b23-31dad5741c00/assets/icons';</script>
+<script src="_ds/autosolutions-os-design-system-27c9557a-4750-47c0-9b23-31dad5741c00/_ds_bundle.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; }
+  a { color: var(--color-text-link); text-decoration: none; }
+  a:hover { color: var(--color-text-link-hover); text-decoration: underline; }
+</style>
+</helmet>
+
+<x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.AppFrame" top-bar="{{ topBar }}" navigation="{{ sideNav }}" hint-size="100%,100%">
+
+  <sc-if value="{{ isStudio }}" hint-placeholder-val="{{ true }}">
+  <div data-screen-label="Studio" style="display: flex; flex-direction: column; gap: 16px;">
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.PageHeader" title="Studio" subtitle="Brief the shot in plain English. References and settings are optional." badge="{{ sessionBadge }}" actions="{{ studioActions }}" hint-size="100%,44px"></x-import>
+
+    <sc-if value="{{ showMetricStrip }}" hint-placeholder-val="{{ true }}">
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" padding="none" hint-size="100%,76px">
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));">
+        <div style="padding: 16px; border-right: 1px solid var(--color-border-secondary);">
+          <div style="font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">Rounds this session</div>
+          <div style="margin-top: 4px; font-size: var(--font-size-600); line-height: 28px; font-weight: var(--font-weight-semibold); letter-spacing: -.01em; font-variant-numeric: tabular-nums;">7</div>
+        </div>
+        <div style="padding: 16px; border-right: 1px solid var(--color-border-secondary);">
+          <div style="font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">Approved picks</div>
+          <div style="margin-top: 4px; font-size: var(--font-size-600); line-height: 28px; font-weight: var(--font-weight-semibold); letter-spacing: -.01em; font-variant-numeric: tabular-nums;">3</div>
+        </div>
+        <div style="padding: 16px; border-right: 1px solid var(--color-border-secondary);">
+          <div style="font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">Favourites</div>
+          <div style="margin-top: 4px; font-size: var(--font-size-600); line-height: 28px; font-weight: var(--font-weight-semibold); letter-spacing: -.01em; font-variant-numeric: tabular-nums;">5</div>
+        </div>
+        <div style="padding: 16px;">
+          <div style="font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">Spend this session</div>
+          <div style="margin-top: 4px; font-size: var(--font-size-600); line-height: 28px; font-weight: var(--font-weight-semibold); letter-spacing: -.01em; font-variant-numeric: tabular-nums;">A$3.92</div>
+        </div>
+      </div>
+    </x-import>
+    </sc-if>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start;">
+
+      <div style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Brief" subtitle="{{ briefSummary }}" hint-size="100%,300px">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="Brief" label-hidden="{{ true }}" multiline="{{ true }}" rows="{{ 5 }}" value="{{ prompt }}" on-change="{{ onPromptChange }}" placeholder="Describe the product, context, channel, mood, and what must stay accurate. Type @ to point at a reference." help-text="Cmd + Enter generates. Reference tags @ref1 and @ref2 point at one image each." hint-size="100%,112px"></x-import>
+
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px; border-radius: var(--radius-200); background: var(--color-bg-surface-secondary);">
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="arrow-up-tray" hint-size="auto,28px">Add references</x-import>
+              <sc-for list="{{ references }}" as="ref" hint-placeholder-count="2">
+                <div title="{{ ref.title }}" style="position: relative; width: 40px; height: 40px; border-radius: var(--radius-200); background: var(--color-bg-fill-secondary); box-shadow: 0 0 0 1px rgba(0,0,0,.06); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 3px;">
+                  <span style="padding: 0 4px; border-radius: var(--radius-050); background: var(--color-bg-fill-brand); color: var(--color-text-brand-on-bg-fill); font-size: var(--font-size-275); line-height: 14px;">{{ ref.tag }}</span>
+                </div>
+              </sc-for>
+              <span style="margin-left: auto; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">{{ referenceNote }}</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="sparkles" hint-size="auto,28px">Remix brief</x-import>
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="adjustments-horizontal" hint-size="auto,28px">Load a preset</x-import>
+              <span style="flex: 1;"></span>
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" tone="critical" icon="no-symbol" hint-size="auto,28px">Cancel run</x-import>
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" variant="primary" icon="bolt" hint-size="auto,28px">{{ generateLabel }}</x-import>
+            </div>
+          </div>
+        </x-import>
+
+        <section aria-label="Rounds" style="border-radius: var(--radius-300); background: var(--color-bg-inverse); overflow: hidden;">
+          <div style="height: 44px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,.08);">
+            <span style="font-size: var(--font-size-325); line-height: 20px; font-weight: var(--font-weight-medium); color: var(--color-text-inverse);">Rounds — newest first</span>
+            <span style="font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-inverse-secondary); font-variant-numeric: tabular-nums;">12 picks · 2 rounds</span>
+          </div>
+          <sc-for list="{{ rounds }}" as="round" hint-placeholder-count="2">
+            <article style="{{ round.style }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start;">
+                <div style="{{ round.gridStyle }}">
+                  <sc-for list="{{ round.picks }}" as="pick" hint-placeholder-count="4">
+                    <div style="{{ pick.style }}">
+                      <span style="align-self: flex-start; padding: 1px 6px; border-radius: var(--radius-050); background: rgba(255,255,255,.12); font-size: var(--font-size-275); line-height: 14px; color: var(--color-text-inverse);">{{ pick.label }}</span>
+                      <span style="font-size: var(--font-size-275); line-height: 14px; color: var(--color-text-inverse-secondary);">{{ pick.note }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="flex: 1 1 240px; min-width: 220px; display: flex; flex-direction: column; gap: 8px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="{{ round.dotStyle }}"></span>
+                    <span style="font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-inverse-secondary);">{{ round.kind }}</span>
+                  </div>
+                  <div style="font-size: var(--font-size-350); line-height: 20px; font-weight: var(--font-weight-semibold); color: #FFFFFF;">{{ round.model }}</div>
+                  <p style="margin: 0; font-size: var(--font-size-325); line-height: 20px; color: var(--color-text-inverse);">{{ round.prompt }}</p>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-inverse-secondary); font-variant-numeric: tabular-nums;">
+                    <span>{{ round.shortId }}</span>
+                    <span>·</span>
+                    <span>{{ round.time }}</span>
+                    <span>·</span>
+                    <span>{{ round.aspect }}</span>
+                    <span>·</span>
+                    <span>{{ round.resolution }}</span>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px; padding-top: 2px;">
+                    <button type="button" style="height: 24px; padding: 0 8px; border: 1px solid rgba(255,255,255,.28); border-radius: var(--radius-200); background: transparent; color: var(--color-text-inverse); font-family: inherit; font-size: var(--font-size-300); font-weight: var(--font-weight-medium); cursor: pointer;" style-hover="background: rgba(255,255,255,.08); border-color: #FFFFFF;">Copy prompt</button>
+                    <button type="button" style="height: 24px; padding: 0 8px; border: 1px solid rgba(255,255,255,.28); border-radius: var(--radius-200); background: transparent; color: var(--color-text-inverse); font-family: inherit; font-size: var(--font-size-300); font-weight: var(--font-weight-medium); cursor: pointer;" style-hover="background: rgba(255,255,255,.08); border-color: #FFFFFF;">Rerun round</button>
+                    <button type="button" style="height: 24px; padding: 0 8px; border: 1px solid rgba(255,255,255,.28); border-radius: var(--radius-200); background: transparent; color: var(--color-text-inverse); font-family: inherit; font-size: var(--font-size-300); font-weight: var(--font-weight-medium); cursor: pointer;" style-hover="background: rgba(255,255,255,.08); border-color: #FFFFFF;">Show request body</button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </sc-for>
+        </section>
+      </div>
+
+      <sc-if value="{{ settingsRailOpen }}" hint-placeholder-val="{{ true }}">
+      <aside aria-label="Run settings" style="flex: 0 0 320px;">
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" padding="none" hint-size="100%,560px">
+          <div style="padding: 16px; border-bottom: 1px solid var(--color-border-secondary);">
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.ButtonGroup" segmented="{{ true }}" hint-size="100%,28px">
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" pressed="{{ mediaIsImage }}" on-click="{{ onPickImage }}" hint-size="auto,28px">Image</x-import>
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" pressed="{{ mediaIsVideo }}" on-click="{{ onPickVideo }}" hint-size="auto,28px">Video</x-import>
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" pressed="{{ mediaIsCompare }}" on-click="{{ onPickCompare }}" hint-size="auto,28px">Compare</x-import>
+            </x-import>
+          </div>
+
+          <div style="padding: 16px; border-bottom: 1px solid var(--color-border-secondary);">
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Model" label-hidden="{{ true }}" options="{{ modelOptions }}" value="{{ model }}" on-change="{{ onModelChange }}" hint-size="100%,32px"></x-import>
+          </div>
+
+          <div style="padding: 16px; border-bottom: 1px solid var(--color-border-secondary); display: flex; flex-direction: column; gap: 12px;">
+            <div>
+              <div style="margin-bottom: 6px; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">Aspect ratio</div>
+              <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;">
+                <sc-for list="{{ aspects }}" as="aspect" hint-placeholder-count="6">
+                  <button type="button" onClick="{{ aspect.onSelect }}" style="{{ aspect.style }}">
+                    <span aria-hidden="true" style="{{ aspect.boxStyle }}"></span>
+                    <span style="font-size: var(--font-size-300); line-height: 16px; font-variant-numeric: tabular-nums;">{{ aspect.label }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+            <div>
+              <div style="margin-bottom: 6px; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">Resolution</div>
+              <div style="display: flex; gap: 6px;">
+                <sc-for list="{{ resolutions }}" as="res" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ res.onSelect }}" style="{{ res.style }}">{{ res.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div>
+              <div style="margin-bottom: 6px; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">Picks per run</div>
+              <div style="display: flex; gap: 6px;">
+                <sc-for list="{{ counts }}" as="count" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ count.onSelect }}" style="{{ count.style }}">{{ count.label }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding: 16px; border-bottom: 1px solid var(--color-border-secondary);">
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Style preset" label-hidden="{{ true }}" options="{{ presetOptions }}" hint-size="100%,32px"></x-import>
+          </div>
+
+          <div style="padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <span style="font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">{{ runCostLabel }}</span>
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" variant="plain" icon="arrow-path" hint-size="auto,28px">Reset run settings</x-import>
+          </div>
+        </x-import>
+      </aside>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isPrompt }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Prompt generator" style="display: flex; flex-direction: column; gap: 16px;">
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.PageHeader" title="Prompt generator" subtitle="Describe the outcome and the agent assembles the prompt. Runs on GPT-5.6 Sol." actions="{{ promptActions }}" hint-size="100%,44px"></x-import>
+
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Skill" subtitle="{{ skillHint }}" hint-size="100%,110px">
+      <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+        <sc-for list="{{ skills }}" as="skill" hint-placeholder-count="6">
+          <button type="button" onClick="{{ skill.onSelect }}" style="{{ skill.style }}">{{ skill.label }}</button>
+        </sc-for>
+      </div>
+    </x-import>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; max-width: 1000px;">
+      <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" padding="none" hint-size="100%,420px">
+        <div style="display: flex; flex-direction: column;">
+          <sc-for list="{{ messages }}" as="message" hint-placeholder-count="3">
+            <div style="{{ message.style }}">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                <span style="font-size: var(--font-size-300); line-height: 16px; font-weight: var(--font-weight-medium); color: var(--color-text-secondary);">{{ message.role }}</span>
+                <sc-if value="{{ message.phase }}" hint-placeholder-val="{{ false }}">
+                  <span style="{{ message.phaseStyle }}">{{ message.phase }}</span>
+                </sc-if>
+              </div>
+              <p style="margin: 0; font-size: var(--font-size-325); line-height: 20px; color: var(--color-text); white-space: pre-line; text-wrap: pretty;">{{ message.body }}</p>
+              <sc-if value="{{ message.hasPrompt }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: 12px; padding: 12px; border-radius: var(--radius-200); background: var(--color-bg-surface-secondary); font-family: ui-monospace, monospace; font-size: var(--font-size-300); line-height: 18px; color: var(--color-text); white-space: pre-line;">{{ message.promptText }}</div>
+              </sc-if>
+              <sc-if value="{{ message.hasPrompt }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: 12px; display: flex; gap: 6px;">
+                  <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" variant="primary" icon="bolt" hint-size="auto,28px">Send to Studio</x-import>
+                  <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="document-duplicate" hint-size="auto,28px">Copy prompt</x-import>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </x-import>
+
+      <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" hint-size="100%,160px">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="Message" label-hidden="{{ true }}" multiline="{{ true }}" rows="{{ 3 }}" placeholder="Brief the agent. Paste or drop reference images here." hint-size="100%,72px"></x-import>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="photo" hint-size="auto,28px">Attach reference</x-import>
+            <span style="flex: 1;"></span>
+            <span style="font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">Up to 6 references</span>
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" variant="primary" icon="paper-airplane" hint-size="auto,28px">Send message</x-import>
+          </div>
+        </div>
+      </x-import>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isUpscaler }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Upscaler" style="display: flex; flex-direction: column; gap: 16px;">
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.PageHeader" title="Upscaler" subtitle="Upscale and clean up any still or clip in this session, or upload a fresh file." actions="{{ upscalerActions }}" hint-size="100%,44px"></x-import>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start;">
+      <div style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Source" subtitle="Pick one still from this session, or upload a file." actions="{{ uploadAction }}" hint-size="100%,220px">
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px;">
+            <sc-for list="{{ sources }}" as="source" hint-placeholder-count="6">
+              <button type="button" onClick="{{ source.onSelect }}" style="{{ source.style }}">
+                <span style="{{ source.thumbStyle }}"></span>
+                <span style="padding: 6px 8px; display: block; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ source.title }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </x-import>
+
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Output" subtitle="Drag the handle to compare before and after." hint-size="100%,320px">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="position: relative; aspect-ratio: 16 / 9; border-radius: var(--radius-200); overflow: hidden; background: var(--color-bg-fill-secondary); box-shadow: 0 0 0 1px rgba(0,0,0,.06);">
+              <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: var(--font-size-300); color: var(--color-text-secondary);">Enhanced output slot — 4096 × 5120</div>
+              <div style="position: absolute; top: 0; bottom: 0; left: 46%; width: 2px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(0,0,0,.2);"></div>
+              <div style="position: absolute; top: 50%; left: 46%; transform: translate(-50%, -50%); width: 28px; height: 28px; border-radius: var(--radius-full); background: #FFFFFF; box-shadow: var(--shadow-200); display: flex; align-items: center; justify-content: center;">
+                <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Icon" source="chevron-up-down" size="{{ 16 }}" hint-size="16px,16px"></x-import>
+              </div>
+              <span style="position: absolute; left: 8px; top: 8px; padding: 2px 6px; border-radius: var(--radius-050); background: rgba(0,0,0,.6); color: #FFFFFF; font-size: var(--font-size-275); line-height: 14px;">Before</span>
+              <span style="position: absolute; right: 8px; top: 8px; padding: 2px 6px; border-radius: var(--radius-050); background: rgba(0,0,0,.6); color: #FFFFFF; font-size: var(--font-size-275); line-height: 14px;">After</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="font-size: var(--font-size-325); line-height: 20px; font-weight: var(--font-weight-medium);">Coffee scrub hero — pick 2</span>
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Badge" tone="success" icon="check-circle" hint-size="auto,20px">Complete</x-import>
+              <span style="flex: 1;"></span>
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="eye" hint-size="auto,28px">Show enhanced only</x-import>
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="arrow-down-tray" hint-size="auto,28px">Download file</x-import>
+            </div>
+          </div>
+        </x-import>
+      </div>
+
+      <aside aria-label="Enhancer settings" style="flex: 0 0 320px; display: flex; flex-direction: column; gap: 16px;">
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Enhancer" hint-size="100%,300px">
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Model" options="{{ upscaleModels }}" hint-size="100%,58px"></x-import>
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Enhance model" options="{{ enhanceModes }}" hint-size="100%,58px"></x-import>
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Upscale factor" options="{{ upscaleFactors }}" hint-size="100%,58px"></x-import>
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Subject detection" options="{{ subjectDetections }}" hint-size="100%,58px"></x-import>
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Output format" options="{{ outputFormats }}" hint-size="100%,58px"></x-import>
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Checkbox" label="Face enhancement" checked="{{ faceOn }}" on-change="{{ onToggleFace }}" hint-size="100%,20px"></x-import>
+            <sc-if value="{{ faceOn }}" hint-placeholder-val="{{ true }}">
+              <div style="padding: 12px; border-radius: var(--radius-200); background: var(--color-bg-surface-secondary); display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">
+                    <span>Strength</span><span style="font-variant-numeric: tabular-nums;">0.80</span>
+                  </div>
+                  <div style="margin-top: 6px; height: 4px; border-radius: var(--radius-full); background: var(--color-bg-fill-tertiary);"><div style="width: 80%; height: 100%; border-radius: var(--radius-full); background: var(--color-bg-fill-brand);"></div></div>
+                </div>
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">
+                    <span>Creativity</span><span style="font-variant-numeric: tabular-nums;">0.00</span>
+                  </div>
+                  <div style="margin-top: 6px; height: 4px; border-radius: var(--radius-full); background: var(--color-bg-fill-tertiary);"><div style="width: 2%; height: 100%; border-radius: var(--radius-full); background: var(--color-bg-fill-brand);"></div></div>
+                </div>
+              </div>
+            </sc-if>
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" variant="primary" icon="bolt" full-width="{{ true }}" hint-size="100%,28px">Enhance image</x-import>
+            <p style="margin: 0; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">Video upscales can take several minutes.</p>
+          </div>
+        </x-import>
+      </aside>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isPresets }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Presets" style="display: flex; flex-direction: column; gap: 16px;">
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.PageHeader" title="Presets" subtitle="A preset is a reusable paragraph appended to the brief. Custom presets appear in the Studio composer." actions="{{ presetActions }}" hint-size="100%,44px"></x-import>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start;">
+      <div style="flex: 0 1 380px; min-width: 300px; display: flex; flex-direction: column; gap: 16px;">
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Your presets" subtitle="{{ customCountLabel }}" padding="none" hint-size="100%,240px">
+          <sc-for list="{{ customPresets }}" as="preset" hint-placeholder-count="3">
+            <button type="button" onClick="{{ preset.onSelect }}" style="{{ preset.style }}">
+              <span style="display: block; font-size: var(--font-size-325); line-height: 20px; font-weight: var(--font-weight-medium); color: var(--color-text);">{{ preset.label }}</span>
+              <span style="display: block; margin-top: 2px; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ preset.description }}</span>
+            </button>
+          </sc-for>
+        </x-import>
+
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Starter presets" subtitle="Read only. Duplicate one to edit it." padding="none" hint-size="100%,200px">
+          <sc-for list="{{ starterPresets }}" as="preset" hint-placeholder-count="3">
+            <div style="padding: 12px 16px; border-bottom: 1px solid var(--color-border-secondary); display: flex; align-items: center; gap: 8px;">
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Icon" source="lock-closed" size="{{ 16 }}" tone="secondary" hint-size="16px,16px"></x-import>
+              <span style="flex: 1; min-width: 0;">
+                <span style="display: block; font-size: var(--font-size-325); line-height: 20px; color: var(--color-text);">{{ preset.label }}</span>
+                <span style="display: block; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ preset.description }}</span>
+              </span>
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" size="micro" icon="document-duplicate" hint-size="auto,24px">Duplicate</x-import>
+            </div>
+          </sc-for>
+        </x-import>
+      </div>
+
+      <div style="flex: 1 1 420px; min-width: 0;">
+      <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="{{ editorTitle }}" subtitle="Describe subject, composition, lighting, lens, materials, mood, then negatives." actions="{{ editorActions }}" hint-size="100%,520px">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="Label" value="{{ draftLabel }}" on-change="{{ onDraftLabel }}" placeholder="Coffee-scrub hero pack shot" help-text="Shown in the composer's preset list." hint-size="100%,58px"></x-import>
+          <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="Short description" value="{{ draftDescription }}" on-change="{{ onDraftDescription }}" placeholder="Warm editorial pack shot with coffee-grain texture" hint-size="100%,58px"></x-import>
+          <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="Preset text" multiline="{{ true }}" rows="{{ 10 }}" value="{{ draftPrompt }}" on-change="{{ onDraftPrompt }}" ai="{{ true }}" help-text="Use [PRODUCT NAME] where the brief slots in. Do not hard-code aspect ratio, resolution or model — those are run settings." hint-size="100%,220px"></x-import>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="sparkles" hint-size="auto,28px">Rewrite with AI</x-import>
+            <span style="flex: 1;"></span>
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" hint-size="auto,28px">Discard changes</x-import>
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" variant="primary" hint-size="auto,28px">Save preset</x-import>
+          </div>
+        </div>
+      </x-import>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isApproved }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Approved" style="display: flex; flex-direction: column; gap: 16px;">
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.PageHeader" title="Approved" subtitle="Every pick whose approval status is approved. Export them, or open the session's review board." actions="{{ approvedActions }}" hint-size="100%,44px"></x-import>
+
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Banner" tone="warning" title="One file is on a temporary provider link" hint-size="100%,72px">
+      <span>Body wash lifestyle was over the 20 MB storage limit, so it streams from the provider instead of storage. Save it now to keep it.</span>
+    </x-import>
+
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" padding="none" hint-size="100%,520px">
+      <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.FilterBar" search-placeholder="Search picks by title" views="{{ approvedViews }}" selected-view="{{ approvedView }}" on-view-change="{{ onApprovedView }}" filters="{{ approvedFilters }}" hint-size="100%,52px"></x-import>
+      <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.DataTable" columns="{{ approvedColumns }}" rows="{{ approvedRows }}" selectable="{{ true }}" selected-ids="{{ approvedSelected }}" on-toggle-row="{{ onToggleApproved }}" footer="{{ approvedFooter }}" hint-size="100%,440px"></x-import>
+    </x-import>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isReview }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Review board" style="display: flex; flex-direction: column; gap: 16px;">
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.PageHeader" title="Review board" subtitle="{{ boardSubtitle }}" back-action="{{ onBackToStudio }}" actions="{{ reviewActions }}" hint-size="100%,44px"></x-import>
+
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Handoff package" subtitle="Schema frank-create.handoff, version 1. Downloads unlock once the manifest validates." hint-size="100%,220px">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="arrow-down-tray" disabled="{{ downloadsBlocked }}" hint-size="auto,28px">Download JSON</x-import>
+          <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="arrow-down-tray" disabled="{{ downloadsBlocked }}" hint-size="auto,28px">Download CSV</x-import>
+          <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="document-duplicate" hint-size="auto,28px">Copy JSON</x-import>
+          <sc-if value="{{ downloadsBlocked }}" hint-placeholder-val="{{ true }}">
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="arrow-path" on-click="{{ onRetryHandoff }}" hint-size="auto,28px">Retry from build_manifest</x-import>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ downloadsBlocked }}" hint-placeholder-val="{{ true }}">
+          <div style="padding: 12px; border-radius: var(--radius-200); background: var(--color-critical-surface); box-shadow: 0 0 0 1px var(--color-critical-border); display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px; font-size: var(--font-size-325); line-height: 20px; font-weight: var(--font-weight-semibold); color: var(--color-critical-text);">
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Icon" source="exclamation-circle" size="{{ 16 }}" tone="critical" hint-size="16px,16px"></x-import>
+              <span>Downloads blocked — 3 manifest schema issues</span>
+            </div>
+            <ul style="margin: 0; padding-left: 20px; font-family: ui-monospace, monospace; font-size: var(--font-size-300); line-height: 18px; color: var(--color-critical-text);">
+              <sc-for list="{{ schemaIssues }}" as="issue" hint-placeholder-count="3">
+                <li>{{ issue.text }}</li>
+              </sc-for>
+            </ul>
+            <p style="margin: 0; font-size: var(--font-size-300); line-height: 16px; color: var(--color-critical-text);">Every asset needs id, title, media_type, approval_status and blueprint. Fix the source rows, then retry from build_manifest.</p>
+          </div>
+        </sc-if>
+        <sc-if value="{{ handoffValid }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; align-items: center; gap: 6px; font-size: var(--font-size-325); line-height: 20px; color: var(--color-success-text);">
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Icon" source="check-circle" size="{{ 16 }}" tone="success" hint-size="16px,16px"></x-import>
+            <span>Schema v1 validated · 12 assets · 4 approved</span>
+          </div>
+        </sc-if>
+      </div>
+    </x-import>
+
+    <sc-for list="{{ boardSections }}" as="section" hint-placeholder-count="3">
+      <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="{{ section.title }}" subtitle="{{ section.subtitle }}" hint-size="100%,300px">
+        <sc-if value="{{ section.isEmpty }}" hint-placeholder-val="{{ false }}">
+          <p style="margin: 0; font-size: var(--font-size-325); line-height: 20px; color: var(--color-text-secondary);">{{ section.emptyText }}</p>
+        </sc-if>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+          <sc-for list="{{ section.assets }}" as="asset" hint-placeholder-count="3">
+            <div style="border-radius: var(--radius-200); overflow: hidden; background: var(--color-bg-surface); box-shadow: 0 0 0 1px rgba(0,0,0,.08);">
+              <div style="width: 100%; aspect-ratio: 1 / 1; background: var(--color-bg-fill-secondary); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-300); color: var(--color-text-secondary);">{{ asset.slot }}</div>
+              <div style="padding: 10px 12px 8px; display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: var(--font-size-325); line-height: 20px; font-weight: var(--font-weight-semibold); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ asset.title }}</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Badge" tone="{{ asset.tone }}" hint-size="auto,20px">{{ asset.status }}</x-import>
+                  <sc-if value="{{ asset.isFavorite }}" hint-placeholder-val="{{ false }}">
+                    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Icon" source="star" size="{{ 16 }}" tone="caution" label="Favourite" hint-size="16px,16px"></x-import>
+                  </sc-if>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <sc-if value="{{ asset.canApprove }}" hint-placeholder-val="{{ true }}">
+                    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" size="micro" icon="check" hint-size="auto,24px">Approve</x-import>
+                  </sc-if>
+                  <sc-if value="{{ asset.canReject }}" hint-placeholder-val="{{ true }}">
+                    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" size="micro" tone="critical" icon="x-mark" hint-size="auto,24px">{{ asset.rejectLabel }}</x-import>
+                  </sc-if>
+                </div>
+                <details style="border-top: 1px solid var(--color-border-secondary); padding-top: 6px;">
+                  <summary style="font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary); cursor: pointer;">{{ asset.auditLabel }}</summary>
+                  <ul style="margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px;">
+                    <sc-for list="{{ asset.audit }}" as="event" hint-placeholder-count="2">
+                      <li style="display: flex; justify-content: space-between; gap: 6px; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">
+                        <span>{{ event.transition }}</span>
+                        <span style="font-variant-numeric: tabular-nums;">{{ event.when }}</span>
+                      </li>
+                    </sc-for>
+                  </ul>
+                </details>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </x-import>
+    </sc-for>
+
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Audit trail" subtitle="{{ auditSubtitle }}" padding="none" hint-size="100%,360px">
+      <div style="padding: 12px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-bottom: 1px solid var(--color-border);">
+        <sc-for list="{{ transitionChips }}" as="chip" hint-placeholder-count="3">
+          <button type="button" onClick="{{ chip.onToggle }}" style="{{ chip.style }}">{{ chip.label }}</button>
+        </sc-for>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Asset" label-hidden="{{ true }}" options="{{ auditAssetOptions }}" hint-size="180px,32px"></x-import>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Actor" label-hidden="{{ true }}" options="{{ auditActorOptions }}" hint-size="160px,32px"></x-import>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="From" label-hidden="{{ true }}" type="date" value="2026-08-01" max-width="140px" hint-size="140px,32px"></x-import>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="To" label-hidden="{{ true }}" type="date" value="2026-08-14" max-width="140px" hint-size="140px,32px"></x-import>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="Search" label-hidden="{{ true }}" icon="magnifying-glass" placeholder="Search title or note" max-width="180px" hint-size="180px,32px"></x-import>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" variant="plain" hint-size="auto,28px">Clear filters</x-import>
+      </div>
+      <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.DataTable" columns="{{ auditColumns }}" rows="{{ auditRows }}" hint-size="100%,260px"></x-import>
+    </x-import>
+
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Sync manifest" subtitle="What the backend returns for this session." hint-size="100%,240px">
+      <pre style="margin: 0; padding: 12px; border-radius: var(--radius-200); background: var(--color-bg-surface-secondary); overflow: auto; font-family: ui-monospace, monospace; font-size: var(--font-size-300); line-height: 18px; color: var(--color-text);">{{ manifestJson }}</pre>
+    </x-import>
+
+    <sc-if value="{{ handoffRunning }}" hint-placeholder-val="{{ true }}">
+    <div role="status" style="position: fixed; right: 20px; bottom: 20px; z-index: 60; width: 300px; padding: 12px; border-radius: var(--radius-300); background: var(--color-bg-surface); box-shadow: var(--shadow-400); display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Spinner" size="small" hint-size="16px,16px"></x-import>
+        <span style="flex: 1; font-size: var(--font-size-325); line-height: 20px; font-weight: var(--font-weight-medium);">Packaging handoff</span>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" variant="plain" size="micro" icon="x-mark" on-click="{{ onDismissHandoff }}" hint-size="auto,24px">Dismiss</x-import>
+      </div>
+      <div style="height: 4px; border-radius: var(--radius-full); background: var(--color-bg-fill-tertiary); overflow: hidden;">
+        <div style="{{ handoffBarStyle }}"></div>
+      </div>
+      <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px;">
+        <sc-for list="{{ handoffSteps }}" as="step" hint-placeholder-count="5">
+          <li style="{{ step.style }}">
+            <span style="{{ step.dotStyle }}"></span>
+            <span>{{ step.label }}</span>
+          </li>
+        </sc-for>
+      </ul>
+      <div style="display: flex; align-items: center; justify-content: space-between; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">
+        <span style="font-variant-numeric: tabular-nums;">{{ handoffElapsed }}</span>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" size="micro" on-click="{{ onDismissHandoff }}" hint-size="auto,24px">Cancel</x-import>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Admin" style="display: flex; flex-direction: column; gap: 16px;">
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.PageHeader" title="Admin portal" subtitle="Manage roles, triage feedback, and edit the prompt generator agent." badge="{{ adminRoleBadge }}" actions="{{ adminActions }}" hint-size="100%,44px"></x-import>
+
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Tabs" tabs="{{ adminTabs }}" selected="{{ adminTab }}" on-select="{{ onAdminTab }}" hint-size="100%,40px"></x-import>
+
+    <sc-if value="{{ adminIsUsers }}" hint-placeholder-val="{{ true }}">
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" padding="none" hint-size="100%,400px">
+      <div style="padding: 12px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--color-border);">
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="Search users" label-hidden="{{ true }}" icon="magnifying-glass" placeholder="Search by email" max-width="260px" hint-size="260px,32px"></x-import>
+        <span style="flex: 1;"></span>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="arrow-path" hint-size="auto,28px">Refresh list</x-import>
+      </div>
+      <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.DataTable" columns="{{ userColumns }}" rows="{{ userRows }}" hint-size="100%,340px"></x-import>
+    </x-import>
+    <p style="margin: 0; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">Granting admin lets that person change roles for anyone, including you. Removing your own admin role ends your access to this portal.</p>
+    </sc-if>
+
+    <sc-if value="{{ adminIsFeedback }}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" icon="arrow-path" hint-size="auto,28px">Refresh board</x-import>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Checkbox" label="Show dismissed (2)" checked="{{ showDismissed }}" on-change="{{ onToggleDismissed }}" hint-size="auto,20px"></x-import>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; align-items: start;">
+        <sc-for list="{{ feedbackColumns }}" as="column" hint-placeholder-count="3">
+          <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="{{ column.title }}" actions="{{ column.countBadge }}" hint-size="100%,300px">
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <sc-if value="{{ column.isEmpty }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary);">Nothing in this column.</p>
+              </sc-if>
+              <sc-for list="{{ column.cards }}" as="card" hint-placeholder-count="2">
+                <article style="padding: 12px; border-radius: var(--radius-200); background: var(--color-bg-surface-secondary); display: flex; flex-direction: column; gap: 8px;">
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: var(--font-size-300); line-height: 16px; color: var(--color-text-secondary); font-variant-numeric: tabular-nums;">
+                    <span>{{ card.when }}</span>
+                    <span>·</span>
+                    <span style="font-family: ui-monospace, monospace;">{{ card.path }}</span>
+                  </div>
+                  <p style="margin: 0; font-size: var(--font-size-325); line-height: 20px; color: var(--color-text); text-wrap: pretty;">{{ card.message }}</p>
+                  <sc-if value="{{ card.hasShot }}" hint-placeholder-val="{{ false }}">
+                    <div style="height: 96px; border-radius: var(--radius-200); background: var(--color-bg-fill-secondary); display: flex; align-items: center; justify-content: center; font-size: var(--font-size-300); color: var(--color-text-secondary);">Screenshot slot</div>
+                  </sc-if>
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: var(--font-size-300); color: var(--color-text-secondary);">
+                    <span>{{ card.viewport }}</span>
+                  </div>
+                  <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Status" label-hidden="{{ true }}" options="{{ feedbackStatusOptions }}" default-value="{{ card.status }}" hint-size="100%,32px"></x-import>
+                </article>
+              </sc-for>
+            </div>
+          </x-import>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{ adminIsAgent }}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; flex-direction: column; gap: 16px; max-width: 1000px;">
+      <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Banner" tone="info" title="Edits go live on the next message" hint-size="100%,72px">
+        <span>This is exactly what the agent runs on — no redeploy. Last edited 12 August 2026, 4:16 pm.</span>
+      </x-import>
+
+      <sc-for list="{{ agentFields }}" as="field" hint-placeholder-count="5">
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="{{ field.label }}" subtitle="{{ field.hint }}" actions="{{ field.resetAction }}" hint-size="100%,200px">
+          <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="{{ field.label }}" label-hidden="{{ true }}" multiline="{{ true }}" rows="{{ field.rows }}" value="{{ field.value }}" hint-size="100%,120px"></x-import>
+        </x-import>
+      </sc-for>
+
+      <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="{{ skillsTitle }}" subtitle="A skill adds one instruction on top of the always-on craft method. Inactive skills keep their text but lose their chip." actions="{{ addSkillAction }}" padding="none" hint-size="100%,400px">
+        <sc-for list="{{ agentSkills }}" as="skill" hint-placeholder-count="3">
+          <div style="padding: 16px; border-bottom: 1px solid var(--color-border-secondary); display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px;">
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="Label" value="{{ skill.label }}" max-width="220px" hint-size="220px,58px"></x-import>
+              <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="Key" value="{{ skill.key }}" max-width="200px" hint-size="200px,58px"></x-import>
+              <div style="padding-bottom: 6px;">
+                <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Checkbox" label="Show chip" checked="{{ skill.active }}" hint-size="auto,20px"></x-import>
+              </div>
+              <span style="flex: 1;"></span>
+              <div style="display: flex; gap: 6px; padding-bottom: 4px;">
+                <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" size="micro" icon="arrow-path" hint-size="auto,24px">Reset</x-import>
+                <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Button" size="micro" tone="critical" icon="trash" hint-size="auto,24px">Remove</x-import>
+              </div>
+            </div>
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="Chip hint" value="{{ skill.hint }}" hint-size="100%,58px"></x-import>
+            <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="Instruction sent to the model" multiline="{{ true }}" rows="{{ 4 }}" value="{{ skill.instruction }}" hint-size="100%,100px"></x-import>
+          </div>
+        </sc-for>
+      </x-import>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isHealth }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="App health" style="display: flex; flex-direction: column; gap: 16px; max-width: 1000px;">
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.PageHeader" title="App health" subtitle="Five checks run on load. Copy the report into a bug before you escalate." badge="{{ healthBadge }}" actions="{{ healthActions }}" hint-size="100%,44px"></x-import>
+
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" padding="none" hint-size="100%,320px">
+      <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.DataTable" columns="{{ healthColumns }}" rows="{{ healthRows }}" hint-size="100%,320px"></x-import>
+    </x-import>
+
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Report" subtitle="Copied to the clipboard as JSON." hint-size="100%,180px">
+      <pre style="margin: 0; padding: 12px; border-radius: var(--radius-200); background: var(--color-bg-surface-secondary); overflow: auto; font-family: ui-monospace, monospace; font-size: var(--font-size-300); line-height: 18px; color: var(--color-text);">{{ healthReport }}</pre>
+    </x-import>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Settings" style="display: flex; flex-direction: column; gap: 16px; max-width: 1000px;">
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.PageHeader" title="Settings" subtitle="Workspace defaults for this tenant." hint-size="100%,44px"></x-import>
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Theme" subtitle="A theme re-points the accent, canvas and navigation tint. Status colours never change." hint-size="100%,180px">
+      <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.ThemePicker" hint-size="100%,120px"></x-import>
+    </x-import>
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Run defaults" hint-size="100%,220px">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Default model" options="{{ modelOptions }}" hint-size="100%,58px"></x-import>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Default aspect ratio" options="{{ aspectOptions }}" hint-size="100%,58px"></x-import>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Default resolution" options="{{ resolutionOptions }}" hint-size="100%,58px"></x-import>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Select" label="Picks per run" options="{{ countOptions }}" hint-size="100%,58px"></x-import>
+      </div>
+    </x-import>
+    <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Card" title="Guardrails" hint-size="100%,200px">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Switch" label="Require approval before export" checked="{{ true }}" hint-size="100%,20px"></x-import>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.Switch" label="Keep run history for 30 days" checked="{{ true }}" hint-size="100%,20px"></x-import>
+        <x-import component-from-global-scope="AutoSolutionsOSDesignSystem_27c955.TextField" label="Monthly spend cap" prefix="A$" value="750.00" help-text="Runs stop when the cap is reached. Operators see the cap in the composer." max-width="240px" hint-size="240px,58px"></x-import>
+      </div>
+    </x-import>
+  </div>
+  </sc-if>
+
+</x-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;startPage&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;studio&quot;,&quot;prompt&quot;,&quot;upscaler&quot;,&quot;presets&quot;,&quot;approved&quot;,&quot;review&quot;,&quot;admin&quot;,&quot;health&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;studio&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Screen&quot;},&quot;showMetricStrip&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Studio&quot;},&quot;settingsRail&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Studio&quot;}}">
+class Component extends DCLogic {
+  state = {
+    page: null,
+    media: 'image',
+    model: 'nano-banana-pro',
+    aspect: '4:5',
+    resolution: '2K',
+    count: 4,
+    prompt: 'Coffee scrub tub on wet tile, morning bathroom light, glossy skin, hero e-comm shot. Keep the label type legible. @ref1 is the tub, @ref2 is the backdrop.',
+    skill: 'brief-to-prompt',
+    adminTab: 'users',
+    approvedView: 'All approved',
+    approvedSelected: ['a2'],
+    faceOn: true,
+    upscaleSource: 's2',
+    presetKey: 'coffee-hero',
+    showDismissed: false,
+    handoffRunning: true,
+    transitions: [],
+    draftLabel: 'Coffee-scrub hero pack shot',
+    draftDescription: 'Warm editorial pack shot with coffee-grain texture',
+    draftPrompt: '[PRODUCT NAME] centred on wet honed travertine, hard single source from camera left at 35 degrees, shallow falloff, coffee grounds scattered in the near foreground and out of focus. Glossy highlights on the tub shoulder, label type fully legible and undistorted. Warm neutral grade, no colour cast on the label. Negatives: no hands, no water droplets on the label, no duplicated type.'
+  };
+
+  DS() { return window.AutoSolutionsOSDesignSystem_27c955 || {}; }
+  el(name, props, ...kids) { const C = this.DS()[name]; return C ? React.createElement(C, props, ...kids) : null; }
+  set(patch) { this.setState(patch); }
+  row(...kids) { return React.createElement('div', { style: { display: 'flex', gap: '8px' } }, ...kids); }
+
+  chip(on, extra) {
+    return 'height: 28px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-200); font-family: inherit; font-size: var(--font-size-325); font-weight: var(--font-weight-medium); font-variant-numeric: tabular-nums; cursor: pointer; transition: background 120ms ease; '
+      + (on
+        ? 'background: var(--color-bg-fill-brand); color: var(--color-text-brand-on-bg-fill); border: 1px solid var(--color-border-brand);'
+        : 'background: var(--color-bg-surface); color: var(--color-text); border: 1px solid var(--color-border); box-shadow: var(--shadow-bevel-100);')
+      + (extra || '');
+  }
+
+  renderVals() {
+    const s = this.state;
+    const p = s.page || this.props.startPage || 'studio';
+    const badge = (tone, label) => this.el('Badge', { tone }, label);
+
+    const models = [
+      { value: 'nano-banana-pro', label: 'Nano Banana Pro', description: 'Strongest reference adherence and text rendering. The right default for pack shots.', price: 'A$0.14', badges: ['References', 'Masked edit', '4K'] },
+      { value: 'seedream-4', label: 'Seedream 4.0', description: 'Fast and painterly. Good for mood exploration, weaker on legible label type.', price: 'A$0.06', badges: ['References', '2K'] },
+      { value: 'flux-11-ultra', label: 'FLUX 1.1 Pro Ultra', description: 'Highest detail per pick and the slowest of the three. Use it for final frames.', price: 'A$0.21', badges: ['References', '4K', 'Slow'] }
+    ];
+    const model = models.find((m) => m.value === s.model) || models[0];
+
+    const aspectDefs = [
+      { label: '1:1', w: 1, h: 1 }, { label: '4:5', w: 4, h: 5 }, { label: '3:4', w: 3, h: 4 },
+      { label: '16:9', w: 16, h: 9 }, { label: '9:16', w: 9, h: 16 }, { label: '2:3', w: 2, h: 3 }
+    ];
+
+    const skillDefs = [
+      { id: 'brief-to-prompt', label: 'Brief to prompt', hint: 'One production-ready image prompt from a rough brief.' },
+      { id: 'variations', label: 'Variations', hint: 'Three to five distinct prompt variants of the same idea.' },
+      { id: 'product-shot', label: 'Product shot', hint: 'Studio and e-commerce product photography direction.' },
+      { id: 'lifestyle', label: 'Lifestyle and model', hint: 'On-body, editorial and in-situ scenes.' },
+      { id: 'video-prompt', label: 'Video prompt', hint: 'Camera move, action and pacing for video models.' },
+      { id: 'critique', label: 'Critique and fix', hint: 'Diagnose a weak prompt and rewrite it.' }
+    ];
+    const skill = skillDefs.find((k) => k.id === s.skill) || skillDefs[0];
+
+    // ── Approved · fields from lib/types.ts Asset: title, kind, media_type,
+    // width/height, favorite, approval_status ("review" | "approved" | "rejected"),
+    // sync_status ("local" | "cloud"), storage_missing.
+    const approvedData = [
+      { id: 'a1', title: 'Coffee scrub hero', kind: 'generate', media: 'Image', model: 'Nano Banana Pro', size: '1536 × 1920', favorite: true, sync: 'Cloud', syncTone: 'success', when: '18 minutes ago' },
+      { id: 'a2', title: 'Coffee scrub on concrete', kind: 'masked_edit', media: 'Image', model: 'Nano Banana Pro', size: '2048 × 2048', favorite: false, sync: 'Cloud', syncTone: 'success', when: 'Yesterday, 2:00 am' },
+      { id: 'a3', title: 'Everyday face — pack', kind: 'generate', media: 'Image', model: 'FLUX 1.1 Pro Ultra', size: '3072 × 3840', favorite: true, sync: 'Cloud', syncTone: 'success', when: '3 August 2026' },
+      { id: 'a4', title: 'Body wash lifestyle', kind: 'video', media: 'Video', model: 'Seedream 4.0', size: '1920 × 1080', favorite: false, sync: 'Temporary link', syncTone: 'caution', when: '1 August 2026' },
+      { id: 'a5', title: 'Shelf simulator frame', kind: 'edit', media: 'Image', model: 'Nano Banana Pro', size: '1536 × 2048', favorite: false, sync: 'Local only', syncTone: 'info', when: '28 July 2026' }
+    ];
+
+    // ── Review board · Board = { session_id, generated_at, assets, approved }.
+    // Three sections mirror ReviewBoardPage: approved / pending / rejected.
+    const boardAssets = [
+      { id: 'b1', title: 'Hero — wet tile', status: 'approved', favorite: true, audit: [{ transition: 'review → approved', when: '13 Aug, 4:12 pm' }, { transition: 'null → review', when: '13 Aug, 3:58 pm' }] },
+      { id: 'b2', title: 'Hero — concrete', status: 'approved', favorite: false, audit: [{ transition: 'review → approved', when: '13 Aug, 4:14 pm' }] },
+      { id: 'b3', title: 'On-body editorial', status: 'review', favorite: true, audit: [{ transition: 'null → review', when: '14 Aug, 9:02 am' }] },
+      { id: 'b4', title: 'Paid social still', status: 'review', favorite: false, audit: [{ transition: 'null → review', when: '14 Aug, 9:02 am' }] },
+      { id: 'b5', title: 'Ingredient macro', status: 'rejected', favorite: false, audit: [{ transition: 'review → rejected', when: '13 Aug, 5:40 pm' }] }
+    ];
+    const statusLabel = { approved: 'Approved', rejected: 'Rejected', review: 'In review' };
+    const statusTone = { approved: 'success', rejected: 'critical', review: 'neutral' };
+    const section = (title, status, emptyText) => {
+      const assets = boardAssets.filter((a) => a.status === status);
+      return {
+        title: title + ' (' + assets.length + ')',
+        subtitle: status === 'approved' ? 'Signed off. Revert one to send it back to review.' : status === 'review' ? 'Waiting on a decision.' : 'Kept for the audit trail, excluded from the handoff.',
+        isEmpty: assets.length === 0,
+        emptyText,
+        assets: assets.map((a) => ({
+          title: a.title,
+          slot: 'Image slot — 1:1',
+          status: statusLabel[a.status],
+          tone: statusTone[a.status],
+          isFavorite: a.favorite,
+          canApprove: a.status !== 'approved',
+          canReject: a.status !== 'rejected' || a.status === 'approved',
+          rejectLabel: a.status === 'approved' ? 'Revert' : 'Reject',
+          auditLabel: 'Audit trail (' + a.audit.length + ')',
+          audit: a.audit
+        }))
+      };
+    };
+
+    const auditData = [
+      { id: 'e1', when: '14 Aug 2026, 9:02 am', asset: 'On-body editorial', actor: 'sam@frankbody.com', from: 'null', to: 'review', note: 'Round delivered' },
+      { id: 'e2', when: '13 Aug 2026, 5:40 pm', asset: 'Ingredient macro', actor: 'ivy@frankbody.com', from: 'review', to: 'rejected', note: 'Label type breaks up at PDP crop' },
+      { id: 'e3', when: '13 Aug 2026, 4:14 pm', asset: 'Hero — concrete', actor: 'sam@frankbody.com', from: 'review', to: 'approved', note: '' },
+      { id: 'e4', when: '13 Aug 2026, 4:12 pm', asset: 'Hero — wet tile', actor: 'sam@frankbody.com', from: 'review', to: 'approved', note: 'Use as the first PDP image' }
+    ];
+
+    const manifest = '{\n  "schema": "frank-create.handoff",\n  "schema_version": 1,\n  "session_id": "9f3c1e84-2b7d-4a51-8c60-71f0a9d3e2bb",\n  "generated_at": "2026-08-14T13:42:08Z",\n  "assets": 12,\n  "turns": 7,\n  "blueprints": 3\n}';
+
+    // ── Admin · AdminUserRow from lib/admin.ts: id, email, created_at,
+    // last_sign_in_at, role ("admin" | "manager" | "user").
+    const userData = [
+      { id: 'u1', email: 'sam@frankbody.com', role: 'admin', joined: '4 February 2026', seen: '14 August 2026, 9:01 am', self: true },
+      { id: 'u2', email: 'ivy@frankbody.com', role: 'manager', joined: '19 March 2026', seen: '14 August 2026, 8:12 am', self: false },
+      { id: 'u3', email: 'dan@frankbody.com', role: 'user', joined: '2 May 2026', seen: '13 August 2026, 6:44 pm', self: false },
+      { id: 'u4', email: 'priya@agency.com', role: 'user', joined: '28 July 2026', seen: null, self: false },
+      { id: 'u5', email: 'marco@frankbody.com', role: 'user', joined: '11 June 2026', seen: '12 August 2026, 11:20 am', self: false }
+    ];
+    const roleOptions = [
+      { value: 'user', label: 'user' }, { value: 'manager', label: 'manager' }, { value: 'admin', label: 'admin' }
+    ];
+
+    // ── Admin · FeedbackRow from lib/feedback.ts: message, page_path,
+    // route_name, viewport, screenshot_path, status, created_at.
+    const feedbackData = {
+      open: [
+        { when: '14 Aug, 8:52 am', path: '#/', viewport: '1512 × 982', message: 'The reference dock collapses the action buttons into unlabelled circles once two references are loaded. I can never tell which one cancels.', hasShot: true },
+        { when: '13 Aug, 3:11 pm', path: '#/review/9f3c1e84', viewport: '1920 × 1080', message: 'Generate handoff failed twice with a schema error and the toast disappeared before I could read it.', hasShot: false }
+      ],
+      in_progress: [
+        { when: '12 Aug, 10:04 am', path: '#/', viewport: '1440 × 900', message: 'Video upscales time out at around six minutes with no message. Please say how long it will take before I start one.', hasShot: false }
+      ],
+      done: [
+        { when: '8 Aug, 5:20 pm', path: '#/admin', viewport: '1512 × 982', message: 'Role dropdown let me remove my own admin role without warning.', hasShot: false }
+      ]
+    };
+
+    const agentFieldDefs = [
+      { label: 'Persona and role', hint: 'Who the agent is and which models it writes for.', rows: 4, value: 'You are a senior product photographer and prompt engineer writing for Nano Banana Pro, Seedream 4.0 and FLUX 1.1 Pro Ultra. You write prompts a photographer could shoot.' },
+      { label: 'Always-on craft method', hint: 'The base operating method applied on every message, whatever skill is selected.', rows: 6, value: 'Work reference-led. Name the surface, the light, the lens and the grade before any adjective. Every prompt ends with explicit negatives. Never invent a product feature that is not in the reference.' },
+      { label: 'Conversation protocol', hint: 'How the agent runs the discovery to final-prompt conversation: when to ask, when it may draft.', rows: 6, value: 'Label every reply DISCOVERY or FINAL PROMPT on the first line. Ask at most three numbered questions in a discovery round. Draft as soon as surface, light and legibility are settled, or when the operator says to draft now.' },
+      { label: 'Production prompt blueprint', hint: 'The section-by-section structure the final prompt follows.', rows: 6, value: 'Subject · Composition · Light · Lens and camera · Materials and surface · Grade and mood · Negatives. One sentence per section, no headings in the output.' },
+      { label: 'Output rules', hint: 'Hard rules appended last.', rows: 4, value: 'Return the final prompt in a fenced code block and nothing else after it. Never put aspect ratio, resolution or model in the prompt — those are run settings. No emoji. No brand adjectives.' }
+    ];
+
+    const agentSkillDefs = [
+      { key: 'brief-to-prompt', label: 'Brief to prompt', active: true, hint: 'One production-ready image prompt from a rough brief.', instruction: 'Produce exactly one prompt. If the brief is missing surface, light or legibility, ask first.' },
+      { key: 'variations', label: 'Variations', active: true, hint: 'Three to five distinct prompt variants of the same idea.', instruction: 'Vary one axis per variant and name the axis. Never vary everything at once.' },
+      { key: 'critique', label: 'Critique and fix', active: false, hint: 'Diagnose a weak prompt and rewrite it.', instruction: 'List what the prompt leaves to chance, then rewrite it to the blueprint.' }
+    ];
+
+    // ── Health · checks from HealthPage.runChecks().
+    const healthData = [
+      { id: 'h1', name: 'Backend /health', ok: true, latency: '82 ms', detail: 'product=frank-create' },
+      { id: 'h2', name: 'Backend /models', ok: true, latency: '134 ms', detail: '17 models' },
+      { id: 'h3', name: 'Auth session', ok: true, latency: '41 ms', detail: 'signed in as sam@frankbody.com' },
+      { id: 'h4', name: 'Browser online', ok: true, latency: '0 ms', detail: 'online' },
+      { id: 'h5', name: 'LocalStorage', ok: false, latency: '2 ms', detail: 'error: read mismatch' }
+    ];
+
+    const handoffStepDefs = [
+      { key: 'fetch', label: 'Load session data' },
+      { key: 'build_manifest', label: 'Build manifest' },
+      { key: 'generate_json', label: 'Generate JSON' },
+      { key: 'generate_csv', label: 'Generate CSV' },
+      { key: 'validate', label: 'Validate schema' }
+    ];
+    const activeStep = 2;
+
+    return {
+      isStudio: p === 'studio',
+      isPrompt: p === 'prompt',
+      isUpscaler: p === 'upscaler',
+      isPresets: p === 'presets',
+      isApproved: p === 'approved',
+      isReview: p === 'review',
+      isAdmin: p === 'admin',
+      isHealth: p === 'health',
+      isSettings: p === 'settings',
+      showMetricStrip: this.props.showMetricStrip !== false,
+      settingsRailOpen: this.props.settingsRail !== false,
+
+      topBar: this.el('TopBar', {
+        searchPlaceholder: 'Search sessions and picks',
+        notificationCount: 3,
+        company: 'frankbody',
+        onCompanyAction: () => {}
+      }),
+      sideNav: this.el('SideNav', {
+        app: 'design-studio',
+        appName: 'art-ificial design studio',
+        items: [
+          { id: 'studio', label: 'Studio', icon: 'bolt' },
+          { id: 'prompt', label: 'Prompt generator', icon: 'chat-bubble-left-right' },
+          { id: 'upscaler', label: 'Upscaler', icon: 'arrow-trending-up' },
+          { id: 'presets', label: 'Presets', icon: 'rectangle-stack' },
+          { id: 'approved', label: 'Approved', icon: 'check-circle', badge: 3 },
+          { id: 'review', label: 'Review board', icon: 'users' }
+        ],
+        selected: p,
+        onSelect: (id) => this.set({ page: id }),
+        footerItems: [
+          { id: 'admin', label: 'Admin portal', icon: 'shield-check' },
+          { id: 'health', label: 'App health', icon: 'signal' },
+          { id: 'settings', label: 'Settings', icon: 'cog-6-tooth' }
+        ]
+      }),
+
+      // ── Studio
+      sessionBadge: badge('neutral', 'Coffee scrub — Q3 campaign'),
+      studioActions: this.row(
+        this.el('Button', { icon: 'folder', key: 'a' }, 'Switch session'),
+        this.el('Button', { icon: 'plus', key: 'b' }, 'Add session'),
+        this.el('Button', { variant: 'primary', icon: 'bolt', key: 'c' }, 'Generate ' + s.count + ' picks')
+      ),
+      generateLabel: 'Generate ' + s.count + ' pick' + (s.count === 1 ? '' : 's'),
+      briefSummary: s.aspect + ' · ' + s.resolution + ' · ' + s.count + ' pick' + (s.count === 1 ? '' : 's') + ' · ' + model.label,
+      prompt: s.prompt,
+      onPromptChange: (e) => this.set({ prompt: e.target.value }),
+      references: [
+        { tag: '@ref1', title: '@ref1 · Coffee scrub tub' },
+        { tag: '@ref2', title: '@ref2 · Wet tile backdrop' }
+      ],
+      referenceNote: '2 references loaded, used in the next run',
+      mediaIsImage: s.media === 'image',
+      mediaIsVideo: s.media === 'video',
+      mediaIsCompare: s.media === 'compare',
+      onPickImage: () => this.set({ media: 'image' }),
+      onPickVideo: () => this.set({ media: 'video' }),
+      onPickCompare: () => this.set({ media: 'compare' }),
+      mediaHint: s.media === 'compare'
+        ? 'Compare runs one output per side from the same brief and settings.'
+        : s.media === 'video'
+          ? 'Video runs from text, or animates @ref1 as the first frame. Two references set a start and end frame.'
+          : 'Stills only. Masked edits are available on models that support them.',
+      modelOptions: models.map((m) => ({ value: m.value, label: m.label })),
+      model: s.model,
+      onModelChange: (e) => this.set({ model: e.target.value }),
+      modelDescription: model.description,
+      modelPrice: model.price,
+      modelBadges: model.badges.map((label) => ({ label })),
+      runCostLabel: model.price + ' per pick · ' + s.count + ' × = A$' + (Number(model.price.replace('A$', '')) * s.count).toFixed(2),
+      aspects: aspectDefs.map((r) => {
+        const on = s.aspect === r.label;
+        const long = 30;
+        const w = r.w >= r.h ? long : Math.round((r.w / r.h) * long);
+        const h = r.h > r.w ? long : Math.round((r.h / r.w) * long);
+        return {
+          label: r.label,
+          onSelect: () => this.set({ aspect: r.label }),
+          style: 'min-height: 68px; padding: 8px 4px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; border-radius: var(--radius-200); font-family: inherit; cursor: pointer; '
+            + (on
+              ? 'background: var(--color-bg-surface-selected); border: 1px solid var(--color-border-brand); color: var(--color-text);'
+              : 'background: var(--color-bg-surface); border: 1px solid var(--color-border); color: var(--color-text-secondary); box-shadow: var(--shadow-bevel-100);'),
+          boxStyle: 'display: block; width: ' + w + 'px; height: ' + h + 'px; border-radius: var(--radius-050); background: ' + (on ? 'var(--color-bg-fill-brand)' : 'var(--color-bg-fill-tertiary)') + ';'
+        };
+      }),
+      resolutions: ['1K', '2K', '4K'].map((label) => ({
+        label, style: this.chip(s.resolution === label), onSelect: () => this.set({ resolution: label })
+      })),
+      counts: [1, 2, 4, 6].map((n) => ({
+        label: String(n), style: this.chip(s.count === n, ' min-width: 36px;'), onSelect: () => this.set({ count: n })
+      })),
+      presetOptions: [
+        { value: 'none', label: 'No preset' },
+        { value: 'coffee-hero', label: 'Coffee-scrub hero pack shot' },
+        { value: 'on-body', label: 'On-body editorial' },
+        { value: 'shelf', label: 'Shelf and planogram' }
+      ],
+      rounds: [
+        {
+          kind: 'Generated', model: 'Nano Banana Pro', shortId: '#8f21c4', time: '18 minutes ago',
+          aspect: '4:5', resolution: '1536 × 1920',
+          prompt: 'Coffee scrub tub on wet tile, morning bathroom light, glossy skin, hero e-comm shot. Keep the label type legible.',
+          style: 'padding: 16px; border-bottom: 1px solid rgba(255,255,255,.08);',
+          gridStyle: 'flex: 3 1 320px; min-width: 280px; display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px;',
+          dotStyle: 'display: block; width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--color-success-icon, #29845A);',
+          picks: [1, 2, 3, 4].map((i) => ({
+            label: 'Pick ' + i,
+            note: i === 2 ? 'Approved' : 'In review',
+            style: 'aspect-ratio: 4 / 5; padding: 8px; border-radius: var(--radius-200); background: rgba(255,255,255,.07); display: flex; flex-direction: column; justify-content: space-between;'
+          }))
+        },
+        {
+          kind: 'Masked edit', model: 'Seedream 4.0', shortId: '#3ab907', time: 'Yesterday, 2:00 am',
+          aspect: '1:1', resolution: '2048 × 2048',
+          prompt: 'Same tub, drop the tile, place it on brushed concrete with one hard source from camera left.',
+          style: 'padding: 16px;',
+          gridStyle: 'flex: 1 1 240px; min-width: 220px; max-width: 360px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;',
+          dotStyle: 'display: block; width: 8px; height: 8px; border-radius: var(--radius-full); background: var(--color-success-icon, #29845A);',
+          picks: [1, 2].map((i) => ({
+            label: 'Pick ' + i,
+            note: 'In review',
+            style: 'aspect-ratio: 1 / 1; padding: 8px; border-radius: var(--radius-200); background: rgba(255,255,255,.07); display: flex; flex-direction: column; justify-content: space-between;'
+          }))
+        }
+      ],
+
+      // ── Prompt generator
+      promptActions: this.row(
+        this.el('Button', { icon: 'arrow-path', key: 'a' }, 'Start a new chat'),
+        this.el('Button', { variant: 'primary', icon: 'bolt', key: 'b' }, 'Send to Studio')
+      ),
+      skillHint: skill.hint,
+      skills: skillDefs.map((k) => ({
+        label: k.label, style: this.chip(s.skill === k.id), onSelect: () => this.set({ skill: k.id })
+      })),
+      messages: [
+        {
+          role: 'You', phase: false, phaseStyle: '', hasPrompt: false, promptText: '',
+          style: 'padding: 16px; border-bottom: 1px solid var(--color-border-secondary); background: var(--color-bg-surface-secondary);',
+          body: 'Hero shot for the coffee scrub relaunch. Needs to work as the first PDP image and as a paid social still.'
+        },
+        {
+          role: 'Agent', phase: 'Discovery', hasPrompt: false, promptText: '',
+          phaseStyle: 'padding: 1px 6px; border-radius: var(--radius-050); background: var(--color-bg-fill-info); color: var(--color-info-text); font-size: var(--font-size-275); line-height: 14px;',
+          style: 'padding: 16px; border-bottom: 1px solid var(--color-border-secondary);',
+          body: 'Three things decide this shot.\n\n1. Surface — wet tile, honed stone or brushed concrete?\n2. Light — soft morning window, or one hard source?\n3. Does the label have to be fully legible at PDP crop?'
+        },
+        {
+          role: 'Agent', phase: 'Final prompt', hasPrompt: true,
+          phaseStyle: 'padding: 1px 6px; border-radius: var(--radius-050); background: var(--color-bg-fill-success); color: var(--color-success-text); font-size: var(--font-size-275); line-height: 14px;',
+          style: 'padding: 16px;',
+          body: 'Locked assumptions: honed travertine, one hard source from camera left, label fully legible.',
+          promptText: 'Coffee scrub tub centred on wet honed travertine. One hard source from camera left at 35 degrees, shallow falloff, coffee grounds scattered out of focus in the near foreground. Glossy highlight along the tub shoulder, label type fully legible and undistorted. Warm neutral grade. Negatives: no hands, no droplets on the label, no duplicated type.'
+        }
+      ],
+
+      // ── Upscaler
+      upscalerActions: this.row(
+        this.el('Button', { pressed: true, key: 'a' }, 'Image upscaler'),
+        this.el('Button', { key: 'b' }, 'Video upscaler')
+      ),
+      uploadAction: this.el('Button', { icon: 'arrow-up-tray', size: 'micro' }, 'Upload a file'),
+      sources: [
+        { id: 's1', title: 'Hero pack shot — pick 1' }, { id: 's2', title: 'Coffee scrub hero — pick 2' },
+        { id: 's3', title: 'Wet tile backdrop' }, { id: 's4', title: 'On-body editorial — pick 3' },
+        { id: 's5', title: 'Shelf simulator frame' }, { id: 's6', title: 'Concrete plinth — pick 1' }
+      ].map((d) => {
+        const on = s.upscaleSource === d.id;
+        return {
+          title: d.title,
+          onSelect: () => this.set({ upscaleSource: d.id }),
+          style: 'padding: 0; overflow: hidden; border-radius: var(--radius-200); cursor: pointer; font-family: inherit; text-align: left; background: var(--color-bg-surface); border: 1px solid '
+            + (on ? 'var(--color-border-brand)' : 'var(--color-border)') + '; box-shadow: ' + (on ? '0 0 0 1px var(--color-border-brand)' : 'none') + ';',
+          thumbStyle: 'display: block; width: 100%; height: 86px; background: var(--color-bg-fill-secondary); border-radius: var(--radius-150) var(--radius-150) 0 0;'
+        };
+      }),
+      upscaleModels: [
+        { value: 'topaz', label: 'Topaz Gigapixel' }, { value: 'recraft', label: 'Recraft Crisp' }, { value: 'crystal', label: 'Crystal Upscale' }
+      ],
+      enhanceModes: [{ value: 'std2', label: 'Standard V2' }, { value: 'lowres', label: 'Low resolution V2' }, { value: 'cgi', label: 'CGI' }],
+      upscaleFactors: [{ value: '2x', label: '2x' }, { value: '4x', label: '4x' }, { value: '6x', label: '6x' }],
+      subjectDetections: [{ value: 'none', label: 'None' }, { value: 'foreground', label: 'Foreground' }, { value: 'background', label: 'Background' }],
+      outputFormats: [{ value: 'png', label: 'PNG' }, { value: 'jpg', label: 'JPG' }, { value: 'webp', label: 'WEBP' }],
+      faceOn: s.faceOn,
+      onToggleFace: (e) => this.set({ faceOn: e && e.target ? e.target.checked : !s.faceOn }),
+
+      // ── Presets
+      presetActions: this.el('Button', { variant: 'primary', icon: 'plus' }, 'Add preset'),
+      customCountLabel: '3 presets',
+      customPresets: [
+        { key: 'coffee-hero', label: 'Coffee-scrub hero pack shot', description: 'Warm editorial pack shot with coffee-grain texture' },
+        { key: 'on-body', label: 'On-body editorial', description: 'Natural skin, soft window light, no retouch gloss' },
+        { key: 'shelf', label: 'Shelf and planogram', description: 'Flat front-on lighting for shelf simulation' }
+      ].map((d) => ({
+        label: d.label, description: d.description,
+        onSelect: () => this.set({ presetKey: d.key, draftLabel: d.label, draftDescription: d.description }),
+        style: 'width: 100%; padding: 12px 16px; border: 0; border-bottom: 1px solid var(--color-border-secondary); border-left: 3px solid '
+          + (s.presetKey === d.key ? 'var(--color-border-brand)' : 'transparent') + '; background: '
+          + (s.presetKey === d.key ? 'var(--color-bg-surface-selected)' : 'transparent') + '; font-family: inherit; text-align: left; cursor: pointer;'
+      })),
+      starterPresets: [
+        { label: 'Studio pack shot', description: 'Seamless white, two softboxes, no shadow spill' },
+        { label: 'Golden hour lifestyle', description: 'Low warm sun, long shadows, hand-held framing' },
+        { label: 'Ingredient macro', description: 'Extreme close, textural, shallow depth of field' }
+      ],
+      editorTitle: s.presetKey ? 'Editing preset' : 'New preset',
+      editorActions: badge('ai', 'AI assisted'),
+      draftLabel: s.draftLabel,
+      draftDescription: s.draftDescription,
+      draftPrompt: s.draftPrompt,
+      onDraftLabel: (e) => this.set({ draftLabel: e.target.value }),
+      onDraftDescription: (e) => this.set({ draftDescription: e.target.value }),
+      onDraftPrompt: (e) => this.set({ draftPrompt: e.target.value }),
+
+      // ── Approved
+      approvedActions: this.row(
+        this.el('Button', { icon: 'arrow-down-tray', key: 'a' }, 'Export selection'),
+        this.el('Button', { variant: 'primary', icon: 'link', key: 'b' }, 'Open review board')
+      ),
+      approvedViews: ['All approved', 'Favourites', 'Stills', 'Clips'],
+      approvedView: s.approvedView,
+      onApprovedView: (v) => this.set({ approvedView: v }),
+      approvedFilters: [{ id: 'model', label: 'Model' }, { id: 'kind', label: 'Kind' }, { id: 'session', label: 'Session' }],
+      approvedColumns: [
+        { key: 'pick', title: 'Pick' },
+        { key: 'kind', title: 'Kind' },
+        { key: 'model', title: 'Model' },
+        { key: 'media', title: 'Media' },
+        { key: 'size', title: 'Delivered size', align: 'end' },
+        { key: 'storage', title: 'Storage' },
+        { key: 'when', title: 'Approved' }
+      ],
+      approvedRows: approvedData.map((r) => ({
+        id: r.id,
+        pick: React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } },
+          React.createElement('span', { key: 't', style: { width: '40px', height: '40px', flex: '0 0 auto', borderRadius: 'var(--radius-200)', background: 'var(--color-bg-fill-secondary)', boxShadow: '0 0 0 1px rgba(0,0,0,.06)' } }),
+          React.createElement('span', { key: 'n', style: { fontWeight: 'var(--font-weight-medium)' } }, r.title),
+          r.favorite ? this.el('Icon', { key: 'f', source: 'star', size: 16, tone: 'caution', label: 'Favourite' }) : null),
+        kind: r.kind,
+        model: r.model,
+        media: r.media,
+        size: r.size,
+        storage: badge(r.syncTone, r.sync),
+        when: r.when
+      })),
+      approvedSelected: s.approvedSelected,
+      onToggleApproved: (id) => this.setState((st) => ({
+        approvedSelected: st.approvedSelected.indexOf(id) === -1
+          ? st.approvedSelected.concat([id])
+          : st.approvedSelected.filter((x) => x !== id)
+      })),
+      approvedFooter: this.el('Pagination', { label: '1–5 of 27', hasPrevious: false, hasNext: true }),
+
+      // ── Review board
+      boardSubtitle: 'Session 9f3c1e84 · generated 14 August 2026, 1:42 pm',
+      onBackToStudio: () => this.set({ page: 'studio' }),
+      reviewActions: this.row(
+        this.el('Button', { icon: 'arrow-path', key: 'a' }, 'Refresh board'),
+        this.el('Button', { variant: 'primary', icon: 'arrow-down-tray', key: 'b' }, 'Generate handoff')
+      ),
+      downloadsBlocked: true,
+      handoffValid: false,
+      onRetryHandoff: () => this.set({ handoffRunning: true }),
+      schemaIssues: [
+        { text: 'assets[3].blueprint missing' },
+        { text: 'assets[7].media_type missing' },
+        { text: 'blueprints not array' }
+      ],
+      boardSections: [
+        section('Approved', 'approved', 'No approved assets yet.'),
+        section('In review', 'review', 'No assets in review.'),
+        section('Rejected', 'rejected', 'No rejected assets.')
+      ],
+      auditSubtitle: auditData.length + ' of ' + auditData.length + ' events',
+      transitionChips: ['approved', 'rejected', 'review'].map((t) => ({
+        label: t,
+        onToggle: () => this.setState((st) => ({
+          transitions: st.transitions.indexOf(t) === -1 ? st.transitions.concat([t]) : st.transitions.filter((x) => x !== t)
+        })),
+        style: this.chip(s.transitions.indexOf(t) !== -1, ' border-radius: var(--radius-750); text-transform: capitalize;')
+      })),
+      auditAssetOptions: [{ value: '', label: 'All assets' }].concat(boardAssets.map((a) => ({ value: a.id, label: a.title }))),
+      auditActorOptions: [
+        { value: '', label: 'All actors' }, { value: 'sam', label: 'sam@frankbody.com' }, { value: 'ivy', label: 'ivy@frankbody.com' }
+      ],
+      auditColumns: [
+        { key: 'when', title: 'Time' },
+        { key: 'asset', title: 'Asset' },
+        { key: 'actor', title: 'Actor' },
+        { key: 'transition', title: 'Transition' },
+        { key: 'note', title: 'Note' }
+      ],
+      auditRows: auditData.map((e) => ({
+        id: e.id,
+        when: e.when,
+        asset: e.asset,
+        actor: e.actor,
+        transition: React.createElement('span', null,
+          React.createElement('span', { key: 'a', style: { color: 'var(--color-text-secondary)' } }, e.from + ' → '),
+          React.createElement('strong', { key: 'b', style: { fontWeight: 'var(--font-weight-semibold)' } }, e.to)),
+        note: e.note || '—'
+      })),
+      manifestJson: manifest,
+      handoffRunning: s.handoffRunning,
+      onDismissHandoff: () => this.set({ handoffRunning: false }),
+      handoffBarStyle: 'width: 60%; height: 100%; border-radius: var(--radius-full); background: var(--color-bg-fill-brand);',
+      handoffElapsed: '14s elapsed',
+      handoffSteps: handoffStepDefs.map((step, i) => ({
+        label: step.label,
+        style: 'display: flex; align-items: center; gap: 6px; font-size: var(--font-size-300); line-height: 18px; color: '
+          + (i > activeStep ? 'var(--color-text-disabled)' : 'var(--color-text-secondary)') + ';',
+        dotStyle: 'flex: 0 0 auto; width: 10px; height: 10px; border-radius: var(--radius-full); '
+          + (i < activeStep
+            ? 'background: var(--color-bg-fill-success);'
+            : i === activeStep
+              ? 'background: var(--color-bg-fill-brand);'
+              : 'box-shadow: inset 0 0 0 1px var(--color-border);')
+      })),
+
+      // ── Admin
+      adminRoleBadge: badge('info', 'Admin only'),
+      adminActions: this.row(
+        this.el('Button', { icon: 'arrow-left', key: 'a', onClick: () => this.set({ page: 'studio' }) }, 'Back to studio'),
+        this.el('Button', { variant: 'primary', icon: 'plus', key: 'b' }, 'Invite operator')
+      ),
+      adminTabs: [
+        { id: 'users', label: 'Users', count: userData.length },
+        { id: 'feedback', label: 'Feedback tasks', count: 4 },
+        { id: 'agent', label: 'Prompt agent' }
+      ],
+      adminTab: s.adminTab,
+      onAdminTab: (id) => this.set({ adminTab: id }),
+      adminIsUsers: s.adminTab === 'users',
+      adminIsFeedback: s.adminTab === 'feedback',
+      adminIsAgent: s.adminTab === 'agent',
+      userColumns: [
+        { key: 'email', title: 'Email' },
+        { key: 'role', title: 'Role', width: '160px' },
+        { key: 'joined', title: 'Joined' },
+        { key: 'seen', title: 'Last sign-in' }
+      ],
+      userRows: userData.map((u) => ({
+        id: u.id,
+        email: React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+          React.createElement('span', { key: 'e', style: { fontWeight: 'var(--font-weight-medium)' } }, u.email),
+          u.self ? badge('neutral', 'you') : null),
+        role: this.el('Select', { label: 'Role', labelHidden: true, options: roleOptions, defaultValue: u.role }),
+        joined: u.joined,
+        seen: u.seen || '—'
+      })),
+      showDismissed: s.showDismissed,
+      onToggleDismissed: (e) => this.set({ showDismissed: e && e.target ? e.target.checked : !s.showDismissed }),
+      feedbackStatusOptions: [
+        { value: 'open', label: 'Open' }, { value: 'in_progress', label: 'In progress' },
+        { value: 'done', label: 'Done' }, { value: 'dismissed', label: 'Dismiss' }
+      ],
+      feedbackColumns: [
+        { key: 'open', title: 'Open' }, { key: 'in_progress', title: 'In progress' }, { key: 'done', title: 'Done' }
+      ].concat(s.showDismissed ? [{ key: 'dismissed', title: 'Dismissed' }] : []).map((col) => {
+        const cards = (feedbackData[col.key] || []).map((c) => ({
+          when: c.when, path: c.path, message: c.message, hasShot: c.hasShot,
+          viewport: 'Viewport ' + c.viewport, status: col.key
+        }));
+        return {
+          title: col.title,
+          countBadge: badge('neutral', String(cards.length)),
+          isEmpty: cards.length === 0,
+          cards
+        };
+      }),
+      agentFields: agentFieldDefs.map((f) => ({
+        label: f.label, hint: f.hint, rows: f.rows, value: f.value,
+        resetAction: this.el('Button', { size: 'micro', icon: 'arrow-path' }, 'Reset to default')
+      })),
+      skillsTitle: 'Skills (' + agentSkillDefs.length + ')',
+      addSkillAction: this.el('Button', { size: 'micro', icon: 'plus' }, 'Add skill'),
+      agentSkills: agentSkillDefs,
+
+      // ── App health
+      healthBadge: badge('critical', 'One check failed'),
+      healthActions: this.row(
+        this.el('Button', { icon: 'arrow-path', key: 'a' }, 'Re-run checks'),
+        this.el('Button', { icon: 'document-duplicate', key: 'b' }, 'Copy report')
+      ),
+      healthColumns: [
+        { key: 'check', title: 'Check' },
+        { key: 'result', title: 'Result' },
+        { key: 'latency', title: 'Latency', align: 'end' },
+        { key: 'detail', title: 'Detail' }
+      ],
+      healthRows: healthData.map((h) => ({
+        id: h.id,
+        check: React.createElement('span', { style: { fontWeight: 'var(--font-weight-medium)' } }, h.name),
+        result: badge(h.ok ? 'success' : 'critical', h.ok ? 'Pass' : 'Fail'),
+        latency: h.latency,
+        detail: React.createElement('span', { style: { color: h.ok ? 'var(--color-text-secondary)' : 'var(--color-critical-text)' } }, h.detail)
+      })),
+      healthReport: '{\n  "generatedAt": "2026-08-14T13:44:02Z",\n  "url": "https://studio.frankbody.com/#/health",\n  "online": true,\n  "failed": ["LocalStorage"]\n}',
+
+      // ── Settings
+      aspectOptions: aspectDefs.map((r) => ({ value: r.label, label: r.label })),
+      resolutionOptions: ['1K', '2K', '4K'].map((v) => ({ value: v, label: v })),
+      countOptions: [1, 2, 4, 6].map((n) => ({ value: String(n), label: String(n) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

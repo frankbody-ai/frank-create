@@ -8,43 +8,23 @@ import { ErrorToast } from "./components/ErrorToast";
 import { HealthPage } from "./components/HealthPage";
 import { ReviewBoardPage } from "./components/ReviewBoardPage";
 import { CliffAccessPage } from "./components/CliffAccessPage";
-import { AdminFeedbackPage } from "./components/AdminFeedbackPage";
 import { AdminPortal } from "./components/AdminPortal";
-import { FeedbackWidget } from "./components/FeedbackWidget";
+import { SettingsPage } from "./components/SettingsPage";
 import { SmallScreenNotice } from "./components/SmallScreenNotice";
 import { OAuthConsentPage } from "./components/OAuthConsentPage";
 import { installErrorReporter } from "./lib/errorReporter";
-import "./styles.css";
+import { applyTheme, storedTheme } from "./ds";
+import { resolveScreen } from "./nav";
+import "./app.css";
 
-document.documentElement.setAttribute("data-tenant", "frank");
+// The remembered theme has to land before first paint, or the page flashes ink.
+applyTheme(storedTheme());
 installErrorReporter();
 
-function resolveRoute() {
-  const pathname = window.location.pathname.replace(/\/$/, "");
-  const rawHash = window.location.hash.replace(/^#/, "");
-  const hashPath = (rawHash.split("?")[0] || "").replace(/\/$/, "");
-  const isHealth = hashPath === "/health" || pathname === "/health";
-  const isCliff = hashPath === "/cliff-access" || pathname === "/cliff-access";
-  const isAdminFeedback = hashPath === "/admin/feedback" || pathname === "/admin/feedback";
-  const isAdmin = hashPath === "/admin" || pathname === "/admin";
-  const isOAuthConsent =
-    hashPath === "/.lovable/oauth/consent" || pathname === "/.lovable/oauth/consent";
-  const reviewMatch =
-    hashPath.match(/^\/review\/([^/]+)$/) ?? pathname.match(/^\/review\/([^/]+)$/);
-  return {
-    isHealth,
-    isCliff,
-    isAdmin,
-    isAdminFeedback,
-    isOAuthConsent,
-    reviewSessionId: reviewMatch ? decodeURIComponent(reviewMatch[1]) : null,
-  };
-}
-
 function Router() {
-  const [route, setRoute] = useState(resolveRoute);
+  const [route, setRoute] = useState(resolveScreen);
   useEffect(() => {
-    const onChange = () => setRoute(resolveRoute());
+    const onChange = () => setRoute(resolveScreen());
     window.addEventListener("hashchange", onChange);
     window.addEventListener("popstate", onChange);
     return () => {
@@ -53,27 +33,44 @@ function Router() {
     };
   }, []);
 
-  if (route.isOAuthConsent) return <OAuthConsentPage />;
-  if (route.isHealth)
-    return (
-      <>
-        <HealthPage />
-        <FeedbackWidget />
-      </>
-    );
-  if (route.isCliff) return <AuthGate><CliffAccessPage /><FeedbackWidget /></AuthGate>;
-  if (route.isAdmin)
-    return <AuthGate><AdminPortal /><FeedbackWidget /></AuthGate>;
-  if (route.isAdminFeedback)
-    return <AuthGate><AdminFeedbackPage /><FeedbackWidget /></AuthGate>;
-  if (route.reviewSessionId)
-    return (
-      <AuthGate>
-        <ReviewBoardPage sessionId={route.reviewSessionId} />
-        <FeedbackWidget />
-      </AuthGate>
-    );
-  return <AuthGate><App /></AuthGate>;
+  switch (route.screen) {
+    case "oauth":
+      return <OAuthConsentPage />;
+    case "health":
+      return (
+<HealthPage />
+      );
+    case "cliff":
+      return (
+        <AuthGate>
+          <CliffAccessPage />
+        </AuthGate>
+      );
+    case "admin":
+      return (
+        <AuthGate>
+          <AdminPortal />
+        </AuthGate>
+      );
+    case "settings":
+      return (
+        <AuthGate>
+          <SettingsPage />
+        </AuthGate>
+      );
+    case "review":
+      return (
+        <AuthGate>
+          <ReviewBoardPage sessionId={route.sessionId} />
+        </AuthGate>
+      );
+    default:
+      return (
+        <AuthGate>
+          <App />
+        </AuthGate>
+      );
+  }
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

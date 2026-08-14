@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { MessageSquarePlus, X, Paperclip, Check, Loader2 } from "lucide-react";
+import { Banner, Button, Icon, Modal, Text, TextField } from "../ds";
 import { submitFeedback } from "../lib/feedback";
 
 function currentPagePath(): string {
@@ -36,7 +36,7 @@ async function fileToBase64(file: File): Promise<string> {
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_BYTES = 3 * 1024 * 1024;
 
-export function FeedbackWidget({ variant = "fixed" }: { variant?: "fixed" | "inline" | "sidebar" }) {
+export function FeedbackWidget({ variant = "fixed" }: { variant?: "fixed" | "inline" }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -110,111 +110,91 @@ export function FeedbackWidget({ variant = "fixed" }: { variant?: "fixed" | "inl
 
   return (
     <>
-      {variant === "sidebar" ? (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="sidebar-nav-button"
-          aria-label="Send feedback"
-        >
-          <MessageSquarePlus size={16} />
-          Feedback
-        </button>
-      ) : variant === "inline" ? (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="feedback-inline"
-          aria-label="Send feedback"
-        >
-          <MessageSquarePlus size={16} />
+      {variant === "inline" ? (
+        <Button icon="chat-bubble-left-right" onClick={() => setOpen(true)}>
+          Send feedback
+        </Button>
+      ) : (
+        <button type="button" onClick={() => setOpen(true)} className="feedback-fab">
+          <Icon source="chat-bubble-left-right" size={16} tone="inherit" />
           <span>Feedback</span>
         </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="feedback-fab"
-          aria-label="Send feedback"
-        >
-          <span className="feedback-fab-ring" aria-hidden />
-          <span className="feedback-fab-inner">
-            <MessageSquarePlus size={16} />
-            <span>Feedback</span>
-          </span>
-        </button>
       )}
 
-      {open && (
-        <div className="feedback-backdrop" onClick={close}>
-          <div className="feedback-modal" data-paste-scope="feedback" onClick={(e) => e.stopPropagation()}>
-            <div className="feedback-modal-header">
-              <h2>Send feedback</h2>
-              <button type="button" onClick={close} className="feedback-icon-btn" aria-label="Close">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="feedback-modal-body">
-              <div className="feedback-page-chip">
-                <span>Page</span>
-                <code>{pagePath}</code>
-              </div>
-
-              <textarea
-                rows={5}
-                maxLength={4000}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="What's broken, confusing, or missing?"
-                className="feedback-textarea"
-                disabled={submitting || success}
-              />
-
-              <div className="feedback-attach-row">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  style={{ display: "none" }}
-                  onChange={onPickFile}
-                />
-                <button
-                  type="button"
-                  className="feedback-attach-btn"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={submitting || success}
-                >
-                  <Paperclip size={14} />
-                  {file ? file.name : "Attach screenshot"}
-                </button>
-                {file && (
-                  <span className="feedback-attach-size">{Math.round(file.size / 1024)} KB</span>
-                )}
-              </div>
-
-              {error && <div className="feedback-error">{error}</div>}
-              {success && (
-                <div className="feedback-success">
-                  <Check size={16} /> Thanks — feedback captured and a task was created.
-                </div>
-              )}
-            </div>
-            <div className="feedback-modal-footer">
-              <button type="button" onClick={close} className="feedback-btn-ghost" disabled={submitting}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={onSubmit}
-                className="feedback-btn-primary"
-                disabled={submitting || success || message.trim().length < 3}
-              >
-                {submitting ? <><Loader2 size={14} className="feedback-spin" /> Sending…</> : "Send feedback"}
-              </button>
-            </div>
+      <Modal
+        open={open}
+        title="Send feedback"
+        size="small"
+        onClose={close}
+        secondaryActions={
+          <Button onClick={close} disabled={submitting}>
+            Cancel
+          </Button>
+        }
+        primaryAction={
+          <Button
+            variant="primary"
+            onClick={onSubmit}
+            loading={submitting}
+            disabled={submitting || success || message.trim().length < 3}
+          >
+            Send feedback
+          </Button>
+        }
+      >
+        <div className="feedback-form" data-paste-scope="feedback">
+          <div className="feedback-form__page">
+            <Text variant="bodySm" tone="secondary">
+              Page
+            </Text>
+            <code>{pagePath}</code>
           </div>
+
+          <TextField
+            label="What's broken, confusing, or missing?"
+            multiline
+            rows={5}
+            maxLength={4000}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Describe what you did, what you expected, and what happened instead."
+            disabled={submitting || success}
+          />
+
+          <div className="feedback-form__attach">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              hidden
+              onChange={onPickFile}
+            />
+            <Button
+              icon="photo"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={submitting || success}
+            >
+              {file ? file.name : "Attach a screenshot"}
+            </Button>
+            {file ? (
+              <Text variant="bodySm" tone="secondary" numeric>
+                {Math.round(file.size / 1024)} KB
+              </Text>
+            ) : null}
+          </div>
+
+          {error ? (
+            <Banner tone="critical" title="That didn't send">
+              <span>{error}</span>
+            </Banner>
+          ) : null}
+          {success ? (
+            <Banner tone="success" title="Thanks — feedback captured">
+              <span>A triage task was created for it.</span>
+            </Banner>
+          ) : null}
         </div>
-      )}
+      </Modal>
     </>
   );
 }

@@ -1,36 +1,4 @@
 import {
-  ArrowLeft,
-
-  Box,
-  CheckCircle2,
-  ChevronLeft,
-  SlidersHorizontal,
-  ChevronRight,
-  Clipboard,
-  Cpu,
-  Download,
-  GitBranch,
-  ExternalLink,
-  Heart,
-  ImageIcon,
-  Layers3,
-  Loader2,
-  MessageSquareText,
-  Paperclip,
-  Paintbrush,
-  Pencil,
-  Plus,
-  RefreshCw,
-  Search,
-  Bell,
-  Sparkles,
-  Square,
-  Upload,
-  Wand2,
-  X,
-  XCircle
-} from "lucide-react";
-import {
   CSSProperties,
   ChangeEvent,
   FormEvent,
@@ -41,6 +9,22 @@ import {
   useState
 } from "react";
 import { createPortal } from "react-dom";
+
+import {
+  ActionList,
+  Badge,
+  Banner,
+  Button,
+  Card,
+  Icon,
+  PageHeader,
+  Popover,
+  Spinner,
+  Text
+} from "./ds";
+import { Shell } from "./Shell";
+import { modeFromUrl, navigate } from "./nav";
+import type { InAppScreen, Screen } from "./nav";
 
 import {
   fetchActivationChecklist,
@@ -126,8 +110,8 @@ import {
 } from "./lib/studio";
 import type { StudioFieldErrors } from "./lib/studio";
 
-import { FeedbackWidget } from "./components/FeedbackWidget";
 import { StudioRail } from "./components/StudioRail";
+import { ApprovedScreen } from "./components/ApprovedScreen";
 import { PresetCreator } from "./components/PresetCreator";
 import { PromptGenerator } from "./components/PromptGenerator";
 import Enhancer from "./components/Enhancer";
@@ -159,7 +143,6 @@ import type {
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
-import osLogo from "./assets/ds/autosolutions-os-md.png";
 
 
 type WalkthroughTarget =
@@ -388,17 +371,13 @@ export default function App() {
     await hardSignOut();
     window.location.replace("/");
   };
-  const [studioMode, setStudioMode] = useState<"image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator" | "prompt-generator" | "enhancer">(() =>
-    initialStudioMode()
-  );
+  const [studioMode, setStudioMode] = useState<InAppScreen>(() => modeFromUrl());
   useEffect(() => {
     document.body.dataset.feedbackView = studioMode;
     return () => {
       delete document.body.dataset.feedbackView;
     };
   }, [studioMode]);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [sessionsOpen, setSessionsOpen] = useState(false);
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
   const [walkthroughStep, setWalkthroughStep] = useState(0);
   const [walkthroughAnchor, setWalkthroughAnchor] = useState<WalkthroughAnchor | null>(null);
@@ -560,22 +539,6 @@ export default function App() {
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
   const [settingsRailOpen, setSettingsRailOpen] = useState(true);
-  const [tenantTheme, setTenantTheme] = useState<TenantThemeId>(() => {
-    try {
-      const stored = window.localStorage.getItem("frank-create.tenant-theme");
-      if (stored && TENANT_THEMES.some((theme) => theme.id === stored)) return stored as TenantThemeId;
-    } catch {
-      /* storage unavailable */
-    }
-    return "frank";
-  });
-  useEffect(() => {
-    try {
-      window.localStorage.setItem("frank-create.tenant-theme", tenantTheme);
-    } catch {
-      /* storage unavailable */
-    }
-  }, [tenantTheme]);
 
   const [mediaKind, setMediaKind] = useState<"image" | "video" | "compare">("image");
 
@@ -595,7 +558,6 @@ export default function App() {
         return;
       }
 
-      setSettingsOpen(false);
       setLightboxAsset(null);
     }
 
@@ -1018,7 +980,7 @@ export default function App() {
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
   const firstOutputAsset = outputAssets[0] ?? null;
   const displayOutputAssets =
-    reviewFilter === "approved" || studioMode === "approved-hot"
+    reviewFilter === "approved" || studioMode === "approved"
       ? outputAssets.filter((asset) => asset.approval_status === "approved")
       : outputAssets;
   const approvedCount = outputAssets.filter((asset) => asset.approval_status === "approved").length;
@@ -1066,73 +1028,37 @@ export default function App() {
   const showMainDemoAction = Boolean(mainDemoSession && activeSession?.id !== mainDemoSession.id);
 
   function showImageStudio() {
-    setStudioMode("image-studio");
+    setStudioMode("studio");
     setReviewFilter("all");
     setSettingsRailOpen(true);
     setStatusText("Studio is open.");
   }
 
   function showPresetCreator() {
-    setStudioMode("preset-creator");
+    setStudioMode("presets");
     setStatusText("Preset Creator is open.");
   }
 
   function showEnhancer() {
-    setStudioMode("enhancer");
+    setStudioMode("upscaler");
     setSettingsRailOpen(false);
     setStatusText("Enhancer is open.");
   }
 
   function showPromptGenerator() {
-    setStudioMode("prompt-generator");
+    setStudioMode("prompt");
     setSettingsRailOpen(false);
     setStatusText("Prompt Generator is open.");
   }
 
-  function showProductShotLab() {
-    const productPreset = promptPresets.find((preset) => preset.key === "product-shot-lab") ?? promptPresets[0];
-    setStudioMode("product-shot-lab");
-    setReviewFilter("all");
-    if (productPreset) {
-      selectPreset(productPreset);
-    }
-    setStatusText("Product Shot Lab is ready.");
-  }
-
-  function showVideoLab() {
-    setStudioMode("video-lab");
-    setReviewFilter("all");
-    clearEditSource();
-    setPrompt((current) =>
-      current.trim()
-        ? current
-        : "Create a short Frank Body motion board: product hero, subtle camera push, tactile texture moment, clean end frame."
-    );
-    setSettings((current) => ({
-      ...current,
-      aspect_ratio: supportedOption(selectedModel?.allowed_aspect_ratios, current.aspect_ratio === "9:16" ? "9:16" : "16:9", current.aspect_ratio),
-      image_size: supportedOption(selectedModel?.allowed_image_sizes, "720p", supportedOption(selectedModel?.allowed_image_sizes, "1K", current.image_size)),
-      count: 1
-    }));
-    setStatusText("Video Lab is ready for a motion board.");
-  }
-
   function showApprovedHot() {
     const firstApproved = firstReviewableAsset(outputAssets.filter((asset) => asset.approval_status === "approved"));
-    setStudioMode("approved-hot");
+    setStudioMode("approved");
     setReviewFilter("approved");
     setSelectedAsset(firstApproved);
     setLightboxAsset(null);
     clearCompare();
     setStatusText(firstApproved ? "approved only. hot." : "no approved images yet.");
-  }
-
-  function showModelSettings() {
-    setSettingsOpen(true);
-    setStatusText("Model settings are open.");
-    requestAnimationFrame(() => {
-      document.getElementById("model-settings-drawer")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
   }
 
   async function handleNewSession() {
@@ -1201,7 +1127,6 @@ export default function App() {
       return;
     }
 
-    setSettingsOpen(false);
     await selectSession(mainDemoSession);
     setStatusText("Back to the Frank Body demo.");
   }
@@ -3462,7 +3387,7 @@ export default function App() {
     const taskPrompt = promptForTask(task);
     setSelectedPresetKey(task.key);
     setAttachedPresetSnapshot(null);
-    setStudioMode(task.key === "prompt-remix" ? "image-studio" : "product-shot-lab");
+    setStudioMode("studio");
     setPrompt((current) => (current.trim() ? `${current.trim()}\n\n${taskPrompt}` : taskPrompt));
     setSettings((current) => settingsForTask(task.key, current, selectedModel));
     setStatusText(`${task.label} is loaded.`);
@@ -3502,9 +3427,6 @@ export default function App() {
   useEffect(() => {
     if (!walkthroughOpen) {
       return;
-    }
-    if (activeWalkthroughStep.openSettings) {
-      setSettingsOpen(true);
     }
     if (activeWalkthroughStep.selectOutput && !selectedAsset && firstOutputAsset) {
       setSelectedAsset(firstOutputAsset);
@@ -3554,7 +3476,6 @@ export default function App() {
     activeWalkthroughStep.target,
     assets.length,
     selectedAsset?.id,
-    settingsOpen,
     turns.length,
     walkthroughOpen
   ]);
@@ -3593,336 +3514,78 @@ export default function App() {
     }
   }, []);
 
+  const [sessionMenuOpen, setSessionMenuOpen] = useState(false);
+
+  /** Nav clicks: the five in-shell screens are a mode change, the rest are routes. */
+  function goToScreen(screen: Screen) {
+    setSessionMenuOpen(false);
+    switch (screen) {
+      case "studio": return showImageStudio();
+      case "prompt": return showPromptGenerator();
+      case "upscaler": return showEnhancer();
+      case "presets": return showPresetCreator();
+      case "approved": return showApprovedHot();
+      default: return navigate(screen, activeSession?.id ?? null);
+    }
+  }
+
+  function renameSession(session: StudioSession) {
+    const next = window.prompt("Rename session", session.name);
+    if (!next) return;
+    const trimmed = next.trim().slice(0, 80);
+    if (!trimmed || trimmed === session.name) return;
+    const optimistic = { ...session, name: trimmed };
+    if (activeSession?.id === session.id) setActiveSession(optimistic);
+    setSessions((current) => current.map((s) => (s.id === session.id ? optimistic : s)));
+    void updateSession(session.id, { name: trimmed })
+      .then((result) => {
+        if (!result?.session) return;
+        if (activeSession?.id === result.session.id) setActiveSession(result.session);
+        setSessions((current) => current.map((s) => (s.id === result.session.id ? result.session : s)));
+      })
+      .catch((error) => { console.error("Failed to rename session", error); });
+  }
+
+  function confirmArchiveSession(session: StudioSession) {
+    // Names the consequence rather than asking "are you sure".
+    const ok = window.confirm(
+      `Archive "${session.name}"? Its rounds stay in the audit trail, but it leaves your session list.`
+    );
+    if (ok) void archiveSession(session);
+  }
+
   const statusReadyLink = parseReadyStatusLink(statusText);
-  const modelSettingsExpanded = settingsOpen;
 
   return (
-    <div
-      className={`studio-shell guided-studio ${providerAuditMode ? "provider-audit-mode" : ""} ${studioMode !== "preset-creator" && studioMode !== "prompt-generator" && studioMode !== "enhancer" && settingsRailOpen ? "settings-rail-open" : ""}`}
-      data-provider-audit={providerAuditMode ? "open" : undefined}
-      data-tenant={tenantTheme}
+    <Shell
+      screen={studioMode}
+      onSelectInApp={goToScreen}
+      sessionId={activeSession?.id ?? null}
+      approvedCount={approvedCount}
+      search={roundSearch}
+      onSearchChange={setRoundSearch}
+      searchPlaceholder="Search sessions and picks"
     >
-      <svg
-        className="ambient-field"
-        viewBox="0 0 1280 832"
-        preserveAspectRatio="xMidYMid slice"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <defs>
-          <filter id="ambient-blob-blur" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="250" />
-          </filter>
-        </defs>
-        <rect width="1280" height="832" fill="transparent" />
-        <g filter="url(#ambient-blob-blur)" transform="translate(-300, 40) scale(1)">
-          <path
-            fill="var(--tenant-blob)"
-            d="M-140 402c72-138 150-236 292-268 142-32 268 26 372 118 104 92 176 214 152 336-24 122-144 244-306 268-162 24-366-50-476-176-110-126-106-140-34-278Z"
-          />
-        </g>
-      </svg>
-
-
-
-      <header className="os-topbar" aria-label="AutoSolutions OS">
-        <div className="os-topbar-logo">
-          <img src={osLogo} alt="autosolutions OS" />
-        </div>
-        <div className="os-topbar-search">
-          <Search size={14} aria-hidden="true" />
-          <input
-            type="search"
-            value={roundSearch}
-            onChange={(event) => setRoundSearch(event.target.value)}
-            placeholder="Search sessions and picks"
-            aria-label="Search sessions and picks"
-          />
-        </div>
-        <div className="os-topbar-right">
-          <span className="os-topbar-bell" aria-hidden="true">
-            <Bell size={16} />
-          </span>
-          <span className="os-topbar-avatar" aria-hidden="true">
-            {(userEmail ?? "—").slice(0, 1).toUpperCase()}
-          </span>
-          <button type="button" className="os-topbar-signout" onClick={handleSignOut}>
-            Sign out
-          </button>
-        </div>
-      </header>
-
       {desktopNotice ? (
-        <div
-          role="status"
-          style={{
-            position: "sticky", top: 0, zIndex: 40,
-            background: "#fff7e6", borderBottom: "1px solid #f0c36d",
-            color: "#7a4a00", padding: "8px 14px",
-            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-            fontSize: 13,
-          }}
-        >
+        <Banner tone="warning" title="Desktop only" onDismiss={() => setDesktopNotice(null)}>
           <span>{desktopNotice}</span>
-          <button
-            type="button"
-            onClick={() => setDesktopNotice(null)}
-            style={{ background: "transparent", border: "none", cursor: "pointer", color: "#7a4a00", fontSize: 18, lineHeight: 1 }}
-            aria-label="Dismiss notice"
-          >×</button>
-        </div>
+        </Banner>
       ) : null}
-      {busy && studioMode === "video-lab" ? (
-        <div style={{ position: "sticky", top: desktopNotice ? 40 : 0, zIndex: 39, height: 3, background: "rgba(0,0,0,0.06)", overflow: "hidden" }}>
-          <div style={{ width: "40%", height: "100%", background: "#111", animation: "frank-video-progress 1.2s ease-in-out infinite" }} />
-          <style>{`@keyframes frank-video-progress { 0% { transform: translateX(-40%); } 100% { transform: translateX(140%); } }`}</style>
-        </div>
-      ) : null}
+
       {videoStartedAt != null ? (
-        <div
-          role="status"
-          style={{
-            position: "fixed", bottom: 20, right: 20, zIndex: 60,
-            display: "flex", flexDirection: "column", gap: 6,
-            padding: "10px 14px", borderRadius: 8, fontSize: 13,
-            background: "#f4f4f5", color: "#222", border: "1px solid #d4d4d8",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.08)", maxWidth: 340,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: "#111", animation: "frank-video-progress 1.2s ease-in-out infinite" }} />
-            <span>Generating video…</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11, opacity: 0.8, gap: 8 }}>
-            <span>⏱ {Math.max(0, Math.floor((videoNowTick - videoStartedAt) / 1000))}s elapsed</span>
-            <button
-              type="button"
-              onClick={() => videoAbortRef.current?.abort()}
-              style={{ padding: "3px 8px", borderRadius: 5, border: "1px solid rgba(0,0,0,0.2)", background: "#fff", cursor: "pointer", fontSize: 11 }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      <aside className="guided-header app-sidebar" data-tour-id="app-header" data-tour-active={tourActive("app-header")}>
-        <div className="sidebar-brand-block">
-          <span className="sidebar-lockup">
-            <span className="lockup-primary">art-ificial</span>
-            <span className="lockup-secondary">studio</span>
+        <div className="run-toast" role="status">
+          <Spinner size="small" />
+          <span className="run-toast__label">Generating video</span>
+          <span className="run-toast__meta as-tabular">
+            {Math.max(0, Math.floor((videoNowTick - videoStartedAt) / 1000))}s elapsed
           </span>
+          <Button size="micro" onClick={() => videoAbortRef.current?.abort()}>
+            Cancel run
+          </Button>
         </div>
-        <div className="sidebar-brand-divider" aria-hidden="true" />
-
-
-
-        <nav className="sidebar-nav" aria-label="Frank Create navigation">
-          <button
-            className={`sidebar-nav-button ${studioMode === "image-studio" && reviewFilter === "all" ? "active" : ""}`}
-            type="button"
-            aria-label="Open Studio"
-            onClick={showImageStudio}
-          >
-            <Wand2 size={16} />
-            Studio
-          </button>
-          <button
-            className={`sidebar-nav-button ${studioMode === "prompt-generator" ? "active" : ""}`}
-            type="button"
-            aria-label="Open Prompt Generator"
-            title="Prompt-engineering agent running on GPT-5.6 Sol"
-            onClick={showPromptGenerator}
-          >
-            <Layers3 size={16} />
-            Prompt Generator
-          </button>
-          <button
-            className={`sidebar-nav-button ${studioMode === "enhancer" ? "active" : ""}`}
-            type="button"
-            aria-label="Open UPSCALER"
-            title="Upscale stills and clips with Recraft, Topaz, and Crystal"
-            onClick={showEnhancer}
-          >
-            <Sparkles size={16} />
-            UPSCALER
-          </button>
-          <button
-            className={`sidebar-nav-button ${studioMode === "preset-creator" ? "active" : ""}`}
-            type="button"
-            aria-label="Open Preset Creator"
-            onClick={showPresetCreator}
-          >
-            <Sparkles size={16} />
-            Preset Creator
-          </button>
-
-          <button
-            className={`sidebar-nav-button ${reviewFilter === "approved" ? "active" : ""}`}
-            type="button"
-            aria-label="Open approved picks"
-            onClick={showApprovedHot}
-          >
-            <CheckCircle2 size={16} />
-            Approved
-            <span className="sidebar-badge">{approvedCount}</span>
-          </button>
-
-          <button
-            className={`sidebar-nav-button ${sessionsOpen ? "active" : ""}`}
-            type="button"
-            aria-expanded={sessionsOpen}
-            aria-controls="sidebar-sessions-list"
-            onClick={() => setSessionsOpen((v) => !v)}
-          >
-            <ChevronRight size={16} style={{ transform: sessionsOpen ? "rotate(90deg)" : "none", transition: "transform 0.15s" }} />
-            <span style={{ flex: 1 }}>
-              {activeSession?.name ?? "Sessions"}
-            </span>
-            <span className="sidebar-badge">{sessions.length}</span>
-          </button>
-          {sessionsOpen ? (
-            <div id="sidebar-sessions-list">
-              {sessions.map((session) => {
-                const renameThis = () => {
-                  const next = window.prompt("Rename session", session.name);
-                  if (!next) return;
-                  const trimmed = next.trim().slice(0, 80);
-                  if (!trimmed || trimmed === session.name) return;
-                  const optimistic = { ...session, name: trimmed };
-                  if (activeSession?.id === session.id) setActiveSession(optimistic);
-                  setSessions((current) => current.map((s) => (s.id === session.id ? optimistic : s)));
-                  void updateSession(session.id, { name: trimmed })
-                    .then((result) => {
-                      if (result?.session) {
-                        if (activeSession?.id === result.session.id) setActiveSession(result.session);
-                        setSessions((current) => current.map((s) => (s.id === result.session.id ? result.session : s)));
-                      }
-                    })
-                    .catch((error) => { console.error("Failed to rename session", error); });
-                };
-                const deleteThis = () => {
-                  if (!window.confirm(`Archive "${session.name}"? It will be removed from your active sessions.`)) return;
-                  void archiveSession(session);
-                };
-                return (
-                  <div
-                    key={session.id}
-                    className={`sidebar-nav-sub sidebar-session-row ${activeSession?.id === session.id ? "active" : ""}`}
-                  >
-                    <button
-                      type="button"
-                      className="sidebar-session-pick"
-                      onClick={() => { void selectSession(session); }}
-                      title={session.name}
-                    >
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.name}</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="sidebar-session-icon"
-                      onClick={(e) => { e.stopPropagation(); renameThis(); }}
-                      title="Rename session"
-                      aria-label="Rename session"
-                    >
-                      <Pencil size={12} />
-                    </button>
-                    <button
-                      type="button"
-                      className="sidebar-session-icon"
-                      onClick={(e) => { e.stopPropagation(); deleteThis(); }}
-                      title="Delete session"
-                      aria-label="Delete session"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                );
-              })}
-              <button className="sidebar-nav-sub" type="button" onClick={handleNewSession}>
-                <Plus size={13} />
-                New session
-              </button>
-              {showMainDemoAction ? (
-                <button className="sidebar-nav-sub" type="button" onClick={returnToMainDemo}>
-                  <ArrowLeft size={13} />
-                  Main demo
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-
-          <div className="sidebar-bottom-divider" aria-hidden="true" />
-          <div className="sidebar-theme">
-            <span className="sidebar-theme-eyebrow">THEME</span>
-            <div className="sidebar-theme-swatches" role="radiogroup" aria-label="Workspace theme">
-              {TENANT_THEMES.map((theme) => (
-                <button
-                  key={theme.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={tenantTheme === theme.id}
-                  aria-label={`Use the ${theme.label} theme`}
-                  title={`${theme.label} · ${theme.hex}`}
-                  className={`sidebar-theme-swatch ${tenantTheme === theme.id ? "active" : ""}`}
-                  style={{ background: theme.hex }}
-                  onClick={() => setTenantTheme(theme.id)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div data-tour-id="feedback-button" data-tour-active={tourActive("feedback-button")}>
-            <FeedbackWidget variant="sidebar" />
-          </div>
-          {isAdmin && (
-            <a
-              className="sidebar-nav-button admin-sidebar-link"
-              href="#/admin"
-              aria-label="Open Admin portal"
-              data-tour-id="admin-entry"
-              data-tour-active={tourActive("admin-entry")}
-            >
-              <Sparkles size={16} />
-              Admin portal
-            </a>
-          )}
-        </nav>
-      </aside>
-
-      {studioMode !== "preset-creator" && studioMode !== "prompt-generator" && studioMode !== "enhancer" && settingsRailOpen ? (
-        <StudioRail
-          mediaKind={mediaKind}
-          onMediaKindChange={switchMediaKind}
-          models={mediaModels}
-          selectedModelId={selectedModelId}
-          onModelChange={setSelectedModelId}
-          settings={settings}
-          onSettingsChange={(patch) => setSettings((current) => ({ ...current, ...patch }))}
-          onAspectChange={handleAspectChange}
-          presets={promptPresets}
-          selectedPresetKey={selectedPresetKey}
-          onPresetChange={(key) => attachPreset(key)}
-          fieldErrors={fieldErrors}
-          referenceCount={selectedReferenceAssets.length}
-          onReset={resetStudioSettings}
-          compareMedia={compareMedia}
-          onCompareMediaChange={switchCompareMedia}
-          compareModelBId={compareModelBId}
-          onCompareModelBChange={(id) => {
-            setCompareModelBId(id);
-            setCompareApproved(false);
-          }}
-          compareAdjustments={compareAdjustments}
-          compareApproved={compareApproved}
-          onCompareApprovedChange={setCompareApproved}
-          compareCostLabel={compareCostLabel}
-
-        />
-
       ) : null}
 
-      {studioMode === "enhancer" ? (
+      {studioMode === "upscaler" ? (
         <Enhancer
           models={config.models}
           assets={assets}
@@ -3939,7 +3602,7 @@ export default function App() {
           onDownloadAsset={(asset) => void downloadAssetFile(asset)}
 
         />
-      ) : studioMode === "prompt-generator" ? (
+      ) : studioMode === "prompt" ? (
         <PromptGenerator
           onStatus={setStatusText}
           onUsePrompt={(value) => {
@@ -3948,900 +3611,1013 @@ export default function App() {
             setStatusText("Prompt loaded into the Studio composer.");
           }}
         />
-      ) : studioMode === "preset-creator" ? (
+      ) : studioMode === "presets" ? (
         <PresetCreator
           builtinPresets={config.promptPresets}
           customPresets={customPresets}
           setCustomPresets={setCustomPresets}
           onStatus={setStatusText}
         />
+      ) : studioMode === "approved" ? (
+        <ApprovedScreen
+          assets={outputAssets}
+          sessionId={activeSession?.id ?? null}
+          search={roundSearch}
+          onOpenAsset={(asset) => setLightboxAsset(asset)}
+          onDownloadAsset={(asset) => void downloadAssetFile(asset)}
+          onStatus={setStatusText}
+        />
       ) : (
-      <main className="conversation-column">
-        <header className="studio-topbar">
-          <div>
-            
-            <h2>{activeSession?.name ?? config.voice.labTitle}</h2>
-            <p className="studio-topbar-copy">
-              Brief in plain English. References and settings are optional. Click a pick to edit, approve, or export.
-            </p>
-          </div>
-          <div className="studio-topbar-right">
-            <div className="stat-row" aria-label="Studio stats">
-              <span role="group" aria-label={`${turns.length} rounds`}>
-                <strong aria-hidden="true">{turns.length}</strong>
-                <small aria-hidden="true">rounds</small>
-              </span>
-              <span role="group" aria-label={`${approvedCount} approved`}>
-                <strong aria-hidden="true">{approvedCount}</strong>
-                <small aria-hidden="true">approved</small>
-              </span>
-              <span role="group" aria-label={`${favoriteCount} favorites`}>
-                <strong aria-hidden="true">{favoriteCount}</strong>
-                <small aria-hidden="true">favorites</small>
-              </span>
-            </div>
-          </div>
-        </header>
-
-        <section
-          className="thread-surface"
-          aria-label="Prompt and output thread"
-          data-tour-id="output-thread"
-          data-tour-active={tourActive("output-thread")}
-        >
-          <div className="rounds-well-head" aria-hidden="true">
-            <span className="rounds-well-title">Rounds</span>
-            <span className="rounds-well-count">
-              {outputAssets.length ? `${outputAssets.length} picks` : "Empty"}
-            </span>
-          </div>
-
-          {compareBaseAsset ? (
-            <div className="compare-prompt" role="status">
-              <span>
-                Comparing from <strong>{compareBaseAsset.title}</strong>
-              </span>
-              <button type="button" onClick={clearCompare}>
-                Cancel
-              </button>
-            </div>
-          ) : null}
-          {(() => {
-            // Once the backend has a queued/running round of its own, that round card
-            // IS the loading state — never show a second local card for the same run.
-            if (hasLiveTurn || !inflightGens.length) return null;
-            return inflightGens.slice().reverse().map((gen) => {
-            const p = aspectRatioParts(gen.aspect);
-            const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
-            const waitedMs = Math.max(0, pendingTick - gen.startedAt);
-            const waitedSeconds = Math.floor(waitedMs / 1000);
-            const waitedLabel = waitedSeconds >= 60
-              ? `${Math.floor(waitedSeconds / 60)}m ${String(waitedSeconds % 60).padStart(2, "0")}s`
-              : `${waitedSeconds}s`;
-            return (
-              <article key={gen.id} className="turn-card turn-card-pending" aria-live="polite" aria-busy="true">
-                <div className="turn-card-body">
-                <div className="turn-side">
-                <div className="turn-copy">
-                  <span className="status-dot pending" />
-                  <div>
-                    <p className="eyebrow">Generating</p>
-                    <h3>{gen.modelLabel}</h3>
-                    <p>{gen.prompt || "Preparing the next round..."}</p>
-                    <div className="turn-meta">
-                      <span>Running</span>
-                      <span>{gen.aspect}</span>
-                      <span>{gen.count} pick{gen.count === 1 ? "" : "s"}</span>
-                      {waitedSeconds >= 5 ? <span>{waitedLabel} elapsed</span> : null}
-                    </div>
-                    {waitedMs > 90000 ? (
-                      <div className="turn-pending-recheck">
-                        <span>Taking longer than usual — the picks may already be saved.</span>
-                        <button type="button" onClick={() => void settleFinishedRunsFromServer()}>
-                          Check for results
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-                </div>
-
-                <div className="turn-visual">
-                <div className="output-grid">
-                  {Array.from({ length: gen.count }).map((_, i) => (
-                    <div
-                      className="output-skeleton"
-                      key={i}
-                      style={{ ["--asset-aspect" as string]: ar } as React.CSSProperties}
-                    >
-                      <span className="output-skeleton-shimmer" aria-hidden="true" />
-                      <span className="output-skeleton-spinner" aria-hidden="true" />
-                    </div>
-                  ))}
-                </div>
-                </div>
-                </div>
-
-              </article>
-            );
-          });
-          })()}
-
-
-          {searchedTurns.length ? (
-            groupCompareRows([...searchedTurns].reverse()).map((row, rowIdx) => (
-            <div
-              key={`row-${row[0].id}`}
-              className={row.length > 1 ? "compare-run" : "turn-row"}
-            >
-              {row.length > 1 ? (
-                <p className="compare-run-title">
-                  Side-by-side · {modelName(config, row[0].model)} vs {modelName(config, row[1].model)}
-                </p>
-              ) : null}
-              <div className={row.length > 1 ? "compare-run-grid" : "turn-row-single"}>
-              {row.map((turn) => {
-              const idx = rowIdx;
-              const compareSide = parseCompareMeta(turn.settings_json).side;
-              const createdMs = turn.created_at ? new Date(turn.created_at).getTime() : 0;
-              const isFresh = idx === 0 && createdMs && Date.now() - createdMs < 30_000;
-              const shortId = turn.id.slice(0, 8);
-
-              const timeLabel = turn.created_at ? new Date(turn.created_at).toLocaleString() : "";
-              return (
-              <article
-                className={`turn-card${isFresh ? " turn-card-fresh" : ""}`}
-                key={turn.id}
-                style={{ position: "relative" }}
-              >
-                <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 6, alignItems: "center" }}>
-                  {isFresh ? (
-                    <span
-                      style={{
-                        fontSize: 10, fontWeight: 600, letterSpacing: 0.4, textTransform: "uppercase",
-                        padding: "2px 6px", borderRadius: 999,
-                        background: "rgba(34,197,94,0.15)", color: "rgb(21,128,61)",
-                        border: "1px solid rgba(34,197,94,0.35)",
-                      }}
-                    >
-                      New
-                    </span>
-                  ) : null}
-                  <button
-                    type="button"
-                    aria-label="Copy generation ID"
-                    title={`Copy ID (${turn.id})`}
-                    onClick={() => {
-                      void navigator.clipboard?.writeText(turn.id).catch(() => {});
-                    }}
-                    style={{
-                      width: 22, height: 22, padding: 0,
-                      display: "inline-flex", alignItems: "center", justifyContent: "center",
-                      borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
-                      background: "rgba(255,255,255,0.85)", cursor: "pointer",
-                      color: "rgba(0,0,0,0.55)",
-                    }}
-                  >
-                    <Clipboard size={12} />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Retry this generation"
-                    title="Retry with the same settings"
-                    onClick={() => retryTurn(turn)}
-                    style={{
-                      width: 22, height: 22, padding: 0,
-                      display: "inline-flex", alignItems: "center", justifyContent: "center",
-                      borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
-                      background: "rgba(255,255,255,0.85)", cursor: "pointer",
-                      color: "rgba(0,0,0,0.55)",
-                    }}
-
-                  >
-                    <RefreshCw size={12} />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Delete this round"
-                    title="Delete this round"
-                    onClick={() => {
-                      if (window.confirm("Delete this round and its generated images?")) {
-                        removeTurnFromSession(turn);
-                      }
-                    }}
-                    style={{
-                      width: 22, height: 22, padding: 0,
-                      display: "inline-flex", alignItems: "center", justifyContent: "center",
-                      borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
-                      background: "rgba(255,255,255,0.85)", cursor: "pointer",
-                      color: "rgba(0,0,0,0.55)",
-                    }}
-                  >
-                    <X size={12} />
-                  </button>
-
-                </div>
-                <div className="turn-card-body">
-                <div className="turn-side">
-                <div className="turn-copy">
-
-                  <span className={`status-dot ${turn.status}`} />
-                  <div>
-                    <p className="eyebrow">
-                      {compareSide ? <span className="compare-side-badge">Side {compareSide}</span> : null}
-                      {turnKindLabel(turn)}
-                    </p>
-
-                    <h3>{modelName(config, turn.model)}</h3>
-                    <p>{turn.prompt}</p>
-                    <div className="turn-meta">
-                      <span title={turn.id} style={{ fontFamily: "ui-monospace, monospace" }}>#{shortId}</span>
-                      {timeLabel ? <span title={timeLabel}>{timeLabel}</span> : null}
-                      <span>{turn.status}</span>
-                      {turn.frank_body_mode ? <span>Frank Body Mode</span> : <span>User prompt</span>}
-                      {turnAspect(turn) ? <span className="turn-chip-aspect">{formatAspectChip(turnAspect(turn))}</span> : null}
-                      {(() => {
-                        // Real returned pixel size, read from the delivered file.
-                        const sizes = Array.from(new Set(
-                          displayOutputAssets
-                            .filter((a) => a.turn_id === turn.id && a.width && a.height)
-                            .map((a) => `${a.width} × ${a.height}`),
-                        ));
-                        if (!sizes.length) return null;
-                        return (
-                          <span className="turn-chip-resolution" title="Resolution returned by the provider">
-                            {sizes.join(" · ")}
-                          </span>
-                        );
-                      })()}
-                      {displayOutputAssets.some((a) => a.turn_id === turn.id && a.storage_missing) ? (
-                        <span
-                          className="turn-chip-resolution"
-                          title="This file was over the 20 MB storage limit, so it streams from the provider's temporary link. Save it now to keep it."
-                        >
-                          Temporary link
-                        </span>
-                      ) : null}
-                      <button
-                        type="button"
-                        className="turn-chip-json"
-                        onClick={() => setPayloadTurnId(turn.id)}
-                        title="Show the JSON body sent to the provider"
-                      >
-                        JSON
-                      </button>
-
-
-                      <button
-                        type="button"
-                        className="turn-copy-prompt"
-                        onClick={() => {
-                          void navigator.clipboard?.writeText(turn.prompt || "").then(() => {
-                            setStatusText("Prompt copied to clipboard.");
-                          }).catch(() => {
-                            setStatusText("Could not copy prompt.");
-                          });
-                        }}
-                        title="Copy prompt"
-                      >
-                        <Clipboard size={12} />
-                        Copy prompt
-                      </button>
-                      {(() => {
-                        const refIds = parseJsonList(turn.reference_asset_ids_json);
-                        if (!refIds.length) return null;
-                        return (
-                          <span className="turn-ref-strip" title={referenceCountLabel(refIds.length)}>
-                            {refIds.map((refId, refIndex) => {
-                              const refAsset = assets.find((a) => a.id === refId);
-                              const tag = referenceTagFor(refIndex);
-                              return (
-                                <span
-                                  key={`${turn.id}-${refId}`}
-                                  className="turn-ref-thumb"
-                                  title={`${tag} · ${refAsset?.title ?? "reference"}`}
-                                  onClick={() => { if (refAsset) setReferencePreviewAsset(refAsset); }}
-                                  role={refAsset ? "button" : undefined}
-                                >
-                                  {refAsset?.preview_url ? (
-                                    <img src={refAsset.preview_url} alt={refAsset.title} loading="lazy" />
-                                  ) : (
-                                    <Paperclip size={12} />
-                                  )}
-                                </span>
-                              );
-                            })}
-                          </span>
-                        );
-                      })()}
-
-                      {turnErrorCopy(turn) ? <span className="turn-error">{turnErrorCopy(turn)}</span> : null}
-
-                      {(() => {
-                        const anyTurn = turn as any;
-                        const requested = typeof anyTurn.requested_count === "number" ? anyTurn.requested_count : 0;
-                        const produced = displayOutputAssets.filter((a) => a.turn_id === turn.id).length;
-                        let partial: Array<{ code?: string; message?: string; request_id?: string }> = [];
-                        try { partial = JSON.parse(anyTurn.partial_errors_json || "[]"); } catch { partial = []; }
-                        if (!partial.length && (!requested || produced >= requested)) return null;
-                        const missing = Math.max(0, requested - produced);
-                        const anyRetryable = partial.some((p: any) => p?.retryable !== false);
-                        return (
-                          <>
-                            <span
-                              className="turn-partial"
-                              title={partial.map((p, i) => `${i + 1}. [${p.code || "error"}] ${p.message || ""}${p.request_id ? ` (id: ${p.request_id})` : ""}`).join("\n")}
-                              style={{
-                                display: "inline-flex", alignItems: "center", gap: 4,
-                                fontSize: 11, padding: "2px 8px", borderRadius: 999,
-                                background: "rgba(245,158,11,0.15)", color: "rgb(146,64,14)",
-                                border: "1px solid rgba(245,158,11,0.4)", cursor: "help",
-                              }}
-                            >
-                              {produced} of {requested || (produced + partial.length)} succeeded
-                              {missing > 0 ? ` · ${missing} failed` : ""}
-                            </span>
-                            {missing > 0 && anyRetryable ? (
-                              <button
-                                type="button"
-                                className="turn-retry-missing"
-                                onClick={() => retryTurn(turn, missing)}
-                                title={`Re-run the ${missing} missing image${missing === 1 ? "" : "s"} with the same settings`}
-                                style={{
-                                  fontSize: 11, padding: "2px 8px", borderRadius: 999,
-                                  background: "rgba(59,130,246,0.12)", color: "rgb(30,64,175)",
-                                  border: "1px solid rgba(59,130,246,0.4)", cursor: "pointer",
-                                }}
-                              >
-                                Retry missing ({missing})
-                              </button>
-                            ) : null}
-                          </>
-                        );
-                      })()}
-                    </div>
-                </div>
-                </div>
-                </div>
-                <div className="turn-visual">
-
-                <OutputStrip
-                  assets={displayOutputAssets.filter((asset) => asset.turn_id === turn.id)}
-                  onSelect={inspectAsset}
-                  emptyLabel={studioMode === "approved-hot" ? "No approved picks in this round" : turnEmptyLabel(turn)}
-                  pending={studioMode !== "approved-hot" && (turn.status === "queued" || turn.status === "running")}
-                  pendingCount={turnExpectedCount(turn)}
-                  pendingAspect={turnAspect(turn)}
-
-
-                  selectedAssetId={selectedAsset?.id}
-                  onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
-                  onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
-                />
-
-                </div>
-                </div>
-
-
-              </article>
-              );
-            })}
-              </div>
-            </div>
-            ))
-
-          ) : roundSearch.trim() && turns.length ? (
-            <div className="empty-thread">
-              <Search size={38} />
-              <strong>No rounds match “{roundSearch.trim()}”</strong>
-              <span>Clear the search in the top bar to see all {turns.length} rounds again.</span>
-            </div>
-          ) : (
-            <div className="empty-thread">
-              <ImageIcon size={38} />
-              <strong>{config.voice.emptyState}</strong>
-              <span>Start with a prompt and optional references. Product Shot Lab is now a preset, not a cage.</span>
-            </div>
-          )}
-        </section>
-
-        <form
-          className="composer"
-          onSubmit={handleGenerate}
-          data-tour-id="composer"
-          data-tour-active={tourActive("composer")}
-        >
-          <div className="brief-card-head" aria-hidden="true">
-            <span className="brief-card-eyebrow">Brief</span>
-            <span className="brief-card-meta">
-              {settings.aspect_ratio} · {settings.image_size} · {settings.count} pick{settings.count === 1 ? "" : "s"}
-            </span>
-          </div>
-
-          {editSourceAsset ? (
-            <div className="edit-banner">
-              <ImageIcon size={16} />
-              Editing {editSourceAsset.title}
-              {maskAsset ? <span className="mask-pill">Mask {maskAsset.title}</span> : null}
-              <button type="button" onClick={clearEditSource}>
-                Clear
-              </button>
-            </div>
-          ) : null}
-
-
-          {studioMode === "product-shot-lab" ? (
-            <div className="task-shortcut-list composer-task-shortcuts" aria-label="Product Image Lab task shortcuts">
-              {productTaskShortcuts.map((task) => (
-                <button
-                  className={selectedPresetKey === task.key ? "selected" : ""}
-                  key={task.key}
-                  type="button"
-                  onClick={() => selectTaskShortcut(task)}
-                >
-                  <span className="task-shortcut-icon">{taskShortcutIcon(task.key)}</span>
-                  <span>
-                    <strong>{task.label}</strong>
-                    <small aria-hidden="true">{task.description}</small>
-                  </span>
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          <div className="prompt-mention-wrap">
-          <textarea
-            ref={promptInputRef}
-            value={prompt}
-            onChange={(event) => {
-              setPrompt(event.target.value);
-              syncMention(event.target.value, event.target.selectionStart);
-            }}
-            onClick={(event) => syncMention(prompt, event.currentTarget.selectionStart)}
-            onBlur={() => window.setTimeout(closeMention, 120)}
-            onPaste={handlePromptPaste}
-            onDragOver={handlePromptDragOver}
-            onDrop={handlePromptDrop}
-            onKeyDown={(event) => {
-              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-                event.preventDefault();
-                if (prompt.trim()) void handleGenerate();
-                else if (!prompt.trim()) setStatusText("Enter a prompt to generate.");
-                return;
-              }
-              if (!mentionOpen) return;
-              if (event.key === "Escape") {
-                event.preventDefault();
-                closeMention();
-                return;
-              }
-              if (!mentionSuggestions.length) return;
-              if (event.key === "ArrowDown") {
-                event.preventDefault();
-                setMentionIndex((i) => (i + 1) % mentionSuggestions.length);
-              } else if (event.key === "ArrowUp") {
-                event.preventDefault();
-                setMentionIndex((i) => (i - 1 + mentionSuggestions.length) % mentionSuggestions.length);
-              } else if (event.key === "Enter" || event.key === "Tab") {
-                event.preventDefault();
-                if (activeMention) applyMention(activeMention.tag);
-              }
-            }}
-            placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Type @ to point at a reference. Cmd/Ctrl+Enter to generate."
-          />
-          {mentionOpen ? (
-            <div className="prompt-mention-popover" role="listbox" aria-label="Reference tags">
-              {mentionSuggestions.length ? (
-                mentionSuggestions.map((option, i) => (
-                  <button
-                    key={option.tag}
-                    type="button"
-                    role="option"
-                    aria-selected={activeMention?.tag === option.tag}
-                    className={`prompt-mention-option${activeMention?.tag === option.tag ? " is-active" : ""}`}
-                    onMouseEnter={() => {
-                      setMentionIndex(i);
-                      setHoveredReferenceTag(option.tag);
-                    }}
-                    onMouseLeave={() => setHoveredReferenceTag(null)}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => applyMention(option.tag)}
-                  >
-                    {option.preview ? (
-                      <img src={option.preview} alt="" />
-                    ) : (
-                      <span className="prompt-mention-thumb-fallback">
-                        <Paperclip size={12} />
-                      </span>
-                    )}
-                    <strong>{option.tag}</strong>
-                    <span>{option.title}</span>
-                  </button>
-                ))
-              ) : (
-                <button
-                  type="button"
-                  className="prompt-mention-option prompt-mention-option--empty"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => {
-                    closeMention();
-                    void openReferencePicker();
-                  }}
-                >
-                  <span>No references loaded — add references</span>
-                </button>
-              )}
-            </div>
-          ) : null}
-          </div>
-
-
-
-
-
-
-
-          {promptRemixes.length ? (
-            <div className="prompt-remix-panel" aria-label="Brief remix directions">
-              {promptRemixes.map((variant) => (
-                <button key={variant.key} type="button" onClick={() => applyPromptRemix(variant)}>
-                  <strong>{variant.label}</strong>
-                  <span>{variant.prompt}</span>
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          <div
-            className={`composer-actions${referenceDropActive ? " reference-drop-active" : ""}${referenceAssets.length ? " composer-actions--icons" : ""}`}
-            data-tour-id="reference-dock"
-            data-tour-active={tourActive("reference-dock")}
-            onDragOver={(event) => {
-              handlePromptDragOver(event);
-              setReferenceDropActive(true);
-            }}
-            onDragLeave={() => setReferenceDropActive(false)}
-            onDrop={(event) => {
-              setReferenceDropActive(false);
-              void handlePromptDrop(event);
-            }}
-          >
-            <button
-              type="button"
-              className={`upload-button reference-upload${referenceAssets.length ? " has-refs" : ""}`}
-              onClick={() => void openReferencePicker()}
-            >
-              <Upload size={16} />
-              Add references
-
-              {referenceAssets.length ? (
-                <span className="reference-count-badge" aria-label={`${referenceAssets.length} references loaded`}>
-                  <Paperclip size={11} />
-                  {referenceAssets.length}
-                </span>
-              ) : null}
-            </button>
-            <div className="reference-dock" aria-label="Reference images">
-
-              {referenceAssets.map((asset, refIndex) => {
-                const tag = referenceTagFor(refIndex);
-                return (
-                <div
-                  key={asset.id}
-                  className={`reference-thumb${hoveredReferenceTag === tag ? " reference-thumb--tag-hover" : ""}`}
-                  title={`${tag} · ${asset.title}`}
-                  data-reference-tag={tag}
-                  onClick={() => setReferencePreviewAsset(asset)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      setReferencePreviewAsset(asset);
-                    }
-                  }}
-                >
-                  {asset.preview_url ? <img src={asset.preview_url} alt={asset.title} /> : <Paperclip size={15} />}
-                  <button
-                    type="button"
-                    className="reference-tag"
-                    title={`Insert ${tag} into the prompt`}
-                    aria-label={`Insert ${tag} for ${asset.title} into the prompt`}
-                    onMouseEnter={() => setHoveredReferenceTag(tag)}
-                    onMouseLeave={() => setHoveredReferenceTag(null)}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      insertReferenceTag(tag);
-                    }}
-                  >
-                    {tag}
-                  </button>
-                  <button
-                    type="button"
-                    className="reference-remove"
-                    aria-label={`Remove ${asset.title}`}
-                    title={`Remove ${asset.title}`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      removeReferenceFromDock(asset);
-                    }}
-                  >
-                    <X size={12} />
-                  </button>
-                </div>
-                );
-              })}
-              {referenceAssets.length ? (
-                <span className="reference-selection-count">
-                  {referenceAssets.length} loaded · used in next run
-                </span>
-              ) : (
-                <span className="reference-selection-count reference-selection-count--empty">
-                  No references loaded
-                </span>
-              )}
-            </div>
-            <div className="composer-action-group">
-              {editSourceAsset && selectedModel?.capabilities.masked_edit ? (
-                <>
-                  <button className="upload-button mask-paint-button" type="button" onClick={() => setMaskPainterAsset(editSourceAsset)}>
-                    <Paintbrush size={16} />
-                    Paint mask
-                  </button>
-                  <label className="upload-button mask-upload-button">
-                    <Box size={16} />
-                    Mask
-                    <input aria-label="Upload edit mask" type="file" accept="image/png,image/webp,image/jpeg" onChange={handleMaskUpload} />
-                  </label>
-                </>
-              ) : null}
-              {maskAsset ? (
-                <button className="mask-chip" type="button" onClick={() => setMaskAsset(null)} title="Clear edit mask">
-                  {maskAsset.preview_url ? <img src={maskAsset.preview_url} alt="" aria-hidden="true" /> : <Box size={14} />}
-                  <span>Mask {maskAsset.title}</span>
-                  <XCircle size={14} />
-                </button>
-              ) : null}
-              {!settingsRailOpen ? (
-                <button className="secondary-button" type="button" onClick={() => setSettingsRailOpen(true)}>
-                  <SlidersHorizontal size={16} />
-                  Setup
-                </button>
-              ) : null}
-              <div className="action-compact-pile">
-                <button
-                  className="secondary-button remix-button"
-                  type="button"
-                  onClick={handlePromptRemix}
-                  disabled={remixBusy}
-                  title="Brief Mix"
-                  aria-label="Brief Mix"
-                >
-                  {remixBusy ? <RefreshCw className="spin" size={14} /> : <Sparkles size={14} />}
-                  <span className="action-label">Brief Mix&nbsp;&nbsp;<br /></span>
-                </button>
-                <button
-                  className="secondary-button danger-button composer-cancel-button"
-                  type="button"
-                  onClick={requestCancelCurrentSession}
-                  disabled={!activeSession}
-                  title="Cancel"
-                  aria-label="Cancel"
-                >
-                  <X size={14} />
-                  <span className="action-label">Cancel</span>
-                </button>
-              </div>
-              <button
-                className="primary-button"
-                type="submit"
-                disabled={!prompt.trim() || hasStudioFieldErrors(fieldErrors)}
-                aria-label={primaryActionLabel}
-                title={
-                  !prompt.trim()
-                    ? "Enter a prompt to generate"
-                    : hasStudioFieldErrors(fieldErrors)
-                      ? "Fix the highlighted settings before generating"
-                      : primaryActionLabel
+      <>
+        <PageHeader
+          title="Studio"
+          subtitle="Brief the shot in plain English. References and settings are optional."
+          badge={activeSession ? <Badge tone="neutral">{activeSession.name}</Badge> : null}
+          actions={
+            <>
+              <Popover
+                active={sessionMenuOpen}
+                onClose={() => setSessionMenuOpen(false)}
+                align="end"
+                width={280}
+                activator={
+                  <Button icon="folder" disclosure onClick={() => setSessionMenuOpen((v) => !v)}>
+                    Switch session
+                  </Button>
                 }
               >
-                <Wand2 size={18} />
-                <span className="action-label">{primaryActionLabel}</span>
-              </button>
+                <ActionList
+                  sections={[
+                    {
+                      title: "Sessions",
+                      items: sessions.map((session) => ({
+                        content: session.name,
+                        active: session.id === activeSession?.id,
+                        onAction: () => {
+                          setSessionMenuOpen(false);
+                          void selectSession(session);
+                        }
+                      }))
+                    },
+                    {
+                      items: [
+                        {
+                          content: "Rename this session",
+                          icon: "pencil-square",
+                          disabled: !activeSession,
+                          onAction: () => {
+                            setSessionMenuOpen(false);
+                            if (activeSession) renameSession(activeSession);
+                          }
+                        },
+                        {
+                          content: "Archive this session",
+                          icon: "trash",
+                          destructive: true,
+                          disabled: !activeSession,
+                          onAction: () => {
+                            setSessionMenuOpen(false);
+                            if (activeSession) confirmArchiveSession(activeSession);
+                          }
+                        }
+                      ]
+                    }
+                  ]}
+                />
+              </Popover>
+              <Button icon="plus" onClick={() => void handleNewSession()}>
+                Add session
+              </Button>
+              <Button
+                variant="primary"
+                icon="bolt"
+                disabled={!prompt.trim() || hasStudioFieldErrors(fieldErrors)}
+                onClick={() => void handleGenerate()}
+              >
+                {primaryActionLabel}
+              </Button>
+            </>
+          }
+        />
 
-            </div>
+        <Card padding="none" className="metric-strip">
+          <div className="metric-strip__cell">
+            <span className="metric-strip__label">Rounds this session</span>
+            <span className="metric-strip__value as-tabular">{turns.length.toLocaleString()}</span>
           </div>
-          {referenceAssets.length ? (
-            <p className="reference-tag-hint">
-              Reference tags:{" "}
-              {taggedReferences(referenceAssets).map((ref, i) => (
-                <span key={ref.tag}>
-                  {i ? ", " : ""}
+          <div className="metric-strip__cell">
+            <span className="metric-strip__label">Picks delivered</span>
+            <span className="metric-strip__value as-tabular">{outputAssets.length.toLocaleString()}</span>
+          </div>
+          <div className="metric-strip__cell">
+            <span className="metric-strip__label">Approved picks</span>
+            <span className="metric-strip__value as-tabular">{approvedCount.toLocaleString()}</span>
+          </div>
+          <div className="metric-strip__cell">
+            <span className="metric-strip__label">Favourites</span>
+            <span className="metric-strip__value as-tabular">{favoriteCount.toLocaleString()}</span>
+          </div>
+        </Card>
+
+        <div className="studio-columns">
+          <div className="studio-main">
+              <form
+                className="composer"
+                onSubmit={handleGenerate}
+                data-tour-id="composer"
+                data-tour-active={tourActive("composer")}
+              >
+                <div className="brief-card-head" aria-hidden="true">
+                  <span className="brief-card-eyebrow">Brief</span>
+                  <span className="brief-card-meta">
+                    {settings.aspect_ratio} · {settings.image_size} · {settings.count} pick{settings.count === 1 ? "" : "s"}
+                  </span>
+                </div>
+
+                {editSourceAsset ? (
+                  <div className="edit-banner">
+                    <Icon source="photo" tone="inherit" size={16} />
+                    Editing {editSourceAsset.title}
+                    {maskAsset ? <span className="mask-pill">Mask {maskAsset.title}</span> : null}
+                    <button type="button" onClick={clearEditSource}>
+                      Clear
+                    </button>
+                  </div>
+                ) : null}
+
+
+
+                <div className="prompt-mention-wrap">
+                <textarea
+                  ref={promptInputRef}
+                  value={prompt}
+                  onChange={(event) => {
+                    setPrompt(event.target.value);
+                    syncMention(event.target.value, event.target.selectionStart);
+                  }}
+                  onClick={(event) => syncMention(prompt, event.currentTarget.selectionStart)}
+                  onBlur={() => window.setTimeout(closeMention, 120)}
+                  onPaste={handlePromptPaste}
+                  onDragOver={handlePromptDragOver}
+                  onDrop={handlePromptDrop}
+                  onKeyDown={(event) => {
+                    if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                      event.preventDefault();
+                      if (prompt.trim()) void handleGenerate();
+                      else if (!prompt.trim()) setStatusText("Enter a prompt to generate.");
+                      return;
+                    }
+                    if (!mentionOpen) return;
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      closeMention();
+                      return;
+                    }
+                    if (!mentionSuggestions.length) return;
+                    if (event.key === "ArrowDown") {
+                      event.preventDefault();
+                      setMentionIndex((i) => (i + 1) % mentionSuggestions.length);
+                    } else if (event.key === "ArrowUp") {
+                      event.preventDefault();
+                      setMentionIndex((i) => (i - 1 + mentionSuggestions.length) % mentionSuggestions.length);
+                    } else if (event.key === "Enter" || event.key === "Tab") {
+                      event.preventDefault();
+                      if (activeMention) applyMention(activeMention.tag);
+                    }
+                  }}
+                  placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Type @ to point at a reference. Cmd/Ctrl+Enter to generate."
+                />
+                {mentionOpen ? (
+                  <div className="prompt-mention-popover" role="listbox" aria-label="Reference tags">
+                    {mentionSuggestions.length ? (
+                      mentionSuggestions.map((option, i) => (
+                        <button
+                          key={option.tag}
+                          type="button"
+                          role="option"
+                          aria-selected={activeMention?.tag === option.tag}
+                          className={`prompt-mention-option${activeMention?.tag === option.tag ? " is-active" : ""}`}
+                          onMouseEnter={() => {
+                            setMentionIndex(i);
+                            setHoveredReferenceTag(option.tag);
+                          }}
+                          onMouseLeave={() => setHoveredReferenceTag(null)}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => applyMention(option.tag)}
+                        >
+                          {option.preview ? (
+                            <img src={option.preview} alt="" />
+                          ) : (
+                            <span className="prompt-mention-thumb-fallback">
+                              <Icon source="photo" tone="inherit" size={12} />
+                            </span>
+                          )}
+                          <strong>{option.tag}</strong>
+                          <span>{option.title}</span>
+                        </button>
+                      ))
+                    ) : (
+                      <button
+                        type="button"
+                        className="prompt-mention-option prompt-mention-option--empty"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => {
+                          closeMention();
+                          void openReferencePicker();
+                        }}
+                      >
+                        <span>No references loaded — add references</span>
+                      </button>
+                    )}
+                  </div>
+                ) : null}
+                </div>
+
+
+
+
+
+
+
+                {promptRemixes.length ? (
+                  <div className="prompt-remix-panel" aria-label="Brief remix directions">
+                    {promptRemixes.map((variant) => (
+                      <button key={variant.key} type="button" onClick={() => applyPromptRemix(variant)}>
+                        <strong>{variant.label}</strong>
+                        <span>{variant.prompt}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div
+                  className={`composer-actions${referenceDropActive ? " reference-drop-active" : ""}${referenceAssets.length ? " composer-actions--icons" : ""}`}
+                  data-tour-id="reference-dock"
+                  data-tour-active={tourActive("reference-dock")}
+                  onDragOver={(event) => {
+                    handlePromptDragOver(event);
+                    setReferenceDropActive(true);
+                  }}
+                  onDragLeave={() => setReferenceDropActive(false)}
+                  onDrop={(event) => {
+                    setReferenceDropActive(false);
+                    void handlePromptDrop(event);
+                  }}
+                >
                   <button
                     type="button"
-                    className="reference-tag-hint-chip"
-                    onMouseEnter={() => setHoveredReferenceTag(ref.tag)}
-                    onMouseLeave={() => setHoveredReferenceTag(null)}
-                    onClick={() => insertReferenceTag(ref.tag)}
+                    className={`upload-button reference-upload${referenceAssets.length ? " has-refs" : ""}`}
+                    onClick={() => void openReferencePicker()}
                   >
-                    {ref.tag}
-                  </button>{" "}
-                  {ref.title}
-                </span>
-              ))}
-              {" "}— use them in the prompt to point at one image.
-              {unknownReferenceTags(prompt, referenceAssets.length).length ? (
-                <strong className="reference-tag-hint-warn">
-                  {" "}Unknown tag{unknownReferenceTags(prompt, referenceAssets.length).length === 1 ? "" : "s"}:{" "}
-                  {unknownReferenceTags(prompt, referenceAssets.length).join(", ")}
-                </strong>
-              ) : null}
-            </p>
-          ) : null}
-          {(() => {
-            const videoActive = mediaKind === "video" || (mediaKind === "compare" && compareMedia === "video");
-            if (!videoActive) return null;
-            const vModel = isVideoModel(selectedModel) ? selectedModel : null;
-            const refs = referenceAssets.length;
-            const endFrames = Boolean(vModel?.supports_last_frame);
-            let note: React.ReactNode;
-            if (endFrames) {
-              note = refs === 0
-                ? "Add 1 reference to animate from it, or 2 to set a start and end frame."
-                : refs === 1
-                  ? "Starts on @ref1. Add a second reference to set the end frame."
-                  : <>Starts on <strong>@ref1</strong>, ends on <strong>@ref2</strong>.</>;
-            } else if (refs > 0) {
-              note = <>Image-to-video from <strong>@ref1</strong>.</>;
-            } else if (vModel?.requires_source_image) {
-              note = "This model needs one reference image — add one to run.";
-            } else {
-              note = "No references — text-to-video.";
-            }
-            return (
-              <p className="video-frame-note">
-                {note}
-                {endFrames && refs > 1 ? (
-                  <button type="button" className="video-frame-swap" onClick={swapFrameOrder}>
-                    Swap
+                    <Icon source="arrow-up-tray" tone="inherit" size={16} />
+                    Add references
+
+                    {referenceAssets.length ? (
+                      <span className="reference-count-badge" aria-label={`${referenceAssets.length} references loaded`}>
+                        <Icon source="photo" tone="inherit" size={11} />
+                        {referenceAssets.length}
+                      </span>
+                    ) : null}
+                  </button>
+                  <div className="reference-dock" aria-label="Reference images">
+
+                    {referenceAssets.map((asset, refIndex) => {
+                      const tag = referenceTagFor(refIndex);
+                      return (
+                      <div
+                        key={asset.id}
+                        className={`reference-thumb${hoveredReferenceTag === tag ? " reference-thumb--tag-hover" : ""}`}
+                        title={`${tag} · ${asset.title}`}
+                        data-reference-tag={tag}
+                        onClick={() => setReferencePreviewAsset(asset)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setReferencePreviewAsset(asset);
+                          }
+                        }}
+                      >
+                        {asset.preview_url ? <img src={asset.preview_url} alt={asset.title} /> : <Icon source="photo" tone="inherit" size={15} />}
+                        <button
+                          type="button"
+                          className="reference-tag"
+                          title={`Insert ${tag} into the prompt`}
+                          aria-label={`Insert ${tag} for ${asset.title} into the prompt`}
+                          onMouseEnter={() => setHoveredReferenceTag(tag)}
+                          onMouseLeave={() => setHoveredReferenceTag(null)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            insertReferenceTag(tag);
+                          }}
+                        >
+                          {tag}
+                        </button>
+                        <button
+                          type="button"
+                          className="reference-remove"
+                          aria-label={`Remove ${asset.title}`}
+                          title={`Remove ${asset.title}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            removeReferenceFromDock(asset);
+                          }}
+                        >
+                          <Icon source="x-mark" tone="inherit" size={12} />
+                        </button>
+                      </div>
+                      );
+                    })}
+                    {referenceAssets.length ? (
+                      <span className="reference-selection-count">
+                        {referenceAssets.length} loaded · used in next run
+                      </span>
+                    ) : (
+                      <span className="reference-selection-count reference-selection-count--empty">
+                        No references loaded
+                      </span>
+                    )}
+                  </div>
+                  <div className="composer-action-group">
+                    {editSourceAsset && selectedModel?.capabilities.masked_edit ? (
+                      <>
+                        <button className="upload-button mask-paint-button" type="button" onClick={() => setMaskPainterAsset(editSourceAsset)}>
+                          <Icon source="pencil-square" tone="inherit" size={16} />
+                          Paint mask
+                        </button>
+                        <label className="upload-button mask-upload-button">
+                          <Icon source="squares-2x2" tone="inherit" size={16} />
+                          Mask
+                          <input aria-label="Upload edit mask" type="file" accept="image/png,image/webp,image/jpeg" onChange={handleMaskUpload} />
+                        </label>
+                      </>
+                    ) : null}
+                    {maskAsset ? (
+                      <button className="mask-chip" type="button" onClick={() => setMaskAsset(null)} title="Clear edit mask">
+                        {maskAsset.preview_url ? <img src={maskAsset.preview_url} alt="" aria-hidden="true" /> : <Icon source="squares-2x2" tone="inherit" size={14} />}
+                        <span>Mask {maskAsset.title}</span>
+                        <Icon source="x-mark" tone="inherit" size={14} />
+                      </button>
+                    ) : null}
+                    {!settingsRailOpen ? (
+                      <button className="secondary-button" type="button" onClick={() => setSettingsRailOpen(true)}>
+                        <Icon source="adjustments-horizontal" tone="inherit" size={16} />
+                        Setup
+                      </button>
+                    ) : null}
+                    <div className="action-compact-pile">
+                      <button
+                        className="secondary-button remix-button"
+                        type="button"
+                        onClick={handlePromptRemix}
+                        disabled={remixBusy}
+                        title="Brief Mix"
+                        aria-label="Brief Mix"
+                      >
+                        {remixBusy ? <Spinner size="small" /> : <Icon source="sparkles" tone="inherit" size={14} />}
+                        <span className="action-label">Brief Mix&nbsp;&nbsp;<br /></span>
+                      </button>
+                      <button
+                        className="secondary-button danger-button composer-cancel-button"
+                        type="button"
+                        onClick={requestCancelCurrentSession}
+                        disabled={!activeSession}
+                        title="Cancel"
+                        aria-label="Cancel"
+                      >
+                        <Icon source="x-mark" tone="inherit" size={14} />
+                        <span className="action-label">Cancel</span>
+                      </button>
+                    </div>
+                    <button
+                      className="primary-button"
+                      type="submit"
+                      disabled={!prompt.trim() || hasStudioFieldErrors(fieldErrors)}
+                      aria-label={primaryActionLabel}
+                      title={
+                        !prompt.trim()
+                          ? "Enter a prompt to generate"
+                          : hasStudioFieldErrors(fieldErrors)
+                            ? "Fix the highlighted settings before generating"
+                            : primaryActionLabel
+                      }
+                    >
+                      <Icon source="bolt" tone="inherit" size={18} />
+                      <span className="action-label">{primaryActionLabel}</span>
+                    </button>
+
+                  </div>
+                </div>
+                {!turns.length && !prompt.trim() && productTaskShortcuts.length ? (
+                  <div className="task-shortcut-list composer-task-shortcuts" aria-label="Ways to start">
+                    {productTaskShortcuts.map((task) => (
+                      <button
+                        className={selectedPresetKey === task.key ? "selected" : ""}
+                        key={task.key}
+                        type="button"
+                        onClick={() => selectTaskShortcut(task)}
+                      >
+                        <span className="task-shortcut-icon">{taskShortcutIcon(task.key)}</span>
+                        <span>
+                          <strong>{task.label}</strong>
+                          <small aria-hidden="true">{task.description}</small>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                {referenceAssets.length ? (
+                  <p className="reference-tag-hint">
+                    Reference tags:{" "}
+                    {taggedReferences(referenceAssets).map((ref, i) => (
+                      <span key={ref.tag}>
+                        {i ? ", " : ""}
+                        <button
+                          type="button"
+                          className="reference-tag-hint-chip"
+                          onMouseEnter={() => setHoveredReferenceTag(ref.tag)}
+                          onMouseLeave={() => setHoveredReferenceTag(null)}
+                          onClick={() => insertReferenceTag(ref.tag)}
+                        >
+                          {ref.tag}
+                        </button>{" "}
+                        {ref.title}
+                      </span>
+                    ))}
+                    {" "}— use them in the prompt to point at one image.
+                    {unknownReferenceTags(prompt, referenceAssets.length).length ? (
+                      <strong className="reference-tag-hint-warn">
+                        {" "}Unknown tag{unknownReferenceTags(prompt, referenceAssets.length).length === 1 ? "" : "s"}:{" "}
+                        {unknownReferenceTags(prompt, referenceAssets.length).join(", ")}
+                      </strong>
+                    ) : null}
+                  </p>
+                ) : null}
+                {(() => {
+                  const videoActive = mediaKind === "video" || (mediaKind === "compare" && compareMedia === "video");
+                  if (!videoActive) return null;
+                  const vModel = isVideoModel(selectedModel) ? selectedModel : null;
+                  const refs = referenceAssets.length;
+                  const endFrames = Boolean(vModel?.supports_last_frame);
+                  let note: React.ReactNode;
+                  if (endFrames) {
+                    note = refs === 0
+                      ? "Add 1 reference to animate from it, or 2 to set a start and end frame."
+                      : refs === 1
+                        ? "Starts on @ref1. Add a second reference to set the end frame."
+                        : <>Starts on <strong>@ref1</strong>, ends on <strong>@ref2</strong>.</>;
+                  } else if (refs > 0) {
+                    note = <>Image-to-video from <strong>@ref1</strong>.</>;
+                  } else if (vModel?.requires_source_image) {
+                    note = "This model needs one reference image — add one to run.";
+                  } else {
+                    note = "No references — text-to-video.";
+                  }
+                  return (
+                    <p className="video-frame-note">
+                      {note}
+                      {endFrames && refs > 1 ? (
+                        <button type="button" className="video-frame-swap" onClick={swapFrameOrder}>
+                          Swap
+                        </button>
+                      ) : null}
+                    </p>
+                  );
+                })()}
+
+              </form>
+
+              <section
+                className="thread-surface"
+                aria-label="Prompt and output thread"
+                data-tour-id="output-thread"
+                data-tour-active={tourActive("output-thread")}
+              >
+                <div className="rounds-well-head" aria-hidden="true">
+                  <span className="rounds-well-title">Rounds — newest first</span>
+                  <span className="rounds-well-count">
+                    {turns.length
+                      ? `${outputAssets.length.toLocaleString()} pick${outputAssets.length === 1 ? "" : "s"} · ${turns.length.toLocaleString()} round${turns.length === 1 ? "" : "s"}`
+                      : "No rounds yet"}
+                  </span>
+                </div>
+
+                {compareBaseAsset ? (
+                  <div className="compare-prompt" role="status">
+                    <span>
+                      Comparing from <strong>{compareBaseAsset.title}</strong>
+                    </span>
+                    <button type="button" onClick={clearCompare}>
+                      Cancel
+                    </button>
+                  </div>
+                ) : null}
+                {(() => {
+                  // Once the backend has a queued/running round of its own, that round card
+                  // IS the loading state — never show a second local card for the same run.
+                  if (hasLiveTurn || !inflightGens.length) return null;
+                  return inflightGens.slice().reverse().map((gen) => {
+                  const p = aspectRatioParts(gen.aspect);
+                  const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
+                  const waitedMs = Math.max(0, pendingTick - gen.startedAt);
+                  const waitedSeconds = Math.floor(waitedMs / 1000);
+                  const waitedLabel = waitedSeconds >= 60
+                    ? `${Math.floor(waitedSeconds / 60)}m ${String(waitedSeconds % 60).padStart(2, "0")}s`
+                    : `${waitedSeconds}s`;
+                  return (
+                    <article key={gen.id} className="turn-card turn-card-pending" aria-live="polite" aria-busy="true">
+                      <div className="turn-card-body">
+                      <div className="turn-side">
+                      <div className="turn-copy">
+                        <span className="status-dot pending" />
+                        <div>
+                          <p className="eyebrow">Generating</p>
+                          <h3>{gen.modelLabel}</h3>
+                          <p>{gen.prompt || "Preparing the next round..."}</p>
+                          <div className="turn-meta">
+                            <span>Running</span>
+                            <span>{gen.aspect}</span>
+                            <span>{gen.count} pick{gen.count === 1 ? "" : "s"}</span>
+                            {waitedSeconds >= 5 ? <span>{waitedLabel} elapsed</span> : null}
+                          </div>
+                          {waitedMs > 90000 ? (
+                            <div className="turn-pending-recheck">
+                              <span>Taking longer than usual — the picks may already be saved.</span>
+                              <button type="button" onClick={() => void settleFinishedRunsFromServer()}>
+                                Check for results
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                      </div>
+
+                      <div className="turn-visual">
+                      <div className="output-grid">
+                        {Array.from({ length: gen.count }).map((_, i) => (
+                          <div
+                            className="output-skeleton"
+                            key={i}
+                            style={{ ["--asset-aspect" as string]: ar } as React.CSSProperties}
+                          >
+                            <span className="output-skeleton-shimmer" aria-hidden="true" />
+                            <span className="output-skeleton-spinner" aria-hidden="true" />
+                          </div>
+                        ))}
+                      </div>
+                      </div>
+                      </div>
+
+                    </article>
+                  );
+                });
+                })()}
+
+
+                {searchedTurns.length ? (
+                  groupCompareRows([...searchedTurns].reverse()).map((row, rowIdx) => (
+                  <div
+                    key={`row-${row[0].id}`}
+                    className={row.length > 1 ? "compare-run" : "turn-row"}
+                  >
+                    {row.length > 1 ? (
+                      <p className="compare-run-title">
+                        Side-by-side · {modelName(config, row[0].model)} vs {modelName(config, row[1].model)}
+                      </p>
+                    ) : null}
+                    <div className={row.length > 1 ? "compare-run-grid" : "turn-row-single"}>
+                    {row.map((turn) => {
+                    const idx = rowIdx;
+                    const compareSide = parseCompareMeta(turn.settings_json).side;
+                    const createdMs = turn.created_at ? new Date(turn.created_at).getTime() : 0;
+                    const isFresh = idx === 0 && createdMs && Date.now() - createdMs < 30_000;
+                    const shortId = turn.id.slice(0, 8);
+
+                    const timeLabel = turn.created_at ? new Date(turn.created_at).toLocaleString() : "";
+                    return (
+                    <article
+                      className={`turn-card${isFresh ? " turn-card-fresh" : ""}`}
+                      key={turn.id}
+                      style={{ position: "relative" }}
+                    >
+                      <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 6, alignItems: "center" }}>
+                        {isFresh ? (
+                          <span
+                            style={{
+                              fontSize: 10, fontWeight: 600, letterSpacing: 0.4, textTransform: "uppercase",
+                              padding: "2px 6px", borderRadius: 999,
+                              background: "rgba(34,197,94,0.15)", color: "rgb(21,128,61)",
+                              border: "1px solid rgba(34,197,94,0.35)",
+                            }}
+                          >
+                            New
+                          </span>
+                        ) : null}
+                        <button
+                          type="button"
+                          aria-label="Copy generation ID"
+                          title={`Copy ID (${turn.id})`}
+                          onClick={() => {
+                            void navigator.clipboard?.writeText(turn.id).catch(() => {});
+                          }}
+                          style={{
+                            width: 22, height: 22, padding: 0,
+                            display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
+                            background: "rgba(255,255,255,0.85)", cursor: "pointer",
+                            color: "rgba(0,0,0,0.55)",
+                          }}
+                        >
+                          <Icon source="document-duplicate" tone="inherit" size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Retry this generation"
+                          title="Retry with the same settings"
+                          onClick={() => retryTurn(turn)}
+                          style={{
+                            width: 22, height: 22, padding: 0,
+                            display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
+                            background: "rgba(255,255,255,0.85)", cursor: "pointer",
+                            color: "rgba(0,0,0,0.55)",
+                          }}
+
+                        >
+                          <Icon source="arrow-path" tone="inherit" size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Delete this round"
+                          title="Delete this round"
+                          onClick={() => {
+                            if (window.confirm("Delete this round and its generated images?")) {
+                              removeTurnFromSession(turn);
+                            }
+                          }}
+                          style={{
+                            width: 22, height: 22, padding: 0,
+                            display: "inline-flex", alignItems: "center", justifyContent: "center",
+                            borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
+                            background: "rgba(255,255,255,0.85)", cursor: "pointer",
+                            color: "rgba(0,0,0,0.55)",
+                          }}
+                        >
+                          <Icon source="x-mark" tone="inherit" size={12} />
+                        </button>
+
+                      </div>
+                      <div className="turn-card-body">
+                      <div className="turn-side">
+                      <div className="turn-copy">
+
+                        <span className={`status-dot ${turn.status}`} />
+                        <div>
+                          <p className="eyebrow">
+                            {compareSide ? <span className="compare-side-badge">Side {compareSide}</span> : null}
+                            {turnKindLabel(turn)}
+                          </p>
+
+                          <h3>{modelName(config, turn.model)}</h3>
+                          <p>{turn.prompt}</p>
+                          <div className="turn-meta">
+                            <span title={turn.id} style={{ fontFamily: "ui-monospace, monospace" }}>#{shortId}</span>
+                            {timeLabel ? <span title={timeLabel}>{timeLabel}</span> : null}
+                            <span>{turn.status}</span>
+                            {turn.frank_body_mode ? <span>Frank Body Mode</span> : <span>User prompt</span>}
+                            {turnAspect(turn) ? <span className="turn-chip-aspect">{formatAspectChip(turnAspect(turn))}</span> : null}
+                            {(() => {
+                              // Real returned pixel size, read from the delivered file.
+                              const sizes = Array.from(new Set(
+                                displayOutputAssets
+                                  .filter((a) => a.turn_id === turn.id && a.width && a.height)
+                                  .map((a) => `${a.width} × ${a.height}`),
+                              ));
+                              if (!sizes.length) return null;
+                              return (
+                                <span className="turn-chip-resolution" title="Resolution returned by the provider">
+                                  {sizes.join(" · ")}
+                                </span>
+                              );
+                            })()}
+                            {displayOutputAssets.some((a) => a.turn_id === turn.id && a.storage_missing) ? (
+                              <span
+                                className="turn-chip-resolution"
+                                title="This file was over the 20 MB storage limit, so it streams from the provider's temporary link. Save it now to keep it."
+                              >
+                                Temporary link
+                              </span>
+                            ) : null}
+                            <button
+                              type="button"
+                              className="turn-chip-json"
+                              onClick={() => setPayloadTurnId(turn.id)}
+                              title="Show the JSON body sent to the provider"
+                            >
+                              JSON
+                            </button>
+
+
+                            <button
+                              type="button"
+                              className="turn-copy-prompt"
+                              onClick={() => {
+                                void navigator.clipboard?.writeText(turn.prompt || "").then(() => {
+                                  setStatusText("Prompt copied to clipboard.");
+                                }).catch(() => {
+                                  setStatusText("Could not copy prompt.");
+                                });
+                              }}
+                              title="Copy prompt"
+                            >
+                              <Icon source="document-duplicate" tone="inherit" size={12} />
+                              Copy prompt
+                            </button>
+                            {(() => {
+                              const refIds = parseJsonList(turn.reference_asset_ids_json);
+                              if (!refIds.length) return null;
+                              return (
+                                <span className="turn-ref-strip" title={referenceCountLabel(refIds.length)}>
+                                  {refIds.map((refId, refIndex) => {
+                                    const refAsset = assets.find((a) => a.id === refId);
+                                    const tag = referenceTagFor(refIndex);
+                                    return (
+                                      <span
+                                        key={`${turn.id}-${refId}`}
+                                        className="turn-ref-thumb"
+                                        title={`${tag} · ${refAsset?.title ?? "reference"}`}
+                                        onClick={() => { if (refAsset) setReferencePreviewAsset(refAsset); }}
+                                        role={refAsset ? "button" : undefined}
+                                      >
+                                        {refAsset?.preview_url ? (
+                                          <img src={refAsset.preview_url} alt={refAsset.title} loading="lazy" />
+                                        ) : (
+                                          <Icon source="photo" tone="inherit" size={12} />
+                                        )}
+                                      </span>
+                                    );
+                                  })}
+                                </span>
+                              );
+                            })()}
+
+                            {turnErrorCopy(turn) ? <span className="turn-error">{turnErrorCopy(turn)}</span> : null}
+
+                            {(() => {
+                              const anyTurn = turn as any;
+                              const requested = typeof anyTurn.requested_count === "number" ? anyTurn.requested_count : 0;
+                              const produced = displayOutputAssets.filter((a) => a.turn_id === turn.id).length;
+                              let partial: Array<{ code?: string; message?: string; request_id?: string }> = [];
+                              try { partial = JSON.parse(anyTurn.partial_errors_json || "[]"); } catch { partial = []; }
+                              if (!partial.length && (!requested || produced >= requested)) return null;
+                              const missing = Math.max(0, requested - produced);
+                              const anyRetryable = partial.some((p: any) => p?.retryable !== false);
+                              return (
+                                <>
+                                  <span
+                                    className="turn-partial"
+                                    title={partial.map((p, i) => `${i + 1}. [${p.code || "error"}] ${p.message || ""}${p.request_id ? ` (id: ${p.request_id})` : ""}`).join("\n")}
+                                    style={{
+                                      display: "inline-flex", alignItems: "center", gap: 4,
+                                      fontSize: 11, padding: "2px 8px", borderRadius: 999,
+                                      background: "rgba(245,158,11,0.15)", color: "rgb(146,64,14)",
+                                      border: "1px solid rgba(245,158,11,0.4)", cursor: "help",
+                                    }}
+                                  >
+                                    {produced} of {requested || (produced + partial.length)} succeeded
+                                    {missing > 0 ? ` · ${missing} failed` : ""}
+                                  </span>
+                                  {missing > 0 && anyRetryable ? (
+                                    <button
+                                      type="button"
+                                      className="turn-retry-missing"
+                                      onClick={() => retryTurn(turn, missing)}
+                                      title={`Re-run the ${missing} missing image${missing === 1 ? "" : "s"} with the same settings`}
+                                      style={{
+                                        fontSize: 11, padding: "2px 8px", borderRadius: 999,
+                                        background: "rgba(59,130,246,0.12)", color: "rgb(30,64,175)",
+                                        border: "1px solid rgba(59,130,246,0.4)", cursor: "pointer",
+                                      }}
+                                    >
+                                      Retry missing ({missing})
+                                    </button>
+                                  ) : null}
+                                </>
+                              );
+                            })()}
+                          </div>
+                      </div>
+                      </div>
+                      </div>
+                      <div className="turn-visual">
+
+                      <OutputStrip
+                        assets={displayOutputAssets.filter((asset) => asset.turn_id === turn.id)}
+                        onSelect={inspectAsset}
+                        emptyLabel={turnEmptyLabel(turn)}
+                        pending={turn.status === "queued" || turn.status === "running"}
+                        pendingCount={turnExpectedCount(turn)}
+                        pendingAspect={turnAspect(turn)}
+
+
+                        selectedAssetId={selectedAsset?.id}
+                        onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
+                        onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
+                      />
+
+                      </div>
+                      </div>
+
+
+                    </article>
+                    );
+                  })}
+                    </div>
+                  </div>
+                  ))
+
+                ) : roundSearch.trim() && turns.length ? (
+                  <div className="empty-thread">
+                    <Icon source="magnifying-glass" tone="inherit" size={38} />
+                    <strong>No rounds match “{roundSearch.trim()}”</strong>
+                    <span>Clear the search in the top bar to see all {turns.length} rounds again.</span>
+                  </div>
+                ) : (
+                  <div className="empty-thread">
+                    <Icon source="photo" tone="inherit" size={38} />
+                    <strong>{config.voice.emptyState}</strong>
+                    <span>Describe the shot in the brief above. References and run settings are optional.</span>
+                  </div>
+                )}
+              </section>
+
+
+
+              <div className="status-strip">
+                <div className={`gen-progress phase-${genPhase}`} role="status" aria-live="polite">
+                  {(["queued", "running", genPhase === "failed" ? "failed" : "completed"] as const).map((step, i) => {
+                    const order: GenPhase[] = ["idle", "queued", "running", genPhase === "failed" ? "failed" : "completed"];
+                    const currentIdx = order.indexOf(genPhase);
+                    const stepIdx = i + 1;
+                    const state =
+                      genPhase === "idle" ? "pending" :
+                      genPhase === "failed" && step === "failed" ? "failed" :
+                      stepIdx < currentIdx ? "done" :
+                      stepIdx === currentIdx ? (genPhase === "failed" ? "failed" : genPhase === "completed" ? "done" : "active") :
+                      "pending";
+                    const label = step === "queued" ? "Queued" : step === "running" ? "Running" : step === "failed" ? "Failed" : "Completed";
+                    return (
+                      <span key={step} className={`gen-step gen-step-${state}`}>
+                        <span className="gen-step-dot">{stepIdx}</span>
+                        <span className="gen-step-label">{label}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+                <span>{statusText}</span>
+                {(genPhase === "queued" || genPhase === "running") && busy ? (
+                  <button
+                    type="button"
+                    className="gen-stop-btn"
+                    onClick={() => {
+                      generateAbortRef.current?.abort();
+                      setStatusText("Canceling...");
+                    }}
+                    title="Cancel this generation"
+                  >
+                    <Icon source="no-symbol" tone="inherit" size={12} />
+                    Stop
                   </button>
                 ) : null}
-              </p>
-            );
-          })()}
-
-        </form>
-
-
-
-        <div className="status-strip">
-          <div className={`gen-progress phase-${genPhase}`} role="status" aria-live="polite">
-            {(["queued", "running", genPhase === "failed" ? "failed" : "completed"] as const).map((step, i) => {
-              const order: GenPhase[] = ["idle", "queued", "running", genPhase === "failed" ? "failed" : "completed"];
-              const currentIdx = order.indexOf(genPhase);
-              const stepIdx = i + 1;
-              const state =
-                genPhase === "idle" ? "pending" :
-                genPhase === "failed" && step === "failed" ? "failed" :
-                stepIdx < currentIdx ? "done" :
-                stepIdx === currentIdx ? (genPhase === "failed" ? "failed" : genPhase === "completed" ? "done" : "active") :
-                "pending";
-              const label = step === "queued" ? "Queued" : step === "running" ? "Running" : step === "failed" ? "Failed" : "Completed";
-              return (
-                <span key={step} className={`gen-step gen-step-${state}`}>
-                  <span className="gen-step-dot">{stepIdx}</span>
-                  <span className="gen-step-label">{label}</span>
-                </span>
-              );
-            })}
-          </div>
-          <span>{statusText}</span>
-          {(genPhase === "queued" || genPhase === "running") && busy ? (
-            <button
-              type="button"
-              className="gen-stop-btn"
-              onClick={() => {
-                generateAbortRef.current?.abort();
-                setStatusText("Canceling...");
-              }}
-              title="Cancel this generation"
-            >
-              <Square size={12} />
-              Stop
-            </button>
-          ) : null}
-          {genPhase === "failed" && genError ? (
-            <>
-              {genError.code === "provider_unavailable" ? (
-                <span className="gen-error-chip outage" title={genError.message}>
-                  <code>provider outage</code>
-                </span>
-              ) : genError.code ? (
-                <span className="gen-error-chip" title={genError.message}>
-                  <code>{genError.code}</code>
-                  {genError.requestId ? <em title={`Replicate request ID: ${genError.requestId}`}>req {genError.requestId.slice(0, 8)}</em> : null}
-                </span>
-              ) : null}
-              {genError.code === "provider_unavailable" && fallbackModel ? (
-                <button
-                  type="button"
-                  onClick={() => setAutoRetryModelId(fallbackModel.id)}
-                  title={`Re-run the same prompt and references on ${fallbackModel.short_label ?? fallbackModel.label}`}
-                >
-                  <RefreshCw size={13} />
-                  Switch to {fallbackModel.short_label ?? fallbackModel.label} and retry
-                </button>
-              ) : null}
-              <button
-                type="button"
-                className="gen-error-toggle"
-                onClick={() => setGenErrorOpen((v) => !v)}
-                aria-expanded={genErrorOpen}
-              >
-                {genErrorOpen ? "Hide details" : "Show details"}
-              </button>
-            </>
-          ) : null}
-          {retrySafePayload ? (
-            <button
-              type="button"
-              onClick={() => { void handleGenerate(); }}
-              title="Re-run the last generation with the same inputs"
-
-            >
-              <RefreshCw size={13} />
-              Retry safely
-            </button>
-          ) : null}
-
-          {statusReadyLink ? (
-            <button type="button" onClick={() => openStudioLink(statusReadyLink.url, statusReadyLink.label)}>
-              <ExternalLink size={13} />
-              Try {statusReadyLink.label} link
-            </button>
-          ) : null}
-          {statusReadyLink ? (
-            <button type="button" onClick={() => copyStudioLink(statusReadyLink.url, statusReadyLink.label)}>
-              <Clipboard size={13} />
-              Copy {statusReadyLink.label} link
-            </button>
-          ) : null}
-          <span className={`connection-pill ${connection}`}>
-            <span />
-            {connection === "online" ? "Studio connected" : connection === "checking" ? "Checking studio" : "Studio offline"}
-          </span>
-        </div>
-        {genPhase === "failed" && genError && genErrorOpen ? (
-          <div className="gen-error-details" role="region" aria-label="Error details">
-            <dl>
-              {genError.code ? (<><dt>Code</dt><dd><code>{genError.code}</code></dd></>) : null}
-              {genError.requestId ? (
-                <>
-                  <dt>Request ID</dt>
-                  <dd>
-                    <code>{genError.requestId}</code>{" "}
+                {genPhase === "failed" && genError ? (
+                  <>
+                    {genError.code === "provider_unavailable" ? (
+                      <span className="gen-error-chip outage" title={genError.message}>
+                        <code>provider outage</code>
+                      </span>
+                    ) : genError.code ? (
+                      <span className="gen-error-chip" title={genError.message}>
+                        <code>{genError.code}</code>
+                        {genError.requestId ? <em title={`Replicate request ID: ${genError.requestId}`}>req {genError.requestId.slice(0, 8)}</em> : null}
+                      </span>
+                    ) : null}
+                    {genError.code === "provider_unavailable" && fallbackModel ? (
+                      <button
+                        type="button"
+                        onClick={() => setAutoRetryModelId(fallbackModel.id)}
+                        title={`Re-run the same prompt and references on ${fallbackModel.short_label ?? fallbackModel.label}`}
+                      >
+                        <Icon source="arrow-path" tone="inherit" size={13} />
+                        Switch to {fallbackModel.short_label ?? fallbackModel.label} and retry
+                      </button>
+                    ) : null}
                     <button
                       type="button"
-                      className="mini-button"
-                      style={{ padding: "2px 6px", fontSize: 11 }}
-                      onClick={() => { void navigator.clipboard?.writeText(genError.requestId ?? ""); }}
-                      title="Copy request ID"
+                      className="gen-error-toggle"
+                      onClick={() => setGenErrorOpen((v) => !v)}
+                      aria-expanded={genErrorOpen}
                     >
-                      Copy
+                      {genErrorOpen ? "Hide details" : "Show details"}
                     </button>
-                  </dd>
-                </>
+                  </>
+                ) : null}
+                {retrySafePayload ? (
+                  <button
+                    type="button"
+                    onClick={() => { void handleGenerate(); }}
+                    title="Re-run the last generation with the same inputs"
+
+                  >
+                    <Icon source="arrow-path" tone="inherit" size={13} />
+                    Retry safely
+                  </button>
+                ) : null}
+
+                {statusReadyLink ? (
+                  <button type="button" onClick={() => openStudioLink(statusReadyLink.url, statusReadyLink.label)}>
+                    <Icon source="arrow-top-right-on-square" tone="inherit" size={13} />
+                    Try {statusReadyLink.label} link
+                  </button>
+                ) : null}
+                {statusReadyLink ? (
+                  <button type="button" onClick={() => copyStudioLink(statusReadyLink.url, statusReadyLink.label)}>
+                    <Icon source="document-duplicate" tone="inherit" size={13} />
+                    Copy {statusReadyLink.label} link
+                  </button>
+                ) : null}
+                <span className={`connection-pill ${connection}`}>
+                  <span />
+                  {connection === "online" ? "Studio connected" : connection === "checking" ? "Checking studio" : "Studio offline"}
+                </span>
+              </div>
+              {genPhase === "failed" && genError && genErrorOpen ? (
+                <div className="gen-error-details" role="region" aria-label="Error details">
+                  <dl>
+                    {genError.code ? (<><dt>Code</dt><dd><code>{genError.code}</code></dd></>) : null}
+                    {genError.requestId ? (
+                      <>
+                        <dt>Request ID</dt>
+                        <dd>
+                          <code>{genError.requestId}</code>{" "}
+                          <button
+                            type="button"
+                            className="mini-button"
+                            style={{ padding: "2px 6px", fontSize: 11 }}
+                            onClick={() => { void navigator.clipboard?.writeText(genError.requestId ?? ""); }}
+                            title="Copy request ID"
+                          >
+                            Copy
+                          </button>
+                        </dd>
+                      </>
+                    ) : null}
+                    {typeof genError.httpStatus === "number" ? (<><dt>HTTP</dt><dd>{genError.httpStatus}</dd></>) : null}
+                    {typeof genError.retryable === "boolean" ? (<><dt>Retryable</dt><dd>{genError.retryable ? "yes" : "no"}</dd></>) : null}
+                    <dt>Message</dt><dd>{genError.message}</dd>
+                  </dl>
+                  {genError.raw ? (
+                    <pre className="gen-error-raw">{genError.raw}</pre>
+                  ) : null}
+                </div>
               ) : null}
-              {typeof genError.httpStatus === "number" ? (<><dt>HTTP</dt><dd>{genError.httpStatus}</dd></>) : null}
-              {typeof genError.retryable === "boolean" ? (<><dt>Retryable</dt><dd>{genError.retryable ? "yes" : "no"}</dd></>) : null}
-              <dt>Message</dt><dd>{genError.message}</dd>
-            </dl>
-            {genError.raw ? (
-              <pre className="gen-error-raw">{genError.raw}</pre>
-            ) : null}
           </div>
-        ) : null}
-      </main>
+
+          {settingsRailOpen ? (
+            <aside className="studio-rail" aria-label="Run settings">
+                <StudioRail
+                  mediaKind={mediaKind}
+                  onMediaKindChange={switchMediaKind}
+                  models={mediaModels}
+                  selectedModelId={selectedModelId}
+                  onModelChange={setSelectedModelId}
+                  settings={settings}
+                  onSettingsChange={(patch) => setSettings((current) => ({ ...current, ...patch }))}
+                  onAspectChange={handleAspectChange}
+                  presets={promptPresets}
+                  selectedPresetKey={selectedPresetKey}
+                  onPresetChange={(key) => attachPreset(key)}
+                  fieldErrors={fieldErrors}
+                  referenceCount={selectedReferenceAssets.length}
+                  onReset={resetStudioSettings}
+                  compareMedia={compareMedia}
+                  onCompareMediaChange={switchCompareMedia}
+                  compareModelBId={compareModelBId}
+                  onCompareModelBChange={(id) => {
+                    setCompareModelBId(id);
+                    setCompareApproved(false);
+                  }}
+                  compareAdjustments={compareAdjustments}
+                  compareApproved={compareApproved}
+                  onCompareApprovedChange={setCompareApproved}
+                  compareCostLabel={compareCostLabel}
+
+                />
+
+            </aside>
+          ) : null}
+        </div>
+      </>
       )}
 
 
@@ -4876,7 +4652,7 @@ export default function App() {
         <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setLightboxAsset(null)}>
           <div className="lightbox-inner is-viewer" onClick={(event) => event.stopPropagation()}>
             <button className="lightbox-close" type="button" onClick={() => setLightboxAsset(null)} aria-label="Close preview">
-              <XCircle size={18} />
+              <Icon source="x-mark" tone="inherit" size={18} />
             </button>
             <AssetPreviewMedia asset={lightboxAsset} fallbackIconSize={42} controls />
             <div className="lightbox-meta">
@@ -4895,11 +4671,11 @@ export default function App() {
                   setLightboxAsset(null);
                 }}
               >
-                <Sparkles size={16} />
+                <Icon source="sparkles" tone="inherit" size={16} />
                 Edit this
               </button>
               <button type="button" onClick={() => void downloadAssetFile(lightboxAsset)}>
-                <Download size={16} />
+                <Icon source="arrow-down-tray" tone="inherit" size={16} />
                 Save
               </button>
               {lightboxAsset.approval_status === "approved" ? (
@@ -4912,7 +4688,7 @@ export default function App() {
                   }}
                   title="Approved — click to undo"
                 >
-                  <CheckCircle2 size={16} />
+                  <Icon source="check-circle" tone="inherit" size={16} />
                   Approved
                 </button>
               ) : (
@@ -4924,7 +4700,7 @@ export default function App() {
                     setLightboxAsset({ ...lightboxAsset, approval_status: "approved" });
                   }}
                 >
-                  <CheckCircle2 size={16} />
+                  <Icon source="check-circle" tone="inherit" size={16} />
                   Approve
                 </button>
               )}
@@ -4937,7 +4713,7 @@ export default function App() {
                     setLightboxAsset({ ...lightboxAsset, approval_status: "rejected" });
                   }}
                 >
-                  <XCircle size={16} />
+                  <Icon source="x-mark" tone="inherit" size={16} />
                   Reject
                 </button>
               ) : (
@@ -4950,7 +4726,7 @@ export default function App() {
                   }}
                   title="Rejected — click to undo"
                 >
-                  <XCircle size={16} />
+                  <Icon source="x-mark" tone="inherit" size={16} />
                   Rejected
                 </button>
               )}
@@ -4973,7 +4749,7 @@ export default function App() {
               onClick={() => setReferencePickerOpen(false)}
               aria-label="Close reference picker"
             >
-              <XCircle size={18} />
+              <Icon source="x-mark" tone="inherit" size={18} />
             </button>
             <header className="reference-picker-header">
               <h3>Add references</h3>
@@ -4999,7 +4775,7 @@ export default function App() {
                     onClick={() => referencePickerInputRef.current?.click()}
                     disabled={referencePickerBusy}
                   >
-                    <Upload size={22} />
+                    <Icon source="arrow-up-tray" tone="inherit" size={22} />
                     <strong>{referencePickerBusy ? "Uploading…" : "Upload from computer"}</strong>
                     <span>PNG, JPG or WEBP · you can also paste or drop</span>
                   </button>
@@ -5073,11 +4849,11 @@ export default function App() {
                     }).catch(() => setStatusText("Could not copy the JSON."));
                   }}
                 >
-                  <Clipboard size={14} />
+                  <Icon source="document-duplicate" tone="inherit" size={14} />
                   Copy
                 </button>
                 <button type="button" onClick={() => setPayloadTurnId(null)} aria-label="Close JSON view">
-                  <XCircle size={18} />
+                  <Icon source="x-mark" tone="inherit" size={18} />
                 </button>
               </div>
             </header>
@@ -5093,12 +4869,12 @@ export default function App() {
         <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setReferencePreviewAsset(null)}>
           <div className="lightbox-inner reference-preview-inner" onClick={(event) => event.stopPropagation()}>
             <button className="lightbox-close" type="button" onClick={() => setReferencePreviewAsset(null)} aria-label="Close reference preview">
-              <XCircle size={18} />
+              <Icon source="x-mark" tone="inherit" size={18} />
             </button>
             {referencePreviewAsset.preview_url ? (
               <img src={referencePreviewAsset.preview_url} alt={referencePreviewAsset.title} />
             ) : (
-              <div className="reference-preview-placeholder"><Paperclip size={48} /></div>
+              <div className="reference-preview-placeholder"><Icon source="photo" tone="inherit" size={48} /></div>
             )}
             <div className="lightbox-actions reference-preview-actions">
               <button
@@ -5109,7 +4885,7 @@ export default function App() {
                   setReferencePreviewAsset(null);
                 }}
               >
-                <X size={16} />
+                <Icon source="x-mark" tone="inherit" size={16} />
                 Remove reference
               </button>
             </div>
@@ -5138,7 +4914,7 @@ export default function App() {
           }}
         />
       ) : null}
-    </div>
+    </Shell>
   );
 }
 
@@ -5179,13 +4955,13 @@ function ReferencePickerCard({
           }}
         />
       ) : (
-        <span className="reference-picker-card-fallback"><Paperclip size={18} /></span>
+        <span className="reference-picker-card-fallback"><Icon source="photo" tone="inherit" size={18} /></span>
       )}
       <span className="reference-picker-card-title">{asset.title}</span>
       {active ? (
         <span className="reference-picker-card-flag">In use</span>
       ) : selected ? (
-        <span className="reference-picker-card-check"><CheckCircle2 size={16} /></span>
+        <span className="reference-picker-card-check"><Icon source="check-circle" tone="inherit" size={16} /></span>
       ) : null}
     </button>
   );
@@ -5224,7 +5000,7 @@ function WalkthroughOverlay({
         style={anchor?.popoverStyle}
       >
         <button className="walkthrough-close" type="button" onClick={onClose} aria-label="Close walkthrough">
-          <XCircle size={18} />
+          <Icon source="x-mark" tone="inherit" size={18} />
         </button>
         <p className="eyebrow">Demo Walkthrough</p>
         <span className="walkthrough-step-count">
@@ -5270,7 +5046,7 @@ function SessionCancelDialog({
     <div className="session-cancel-modal" role="dialog" aria-modal="true" aria-label="Cancel session confirmation">
       <section className="session-cancel-card">
         <button className="lightbox-close" type="button" onClick={onCancel} aria-label="Close cancel dialog">
-          <XCircle size={18} />
+          <Icon source="x-mark" tone="inherit" size={18} />
         </button>
         <p className="eyebrow">Session control</p>
         <h2>Cancel this session?</h2>
@@ -5283,7 +5059,7 @@ function SessionCancelDialog({
             Keep session
           </button>
           <button className="secondary-button danger-button" type="button" onClick={onConfirm}>
-            <XCircle size={16} />
+            <Icon source="x-mark" tone="inherit" size={16} />
             Cancel session
           </button>
         </div>
@@ -5373,7 +5149,7 @@ function CompareDialog({
             <h2>Compare picks</h2>
           </div>
           <button className="lightbox-close" type="button" onClick={onClose} aria-label="Close compare">
-            <XCircle size={18} />
+            <Icon source="x-mark" tone="inherit" size={18} />
           </button>
         </header>
         <div className="compare-grid">
@@ -5416,11 +5192,11 @@ function ComparePane({
         {asset.notes ? <p>{asset.notes}</p> : <p>No notes yet.</p>}
         <div className="compare-actions">
           <button type="button" onClick={() => onApprove(asset)}>
-            <CheckCircle2 size={15} />
+            <Icon source="check-circle" tone="inherit" size={15} />
             Approve
           </button>
           <button type="button" onClick={() => onEdit(asset)}>
-            <Sparkles size={15} />
+            <Icon source="sparkles" tone="inherit" size={15} />
             Edit
           </button>
         </div>
@@ -5474,18 +5250,18 @@ function supportedOption(options: string[] | undefined, preferred: string, fallb
 
 function taskShortcutIcon(taskKey: string) {
   if (taskKey === "background-remove") {
-    return <ImageIcon size={15} />;
+    return <Icon source="photo" tone="inherit" size={15} />;
   }
   if (taskKey === "background-replace" || taskKey === "campaign-variants") {
-    return <Wand2 size={15} />;
+    return <Icon source="bolt" tone="inherit" size={15} />;
   }
   if (taskKey === "product-cleanup" || taskKey === "upscale-enhance") {
-    return <Sparkles size={15} />;
+    return <Icon source="sparkles" tone="inherit" size={15} />;
   }
   if (taskKey === "aspect-crops") {
-    return <Layers3 size={15} />;
+    return <Icon source="rectangle-stack" tone="inherit" size={15} />;
   }
-  return <RefreshCw size={15} />;
+  return <Icon source="arrow-path" tone="inherit" size={15} />;
 }
 
 function formatCount(count: number, singular: string, plural = `${singular}s`) {
@@ -5507,12 +5283,12 @@ function AssetPreviewMedia({
     if (controls) {
       return (
         <div className="asset-preview-placeholder">
-          <ImageIcon size={fallbackIconSize} />
+          <Icon source="photo" tone="inherit" size={fallbackIconSize} />
           <span>{asset.title}</span>
         </div>
       );
     }
-    return <ImageIcon size={fallbackIconSize} />;
+    return <Icon source="photo" tone="inherit" size={fallbackIconSize} />;
   }
 
   const isThumb = variant === "thumb";
@@ -5721,11 +5497,11 @@ function MaskPainterDialog({
             <span>{asset.title}</span>
           </div>
           <button className="lightbox-close" type="button" onClick={onClose} aria-label="Close mask painter">
-            <XCircle size={18} />
+            <Icon source="x-mark" tone="inherit" size={18} />
           </button>
         </div>
         <div className="mask-painter-stage">
-          {asset.preview_url ? <img ref={imageRef} src={asset.preview_url} alt="" onLoad={prepareCanvas} /> : <ImageIcon size={42} />}
+          {asset.preview_url ? <img ref={imageRef} src={asset.preview_url} alt="" onLoad={prepareCanvas} /> : <Icon source="photo" tone="inherit" size={42} />}
           <canvas
             ref={canvasRef}
             aria-label="Painted edit mask"
@@ -5751,7 +5527,7 @@ function MaskPainterDialog({
             Clear
           </button>
           <button className="primary-button" type="button" onClick={saveMask} disabled={!hasMask || !canvasReady || busy}>
-            {busy ? <RefreshCw className="spin" size={16} /> : <Paintbrush size={16} />}
+            {busy ? <Spinner size="small" /> : <Icon source="pencil-square" tone="inherit" size={16} />}
             Use mask
           </button>
         </div>
@@ -5838,7 +5614,7 @@ function OutputStrip({
   if (!assets.length && !pending) {
     return (
       <div className="output-placeholder">
-        <RefreshCw size={18} />
+        <Icon source="arrow-path" tone="inherit" size={18} />
         {emptyLabel}
       </div>
     );
@@ -5897,7 +5673,7 @@ function OutputStrip({
                     aria-label="Approve pick"
                     title="Approve"
                   >
-                    <CheckCircle2 size={14} />
+                    <Icon source="check-circle" tone="inherit" size={14} />
                   </button>
                 ) : null}
                 {onQuickReject ? (
@@ -5908,7 +5684,7 @@ function OutputStrip({
                     aria-label="Reject pick"
                     title="Reject"
                   >
-                    <XCircle size={14} />
+                    <Icon source="x-mark" tone="inherit" size={14} />
                   </button>
                 ) : null}
               </div>
@@ -6070,18 +5846,6 @@ function titleize(value: string) {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
-}
-
-function initialStudioMode(): "image-studio" | "product-shot-lab" | "video-lab" | "approved-hot" | "preset-creator" | "prompt-generator" | "enhancer" {
-  if (typeof window === "undefined") {
-    return "image-studio";
-  }
-
-  const mode = new URLSearchParams(window.location.search).get("mode");
-  if (mode === "preset-creator") return "preset-creator";
-  if (mode === "prompt-generator") return "prompt-generator";
-  if (mode === "enhancer") return "enhancer";
-  return mode === "product-shot-lab" || mode === "video-lab" || mode === "approved-hot" ? mode : "image-studio";
 }
 
 function shouldAutoOpenProviderAudit() {

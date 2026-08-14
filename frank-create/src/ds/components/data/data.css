@@ -1,0 +1,29 @@
+.as-table-wrap{width:100%;overflow-x:auto}
+.as-table{width:100%;border-collapse:collapse;font-size:var(--type-body-md-size);line-height:var(--type-body-md-line);color:var(--color-text)}
+.as-table th{padding:var(--space-200) var(--space-300);background:var(--color-bg-surface-secondary);border-bottom:var(--border-width-025) solid var(--color-border-secondary);font-size:var(--type-heading-sm-size);line-height:var(--type-heading-sm-line);font-weight:var(--type-heading-sm-weight);color:var(--color-text);text-align:left;white-space:nowrap}
+.as-table td{height:var(--row-height);padding:var(--table-cell-padding) var(--space-300);border-bottom:var(--border-width-025) solid var(--color-border-secondary);vertical-align:middle;transition:background-color var(--motion-hover)}
+.as-table tbody tr:hover td{background:var(--color-bg-surface-hover)}
+.as-table tbody tr.is-selected td{background:var(--color-bg-surface-selected)}
+.as-table tbody tr:last-child td{border-bottom:0}
+.as-table__check{width:44px;padding-inline:var(--space-300) 0!important}
+
+.as-table__footer{display:flex;align-items:center;justify-content:space-between;gap:var(--space-200);padding:var(--space-200) var(--space-300);border-top:var(--border-width-025) solid var(--color-border-secondary);background:var(--color-bg-surface-secondary)}
+
+.as-pagination{display:flex;align-items:center;gap:var(--space-300)}
+.as-pagination__label{font-size:var(--type-body-md-size);color:var(--color-text-secondary)}
+
+.as-filterbar{display:flex;align-items:center;gap:var(--space-200);padding:var(--space-200) var(--space-300);border-bottom:var(--border-width-025) solid var(--color-border-secondary)}
+.as-filterbar__views{display:flex;align-items:center;gap:var(--space-050)}
+.as-filterbar__view{height:var(--control-height);padding-inline:var(--space-300);border:0;border-radius:var(--radius-200);background:transparent;font-size:var(--type-body-md-size);font-weight:var(--font-weight-medium);color:var(--color-text-secondary);cursor:pointer;transition:background-color var(--motion-hover),color var(--motion-hover)}
+.as-filterbar__view:hover{background:var(--color-bg-fill-transparent-hover)}
+.as-filterbar__view.is-selected{background:var(--color-bg-fill-transparent-secondary);color:var(--color-text)}
+.as-filterbar__search{display:flex;align-items:center;gap:var(--space-200);flex:1 1 auto;min-width:0;height:var(--field-min-height);padding-inline:var(--space-300);border-radius:var(--radius-200);transition:background-color var(--motion-hover)}
+.as-filterbar__search:hover{background:var(--color-bg-fill-transparent)}
+.as-filterbar__search:focus-within{background:var(--color-bg-surface);box-shadow:inset 0 0 0 1px var(--color-input-border-active);outline:var(--focus-ring);outline-offset:var(--focus-ring-offset)}
+.as-filterbar__search input{flex:1 1 auto;min-width:0;border:0;background:none;outline:none;font-size:var(--type-body-md-size);color:var(--color-text)}
+.as-filterbar__search input::placeholder{color:var(--color-text-secondary)}
+.as-filterbar__actions{display:flex;align-items:center;gap:var(--space-100);flex:0 0 auto}
+
+/* PORT: DataTable gained an `emptyState` slot — the system leaves an empty
+   tbody, which reads as a broken table rather than an empty one. */
+.as-table__empty{padding:var(--space-800) var(--space-400);text-align:center;color:var(--color-text-secondary)}

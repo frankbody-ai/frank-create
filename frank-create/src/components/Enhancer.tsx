@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Banner, Button, ButtonGroup, Card, Checkbox, PageHeader, Select, Text } from "../ds";
 import { createEnhancement, createReference, uploadReferenceToStorage } from "../lib/api";
 import { upscaleModelsForMedia } from "../lib/studio";
 import BeforeAfterSlider from "./BeforeAfterSlider";
@@ -183,311 +184,325 @@ export default function Enhancer({
     onStatus("Enhance stopped.");
   }
 
+  const enumOptions = (values: (string | number)[] | undefined, format?: (v: string) => string) =>
+    (values ?? []).map((v) => ({ value: String(v), label: format ? format(String(v)) : String(v) }));
+
   return (
-    <main className="conversation-column enhancer-view">
-      <header className="panel-head">
-        <div>
-          <h2>Enhancer</h2>
-          <p className="panel-sub">Upscale and clean up any still or clip from this session — or upload a fresh file.</p>
-        </div>
-        <div className="enhancer-media-toggle" role="tablist" aria-label="Enhancer media">
-          {(["image", "video"] as MediaKind[]).map((kind) => (
-            <button
-              key={kind}
-              type="button"
-              role="tab"
-              aria-selected={media === kind}
-              className={`pill-toggle${media === kind ? " is-active" : ""}`}
-              onClick={() => setMedia(kind)}
-            >
-              {kind === "image" ? "Image upscaler" : "Video upscaler"}
-            </button>
-          ))}
-        </div>
-      </header>
+    <>
+      <PageHeader
+        title="Upscaler"
+        subtitle="Upscale and clean up any still or clip in this session, or upload a fresh file."
+        actions={
+          <ButtonGroup variant="segmented">
+            {(["image", "video"] as MediaKind[]).map((kind) => (
+              <Button key={kind} pressed={media === kind} onClick={() => setMedia(kind)}>
+                {kind === "image" ? "Image upscaler" : "Video upscaler"}
+              </Button>
+            ))}
+          </ButtonGroup>
+        }
+      />
 
-      <div className="enhancer-grid">
-        <div className="enhancer-block">
-          <div className="enhancer-block-head">
-            <h3>1 · Source {media}</h3>
-            <label className="upload-button enhancer-upload">
-              <input
-                type="file"
-                accept={media === "video" ? "video/*" : "image/*"}
-                onChange={(event) => {
-                  const files = Array.from(event.target.files ?? []);
-                  event.target.value = "";
-                  void handleUpload(files);
-                }}
-              />
-              Upload
-            </label>
-          </div>
-          {sources.length ? (
-            <div className="enhancer-source-grid">
-              {sources.map((asset) => {
-                const preview = asset.preview_url || asset.remote_url || "";
-                return (
-                  <button
-                    key={asset.id}
-                    type="button"
-                    className={`enhancer-source${sourceId === asset.id ? " is-selected" : ""}`}
-                    onClick={() => setSourceId(asset.id)}
-                    title={asset.title || asset.id}
-                  >
-                    {media === "video" ? (
-                      <video src={preview} muted playsInline preload="metadata" />
-                    ) : (
-                      <img src={preview} alt={asset.title || "Source asset"} loading="lazy" />
-                    )}
-                    <span className="enhancer-source-label">{asset.title || asset.kind}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="empty-note">
-              No {media === "video" ? "clips" : "stills"} in this session yet. Generate one in Studio or upload a file.
-            </p>
-          )}
-        </div>
-
-        <div className="enhancer-block">
-          <h3>2 · Enhancer model</h3>
-          <label className="field">
-            <span>Model</span>
-            <select value={model?.id ?? ""} onChange={(event) => setModelId(event.target.value)}>
-              {roster.map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.label}
-                  {entry.badge ? ` · ${entry.badge}` : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-          {model?.description ? <p className="field-hint">{model.description}</p> : null}
-
-          {controls.includes("enhance_model") ? (
-            <label className="field">
-              <span>Enhance model</span>
-              <select
-                value={settings.enhance_model ?? ""}
-                onChange={(event) => patch({ enhance_model: event.target.value })}
-              >
-                {(model?.allowed_enhance_models ?? []).map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
-          {controls.includes("upscale_factor") ? (
-            <label className="field">
-              <span>Upscale factor</span>
-              <select
-                value={settings.upscale_factor ?? ""}
-                onChange={(event) => patch({ upscale_factor: event.target.value })}
-              >
-                {(model?.allowed_upscale_factors ?? []).map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
-          {controls.includes("subject_detection") ? (
-            <label className="field">
-              <span>Subject detection</span>
-              <select
-                value={settings.subject_detection ?? ""}
-                onChange={(event) => patch({ subject_detection: event.target.value })}
-              >
-                {(model?.allowed_subject_detections ?? []).map((value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
-          {controls.includes("output_format") ? (
-            <label className="field">
-              <span>Output format</span>
-              <select
-                value={settings.output_format ?? ""}
-                onChange={(event) => patch({ output_format: event.target.value })}
-              >
-                {(model?.allowed_output_formats ?? []).map((value) => (
-                  <option key={value} value={value}>
-                    {value.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
-          {controls.includes("face_enhancement") ? (
-            <>
-              <label className="field field-check">
+      <div className="upscaler-columns">
+        <div className="upscaler-main">
+          <Card
+            title="Source"
+            subtitle={`Pick one ${media === "video" ? "clip" : "still"} from this session, or upload a file.`}
+            actions={
+              <label className="file-button">
                 <input
-                  type="checkbox"
-                  checked={Boolean(settings.face_enhancement)}
-                  onChange={(event) => patch({ face_enhancement: event.target.checked })}
+                  type="file"
+                  accept={media === "video" ? "video/*" : "image/*"}
+                  onChange={(event) => {
+                    const files = Array.from(event.target.files ?? []);
+                    event.target.value = "";
+                    void handleUpload(files);
+                  }}
                 />
-                <span>Face enhancement</span>
+                <span className="as-btn as-btn--secondary as-btn--micro">
+                  <span className="as-btn__label">Upload a file</span>
+                </span>
               </label>
-              {settings.face_enhancement ? (
-                <div className="enhancer-slider-row">
-                  <label className="field">
-                    <span>Strength {Number(settings.face_enhancement_strength ?? 0.8).toFixed(2)}</span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={1}
-                      step={0.05}
-                      value={settings.face_enhancement_strength ?? 0.8}
-                      onChange={(event) => patch({ face_enhancement_strength: Number(event.target.value) })}
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Creativity {Number(settings.face_enhancement_creativity ?? 0).toFixed(2)}</span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={1}
-                      step={0.05}
-                      value={settings.face_enhancement_creativity ?? 0}
-                      onChange={(event) => patch({ face_enhancement_creativity: Number(event.target.value) })}
-                    />
-                  </label>
-                </div>
-              ) : null}
-            </>
-          ) : null}
+            }
+          >
+            {sources.length ? (
+              <div className="source-grid">
+                {sources.map((asset) => {
+                  const preview = asset.preview_url || asset.remote_url || "";
+                  return (
+                    <button
+                      key={asset.id}
+                      type="button"
+                      className={`source-tile ${sourceId === asset.id ? "is-selected" : ""}`}
+                      aria-pressed={sourceId === asset.id}
+                      onClick={() => setSourceId(asset.id)}
+                    >
+                      <span className="source-tile__media">
+                        {media === "video" ? (
+                          <video src={preview} muted playsInline preload="metadata" />
+                        ) : (
+                          <img src={preview} alt="" loading="lazy" />
+                        )}
+                      </span>
+                      <span className="source-tile__label">{asset.title || asset.kind}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="empty-state empty-state--inset">
+                <Text as="p" tone="secondary">
+                  No {media === "video" ? "clips" : "stills"} in this session yet. Generate one in the
+                  studio, or upload a file above.
+                </Text>
+              </div>
+            )}
+          </Card>
 
-          {controls.includes("target_resolution") ? (
-            <label className="field">
-              <span>Target resolution</span>
-              <select
-                value={settings.target_resolution ?? ""}
-                onChange={(event) => patch({ target_resolution: event.target.value })}
-              >
-                {(model?.allowed_resolutions ?? []).map((value) => (
-                  <option key={value} value={value}>
-                    {value.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
-          {controls.includes("target_fps") ? (
-            <label className="field">
-              <span>Target fps</span>
-              <select
-                value={String(settings.target_fps ?? 60)}
-                onChange={(event) => patch({ target_fps: Number(event.target.value) })}
-              >
-                {(model?.allowed_target_fps ?? [24, 30, 60]).map((value) => (
-                  <option key={value} value={String(value)}>
-                    {value} fps
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
-          {controls.includes("scale_factor") ? (
-            <label className="field">
-              <span>Scale factor {Number(settings.scale_factor ?? 2).toFixed(1)}x</span>
-              <input
-                type="range"
-                min={model?.scale_factor_min ?? 1}
-                max={model?.scale_factor_max ?? 8}
-                step={0.5}
-                value={settings.scale_factor ?? 2}
-                onChange={(event) => patch({ scale_factor: Number(event.target.value) })}
-              />
-            </label>
-          ) : null}
-
-          {!controls.length ? <p className="field-hint">This enhancer runs with no extra settings.</p> : null}
-
-          <div className="enhancer-actions">
-            <button type="button" className="primary-button" onClick={() => void run()} disabled={!canRun}>
-              {running ? "Enhancing..." : `Enhance ${media}`}
-            </button>
-            {running ? (
-              <button type="button" className="ghost-button" onClick={stop}>
-                Stop
-              </button>
-            ) : null}
-          </div>
-          {!source ? <p className="field-hint">Pick a source {media} to enable the run.</p> : null}
-          {media === "video" ? <p className="field-hint">Video upscales can take several minutes.</p> : null}
-          {error ? <p className="error-note">{error}</p> : null}
+          <Card
+            title="Output"
+            subtitle={results.length ? "Drag the handle to compare before and after." : undefined}
+          >
+            {results.length ? (
+              <div className="upscaler-results">
+                {results.map((asset) => {
+                  const preview = asset.preview_url || asset.remote_url || "";
+                  const beforeSrc = sourceByResult[asset.id] || "";
+                  const isImage = asset.media_type !== "video";
+                  const canCompare = isImage && Boolean(beforeSrc && preview) && !compareOff[asset.id];
+                  return (
+                    <figure key={asset.id} className="upscaler-result">
+                      {asset.media_type === "video" ? (
+                        <video src={preview} controls playsInline preload="metadata" />
+                      ) : canCompare ? (
+                        <BeforeAfterSlider
+                          beforeSrc={beforeSrc}
+                          afterSrc={preview}
+                          alt={asset.title || "Enhanced asset"}
+                          onExpand={() => onExpandAsset?.(asset)}
+                        />
+                      ) : (
+                        <img
+                          src={preview}
+                          alt={asset.title || "Enhanced asset"}
+                          onClick={() => onExpandAsset?.(asset)}
+                        />
+                      )}
+                      <figcaption>
+                        <Text fontWeight="medium">{asset.title || "Enhanced"}</Text>
+                        {asset.width && asset.height ? (
+                          <Text variant="bodySm" tone="secondary" numeric>
+                            {asset.width} × {asset.height}
+                          </Text>
+                        ) : null}
+                        <span className="upscaler-result__spacer" />
+                        {isImage && beforeSrc ? (
+                          <Button
+                            size="micro"
+                            icon="eye"
+                            onClick={() =>
+                              setCompareOff((current) => ({ ...current, [asset.id]: !current[asset.id] }))
+                            }
+                          >
+                            {compareOff[asset.id] ? "Compare" : "Show enhanced only"}
+                          </Button>
+                        ) : null}
+                        {preview ? (
+                          <Button size="micro" icon="arrow-down-tray" onClick={() => onDownloadAsset?.(asset)}>
+                            Download file
+                          </Button>
+                        ) : null}
+                      </figcaption>
+                    </figure>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="empty-state empty-state--inset">
+                <Text as="p" tone="secondary">
+                  Nothing enhanced in this session yet. Pick a source and run the enhancer.
+                </Text>
+              </div>
+            )}
+          </Card>
         </div>
-      </div>
 
-      <div className="enhancer-block">
-        <h3>3 · Enhanced output</h3>
-        {results.length ? (
-          <div className="enhancer-result-stack">
-            {results.map((asset) => {
-              const preview = asset.preview_url || asset.remote_url || "";
-              const beforeSrc = sourceByResult[asset.id] || "";
-              const isImage = asset.media_type !== "video";
-              const canCompare = isImage && Boolean(beforeSrc && preview) && !compareOff[asset.id];
-              return (
-                <figure key={asset.id} className="enhancer-result">
-                  {asset.media_type === "video" ? (
-                    <video src={preview} controls playsInline preload="metadata" />
-                  ) : canCompare ? (
-                    <BeforeAfterSlider
-                      beforeSrc={beforeSrc}
-                      afterSrc={preview}
-                      alt={asset.title || "Enhanced asset"}
-                      onExpand={() => onExpandAsset?.(asset)}
-                    />
-                  ) : (
-                    <img
-                      src={preview}
-                      alt={asset.title || "Enhanced asset"}
-                      onClick={() => onExpandAsset?.(asset)}
-                    />
-                  )}
-                  <figcaption>
-                    <span>{asset.title || "Enhanced"}</span>
-                    {isImage && beforeSrc ? (
-                      <button
-                        type="button"
-                        className="link-button"
-                        onClick={() =>
-                          setCompareOff((current) => ({ ...current, [asset.id]: !current[asset.id] }))
-                        }
-                      >
-                        {compareOff[asset.id] ? "Compare" : "Enhanced only"}
-                      </button>
-                    ) : null}
-                    {preview ? (
-                      <button type="button" className="link-button" onClick={() => onDownloadAsset?.(asset)}>
-                        Download
-                      </button>
-                    ) : null}
-                  </figcaption>
-                </figure>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="empty-note">Nothing enhanced yet in this session.</p>
-        )}
+        <aside className="upscaler-rail" aria-label="Enhancer settings">
+          <Card title="Enhancer" subtitle={model?.description}>
+            <div className="rail-fields">
+              <Select
+                label="Model"
+                value={model?.id ?? ""}
+                onChange={(event) => setModelId(event.target.value)}
+                options={roster.map((entry) => ({
+                  value: entry.id,
+                  label: entry.badge ? `${entry.label} · ${entry.badge}` : entry.label,
+                }))}
+              />
+
+              {controls.includes("enhance_model") ? (
+                <Select
+                  label="Enhance model"
+                  value={settings.enhance_model ?? ""}
+                  onChange={(event) => patch({ enhance_model: event.target.value })}
+                  options={enumOptions(model?.allowed_enhance_models)}
+                />
+              ) : null}
+
+              {controls.includes("upscale_factor") ? (
+                <Select
+                  label="Upscale factor"
+                  value={settings.upscale_factor ?? ""}
+                  onChange={(event) => patch({ upscale_factor: event.target.value })}
+                  options={enumOptions(model?.allowed_upscale_factors)}
+                />
+              ) : null}
+
+              {controls.includes("subject_detection") ? (
+                <Select
+                  label="Subject detection"
+                  value={settings.subject_detection ?? ""}
+                  onChange={(event) => patch({ subject_detection: event.target.value })}
+                  options={enumOptions(model?.allowed_subject_detections)}
+                />
+              ) : null}
+
+              {controls.includes("output_format") ? (
+                <Select
+                  label="Output format"
+                  value={settings.output_format ?? ""}
+                  onChange={(event) => patch({ output_format: event.target.value })}
+                  options={enumOptions(model?.allowed_output_formats, (v) => v.toUpperCase())}
+                />
+              ) : null}
+
+              {controls.includes("target_resolution") ? (
+                <Select
+                  label="Target resolution"
+                  value={settings.target_resolution ?? ""}
+                  onChange={(event) => patch({ target_resolution: event.target.value })}
+                  options={enumOptions(model?.allowed_resolutions, (v) => v.toUpperCase())}
+                />
+              ) : null}
+
+              {controls.includes("target_fps") ? (
+                <Select
+                  label="Target frame rate"
+                  value={String(settings.target_fps ?? 60)}
+                  onChange={(event) => patch({ target_fps: Number(event.target.value) })}
+                  options={enumOptions(model?.allowed_target_fps ?? [24, 30, 60], (v) => `${v} fps`)}
+                />
+              ) : null}
+
+              {controls.includes("face_enhancement") ? (
+                <>
+                  <Checkbox
+                    label="Face enhancement"
+                    checked={Boolean(settings.face_enhancement)}
+                    onChange={(event) => patch({ face_enhancement: event.target.checked })}
+                  />
+                  {settings.face_enhancement ? (
+                    <div className="rail-sliders">
+                      <label className="rail-slider">
+                        <span className="rail-slider__head">
+                          <span>Strength</span>
+                          <span className="as-tabular">
+                            {Number(settings.face_enhancement_strength ?? 0.8).toFixed(2)}
+                          </span>
+                        </span>
+                        <input
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          value={settings.face_enhancement_strength ?? 0.8}
+                          onChange={(event) =>
+                            patch({ face_enhancement_strength: Number(event.target.value) })
+                          }
+                        />
+                      </label>
+                      <label className="rail-slider">
+                        <span className="rail-slider__head">
+                          <span>Creativity</span>
+                          <span className="as-tabular">
+                            {Number(settings.face_enhancement_creativity ?? 0).toFixed(2)}
+                          </span>
+                        </span>
+                        <input
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          value={settings.face_enhancement_creativity ?? 0}
+                          onChange={(event) =>
+                            patch({ face_enhancement_creativity: Number(event.target.value) })
+                          }
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+
+              {controls.includes("scale_factor") ? (
+                <label className="rail-slider">
+                  <span className="rail-slider__head">
+                    <span>Scale factor</span>
+                    <span className="as-tabular">{Number(settings.scale_factor ?? 2).toFixed(1)}x</span>
+                  </span>
+                  <input
+                    type="range"
+                    min={model?.scale_factor_min ?? 1}
+                    max={model?.scale_factor_max ?? 8}
+                    step={0.5}
+                    value={settings.scale_factor ?? 2}
+                    onChange={(event) => patch({ scale_factor: Number(event.target.value) })}
+                  />
+                </label>
+              ) : null}
+
+              {!controls.length ? (
+                <Text variant="bodySm" tone="secondary" as="p">
+                  This enhancer runs with no extra settings.
+                </Text>
+              ) : null}
+
+              {running ? (
+                <Button fullWidth tone="critical" icon="no-symbol" onClick={stop}>
+                  Stop the run
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  icon="bolt"
+                  fullWidth
+                  disabled={!canRun}
+                  onClick={() => void run()}
+                >
+                  Enhance {media}
+                </Button>
+              )}
+
+              {!source ? (
+                <Text variant="bodySm" tone="secondary" as="p">
+                  Pick a source {media} to enable the run.
+                </Text>
+              ) : null}
+              {media === "video" ? (
+                <Text variant="bodySm" tone="secondary" as="p">
+                  Video upscales can take several minutes.
+                </Text>
+              ) : null}
+            </div>
+          </Card>
+
+          {error ? (
+            <Banner tone="critical" title="The run didn't finish">
+              <span>{error}</span>
+            </Banner>
+          ) : null}
+        </aside>
       </div>
-    </main>
+    </>
   );
 }

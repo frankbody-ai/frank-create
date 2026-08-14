@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Plus, Sparkles, Trash2, Save, X, Pencil, Copy, Lock } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { Badge, Button, Card, Icon, IconButton, PageHeader, Text, TextField } from "../ds";
 import type { PromptPreset } from "../lib/types";
 import { improvePresetPrompt } from "../lib/api";
 
@@ -112,165 +112,148 @@ export function PresetCreator({ builtinPresets, customPresets, setCustomPresets,
   }
 
   return (
-    <main className="conversation-column preset-creator-view">
-      <header className="studio-topbar">
-        <div>
-          <p className="eyebrow">Library</p>
-          <h2>Preset Creator</h2>
-          <p className="studio-topbar-copy">
-            Build, refine, and manage your prompt presets. Custom presets show up in the composer's Preset dropdown.
-          </p>
-        </div>
-        <div className="studio-topbar-right">
-          <button type="button" className="pc-primary-btn" onClick={startNew}>
-            <Plus size={14} /> New preset
-          </button>
-        </div>
-      </header>
+    <>
+      <PageHeader
+        title="Presets"
+        subtitle="A preset is a reusable paragraph appended to the brief. Custom presets appear in the Studio composer."
+        actions={
+          <Button variant="primary" icon="plus" onClick={startNew}>
+            Add preset
+          </Button>
+        }
+      />
 
-      <section className="preset-creator-grid">
-        <div className="preset-creator-list-col">
-          <div className="section-title">
-            <p className="eyebrow">Your presets</p>
-            <h3>Custom ({customPresets.length})</h3>
-          </div>
-          {customPresets.length === 0 ? (
-            <div className="pc-empty">
-              <p>No custom presets yet.</p>
-              <button type="button" className="pc-primary-btn" onClick={startNew}>
-                <Plus size={14} /> Create your first preset
-              </button>
-            </div>
-          ) : (
-            <ul className="pc-preset-list">
-              {customPresets.map((p) => (
-                <li key={p.key} className={`pc-preset-row ${draft.key === p.key ? "active" : ""}`}>
-                  <div className="pc-preset-row-main" onClick={() => editPreset(p)} role="button" tabIndex={0}>
-                    <strong>{p.label}</strong>
-                    <small>{p.description}</small>
-                    <p className="pc-preset-preview">{p.prompt}</p>
-                  </div>
-                  <div className="pc-preset-row-actions">
-                    <button type="button" title="Edit" aria-label="Edit" onClick={() => editPreset(p)}>
-                      <Pencil size={14} />
+      <div className="preset-columns">
+        <div className="preset-list-col">
+          <Card
+            title="Your presets"
+            subtitle={`${customPresets.length} ${customPresets.length === 1 ? "preset" : "presets"}`}
+            padding="none"
+          >
+            {customPresets.length === 0 ? (
+              <div className="empty-state empty-state--inset">
+                <Text as="p" tone="secondary">
+                  No custom presets yet. A preset saves the part of a brief you keep retyping.
+                </Text>
+                <Button variant="primary" icon="plus" onClick={startNew}>
+                  Add preset
+                </Button>
+              </div>
+            ) : (
+              <ul className="preset-list">
+                {customPresets.map((p) => (
+                  <li key={p.key} className={`preset-row ${draft.key === p.key ? "is-selected" : ""}`}>
+                    <button type="button" className="preset-row__main" onClick={() => editPreset(p)}>
+                      <span className="preset-row__label">{p.label}</span>
+                      <span className="preset-row__description">{p.description}</span>
+                      <span className="preset-row__preview">{p.prompt}</span>
                     </button>
-                    <button type="button" title="Delete" aria-label="Delete" onClick={() => deletePreset(p.key, p.label)}>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+                    <span className="preset-row__actions">
+                      <IconButton icon="pencil-square" label={`Edit ${p.label}`} size="micro" onClick={() => editPreset(p)} />
+                      <IconButton
+                        icon="trash"
+                        label={`Delete ${p.label}`}
+                        size="micro"
+                        tone="critical"
+                        onClick={() => deletePreset(p.key, p.label)}
+                      />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card title="Starter presets" subtitle="Read only. Duplicate one to edit it." padding="none">
+            <ul className="preset-list">
+              {builtinPresets.map((p) => (
+                <li key={p.key} className="preset-row is-locked">
+                  <span className="preset-row__main preset-row__main--static">
+                    <span className="preset-row__label">
+                      <Icon source="lock-closed" size={16} tone="secondary" />
+                      {p.label}
+                    </span>
+                    <span className="preset-row__description">{p.description}</span>
+                    <span className="preset-row__preview">{p.prompt}</span>
+                  </span>
+                  <span className="preset-row__actions">
+                    <Button size="micro" icon="document-duplicate" onClick={() => editPreset(p, true)}>
+                      Duplicate
+                    </Button>
+                  </span>
                 </li>
               ))}
             </ul>
-          )}
-
-          <div className="section-title" style={{ marginTop: 24 }}>
-            <p className="eyebrow">Built-in</p>
-            <h3>Starter presets</h3>
-          </div>
-          <ul className="pc-preset-list">
-            {builtinPresets.map((p) => (
-              <li key={p.key} className="pc-preset-row is-locked">
-                <div className="pc-preset-row-main">
-                  <strong>
-                    <Lock size={12} style={{ display: "inline", marginRight: 6, opacity: 0.6 }} />
-                    {p.label}
-                  </strong>
-                  <small>{p.description}</small>
-                  <p className="pc-preset-preview">{p.prompt}</p>
-                </div>
-                <div className="pc-preset-row-actions">
-                  <button type="button" title="Duplicate & edit" aria-label="Duplicate" onClick={() => editPreset(p, true)}>
-                    <Copy size={14} />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
+          </Card>
         </div>
 
-        <div className="preset-creator-editor-col">
+        <div className="preset-editor-col">
           {isEditing ? (
-            <form className="pc-editor-card" onSubmit={savePreset}>
-              <div className="section-title">
-                <p className="eyebrow">{draft.key ? "Editing" : "New preset"}</p>
-                <h3>{draft.key ? draft.label || "Preset" : "Create a new preset"}</h3>
-              </div>
-
-              <label className="pc-field">
-                <span>Label</span>
-                <input
-                  type="text"
+            <Card
+              title={draft.key ? "Editing preset" : "New preset"}
+              subtitle="Describe subject, composition, lighting, lens, materials, mood, then negatives."
+              actions={<Badge tone="ai" icon="sparkles">AI assisted</Badge>}
+            >
+              <form className="preset-editor" onSubmit={savePreset}>
+                <TextField
+                  label="Label"
                   value={draft.label}
                   onChange={(e) => setDraft((d) => ({ ...d, label: e.target.value }))}
-                  placeholder="e.g. Coffee-Scrub Hero Pack Shot"
+                  placeholder="Coffee-scrub hero pack shot"
+                  helpText="Shown in the composer's preset list."
                   maxLength={80}
-                  required
+                  requiredIndicator
                 />
-              </label>
-
-              <label className="pc-field">
-                <span>Short description</span>
-                <input
-                  type="text"
+                <TextField
+                  label="Short description"
                   value={draft.description}
                   onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-                  placeholder="e.g. Warm editorial pack shot with coffee-grain texture"
+                  placeholder="Warm editorial pack shot with coffee-grain texture"
                   maxLength={140}
                 />
-              </label>
-
-              <label className="pc-field">
-                <span>Prompt text</span>
-                <textarea
+                <TextField
+                  label="Preset text"
+                  multiline
+                  rows={12}
+                  ai
                   value={draft.prompt}
                   onChange={(e) => setDraft((d) => ({ ...d, prompt: e.target.value }))}
-                  rows={12}
-                  placeholder="Describe the shot: composition, lighting, camera, materials, mood, negatives. Use [PRODUCT NAME] as a placeholder where the brief slots in."
-                  required
+                  placeholder="Subject, composition, light, lens, materials, grade, then negatives."
+                  error={improveError ?? undefined}
+                  helpText="Use [PRODUCT NAME] where the brief slots in. Don't hard-code aspect ratio, resolution or model — those are run settings."
+                  requiredIndicator
                 />
-              </label>
-
-              {improveError ? <p className="pc-error">{improveError}</p> : null}
-
-              <div className="pc-editor-actions">
-                <button
-                  type="button"
-                  className="pc-improve-btn"
-                  onClick={improveWithAI}
-                  disabled={improving || !draft.prompt.trim()}
-                  title="Rewrite this prompt with AI using image-gen best practices"
-                >
-                  <Sparkles size={14} />
-                  {improving ? "Improving…" : "Improve this with AI"}
-                </button>
-                <div className="pc-editor-actions-right">
-                  <button type="button" className="pc-secondary-btn" onClick={cancelEdit}>
-                    <X size={14} /> Cancel
-                  </button>
-                  <button type="submit" className="pc-primary-btn">
-                    <Save size={14} /> {draft.key ? "Save changes" : "Save preset"}
-                  </button>
+                <div className="preset-editor__actions">
+                  <Button
+                    icon="sparkles"
+                    loading={improving}
+                    disabled={!draft.prompt.trim()}
+                    onClick={improveWithAI}
+                  >
+                    Rewrite with AI
+                  </Button>
+                  <span className="preset-editor__spacer" />
+                  <Button onClick={cancelEdit}>Discard changes</Button>
+                  <Button variant="primary" type="submit">
+                    Save preset
+                  </Button>
                 </div>
-              </div>
-
-              <p className="pc-editor-hint">
-                Tip: describe subject → composition → lighting → lens → materials → mood → negatives.
-                Use <code>[PRODUCT NAME]</code> so the preset adapts to any brief.
-                Aspect ratio, resolution, and model are chosen in the composer — don't hard-code them here.
-              </p>
-            </form>
+              </form>
+            </Card>
           ) : (
-            <div className="pc-editor-card pc-editor-placeholder">
-              <Sparkles size={20} />
-              <h3>Pick a preset to edit</h3>
-              <p>Select one of your custom presets on the left, duplicate a starter preset, or start a new one.</p>
-              <button type="button" className="pc-primary-btn" onClick={startNew}>
-                <Plus size={14} /> New preset
-              </button>
-            </div>
+            <Card title="No preset open" subtitle="Pick one on the left, duplicate a starter, or start a new one.">
+              <div className="empty-state">
+                <Text as="p" tone="secondary">
+                  A preset is a paragraph the composer appends to every brief that uses it.
+                </Text>
+                <Button variant="primary" icon="plus" onClick={startNew}>
+                  Add preset
+                </Button>
+              </div>
+            </Card>
           )}
         </div>
-      </section>
-    </main>
+      </div>
+    </>
   );
 }

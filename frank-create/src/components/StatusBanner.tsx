@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "../ds";
 import { fetchHealth } from "../lib/api";
 
 type Status = "healthy" | "reconnecting" | "offline";
@@ -65,25 +66,28 @@ export function StatusBanner() {
 
   const label =
     status === "offline"
-      ? "Connection lost — you appear to be offline."
-      : "Reconnecting to preview…";
+      ? "You're offline. The studio can't reach the backend until the connection is back."
+      : "Reconnecting to the studio backend.";
 
   return (
-    <div className={`frank-status-banner frank-status-${status}`} role="status">
-      <span>{label}</span>
-      <div className="frank-status-actions">
-        <a href="#/health" className="frank-status-link">
-          Diagnostics
-        </a>
-        <button
-          type="button"
-          className="frank-status-dismiss"
-          onClick={() => setDismissed(true)}
-          aria-label="Dismiss"
-        >
-          ×
-        </button>
-      </div>
+    <div className={`status-bar status-bar--${status}`} role="status">
+      <Icon
+        source={status === "offline" ? "exclamation-circle" : "arrow-path"}
+        size={16}
+        tone="inherit"
+      />
+      <span className="status-bar__label">{label}</span>
+      <a href="#/health" className="status-bar__link">
+        Run diagnostics
+      </a>
+      <button
+        type="button"
+        className="status-bar__dismiss"
+        onClick={() => setDismissed(true)}
+        aria-label="Dismiss"
+      >
+        <Icon source="x-mark" size={16} tone="inherit" />
+      </button>
     </div>
   );
 }
