@@ -1,8 +1,13 @@
-import { createLovableAuth } from "@lovable.dev/cloud-auth-js";
 import { supabase } from "./supabaseClient";
 
-const lovableAuth = createLovableAuth();
-
+/**
+ * Sign-in goes straight through our own Supabase project (and therefore our own
+ * Google OAuth client), NOT the Lovable OAuth broker at oauth.lovable.app.
+ * The broker's callback URL isn't registered in our Google Cloud project, which
+ * produced `redirect_uri_mismatch` after the public URL changed. The Supabase
+ * callback (https://<ref>.supabase.co/auth/v1/callback) is registered and stable,
+ * so renaming the app's public URL can never break it again.
+ */
 type SignInOptions = {
   redirect_uri?: string;
   extraParams?: Record<string, string>;
@@ -14,19 +19,16 @@ export const lovable = {
       provider: "google" | "apple" | "microsoft" | "lovable",
       opts?: SignInOptions
     ) => {
-      const result = await lovableAuth.signInWithOAuth(provider, {
-        redirect_uri: opts?.redirect_uri,
-        extraParams: { ...opts?.extraParams },
+      const supaProvider = provider === "microsoft" ? "azure" : provider === "lovable" ? "google" : provider;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: supaProvider as "google" | "apple" | "azure",
+        options: {
+          redirectTo: opts?.redirect_uri ?? window.location.origin,
+          queryParams: { ...opts?.extraParams },
+        },
       });
-
-      if (result.redirected || result.error) return result;
-
-      try {
-        await supabase.auth.setSession(result.tokens);
-      } catch (e) {
-        return { error: e instanceof Error ? e : new Error(String(e)) };
-      }
-      return result;
+      if (error) return { error, redirected: false as const };
+      return { redirected: true as const, error: null };
     },
   },
 };
