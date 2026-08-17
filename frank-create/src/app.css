@@ -1377,7 +1377,10 @@
   gap: var(--space-300);
 }
 .reference-picker-body { min-height: 0; overflow: auto; }
-.reference-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-200); }
+.reference-picker-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-200); }
+@media (max-width: 720px) {
+  .reference-picker-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 .reference-picker-card {
   position: relative;
   display: flex;
