@@ -402,6 +402,8 @@ export default function App() {
   const [referencePickerBusy, setReferencePickerBusy] = useState(false);
   const [referencePickerNote, setReferencePickerNote] = useState<string | null>(null);
   const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
+  // True once bootstrap settled, so empty-state tiles never flash before turns load.
+  const [studioBooted, setStudioBooted] = useState(false);
   // The picker paints 10 cards at a time so the overlay opens instantly even
   // when the library holds hundreds of approved picks and uploads.
   const [referencePickerPage, setReferencePickerPage] = useState(0);
@@ -651,6 +653,7 @@ export default function App() {
         setSelectedAsset(firstReviewableAsset(assetResult.assets));
         setConnection("online");
         setStatusText("Studio is connected.");
+        setStudioBooted(true);
       } catch {
         if (cancelled) {
           return;
@@ -673,6 +676,7 @@ export default function App() {
         setSelectedAsset(firstReviewableAsset(persisted));
       }
         setStatusText("Preview backend offline. You can stage rounds here; live provider runs happen locally.");
+        setStudioBooted(true);
       }
     }
 
@@ -4030,7 +4034,7 @@ export default function App() {
 
                   </div>
                 </div>
-                {!turns.length && !prompt.trim() && productTaskShortcuts.length ? (
+                {studioBooted && !turns.length && !prompt.trim() && productTaskShortcuts.length ? (
                   <div className="task-shortcut-list composer-task-shortcuts" aria-label="Ways to start">
                     {productTaskShortcuts.map((task) => (
                       <button
