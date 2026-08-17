@@ -1687,3 +1687,10 @@
 
 /* Nothing may sit on top of the nav's footer group — Settings lives there. */
 .as-nav__list--footer { background: var(--color-nav-bg); }
+
+/* Reference picker pagination — 10 cards per page keeps the overlay instant. */
+.reference-picker-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding-block-start: var(--space-200);
+}
