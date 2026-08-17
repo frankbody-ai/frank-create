@@ -1934,7 +1934,9 @@ export default function App() {
   async function openReferencePicker() {
     setReferencePickerOpen(true);
     setReferencePickerSelection([]);
+    setReferencePickerPage(0);
     setReferencePickerNote(null);
+
     if (connection !== "online") {
       splitReferenceLibrary(assets);
       return;
