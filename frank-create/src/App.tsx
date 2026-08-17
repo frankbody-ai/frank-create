@@ -18,7 +18,9 @@ import {
   Card,
   Icon,
   PageHeader,
+  Pagination,
   Popover,
+
   Spinner,
   Text
 } from "./ds";
@@ -306,7 +308,11 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
 
 // Official AutoSolutions OS tenant ambient ramps. Each theme re-tints the shell
 // gradient, the blurred blob and the accent from one brand colour.
+/** Cards painted per page in the Add references overlay. */
+const REFERENCE_PICKER_PAGE_SIZE = 10;
+
 const TENANT_THEMES = [
+
   { id: "frank", label: "frank body", hex: "#F9ABAA" },
   { id: "snouts", label: "senior snouts", hex: "#FF4D00" },
   { id: "coreiq", label: "coreiQ", hex: "#ED1B53" },
@@ -396,6 +402,10 @@ export default function App() {
   const [referencePickerBusy, setReferencePickerBusy] = useState(false);
   const [referencePickerNote, setReferencePickerNote] = useState<string | null>(null);
   const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
+  // The picker paints 10 cards at a time so the overlay opens instantly even
+  // when the library holds hundreds of approved picks and uploads.
+  const [referencePickerPage, setReferencePickerPage] = useState(0);
+
 
 
   useEffect(() => {
@@ -467,7 +477,10 @@ export default function App() {
   const [handoffProofText, setHandoffProofText] = useState("");
   const [remixBusy, setRemixBusy] = useState(false);
   const [busy, setBusy] = useState(false);
-  type InflightGen = { id: string; modelId: string; modelLabel: string; prompt: string; aspect: string; count: number; startedAt: number };
+  // `compareGroup` ties the two sides of a side-by-side run together so the
+  // timeline shows one loading round with two slots, not two separate rounds.
+  type InflightGen = { id: string; modelId: string; modelLabel: string; prompt: string; aspect: string; count: number; startedAt: number; compareGroup?: string };
+
   const [inflightGens, setInflightGens] = useState<InflightGen[]>([]);
 
   const [roundSearch, setRoundSearch] = useState("");
@@ -1912,11 +1925,25 @@ export default function App() {
 
 
   const referencePickerLimit = Math.min(10, modelOptions.referenceLimit || 10);
+  const referencePickerRangeStart = referenceLibrary.length
+    ? referencePickerPage * REFERENCE_PICKER_PAGE_SIZE + 1
+    : 0;
+  const referencePickerRangeEnd = Math.min(
+    referenceLibrary.length,
+    (referencePickerPage + 1) * REFERENCE_PICKER_PAGE_SIZE
+  );
+  const referencePickerPageItems = referenceLibrary.slice(
+    referencePickerPage * REFERENCE_PICKER_PAGE_SIZE,
+    referencePickerRangeEnd
+  );
+
 
   async function openReferencePicker() {
     setReferencePickerOpen(true);
     setReferencePickerSelection([]);
+    setReferencePickerPage(0);
     setReferencePickerNote(null);
+
     if (connection !== "online") {
       splitReferenceLibrary(assets);
       return;
@@ -2859,7 +2886,9 @@ export default function App() {
       aspect: settings.aspect_ratio,
       count: 1,
       startedAt: Date.now(),
+      compareGroup: groupId,
     }));
+
     setInflightGens((current) => [...current, ...inflight]);
     setBusy(true);
     setGenPhase("running");
@@ -3700,24 +3729,8 @@ export default function App() {
           }
         />
 
-        <Card padding="none" className="metric-strip">
-          <div className="metric-strip__cell">
-            <span className="metric-strip__label">Rounds this session</span>
-            <span className="metric-strip__value as-tabular">{turns.length.toLocaleString()}</span>
-          </div>
-          <div className="metric-strip__cell">
-            <span className="metric-strip__label">Picks delivered</span>
-            <span className="metric-strip__value as-tabular">{outputAssets.length.toLocaleString()}</span>
-          </div>
-          <div className="metric-strip__cell">
-            <span className="metric-strip__label">Approved picks</span>
-            <span className="metric-strip__value as-tabular">{approvedCount.toLocaleString()}</span>
-          </div>
-          <div className="metric-strip__cell">
-            <span className="metric-strip__label">Favourites</span>
-            <span className="metric-strip__value as-tabular">{favoriteCount.toLocaleString()}</span>
-          </div>
-        </Card>
+        {/* The session metric strip was removed on purpose — the studio starts here. */}
+
 
         <div className="studio-columns">
           <div className="studio-main">
@@ -3761,12 +3774,20 @@ export default function App() {
                   onDragOver={handlePromptDragOver}
                   onDrop={handlePromptDrop}
                   onKeyDown={(event) => {
+                    // Enter sends. Shift+Enter is the newline, everywhere in the app.
+                    if (event.key === "Enter" && !event.shiftKey && !mentionOpen) {
+                      event.preventDefault();
+                      if (prompt.trim()) void handleGenerate();
+                      else setStatusText("Enter a prompt to generate.");
+                      return;
+                    }
                     if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
                       event.preventDefault();
                       if (prompt.trim()) void handleGenerate();
                       else if (!prompt.trim()) setStatusText("Enter a prompt to generate.");
                       return;
                     }
+
                     if (!mentionOpen) return;
                     if (event.key === "Escape") {
                       event.preventDefault();
@@ -3785,7 +3806,7 @@ export default function App() {
                       if (activeMention) applyMention(activeMention.tag);
                     }
                   }}
-                  placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Type @ to point at a reference. Cmd/Ctrl+Enter to generate."
+                  placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Type @ to point at a reference. Enter to generate, Shift+Enter for a new line."
                 />
                 {mentionOpen ? (
                   <div className="prompt-mention-popover" role="listbox" aria-label="Reference tags">
@@ -4117,7 +4138,24 @@ export default function App() {
                   // Once the backend has a queued/running round of its own, that round card
                   // IS the loading state — never show a second local card for the same run.
                   if (hasLiveTurn || !inflightGens.length) return null;
-                  return inflightGens.slice().reverse().map((gen) => {
+                  // Both sides of a side-by-side run collapse into one pending
+                  // round with a slot per model, instead of two separate cards.
+                  const pendingCards: InflightGen[] = [];
+                  const seenGroups = new Set<string>();
+                  for (const gen of inflightGens) {
+                    if (!gen.compareGroup) { pendingCards.push(gen); continue; }
+                    if (seenGroups.has(gen.compareGroup)) continue;
+                    seenGroups.add(gen.compareGroup);
+                    const pair = inflightGens.filter((entry) => entry.compareGroup === gen.compareGroup);
+                    pendingCards.push({
+                      ...gen,
+                      modelLabel: `Side-by-side · ${pair.map((entry) => entry.modelLabel.replace(/^Side [AB] · /, "")).join(" vs ")}`,
+                      count: pair.reduce((total, entry) => total + entry.count, 0),
+                      startedAt: Math.min(...pair.map((entry) => entry.startedAt)),
+                    });
+                  }
+                  return pendingCards.slice().reverse().map((gen) => {
+
                   const p = aspectRatioParts(gen.aspect);
                   const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
                   const waitedMs = Math.max(0, pendingTick - gen.startedAt);
@@ -4779,8 +4817,8 @@ export default function App() {
                     <strong>{referencePickerBusy ? "Uploading…" : "Upload from computer"}</strong>
                     <span>PNG, JPG or WEBP · you can also paste or drop</span>
                   </button>
-                  {referenceLibrary.length ? (
-                    referenceLibrary.map((asset) => (
+                  {referencePickerPageItems.length ? (
+                    referencePickerPageItems.map((asset) => (
                       <ReferencePickerCard
                         key={asset.id}
                         asset={asset}
@@ -4792,6 +4830,7 @@ export default function App() {
                       />
                     ))
                   ) : null}
+
                 </div>
               )}
               {!referenceLibraryLoading && !referenceLibrary.length ? (
@@ -4800,11 +4839,23 @@ export default function App() {
                 </div>
               ) : null}
             </div>
+            {referenceLibrary.length > REFERENCE_PICKER_PAGE_SIZE ? (
+              <div className="reference-picker-pagination">
+                <Pagination
+                  label={`${referencePickerRangeStart}–${referencePickerRangeEnd} of ${referenceLibrary.length}`}
+                  hasPrevious={referencePickerPage > 0}
+                  hasNext={referencePickerRangeEnd < referenceLibrary.length}
+                  onPrevious={() => setReferencePickerPage((page) => Math.max(0, page - 1))}
+                  onNext={() => setReferencePickerPage((page) => page + 1)}
+                />
+              </div>
+            ) : null}
             <footer className="reference-picker-footer">
               <span className="reference-picker-count">
                 {referencePickerSelection.length} of {referencePickerLimit} selected
                 {referencePickerNote ? <em> · {referencePickerNote}</em> : null}
               </span>
+
               <div className="reference-picker-footer-actions">
                 <button type="button" className="ghost-button" onClick={() => setReferencePickerOpen(false)}>
                   Cancel

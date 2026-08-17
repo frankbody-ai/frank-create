@@ -7,9 +7,52 @@ interface Props {
   onStatus?: (msg: string) => void;
 }
 
-type ChatMessage = { role: "user" | "assistant"; content: string; images?: string[] };
+type ChatMessage = { role: "user" | "assistant"; content: string; images?: string[]; hidden?: boolean };
 
 const MAX_ATTACHMENTS = 6;
+
+/** The wizard always runs between these bounds — never fewer, never more. */
+const MIN_QUESTIONS = 5;
+const MAX_QUESTIONS = 10;
+
+type WizardQuestion = { question: string; why?: string; options: string[] };
+type WizardState = { questions: WizardQuestion[]; index: number; answers: string[]; custom: string };
+
+const WIZARD_INSTRUCTION = `Before drafting anything, run the discovery wizard.
+Reply with NOTHING but a single fenced json block in exactly this shape:
+\`\`\`json
+{"questions":[{"question":"...","why":"one short line on why this matters","options":["option A","option B","option C"]}]}
+\`\`\`
+Rules: between ${MIN_QUESTIONS} and ${MAX_QUESTIONS} questions (never fewer than ${MIN_QUESTIONS}), ordered from most to least decisive for the final image or video. Each question needs exactly 3 concrete, mutually exclusive options written as short art-direction choices — not yes/no. Do not add a free-text option; the interface adds one. No prose outside the json block.`;
+
+/** Reads the wizard question set out of an agent reply. Returns null when the reply isn't one. */
+function parseWizardQuestions(reply: string): WizardQuestion[] | null {
+  const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(reply);
+  const raw = (fenced ? fenced[1] : reply).trim();
+  try {
+    const parsed = JSON.parse(raw) as { questions?: unknown };
+    const list = Array.isArray(parsed.questions) ? parsed.questions : null;
+    if (!list) return null;
+    const questions = list
+      .map((entry): WizardQuestion | null => {
+        const item = entry as { question?: unknown; why?: unknown; options?: unknown };
+        const question = typeof item.question === "string" ? item.question.trim() : "";
+        const options = Array.isArray(item.options)
+          ? item.options.filter((o): o is string => typeof o === "string" && o.trim().length > 0).slice(0, 3)
+          : [];
+        if (!question || options.length < 2) return null;
+        const why = typeof item.why === "string" ? item.why : undefined;
+        return why ? { question, why, options } : { question, options };
+      })
+      .filter((q): q is WizardQuestion => q !== null)
+      .slice(0, MAX_QUESTIONS);
+
+    return questions.length >= MIN_QUESTIONS ? questions : null;
+  } catch {
+    return null;
+  }
+}
+
 
 function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -99,9 +142,11 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<string[]>([]);
+  const [wizard, setWizard] = useState<WizardState | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -149,7 +194,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     }
   }
 
-  async function send(text: string) {
+  async function send(text: string, options?: { wizardKickoff?: boolean }) {
     const trimmed = text.trim();
     if ((!trimmed && !attachments.length) || busy) return;
     const next: ChatMessage[] = [
@@ -162,7 +207,21 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const result = await promptAgentChat({ messages: next, skill });
+      // The wizard kickoff asks for a machine-readable question set. That request
+      // and its json answer stay hidden from the thread — the wizard IS their UI.
+      const payload: ChatMessage[] = options?.wizardKickoff
+        ? [...next, { role: "user", content: WIZARD_INSTRUCTION, hidden: true }]
+        : next;
+      const result = await promptAgentChat({ messages: payload, skill });
+      if (options?.wizardKickoff) {
+        const questions = parseWizardQuestions(result.reply);
+        if (questions) {
+          setMessages([...payload, { role: "assistant", content: result.reply, hidden: true }]);
+          setWizard({ questions, index: 0, answers: [], custom: "" });
+          onStatus?.(`Discovery wizard ready — ${questions.length} questions.`);
+          return;
+        }
+      }
       setMessages([...next, { role: "assistant", content: result.reply }]);
       onStatus?.("Prompt Generator replied.");
     } catch (err) {
@@ -172,6 +231,23 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
       inputRef.current?.focus();
     }
   }
+
+  /** Records an answer and either advances the wizard or submits the full set. */
+  function answerWizard(answer: string) {
+    if (!wizard) return;
+    const answers = [...wizard.answers];
+    answers[wizard.index] = answer;
+    if (wizard.index + 1 < wizard.questions.length) {
+      setWizard({ ...wizard, index: wizard.index + 1, answers, custom: "" });
+      return;
+    }
+    const summary = wizard.questions
+      .map((q, i) => `${i + 1}. ${q.question}\n   → ${answers[i] ?? "no preference — pick the strongest option"}`)
+      .join("\n");
+    setWizard(null);
+    void send(`Here are my answers to the discovery questions:\n\n${summary}\n\nNow write the final production prompt.`);
+  }
+
 
   async function copyPrompt(value: string) {
     try {
@@ -183,6 +259,10 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   }
 
   const activeSkill = SKILLS.find((s) => s.key === skill) ?? SKILLS[0];
+  // The wizard kickoff request and its json reply are plumbing, not conversation.
+  const visibleMessages = messages.filter((message) => !message.hidden);
+  const activeQuestion = wizard ? wizard.questions[wizard.index] : null;
+
 
   return (
     <>
@@ -196,9 +276,11 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
             onClick={() => {
               setMessages([]);
               setAttachments([]);
+              setWizard(null);
               setError(null);
               inputRef.current?.focus();
             }}
+
           >
             Start a new chat
           </Button>
@@ -224,18 +306,20 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
 
       <Card padding="none">
         <div className="agent-thread" ref={scrollRef}>
-          {messages.length === 0 ? (
+          {visibleMessages.length === 0 ? (
             <div className="empty-state empty-state--inset">
               <Text variant="headingSm" as="h3">
                 Describe what you want to shoot
               </Text>
               <Text as="p" tone="secondary">
                 For example: coffee scrub tub on wet tile, morning bathroom light, glossy skin, hero
-                e-commerce shot.
+                e-commerce shot. The agent then walks you through {MIN_QUESTIONS}–{MAX_QUESTIONS}
+                {" "}art-direction questions before writing the prompt.
               </Text>
             </div>
           ) : (
-            messages.map((message, index) => {
+            visibleMessages.map((message, index) => {
+
               const parsed =
                 message.role === "assistant"
                   ? parseAgentReply(message.content)
@@ -282,7 +366,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
                   ))}
                   {message.role === "assistant" &&
                   parsed.phase === "discovery" &&
-                  index === messages.length - 1 ? (
+                  index === visibleMessages.length - 1 ? (
                     <div className="agent-msg__actions">
                       <Button
                         icon="bolt"
@@ -316,15 +400,106 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
         </div>
       </Card>
 
+      {wizard && activeQuestion ? (
+        <Card padding="none">
+          <section className="prompt-wizard" aria-label="Discovery wizard">
+            <header className="prompt-wizard__head">
+              <div>
+                <p className="prompt-wizard__eyebrow">Discovery</p>
+                <p className="prompt-wizard__step">
+                  Question {wizard.index + 1} of {wizard.questions.length}
+                </p>
+              </div>
+              <div className="prompt-wizard__dots" aria-hidden="true">
+                {wizard.questions.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`prompt-wizard__dot${i < wizard.index ? " is-done" : ""}${i === wizard.index ? " is-active" : ""}`}
+                  />
+                ))}
+              </div>
+            </header>
+            <div className="prompt-wizard__progress" aria-hidden="true">
+              <span style={{ width: `${(wizard.index / wizard.questions.length) * 100}%` }} />
+            </div>
+            <div className="prompt-wizard__body">
+              <h3 className="prompt-wizard__question">{activeQuestion.question}</h3>
+              {activeQuestion.why ? <p className="prompt-wizard__why">{activeQuestion.why}</p> : null}
+              <div className="prompt-wizard__options">
+                {activeQuestion.options.map((option, i) => (
+                  <button
+                    key={option}
+                    type="button"
+                    className="prompt-wizard__option"
+                    onClick={() => answerWizard(option)}
+                  >
+                    <span className="prompt-wizard__key">{String.fromCharCode(65 + i)}</span>
+                    <span>{option}</span>
+                  </button>
+                ))}
+                <div className="prompt-wizard__option prompt-wizard__option--custom">
+                  <span className="prompt-wizard__key">D</span>
+                  <TextField
+                    label="Your own answer"
+                    labelHidden
+                    value={wizard.custom}
+                    placeholder="Something else — type it here"
+                    onChange={(event) => setWizard({ ...wizard, custom: event.target.value })}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter" || event.shiftKey) return;
+                      event.preventDefault();
+                      if (wizard.custom.trim()) answerWizard(wizard.custom.trim());
+                    }}
+                  />
+                  <Button
+                    variant="primary"
+                    icon="arrow-right"
+                    disabled={!wizard.custom.trim()}
+                    onClick={() => answerWizard(wizard.custom.trim())}
+                  >
+                    Use this
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <footer className="prompt-wizard__foot">
+              <Button
+                icon="arrow-left"
+                disabled={wizard.index === 0}
+                onClick={() => setWizard({ ...wizard, index: Math.max(0, wizard.index - 1), custom: "" })}
+              >
+                Back
+              </Button>
+              <span className="agent-composer__spacer" />
+              <Button icon="forward" onClick={() => answerWizard("no preference — pick the strongest option")}>
+                Skip this one
+              </Button>
+              <Button
+                icon="bolt"
+                onClick={() => {
+                  setWizard(null);
+                  void send(
+                    "Skip the rest of the questions — draft the final prompt now with sensible defaults and list the assumptions you locked."
+                  );
+                }}
+              >
+                Draft it now
+              </Button>
+            </footer>
+          </section>
+        </Card>
+      ) : null}
+
       <Card>
         <form
           className="agent-composer"
           data-paste-scope="prompt-agent"
           onSubmit={(event) => {
             event.preventDefault();
-            void send(input);
+            void send(input, { wizardKickoff: !messages.length });
           }}
         >
+
           {attachments.length ? (
             <div className="agent-attachments">
               {attachments.map((src, index) => (
@@ -348,7 +523,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
             value={input}
             inputRef={inputRef as never}
             error={error ?? undefined}
-            placeholder="Brief the agent. Paste or drop reference images here."
+            placeholder="Brief the agent. Enter to send, Shift+Enter for a new line. Paste or drop reference images here."
             onChange={(event) => setInput(event.target.value)}
             onPaste={(event: React.ClipboardEvent) => {
               const files = Array.from(event.clipboardData?.files ?? []);
@@ -365,11 +540,13 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               }
             }}
             onKeyDown={(event) => {
-              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-                event.preventDefault();
-                void send(input);
-              }
+              // Enter sends, Shift+Enter breaks the line.
+              if (event.key !== "Enter") return;
+              if (event.shiftKey) return;
+              event.preventDefault();
+              void send(input, { wizardKickoff: !messages.length });
             }}
+
           />
           <div className="agent-composer__actions">
             <input

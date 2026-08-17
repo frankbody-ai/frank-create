@@ -78,3 +78,4 @@
    affordance and no chevron — this app has one tenant. */
 .as-topbar__company--static{cursor:default}
 .as-topbar__company--static:hover{background:var(--color-bg-surface)}
+.as-nav__footer-extra{flex:0 0 auto;padding:var(--space-200) var(--space-300) var(--space-300)}
