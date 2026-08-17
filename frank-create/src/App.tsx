@@ -4327,7 +4327,7 @@ export default function App() {
                           <h3>{modelName(config, turn.model)}</h3>
                           {(() => {
                             const expanded = expandedPromptTurnIds.includes(turn.id);
-                            const clamped = clampSentences(turn.prompt || "", 4);
+                            const clamped = clampWords(turn.prompt || "", 25);
                             if (!clamped.truncated) return <p>{turn.prompt}</p>;
                             return (
                               <p
