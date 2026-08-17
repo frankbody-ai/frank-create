@@ -4,7 +4,7 @@ import { TextField } from '../forms/TextField';
 import { Checkbox } from '../forms/Checkbox';
 import { Banner } from '../feedback/Banner';
 
-export interface SignInProps extends Omit<React.FormHTMLAttributes<HTMLFormElement>, 'onSubmit'> {
+export interface SignInProps extends Omit<React.FormHTMLAttributes<HTMLFormElement>, 'onSubmit' | 'title'> {
   company?: string | string[] | null;
   companyName?: string | (string | undefined)[] | null;
   companyVariant?: 'plain' | 'tile';
@@ -16,9 +16,9 @@ export interface SignInProps extends Omit<React.FormHTMLAttributes<HTMLFormEleme
   /** 'sso' hides the email/password form entirely. */
   method?: 'password' | 'link' | 'sso';
   email?: string;
-  onEmailChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onEmailChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   password?: string;
-  onPasswordChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onPasswordChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   remember?: boolean;
   onRememberChange?: (checked: boolean) => void;
   error?: React.ReactNode;
