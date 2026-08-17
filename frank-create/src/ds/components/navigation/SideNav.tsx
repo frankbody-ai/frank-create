@@ -83,6 +83,8 @@ export function SideNav({ items = [], selected, onSelect, footerItems = [], foot
       </div>
       <ul className="as-nav__list as-nav__list--main">{items.map(renderItem)}</ul>
       {footerItems.length > 0 && <ul className="as-nav__list as-nav__list--footer">{footerItems.map(renderItem)}</ul>}
+      {footer && <div className="as-nav__footer-extra">{footer}</div>}
+
     </nav>
   );
 }
