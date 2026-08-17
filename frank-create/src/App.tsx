@@ -340,7 +340,10 @@ export default function App() {
   const [exports, setExports] = useState<ExportRecord[]>([]);
   const [prompt, setPrompt] = useState("");
   const [promptRemixes, setPromptRemixes] = useState<PromptRemixVariant[]>([]);
-  const [selectedModelId, setSelectedModelId] = useState(() => preferredStudioModel(fallbackConfig.models).id);
+  const [selectedModelId, setSelectedModelId] = useState(
+    () => preferredStudioModel(fallbackConfig.models, readLastUsedModelId()).id
+  );
+  const [expandedPromptTurnIds, setExpandedPromptTurnIds] = useState<string[]>([]);
   const [selectedPresetKey, setSelectedPresetKey] = useState<string | null>(null);
   const [attachedPresetSnapshot, setAttachedPresetSnapshot] = useState<string | null>(null);
   const [customPresets, setCustomPresets] = useState<PromptPreset[]>(() => {
@@ -627,7 +630,7 @@ export default function App() {
         }
 
         setConfig(freshConfig);
-        setSelectedModelId(preferredStudioModel(freshConfig.models).id);
+        setSelectedModelId(preferredStudioModel(freshConfig.models, readLastUsedModelId()).id);
         setProjects(projectResult.projects);
         setActiveProject(projectForSession);
         setProjectName(projectForSession?.name ?? "Frank Body Campaign");
@@ -4322,7 +4325,28 @@ export default function App() {
                           </p>
 
                           <h3>{modelName(config, turn.model)}</h3>
-                          <p>{turn.prompt}</p>
+                          {(() => {
+                            const expanded = expandedPromptTurnIds.includes(turn.id);
+                            const clamped = clampSentences(turn.prompt || "", 4);
+                            if (!clamped.truncated) return <p>{turn.prompt}</p>;
+                            return (
+                              <p
+                                className="turn-prompt-text"
+                                role="button"
+                                title={expanded ? "Collapse prompt" : "Show full prompt"}
+                                onClick={() =>
+                                  setExpandedPromptTurnIds((current) =>
+                                    current.includes(turn.id)
+                                      ? current.filter((id) => id !== turn.id)
+                                      : [...current, turn.id]
+                                  )
+                                }
+                              >
+                                {expanded ? turn.prompt : clamped.text}
+                                <span className="turn-prompt-more">{expanded ? "less" : "more"}</span>
+                              </p>
+                            );
+                          })()}
                           <div className="turn-meta">
                             <span title={turn.id} style={{ fontFamily: "ui-monospace, monospace" }}>#{shortId}</span>
                             {timeLabel ? <span title={timeLabel}>{timeLabel}</span> : null}
@@ -4632,7 +4656,7 @@ export default function App() {
                   onMediaKindChange={switchMediaKind}
                   models={mediaModels}
                   selectedModelId={selectedModelId}
-                  onModelChange={setSelectedModelId}
+                  onModelChange={(id) => { setSelectedModelId(id); writeLastUsedModelId(id); }}
                   settings={settings}
                   onSettingsChange={(patch) => setSettings((current) => ({ ...current, ...patch }))}
                   onAspectChange={handleAspectChange}
@@ -5911,8 +5935,35 @@ function shouldAutoOpenProviderAudit() {
   return new URLSearchParams(window.location.search).get("provider_audit") === "1";
 }
 
-function preferredStudioModel(models: StudioModel[]) {
+const LAST_MODEL_KEY = "frank.lastUsedModelId";
+
+function readLastUsedModelId(): string | null {
+  try {
+    return typeof window !== "undefined" ? window.localStorage.getItem(LAST_MODEL_KEY) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastUsedModelId(id: string): void {
+  try {
+    window.localStorage.setItem(LAST_MODEL_KEY, id);
+  } catch {
+    /* storage blocked — the default just doesn't persist */
+  }
+}
+
+/** First `limit` sentences of a prompt, plus whether anything was trimmed. */
+function clampSentences(text: string, limit = 4): { text: string; truncated: boolean } {
+  const source = (text || "").trim();
+  const matches = source.match(/[^.!?\n]+[.!?]*\s*/g);
+  if (!matches || matches.length <= limit) return { text: source, truncated: false };
+  return { text: matches.slice(0, limit).join("").trim(), truncated: true };
+}
+
+function preferredStudioModel(models: StudioModel[], preferredId?: string | null) {
   return (
+    (preferredId ? models.find((model) => model.id === preferredId && model.configured !== false) : undefined) ??
     models.find((model) => model.id === "google-nb-pro" && model.configured !== false) ??
     models[0] ??
     fallbackConfig.models[0]
