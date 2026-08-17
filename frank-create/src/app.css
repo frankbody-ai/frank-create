@@ -128,26 +128,8 @@
    2. Studio — page frame
    ============================================================ */
 
-.metric-strip .as-card__body { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.metric-strip__cell {
-  padding: var(--card-padding);
-  border-inline-end: var(--border-width-025) solid var(--color-border-secondary);
-}
-.metric-strip__cell:last-child { border-inline-end: 0; }
-.metric-strip__label {
-  display: block;
-  font-size: var(--font-size-300);
-  line-height: var(--font-line-height-400);
-  color: var(--color-text-secondary);
-}
-.metric-strip__value {
-  display: block;
-  margin-top: var(--space-100);
-  font-size: var(--font-size-600);
-  line-height: var(--font-line-height-700);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--font-letter-spacing-dense);
-}
+/* The session metric strip was removed — the studio content starts at the top. */
+
 
 .studio-columns,
 .upscaler-columns,
