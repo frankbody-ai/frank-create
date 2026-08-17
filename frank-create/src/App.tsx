@@ -4785,11 +4785,23 @@ export default function App() {
                 </div>
               ) : null}
             </div>
+            {referenceLibrary.length > REFERENCE_PICKER_PAGE_SIZE ? (
+              <div className="reference-picker-pagination">
+                <Pagination
+                  label={`${referencePickerRangeStart}–${referencePickerRangeEnd} of ${referenceLibrary.length}`}
+                  hasPrevious={referencePickerPage > 0}
+                  hasNext={referencePickerRangeEnd < referenceLibrary.length}
+                  onPrevious={() => setReferencePickerPage((page) => Math.max(0, page - 1))}
+                  onNext={() => setReferencePickerPage((page) => page + 1)}
+                />
+              </div>
+            ) : null}
             <footer className="reference-picker-footer">
               <span className="reference-picker-count">
                 {referencePickerSelection.length} of {referencePickerLimit} selected
                 {referencePickerNote ? <em> · {referencePickerNote}</em> : null}
               </span>
+
               <div className="reference-picker-footer-actions">
                 <button type="button" className="ghost-button" onClick={() => setReferencePickerOpen(false)}>
                   Cancel
