@@ -4034,7 +4034,7 @@ export default function App() {
 
                   </div>
                 </div>
-                {!turns.length && !prompt.trim() && productTaskShortcuts.length ? (
+                {studioBooted && !turns.length && !prompt.trim() && productTaskShortcuts.length ? (
                   <div className="task-shortcut-list composer-task-shortcuts" aria-label="Ways to start">
                     {productTaskShortcuts.map((task) => (
                       <button
