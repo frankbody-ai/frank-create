@@ -308,8 +308,8 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
 
 // Official AutoSolutions OS tenant ambient ramps. Each theme re-tints the shell
 // gradient, the blurred blob and the accent from one brand colour.
-/** Cards painted per page in the Add references overlay. */
-const REFERENCE_PICKER_PAGE_SIZE = 10;
+/** Tiles painted per page in the Add references overlay, upload tile included. */
+const REFERENCE_PICKER_PAGE_SIZE = 9;
 
 const TENANT_THEMES = [
 
