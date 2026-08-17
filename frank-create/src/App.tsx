@@ -4325,7 +4325,28 @@ export default function App() {
                           </p>
 
                           <h3>{modelName(config, turn.model)}</h3>
-                          <p>{turn.prompt}</p>
+                          {(() => {
+                            const expanded = expandedPromptTurnIds.includes(turn.id);
+                            const clamped = clampSentences(turn.prompt || "", 4);
+                            if (!clamped.truncated) return <p>{turn.prompt}</p>;
+                            return (
+                              <p
+                                className="turn-prompt-text"
+                                role="button"
+                                title={expanded ? "Collapse prompt" : "Show full prompt"}
+                                onClick={() =>
+                                  setExpandedPromptTurnIds((current) =>
+                                    current.includes(turn.id)
+                                      ? current.filter((id) => id !== turn.id)
+                                      : [...current, turn.id]
+                                  )
+                                }
+                              >
+                                {expanded ? turn.prompt : clamped.text}
+                                <span className="turn-prompt-more">{expanded ? "less" : "more"}</span>
+                              </p>
+                            );
+                          })()}
                           <div className="turn-meta">
                             <span title={turn.id} style={{ fontFamily: "ui-monospace, monospace" }}>#{shortId}</span>
                             {timeLabel ? <span title={timeLabel}>{timeLabel}</span> : null}
