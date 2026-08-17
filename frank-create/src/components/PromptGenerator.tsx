@@ -7,9 +7,50 @@ interface Props {
   onStatus?: (msg: string) => void;
 }
 
-type ChatMessage = { role: "user" | "assistant"; content: string; images?: string[] };
+type ChatMessage = { role: "user" | "assistant"; content: string; images?: string[]; hidden?: boolean };
 
 const MAX_ATTACHMENTS = 6;
+
+/** The wizard always runs between these bounds — never fewer, never more. */
+const MIN_QUESTIONS = 5;
+const MAX_QUESTIONS = 10;
+
+type WizardQuestion = { question: string; why?: string; options: string[] };
+type WizardState = { questions: WizardQuestion[]; index: number; answers: string[]; custom: string };
+
+const WIZARD_INSTRUCTION = `Before drafting anything, run the discovery wizard.
+Reply with NOTHING but a single fenced json block in exactly this shape:
+\`\`\`json
+{"questions":[{"question":"...","why":"one short line on why this matters","options":["option A","option B","option C"]}]}
+\`\`\`
+Rules: between ${MIN_QUESTIONS} and ${MAX_QUESTIONS} questions (never fewer than ${MIN_QUESTIONS}), ordered from most to least decisive for the final image or video. Each question needs exactly 3 concrete, mutually exclusive options written as short art-direction choices — not yes/no. Do not add a free-text option; the interface adds one. No prose outside the json block.`;
+
+/** Reads the wizard question set out of an agent reply. Returns null when the reply isn't one. */
+function parseWizardQuestions(reply: string): WizardQuestion[] | null {
+  const fenced = /```(?:json)?\s*([\s\S]*?)```/.exec(reply);
+  const raw = (fenced ? fenced[1] : reply).trim();
+  try {
+    const parsed = JSON.parse(raw) as { questions?: unknown };
+    const list = Array.isArray(parsed.questions) ? parsed.questions : null;
+    if (!list) return null;
+    const questions = list
+      .map((entry) => {
+        const item = entry as { question?: unknown; why?: unknown; options?: unknown };
+        const question = typeof item.question === "string" ? item.question.trim() : "";
+        const options = Array.isArray(item.options)
+          ? item.options.filter((o): o is string => typeof o === "string" && o.trim().length > 0).slice(0, 3)
+          : [];
+        if (!question || options.length < 2) return null;
+        return { question, why: typeof item.why === "string" ? item.why : undefined, options };
+      })
+      .filter((q): q is WizardQuestion => q != null)
+      .slice(0, MAX_QUESTIONS);
+    return questions.length >= MIN_QUESTIONS ? questions : null;
+  } catch {
+    return null;
+  }
+}
+
 
 function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
