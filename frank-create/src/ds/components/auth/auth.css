@@ -43,3 +43,6 @@
 .as-auth__foot{display:flex;flex-direction:column;align-items:center;gap:var(--space-600)}
 .as-auth__note{margin:0;font-size:var(--type-body-sm-size);line-height:var(--type-body-sm-line);color:var(--color-text-secondary);text-align:center;text-wrap:pretty}
 .as-auth__os{height:var(--logo-height-compact)}
+
+/* PORT: loading row shown while the session is being checked. */
+.as-auth__loading{display:flex;align-items:center;justify-content:center;gap:var(--space-200)}
