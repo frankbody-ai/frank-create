@@ -34,17 +34,19 @@ function parseWizardQuestions(reply: string): WizardQuestion[] | null {
     const list = Array.isArray(parsed.questions) ? parsed.questions : null;
     if (!list) return null;
     const questions = list
-      .map((entry) => {
+      .map((entry): WizardQuestion | null => {
         const item = entry as { question?: unknown; why?: unknown; options?: unknown };
         const question = typeof item.question === "string" ? item.question.trim() : "";
         const options = Array.isArray(item.options)
           ? item.options.filter((o): o is string => typeof o === "string" && o.trim().length > 0).slice(0, 3)
           : [];
         if (!question || options.length < 2) return null;
-        return { question, why: typeof item.why === "string" ? item.why : undefined, options };
+        const why = typeof item.why === "string" ? item.why : undefined;
+        return why ? { question, why, options } : { question, options };
       })
-      .filter((q): q is WizardQuestion => q != null)
+      .filter((q): q is WizardQuestion => q !== null)
       .slice(0, MAX_QUESTIONS);
+
     return questions.length >= MIN_QUESTIONS ? questions : null;
   } catch {
     return null;
