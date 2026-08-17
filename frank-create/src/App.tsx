@@ -676,6 +676,7 @@ export default function App() {
         setSelectedAsset(firstReviewableAsset(persisted));
       }
         setStatusText("Preview backend offline. You can stage rounds here; live provider runs happen locally.");
+        setStudioBooted(true);
       }
     }
 
