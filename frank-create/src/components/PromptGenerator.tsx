@@ -270,9 +270,11 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
             onClick={() => {
               setMessages([]);
               setAttachments([]);
+              setWizard(null);
               setError(null);
               inputRef.current?.focus();
             }}
+
           >
             Start a new chat
           </Button>
