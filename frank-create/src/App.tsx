@@ -4763,8 +4763,8 @@ export default function App() {
                     <strong>{referencePickerBusy ? "Uploading…" : "Upload from computer"}</strong>
                     <span>PNG, JPG or WEBP · you can also paste or drop</span>
                   </button>
-                  {referenceLibrary.length ? (
-                    referenceLibrary.map((asset) => (
+                  {referencePickerPageItems.length ? (
+                    referencePickerPageItems.map((asset) => (
                       <ReferencePickerCard
                         key={asset.id}
                         asset={asset}
@@ -4776,6 +4776,7 @@ export default function App() {
                       />
                     ))
                   ) : null}
+
                 </div>
               )}
               {!referenceLibraryLoading && !referenceLibrary.length ? (
