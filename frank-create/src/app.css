@@ -1694,3 +1694,59 @@
   justify-content: flex-end;
   padding-block-start: var(--space-200);
 }
+
+/* ---- Prompt generator discovery wizard ------------------------------------
+   One question at a time on the ambient surface: three art-direction options
+   plus a free-text D so nobody is trapped in the agent's choices. */
+.prompt-wizard { display: flex; flex-direction: column; }
+.prompt-wizard__head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--space-300); padding: var(--space-400) var(--space-500) var(--space-300);
+}
+.prompt-wizard__eyebrow {
+  margin: 0; font-family: var(--font-family-label, inherit);
+  font-size: var(--type-body-xs-size, 0.6875rem); letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--color-text-secondary);
+}
+.prompt-wizard__step { margin: 0; font-size: var(--type-heading-sm-size, 1rem); font-weight: 600; }
+.prompt-wizard__dots { display: flex; gap: 4px; }
+.prompt-wizard__dot {
+  width: 7px; height: 7px; border-radius: 999px;
+  background: var(--color-border-secondary);
+}
+.prompt-wizard__dot.is-done { background: var(--color-text-secondary); }
+.prompt-wizard__dot.is-active { background: var(--color-text-primary); transform: scale(1.3); }
+.prompt-wizard__progress {
+  height: 3px; background: var(--color-border-secondary); overflow: hidden;
+}
+.prompt-wizard__progress > span {
+  display: block; height: 100%; background: var(--color-text-primary);
+  transition: width var(--motion-duration-200, 200ms) ease;
+}
+.prompt-wizard__body { padding: var(--space-500); display: grid; gap: var(--space-300); }
+.prompt-wizard__question { margin: 0; font-size: var(--type-heading-md-size, 1.25rem); }
+.prompt-wizard__why { margin: 0; color: var(--color-text-secondary); font-size: var(--type-body-sm-size); }
+.prompt-wizard__options { display: grid; gap: var(--space-200); }
+.prompt-wizard__option {
+  display: flex; align-items: center; gap: var(--space-300); width: 100%;
+  padding: var(--space-300) var(--space-400); text-align: left;
+  border: var(--border-width-025) solid var(--color-border-secondary);
+  border-radius: var(--radius-300); background: var(--color-bg-surface);
+  font: inherit; color: inherit; cursor: pointer;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+.prompt-wizard__option:hover { border-color: var(--color-text-primary); transform: translateY(-1px); }
+.prompt-wizard__option--custom { cursor: default; align-items: center; }
+.prompt-wizard__option--custom:hover { transform: none; border-color: var(--color-border-secondary); }
+.prompt-wizard__option--custom .as-field { flex: 1 1 auto; }
+.prompt-wizard__key {
+  flex: 0 0 auto; width: 26px; height: 26px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--color-bg-surface-secondary, rgba(0, 0, 0, 0.06));
+  font-size: var(--type-body-xs-size, 0.6875rem); font-weight: 700;
+}
+.prompt-wizard__foot {
+  display: flex; align-items: center; gap: var(--space-200);
+  padding: var(--space-300) var(--space-500) var(--space-400);
+  border-top: var(--border-width-025) solid var(--color-border-secondary);
+}
