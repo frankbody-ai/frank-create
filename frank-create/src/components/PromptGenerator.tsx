@@ -257,6 +257,10 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   }
 
   const activeSkill = SKILLS.find((s) => s.key === skill) ?? SKILLS[0];
+  // The wizard kickoff request and its json reply are plumbing, not conversation.
+  const visibleMessages = messages.filter((message) => !message.hidden);
+  const activeQuestion = wizard ? wizard.questions[wizard.index] : null;
+
 
   return (
     <>
