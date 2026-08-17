@@ -92,15 +92,16 @@ export function Shell({
           selected={screen}
           onSelect={go}
           footer={
-            <Button
-              icon="power"
-              fullWidth
+            <button
+              type="button"
+              className="as-nav__item"
               onClick={() => {
                 void hardSignOut().then(() => window.location.replace("/"));
               }}
             >
-              Sign out
-            </Button>
+              <Icon source="power" size={20} />
+              <span className="as-nav__label">Sign out</span>
+            </button>
           }
         />
       }
