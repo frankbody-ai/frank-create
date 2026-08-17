@@ -1332,8 +1332,39 @@
   font-variant-numeric: tabular-nums;
 }
 .lightbox-actions { display: flex; flex-wrap: wrap; gap: var(--space-200); }
-.lightbox-approve { border-color: var(--color-success-border); color: var(--color-success-text); }
-.lightbox-reject { border-color: var(--color-critical-border); color: var(--color-critical-text); }
+/* The viewer sits on the inverse surface, so every action needs an explicit
+   high-contrast pair — inherited light-surface colours read as invisible grey. */
+.lightbox-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-150);
+  min-height: 2.25rem;
+  padding-inline: var(--space-300);
+  border: var(--border-width-025) solid var(--color-border-inverse, rgba(255, 255, 255, 0.4));
+  border-radius: var(--radius-200);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--color-text-inverse);
+  font: inherit;
+  font-size: var(--type-body-sm-size);
+  cursor: pointer;
+}
+.lightbox-actions button:hover { background: rgba(255, 255, 255, 0.22); }
+.lightbox-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+.lightbox-approve,
+.lightbox-actions .lightbox-approve {
+  border-color: var(--color-success-border);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--color-success-text);
+}
+.lightbox-reject,
+.lightbox-actions .lightbox-reject {
+  border-color: var(--color-critical-border);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--color-critical-text);
+}
+.lightbox-actions .lightbox-approve:hover,
+.lightbox-actions .lightbox-reject:hover { background: var(--color-bg-surface); }
+
 
 .reference-picker { width: min(880px, 100%); }
 .reference-picker-header,
