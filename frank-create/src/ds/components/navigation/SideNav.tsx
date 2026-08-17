@@ -27,13 +27,16 @@ export interface SideNavProps extends Omit<React.HTMLAttributes<HTMLElement>, 'o
   appAction?: () => void;
   /** Pinned to the bottom edge of the nav and always visible — Settings lives here. */
   footerItems?: SideNavItem[];
+  /** Extra controls below the footer items — sign out and the theme picker. */
+  footer?: React.ReactNode;
 }
 
 /**
  * Fixed 240px navigation on #EBEBEB — one step darker than the canvas so the
  * content area reads as raised. Icon colour never changes on hover or selection.
  */
-export function SideNav({ items = [], selected, onSelect, footerItems = [], app, appName, appAction, className = '', style, ...rest }: SideNavProps) {
+export function SideNav({ items = [], selected, onSelect, footerItems = [], footer, app, appName, appAction, className = '', style, ...rest }: SideNavProps) {
+
   const renderItem = (item: SideNavItem) => {
     if (item.group) {
       return <li key={item.id || item.label} className="as-nav__group">{item.label}</li>;
