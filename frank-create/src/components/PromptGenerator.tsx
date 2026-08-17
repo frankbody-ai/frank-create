@@ -398,15 +398,106 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
         </div>
       </Card>
 
+      {wizard && activeQuestion ? (
+        <Card padding="none">
+          <section className="prompt-wizard" aria-label="Discovery wizard">
+            <header className="prompt-wizard__head">
+              <div>
+                <p className="prompt-wizard__eyebrow">Discovery</p>
+                <p className="prompt-wizard__step">
+                  Question {wizard.index + 1} of {wizard.questions.length}
+                </p>
+              </div>
+              <div className="prompt-wizard__dots" aria-hidden="true">
+                {wizard.questions.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`prompt-wizard__dot${i < wizard.index ? " is-done" : ""}${i === wizard.index ? " is-active" : ""}`}
+                  />
+                ))}
+              </div>
+            </header>
+            <div className="prompt-wizard__progress" aria-hidden="true">
+              <span style={{ width: `${(wizard.index / wizard.questions.length) * 100}%` }} />
+            </div>
+            <div className="prompt-wizard__body">
+              <h3 className="prompt-wizard__question">{activeQuestion.question}</h3>
+              {activeQuestion.why ? <p className="prompt-wizard__why">{activeQuestion.why}</p> : null}
+              <div className="prompt-wizard__options">
+                {activeQuestion.options.map((option, i) => (
+                  <button
+                    key={option}
+                    type="button"
+                    className="prompt-wizard__option"
+                    onClick={() => answerWizard(option)}
+                  >
+                    <span className="prompt-wizard__key">{String.fromCharCode(65 + i)}</span>
+                    <span>{option}</span>
+                  </button>
+                ))}
+                <div className="prompt-wizard__option prompt-wizard__option--custom">
+                  <span className="prompt-wizard__key">D</span>
+                  <TextField
+                    label="Your own answer"
+                    labelHidden
+                    value={wizard.custom}
+                    placeholder="Something else — type it here"
+                    onChange={(event) => setWizard({ ...wizard, custom: event.target.value })}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter" || event.shiftKey) return;
+                      event.preventDefault();
+                      if (wizard.custom.trim()) answerWizard(wizard.custom.trim());
+                    }}
+                  />
+                  <Button
+                    variant="primary"
+                    icon="arrow-right"
+                    disabled={!wizard.custom.trim()}
+                    onClick={() => answerWizard(wizard.custom.trim())}
+                  >
+                    Use this
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <footer className="prompt-wizard__foot">
+              <Button
+                icon="arrow-left"
+                disabled={wizard.index === 0}
+                onClick={() => setWizard({ ...wizard, index: Math.max(0, wizard.index - 1), custom: "" })}
+              >
+                Back
+              </Button>
+              <span className="agent-composer__spacer" />
+              <Button icon="forward" onClick={() => answerWizard("no preference — pick the strongest option")}>
+                Skip this one
+              </Button>
+              <Button
+                icon="bolt"
+                onClick={() => {
+                  setWizard(null);
+                  void send(
+                    "Skip the rest of the questions — draft the final prompt now with sensible defaults and list the assumptions you locked."
+                  );
+                }}
+              >
+                Draft it now
+              </Button>
+            </footer>
+          </section>
+        </Card>
+      ) : null}
+
       <Card>
         <form
           className="agent-composer"
           data-paste-scope="prompt-agent"
           onSubmit={(event) => {
             event.preventDefault();
-            void send(input);
+            void send(input, { wizardKickoff: !messages.length });
           }}
         >
+
           {attachments.length ? (
             <div className="agent-attachments">
               {attachments.map((src, index) => (
