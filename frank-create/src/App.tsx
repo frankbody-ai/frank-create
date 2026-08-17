@@ -630,7 +630,7 @@ export default function App() {
         }
 
         setConfig(freshConfig);
-        setSelectedModelId(preferredStudioModel(freshConfig.models).id);
+        setSelectedModelId(preferredStudioModel(freshConfig.models, readLastUsedModelId()).id);
         setProjects(projectResult.projects);
         setActiveProject(projectForSession);
         setProjectName(projectForSession?.name ?? "Frank Body Campaign");
