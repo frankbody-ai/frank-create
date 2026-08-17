@@ -5953,12 +5953,12 @@ function writeLastUsedModelId(id: string): void {
   }
 }
 
-/** First `limit` sentences of a prompt, plus whether anything was trimmed. */
-function clampSentences(text: string, limit = 4): { text: string; truncated: boolean } {
+/** First `limit` words of a prompt, plus whether anything was trimmed. */
+function clampWords(text: string, limit = 25): { text: string; truncated: boolean } {
   const source = (text || "").trim();
-  const matches = source.match(/[^.!?\n]+[.!?]*\s*/g);
-  if (!matches || matches.length <= limit) return { text: source, truncated: false };
-  return { text: matches.slice(0, limit).join("").trim(), truncated: true };
+  const words = source.split(/\s+/).filter((w) => w.length > 0);
+  if (words.length <= limit) return { text: source, truncated: false };
+  return { text: words.slice(0, limit).join(" ") + "…", truncated: true };
 }
 
 function preferredStudioModel(models: StudioModel[], preferredId?: string | null) {
