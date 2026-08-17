@@ -19,12 +19,16 @@ const WIDTHS = { small: 380, medium: 620, large: 980 };
 export function Modal({ open = false, title, size = 'medium', onClose, primaryAction, secondaryActions, children, className = '', style, ...rest }: ModalProps) {
   const layer = React.useRef<HTMLDivElement>(null);
   const restore = React.useRef<Element | null>(null);
+  // Held in a ref so a caller passing an inline arrow does not re-run the focus
+  // effect on every render — that stole focus back from whatever was being typed.
+  const closeRef = React.useRef(onClose);
+  closeRef.current = onClose;
 
   React.useEffect(() => {
     if (!open) return undefined;
     restore.current = document.activeElement;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && onClose) { onClose(); return; }
+      if (e.key === 'Escape' && closeRef.current) { closeRef.current(); return; }
       if (e.key !== 'Tab' || !layer.current) return;
       const focusable = layer.current.querySelectorAll<HTMLElement>(
         'a[href],button:not([disabled]),textarea,input,select,[tabindex]:not([tabindex="-1"])',
@@ -36,13 +40,14 @@ export function Modal({ open = false, title, size = 'medium', onClose, primaryAc
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     };
     document.addEventListener('keydown', onKey);
-    const firstControl = layer.current?.querySelector<HTMLElement>('button,input,textarea,select,a[href]');
+    const firstControl = layer.current?.querySelector<HTMLElement>('textarea,input,select,button,a[href]');
     firstControl?.focus();
     return () => {
       document.removeEventListener('keydown', onKey);
       (restore.current as HTMLElement | null)?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
+
 
   if (!open) return null;
   return (
