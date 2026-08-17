@@ -3801,7 +3801,7 @@ export default function App() {
                       if (activeMention) applyMention(activeMention.tag);
                     }
                   }}
-                  placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Type @ to point at a reference. Cmd/Ctrl+Enter to generate."
+                  placeholder="Brief the image: product, context, channel, mood, and what must stay accurate. Type @ to point at a reference. Enter to generate, Shift+Enter for a new line."
                 />
                 {mentionOpen ? (
                   <div className="prompt-mention-popover" role="listbox" aria-label="Reference tags">
