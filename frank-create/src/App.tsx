@@ -2886,7 +2886,9 @@ export default function App() {
       aspect: settings.aspect_ratio,
       count: 1,
       startedAt: Date.now(),
+      compareGroup: groupId,
     }));
+
     setInflightGens((current) => [...current, ...inflight]);
     setBusy(true);
     setGenPhase("running");
