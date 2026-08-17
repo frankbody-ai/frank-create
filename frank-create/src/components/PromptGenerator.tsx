@@ -192,7 +192,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     }
   }
 
-  async function send(text: string) {
+  async function send(text: string, options?: { wizardKickoff?: boolean }) {
     const trimmed = text.trim();
     if ((!trimmed && !attachments.length) || busy) return;
     const next: ChatMessage[] = [
@@ -205,7 +205,21 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const result = await promptAgentChat({ messages: next, skill });
+      // The wizard kickoff asks for a machine-readable question set. That request
+      // and its json answer stay hidden from the thread — the wizard IS their UI.
+      const payload: ChatMessage[] = options?.wizardKickoff
+        ? [...next, { role: "user", content: WIZARD_INSTRUCTION, hidden: true }]
+        : next;
+      const result = await promptAgentChat({ messages: payload, skill });
+      if (options?.wizardKickoff) {
+        const questions = parseWizardQuestions(result.reply);
+        if (questions) {
+          setMessages([...payload, { role: "assistant", content: result.reply, hidden: true }]);
+          setWizard({ questions, index: 0, answers: [], custom: "" });
+          onStatus?.(`Discovery wizard ready — ${questions.length} questions.`);
+          return;
+        }
+      }
       setMessages([...next, { role: "assistant", content: result.reply }]);
       onStatus?.("Prompt Generator replied.");
     } catch (err) {
@@ -215,6 +229,23 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
       inputRef.current?.focus();
     }
   }
+
+  /** Records an answer and either advances the wizard or submits the full set. */
+  function answerWizard(answer: string) {
+    if (!wizard) return;
+    const answers = [...wizard.answers];
+    answers[wizard.index] = answer;
+    if (wizard.index + 1 < wizard.questions.length) {
+      setWizard({ ...wizard, index: wizard.index + 1, answers, custom: "" });
+      return;
+    }
+    const summary = wizard.questions
+      .map((q, i) => `${i + 1}. ${q.question}\n   → ${answers[i] ?? "no preference — pick the strongest option"}`)
+      .join("\n");
+    setWizard(null);
+    void send(`Here are my answers to the discovery questions:\n\n${summary}\n\nNow write the final production prompt.`);
+  }
+
 
   async function copyPrompt(value: string) {
     try {
