@@ -1918,6 +1918,18 @@ export default function App() {
 
 
   const referencePickerLimit = Math.min(10, modelOptions.referenceLimit || 10);
+  const referencePickerRangeStart = referenceLibrary.length
+    ? referencePickerPage * REFERENCE_PICKER_PAGE_SIZE + 1
+    : 0;
+  const referencePickerRangeEnd = Math.min(
+    referenceLibrary.length,
+    (referencePickerPage + 1) * REFERENCE_PICKER_PAGE_SIZE
+  );
+  const referencePickerPageItems = referenceLibrary.slice(
+    referencePickerPage * REFERENCE_PICKER_PAGE_SIZE,
+    referencePickerRangeEnd
+  );
+
 
   async function openReferencePicker() {
     setReferencePickerOpen(true);
