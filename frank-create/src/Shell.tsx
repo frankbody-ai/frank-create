@@ -79,14 +79,6 @@ export function Shell({
             <>
               {actions}
               <FeedbackWidget variant="inline" />
-              <Button
-                icon="power"
-                onClick={() => {
-                  void hardSignOut().then(() => window.location.replace("/"));
-                }}
-              >
-                Sign out
-              </Button>
             </>
           }
         />
@@ -99,8 +91,20 @@ export function Shell({
           footerItems={NAV_FOOTER.map(toItem)}
           selected={screen}
           onSelect={go}
+          footer={
+            <Button
+              icon="power"
+              fullWidth
+              onClick={() => {
+                void hardSignOut().then(() => window.location.replace("/"));
+              }}
+            >
+              Sign out
+            </Button>
+          }
         />
       }
+
     >
       {children}
     </AppFrame>
