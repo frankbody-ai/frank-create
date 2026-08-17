@@ -653,6 +653,7 @@ export default function App() {
         setSelectedAsset(firstReviewableAsset(assetResult.assets));
         setConnection("online");
         setStatusText("Studio is connected.");
+        setStudioBooted(true);
       } catch {
         if (cancelled) {
           return;
