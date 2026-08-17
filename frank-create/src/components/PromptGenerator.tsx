@@ -360,7 +360,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
                   ))}
                   {message.role === "assistant" &&
                   parsed.phase === "discovery" &&
-                  index === messages.length - 1 ? (
+                  index === visibleMessages.length - 1 ? (
                     <div className="agent-msg__actions">
                       <Button
                         icon="bolt"
