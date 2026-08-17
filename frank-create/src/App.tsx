@@ -18,7 +18,9 @@ import {
   Card,
   Icon,
   PageHeader,
+  Pagination,
   Popover,
+
   Spinner,
   Text
 } from "./ds";
