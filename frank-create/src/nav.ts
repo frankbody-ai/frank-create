@@ -45,9 +45,10 @@ export const NAV_MAIN: NavEntry[] = [
 
 export const NAV_FOOTER: NavEntry[] = [
   { id: "admin", label: "Admin portal", icon: "shield-check" },
-  { id: "health", label: "App health", icon: "signal" },
+  // App health stays reachable at /health, but it is not a nav destination.
   { id: "settings", label: "Settings", icon: "cog-6-tooth" },
 ];
+
 
 /** Where a screen lives. `sessionId` only matters for the review board. */
 export function hashFor(screen: Screen, sessionId?: string | null): string {
