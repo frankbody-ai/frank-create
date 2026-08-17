@@ -5914,8 +5914,35 @@ function shouldAutoOpenProviderAudit() {
   return new URLSearchParams(window.location.search).get("provider_audit") === "1";
 }
 
-function preferredStudioModel(models: StudioModel[]) {
+const LAST_MODEL_KEY = "frank.lastUsedModelId";
+
+function readLastUsedModelId(): string | null {
+  try {
+    return typeof window !== "undefined" ? window.localStorage.getItem(LAST_MODEL_KEY) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastUsedModelId(id: string): void {
+  try {
+    window.localStorage.setItem(LAST_MODEL_KEY, id);
+  } catch {
+    /* storage blocked — the default just doesn't persist */
+  }
+}
+
+/** First `limit` sentences of a prompt, plus whether anything was trimmed. */
+function clampSentences(text: string, limit = 4): { text: string; truncated: boolean } {
+  const source = (text || "").trim();
+  const matches = source.match(/[^.!?\n]+[.!?]*\s*/g);
+  if (!matches || matches.length <= limit) return { text: source, truncated: false };
+  return { text: matches.slice(0, limit).join("").trim(), truncated: true };
+}
+
+function preferredStudioModel(models: StudioModel[], preferredId?: string | null) {
   return (
+    (preferredId ? models.find((model) => model.id === preferredId && model.configured !== false) : undefined) ??
     models.find((model) => model.id === "google-nb-pro" && model.configured !== false) ??
     models[0] ??
     fallbackConfig.models[0]
