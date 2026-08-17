@@ -544,8 +544,8 @@
   gap: var(--card-gap);
   align-items: flex-start;
 }
-.turn-visual { min-width: 0; }
-.turn-side { min-width: 0; justify-self: end; width: 100%; }
+.turn-visual { min-width: 0; order: 1; }
+.turn-side { min-width: 0; order: 2; justify-self: end; width: 100%; }
 @media (max-width: 1000px) {
   .turn-card-body { grid-template-columns: minmax(0, 1fr); }
   .turn-side { justify-self: stretch; }
