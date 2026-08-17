@@ -4138,7 +4138,24 @@ export default function App() {
                   // Once the backend has a queued/running round of its own, that round card
                   // IS the loading state — never show a second local card for the same run.
                   if (hasLiveTurn || !inflightGens.length) return null;
-                  return inflightGens.slice().reverse().map((gen) => {
+                  // Both sides of a side-by-side run collapse into one pending
+                  // round with a slot per model, instead of two separate cards.
+                  const pendingCards: InflightGen[] = [];
+                  const seenGroups = new Set<string>();
+                  for (const gen of inflightGens) {
+                    if (!gen.compareGroup) { pendingCards.push(gen); continue; }
+                    if (seenGroups.has(gen.compareGroup)) continue;
+                    seenGroups.add(gen.compareGroup);
+                    const pair = inflightGens.filter((entry) => entry.compareGroup === gen.compareGroup);
+                    pendingCards.push({
+                      ...gen,
+                      modelLabel: `Side-by-side · ${pair.map((entry) => entry.modelLabel.replace(/^Side [AB] · /, "")).join(" vs ")}`,
+                      count: pair.reduce((total, entry) => total + entry.count, 0),
+                      startedAt: Math.min(...pair.map((entry) => entry.startedAt)),
+                    });
+                  }
+                  return pendingCards.slice().reverse().map((gen) => {
+
                   const p = aspectRatioParts(gen.aspect);
                   const ar = p ? `${p.width} / ${p.height}` : "1 / 1";
                   const waitedMs = Math.max(0, pendingTick - gen.startedAt);
