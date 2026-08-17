@@ -3700,24 +3700,8 @@ export default function App() {
           }
         />
 
-        <Card padding="none" className="metric-strip">
-          <div className="metric-strip__cell">
-            <span className="metric-strip__label">Rounds this session</span>
-            <span className="metric-strip__value as-tabular">{turns.length.toLocaleString()}</span>
-          </div>
-          <div className="metric-strip__cell">
-            <span className="metric-strip__label">Picks delivered</span>
-            <span className="metric-strip__value as-tabular">{outputAssets.length.toLocaleString()}</span>
-          </div>
-          <div className="metric-strip__cell">
-            <span className="metric-strip__label">Approved picks</span>
-            <span className="metric-strip__value as-tabular">{approvedCount.toLocaleString()}</span>
-          </div>
-          <div className="metric-strip__cell">
-            <span className="metric-strip__label">Favourites</span>
-            <span className="metric-strip__value as-tabular">{favoriteCount.toLocaleString()}</span>
-          </div>
-        </Card>
+        {/* The session metric strip was removed on purpose — the studio starts here. */}
+
 
         <div className="studio-columns">
           <div className="studio-main">
