@@ -3769,12 +3769,20 @@ export default function App() {
                   onDragOver={handlePromptDragOver}
                   onDrop={handlePromptDrop}
                   onKeyDown={(event) => {
+                    // Enter sends. Shift+Enter is the newline, everywhere in the app.
+                    if (event.key === "Enter" && !event.shiftKey && !mentionOpen) {
+                      event.preventDefault();
+                      if (prompt.trim()) void handleGenerate();
+                      else setStatusText("Enter a prompt to generate.");
+                      return;
+                    }
                     if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
                       event.preventDefault();
                       if (prompt.trim()) void handleGenerate();
                       else if (!prompt.trim()) setStatusText("Enter a prompt to generate.");
                       return;
                     }
+
                     if (!mentionOpen) return;
                     if (event.key === "Escape") {
                       event.preventDefault();
