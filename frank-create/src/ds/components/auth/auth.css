@@ -46,3 +46,6 @@
 
 /* PORT: loading row shown while the session is being checked. */
 .as-auth__loading{display:flex;align-items:center;justify-content:center;gap:var(--space-200)}
+/* PORT: our .as-logo takes its width from the size class, so the footer
+   lockup needs the 4.5:1 aspect to resolve a width from its height. */
+.as-auth__os{aspect-ratio:var(--logo-aspect);width:auto}
