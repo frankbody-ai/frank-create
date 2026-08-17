@@ -348,7 +348,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
             value={input}
             inputRef={inputRef as never}
             error={error ?? undefined}
-            placeholder="Brief the agent. Paste or drop reference images here."
+            placeholder="Brief the agent. Enter to send, Shift+Enter for a new line. Paste or drop reference images here."
             onChange={(event) => setInput(event.target.value)}
             onPaste={(event: React.ClipboardEvent) => {
               const files = Array.from(event.clipboardData?.files ?? []);
@@ -365,11 +365,13 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               }
             }}
             onKeyDown={(event) => {
-              if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
-                event.preventDefault();
-                void send(input);
-              }
+              // Enter sends, Shift+Enter breaks the line.
+              if (event.key !== "Enter") return;
+              if (event.shiftKey) return;
+              event.preventDefault();
+              void send(input);
             }}
+
           />
           <div className="agent-composer__actions">
             <input
