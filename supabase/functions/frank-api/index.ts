@@ -963,7 +963,8 @@ function mapOpenrouterHttpError(status: number, text: string): ProviderRunError 
 async function openrouterPost(path: string, payload: Record<string, unknown>): Promise<any> {
   const key = openrouterKey();
   let lastErr: unknown;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  const maxAttempts = 5;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     let res: Response;
     try {
       res = await fetch(`${OPENROUTER_BASE}${path}`, {
@@ -973,8 +974,8 @@ async function openrouterPost(path: string, payload: Record<string, unknown>): P
       });
     } catch (err) {
       lastErr = err;
-      if (attempt === 2) throw new ProviderRunError(`OpenRouter network error: ${errMessage(err)}`, "provider_unavailable", true);
-      await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+      if (attempt === maxAttempts - 1) throw new ProviderRunError(`OpenRouter network error: ${errMessage(err)}`, "provider_unavailable", true);
+      await new Promise((r) => setTimeout(r, 1_000 * (2 ** attempt) + Math.floor(Math.random() * 500)));
       continue;
     }
     if (res.ok) {
@@ -992,10 +993,14 @@ async function openrouterPost(path: string, payload: Record<string, unknown>): P
     }
     const text = await res.text();
     const mapped = mapOpenrouterHttpError(res.status, text);
-    if (mapped.retryable && attempt < 2) {
+    if (mapped.retryable && attempt < maxAttempts - 1) {
       console.warn("[frank-api] openrouter:transient", { path, status: res.status, body: text.slice(0, 300) });
       lastErr = mapped;
-      await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
+      const retryAfter = Number(res.headers.get("retry-after"));
+      const delay = Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1_000
+        : 1_500 * (2 ** attempt) + Math.floor(Math.random() * 750);
+      await new Promise((r) => setTimeout(r, delay));
       continue;
     }
     console.error("[frank-api] openrouter:failed", { path, status: res.status, body: text.slice(0, 800) });
@@ -1360,18 +1365,25 @@ async function handleInference(body: any, userId: string) {
       // support n>1 get one call; the rest are fanned out in parallel.
       const nativeN = OPENROUTER_NATIVE_N.has(openrouterModel);
       const calls = nativeN ? 1 : count;
-      const results = await Promise.allSettled(
-        Array.from({ length: calls }, () =>
-          openrouterImage(providerPrompt, refUrls, {
+      const results: PromiseSettledResult<Array<{ b64?: string; url?: string; mime: string }>>[] = [];
+      // Multiple simultaneous 4K calls can trip OpenRouter's Cloudflare worker
+      // resource ceiling (1102) even though each provider job itself succeeds.
+      // Models without native `n` therefore run one request at a time.
+      for (let call = 0; call < calls; call++) {
+        try {
+          const images = await openrouterImage(providerPrompt, refUrls, {
             model: openrouterModel,
             aspectRatio: reqSettings.aspect_ratio,
             size: reqSettings.image_size || reqSettings.size,
             quality: reqSettings.quality,
             n: nativeN ? count : 1,
             onRequest: (record) => { providerRequest = record; },
-          })
-        )
-      );
+          });
+          results.push({ status: "fulfilled", value: images });
+        } catch (reason) {
+          results.push({ status: "rejected", reason });
+        }
+      }
 
       for (const result of results) {
         if (result.status === "fulfilled") generatedImages.push(...result.value);
