@@ -12,6 +12,7 @@
 /* Labels are wordmarks: one shared cap height, width follows the word. */
 --app-label-height:1.5625rem;         /* 25 — the nav plate */
 --app-label-height-compact:1.3125rem; /* 21 — switcher rows, lists */
+--app-label-height-large:2rem;        /* 32 — sign-in cards, empty states */
 --app-height:3rem;         /* 48 — the nav plate */
 --app-width:9.9375rem;     /* 159 */
 --app-height-compact:2rem; /* 32 — switcher rows, lists */

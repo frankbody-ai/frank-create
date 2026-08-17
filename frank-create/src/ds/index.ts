@@ -56,5 +56,10 @@ export { CompanyMark, COMPANIES } from './components/brand/CompanyMark';
 export type { CompanyId } from './components/brand/CompanyMark';
 export { AppMark, APPS, APP_GROUPS } from './components/brand/AppMark';
 
+export { SignIn } from './components/auth/SignIn';
+export type { SignInProps } from './components/auth/SignIn';
+export { AuthLayout } from './components/auth/AuthLayout';
+export { GoogleButton } from './components/auth/GoogleButton';
+
 export { ThemePicker, OFFICIAL_THEMES, applyTheme, storedTheme, THEME_STORAGE_KEY } from './components/theming/ThemePicker';
 export type { ThemeDefinition } from './components/theming/ThemePicker';
