@@ -145,6 +145,7 @@ import type {
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
+import { clampWords } from "./lib/clampWords";
 
 
 type WalkthroughTarget =
@@ -5953,13 +5954,6 @@ function writeLastUsedModelId(id: string): void {
   }
 }
 
-/** First `limit` words of a prompt, plus whether anything was trimmed. */
-function clampWords(text: string, limit = 25): { text: string; truncated: boolean } {
-  const source = (text || "").trim();
-  const words = source.split(/\s+/).filter((w) => w.length > 0);
-  if (words.length <= limit) return { text: source, truncated: false };
-  return { text: words.slice(0, limit).join(" ") + "…", truncated: true };
-}
 
 function preferredStudioModel(models: StudioModel[], preferredId?: string | null) {
   return (
