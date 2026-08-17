@@ -13,7 +13,7 @@
 .as-topbar__target{position:relative;display:inline-flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border:0;border-radius:var(--radius-300);background:transparent;color:var(--color-topbar-text);cursor:pointer;transition:background-color var(--motion-hover)}
 .as-topbar__target:hover{background:var(--color-topbar-fill)}
 .as-topbar__count{position:absolute;top:4px;inset-inline-end:4px;min-width:14px;height:14px;padding-inline:3px;border-radius:var(--radius-full);background:var(--color-critical-fill);color:#fff;font-size:9px;line-height:14px;font-weight:var(--font-weight-medium);text-align:center}
-.as-topbar__company{display:inline-flex;align-items:center;gap:var(--space-150);height:2.25rem;padding:var(--space-100) var(--space-200);border:0;border-radius:var(--radius-300);background:var(--color-bg-surface);color:var(--color-text-secondary);cursor:pointer;transition:background-color var(--motion-hover)}
+.as-topbar__company{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-150);height:2.25rem;padding:var(--space-100) var(--space-200);border:0;border-radius:var(--radius-300);background:var(--color-bg-surface);color:var(--color-text-secondary);cursor:pointer;transition:background-color var(--motion-hover)}
 .as-topbar__company:hover{background:var(--color-bg-surface-hover)}
 
 .as-nav{display:flex;flex-direction:column;gap:var(--space-200);width:var(--sidenav-width);height:100%;padding:var(--space-200);background:var(--color-nav-bg);overflow:hidden}
