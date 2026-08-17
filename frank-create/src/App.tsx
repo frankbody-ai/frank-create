@@ -398,6 +398,10 @@ export default function App() {
   const [referencePickerBusy, setReferencePickerBusy] = useState(false);
   const [referencePickerNote, setReferencePickerNote] = useState<string | null>(null);
   const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
+  // The picker paints 10 cards at a time so the overlay opens instantly even
+  // when the library holds hundreds of approved picks and uploads.
+  const [referencePickerPage, setReferencePickerPage] = useState(0);
+
 
 
   useEffect(() => {
