@@ -140,9 +140,11 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<string[]>([]);
+  const [wizard, setWizard] = useState<WizardState | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
 
   useEffect(() => {
     inputRef.current?.focus();
