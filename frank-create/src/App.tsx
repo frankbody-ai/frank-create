@@ -477,7 +477,10 @@ export default function App() {
   const [handoffProofText, setHandoffProofText] = useState("");
   const [remixBusy, setRemixBusy] = useState(false);
   const [busy, setBusy] = useState(false);
-  type InflightGen = { id: string; modelId: string; modelLabel: string; prompt: string; aspect: string; count: number; startedAt: number };
+  // `compareGroup` ties the two sides of a side-by-side run together so the
+  // timeline shows one loading round with two slots, not two separate rounds.
+  type InflightGen = { id: string; modelId: string; modelLabel: string; prompt: string; aspect: string; count: number; startedAt: number; compareGroup?: string };
+
   const [inflightGens, setInflightGens] = useState<InflightGen[]>([]);
 
   const [roundSearch, setRoundSearch] = useState("");
