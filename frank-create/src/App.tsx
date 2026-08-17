@@ -340,7 +340,10 @@ export default function App() {
   const [exports, setExports] = useState<ExportRecord[]>([]);
   const [prompt, setPrompt] = useState("");
   const [promptRemixes, setPromptRemixes] = useState<PromptRemixVariant[]>([]);
-  const [selectedModelId, setSelectedModelId] = useState(() => preferredStudioModel(fallbackConfig.models).id);
+  const [selectedModelId, setSelectedModelId] = useState(
+    () => preferredStudioModel(fallbackConfig.models, readLastUsedModelId()).id
+  );
+  const [expandedPromptTurnIds, setExpandedPromptTurnIds] = useState<string[]>([]);
   const [selectedPresetKey, setSelectedPresetKey] = useState<string | null>(null);
   const [attachedPresetSnapshot, setAttachedPresetSnapshot] = useState<string | null>(null);
   const [customPresets, setCustomPresets] = useState<PromptPreset[]>(() => {
