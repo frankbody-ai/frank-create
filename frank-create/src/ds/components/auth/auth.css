@@ -1,0 +1,51 @@
+/* ============================================================
+   Sign in — the standard entry card for every AutoSolutions app.
+
+   Modal-class surface, not an in-page card: 20px radius and
+   shadow-400, because it floats alone on the canvas rather than
+   sitting in a page column. Padding is 32px for the same reason.
+
+   The lockup order is fixed and must not be rearranged:
+   company mark → app wordmark → rule → form → AutoSolutions logo.
+   ============================================================ */
+.as-auth-page{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:var(--space-1200) var(--space-400);background:var(--color-bg)}
+.as-auth{display:flex;flex-direction:column;gap:var(--space-600);width:100%;max-width:25rem;padding:var(--space-800);background:var(--color-bg-surface);border-radius:var(--radius-500);box-shadow:var(--shadow-400)}
+
+.as-auth__brand{display:flex;flex-direction:column;align-items:center;gap:var(--space-400)}
+.as-auth__marks{display:flex;align-items:center;justify-content:center}
+.as-auth__marks--pair{gap:var(--space-400)}
+.as-auth__marks-rule{flex:0 0 auto;width:1px;height:var(--space-600);background:var(--color-border)}
+.as-auth__rule{width:100%;margin:0;border:0;border-top:var(--border-width-025) solid var(--color-border-secondary)}
+
+.as-auth__head{display:flex;flex-direction:column;align-items:center;gap:var(--space-150);text-align:center}
+.as-auth__eyebrow{font-size:var(--type-heading-xs-size);line-height:var(--type-heading-xs-line);font-weight:var(--type-heading-xs-weight);letter-spacing:.04em;text-transform:uppercase;color:var(--color-text-secondary)}
+.as-auth__title{margin:0;font-size:var(--type-heading-xl-size);line-height:var(--type-heading-xl-line);font-weight:var(--type-heading-xl-weight);letter-spacing:var(--type-heading-xl-tracking);color:var(--color-text)}
+.as-auth__description{margin:0;font-size:var(--type-body-md-size);line-height:var(--type-body-md-line);color:var(--color-text-secondary);text-wrap:pretty}
+
+.as-auth__form{display:flex;flex-direction:column;gap:var(--space-400)}
+.as-auth__aside{display:flex;align-items:center;justify-content:space-between;gap:var(--space-300)}
+
+.as-auth__providers{display:flex;flex-direction:column;gap:var(--space-200)}
+.as-auth__or{display:flex;align-items:center;gap:var(--space-300);font-size:var(--type-body-sm-size);line-height:var(--type-body-sm-line);color:var(--color-text-secondary)}
+.as-auth__or::before,.as-auth__or::after{content:"";flex:1 1 0;height:1px;background:var(--color-border-secondary)}
+
+/* Google's own button. Their guidelines own these values — 40px minimum
+   height, white surface, #747775 hairline, the four-colour G unmodified at
+   18px. Only the 8px radius is ours, which Google permits. */
+.as-google{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-300);height:2.5rem;padding-inline:var(--space-300);border:1px solid #747775;border-radius:var(--radius-200);background:#FFFFFF;font-family:var(--font-sans);font-size:var(--type-body-lg-size);line-height:var(--type-body-lg-line);font-weight:var(--font-weight-medium);color:#1F1F1F;cursor:pointer;transition:background-color var(--motion-hover),box-shadow var(--motion-hover)}
+.as-google--full{width:100%}
+.as-google:hover{background:#F7F8F8;box-shadow:0 1px 2px rgba(60,64,67,.30),0 1px 3px 1px rgba(60,64,67,.15)}
+.as-google:active{background:#F1F3F4}
+.as-google:disabled{border-color:#DADCE0;background:#FFFFFF;color:#BDC1C6;cursor:default}
+.as-google:disabled .as-google__mark{opacity:.38}
+.as-google__mark{display:inline-flex;flex:0 0 auto}
+
+.as-auth__foot{display:flex;flex-direction:column;align-items:center;gap:var(--space-600)}
+.as-auth__note{margin:0;font-size:var(--type-body-sm-size);line-height:var(--type-body-sm-line);color:var(--color-text-secondary);text-align:center;text-wrap:pretty}
+.as-auth__os{height:var(--logo-height-compact)}
+
+/* PORT: loading row shown while the session is being checked. */
+.as-auth__loading{display:flex;align-items:center;justify-content:center;gap:var(--space-200)}
+/* PORT: our .as-logo takes its width from the size class, so the footer
+   lockup needs the 4.5:1 aspect to resolve a width from its height. */
+.as-auth__os{aspect-ratio:var(--logo-aspect);width:auto}
