@@ -300,18 +300,20 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
 
       <Card padding="none">
         <div className="agent-thread" ref={scrollRef}>
-          {messages.length === 0 ? (
+          {visibleMessages.length === 0 ? (
             <div className="empty-state empty-state--inset">
               <Text variant="headingSm" as="h3">
                 Describe what you want to shoot
               </Text>
               <Text as="p" tone="secondary">
                 For example: coffee scrub tub on wet tile, morning bathroom light, glossy skin, hero
-                e-commerce shot.
+                e-commerce shot. The agent then walks you through {MIN_QUESTIONS}–{MAX_QUESTIONS}
+                {" "}art-direction questions before writing the prompt.
               </Text>
             </div>
           ) : (
-            messages.map((message, index) => {
+            visibleMessages.map((message, index) => {
+
               const parsed =
                 message.role === "assistant"
                   ? parseAgentReply(message.content)
