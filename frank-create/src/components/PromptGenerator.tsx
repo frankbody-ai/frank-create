@@ -471,7 +471,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
                 Back
               </Button>
               <span className="agent-composer__spacer" />
-              <Button icon="forward" onClick={() => answerWizard("no preference — pick the strongest option")}>
+              <Button icon="arrow-right" onClick={() => answerWizard("no preference — pick the strongest option")}>
                 Skip this one
               </Button>
               <Button
