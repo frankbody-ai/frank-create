@@ -132,12 +132,34 @@ export const fallbackConfig: FrankConfig = {
       missing_env_vars: []
     },
     {
+      id: "seedream-5-pro",
+      label: "Seedream 5.0 Pro (ByteDance)",
+      short_label: "Seedream 5.0 Pro",
+      provider: "openrouter",
+      provider_model: "bytedance-seed/seedream-5-0-pro",
+      status: "ready",
+      badge: "4K",
+      max_resolution_label: "4K",
+      description: "ByteDance Seedream 5.0 Pro via OpenRouter — precise editing control, lifelike commercial scenes, native multi-image batches.",
+      capabilities: { generation: true, edit: true, masked_edit: false, video: false },
+      allowed_aspect_ratios: ["1:1", "4:3", "3:4", "16:9", "9:16", "3:2", "2:3", "21:9"],
+      allowed_image_sizes: ["2K", "4K"],
+      reference_image_limit: 10,
+      max_count: 6,
+      cost_label: "premium",
+      configured: true,
+      missing_env_vars: []
+    },
+    {
+      // Superseded by Seedream 5.0 Pro. Kept in the roster (hidden from the
+      // pickers) so historical rounds still resolve their real model label.
       id: "seedream-4-5",
       label: "Seedream 4.5 (ByteDance)",
       short_label: "Seedream 4.5",
       provider: "openrouter",
       provider_model: "bytedance-seed/seedream-4.5",
       status: "ready",
+      legacy: true,
       badge: "4K",
       max_resolution_label: "4K",
       description: "ByteDance Seedream 4.5 via OpenRouter — photoreal product and campaign imagery, native multi-image batches.",
@@ -150,6 +172,7 @@ export const fallbackConfig: FrankConfig = {
       configured: true,
       missing_env_vars: []
     },
+
     {
       id: "flux-2-pro",
       label: "FLUX.2 Pro (Black Forest Labs)",

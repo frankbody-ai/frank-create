@@ -140,9 +140,11 @@ export function isUpscaleModel(model: StudioModel | undefined | null): boolean {
 
 export function modelsForMedia(models: StudioModel[], media: "image" | "video"): StudioModel[] {
   return models.filter((model) =>
-    !isUpscaleModel(model) && (media === "video" ? isVideoModel(model) : !isVideoModel(model))
+    !isUpscaleModel(model) && model.legacy !== true
+    && (media === "video" ? isVideoModel(model) : !isVideoModel(model))
   );
 }
+
 
 /** Enhancer roster: upscale-capable models for the requested media kind. */
 export function upscaleModelsForMedia(models: StudioModel[], media: "image" | "video"): StudioModel[] {
@@ -214,6 +216,7 @@ export function modelRateLabel(model: StudioModel | undefined | null): string | 
  */
 const IMAGE_COST_TIERS: Record<string, 1 | 2 | 3> = {
   "nano-banana-pro": 1,
+  "seedream-5-pro": 1,
   "seedream-4-5": 1,
   "grok-imagine-image": 1,
   "google-nb-2": 2,

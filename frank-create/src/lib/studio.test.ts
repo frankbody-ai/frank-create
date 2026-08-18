@@ -69,6 +69,7 @@ describe("studio helpers", () => {
       "google-nb-pro",
       "google-nb-2",
       "openai-gpt-image-2",
+      "seedream-5-pro",
       "seedream-4-5",
       "flux-2-pro",
       "flux-2-max",
@@ -152,8 +153,8 @@ describe("studio helpers", () => {
     expect(errors.aspect).toBeTruthy();
   });
 
-  it("passes validation on a valid Seedream 4.5 combo", () => {
-    const seedream = fallbackConfig.models.find((m) => m.id === "seedream-4-5")!;
+  it("passes validation on a valid Seedream 5.0 Pro combo", () => {
+    const seedream = fallbackConfig.models.find((m) => m.id === "seedream-5-pro")!;
     const errors = validateStudioSettings(seedream, { aspect_ratio: "16:9", image_size: "2K", count: 2 });
     expect(hasStudioFieldErrors(errors)).toBe(false);
   });

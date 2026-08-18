@@ -212,7 +212,7 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: "The composer",
     detail: "Write the brief in plain English, then dial in Model, Aspect, Size, Count, Quality, and Thinking Mode right inside this card. Sizes are automatically filtered to match the chosen aspect and model.",
     points: [
-      "Model roster: Nano Banana Pro/2, gpt-image-2, Reve 2.1, Seedream 5.0 Pro (all via Replicate).",
+      "Model roster: Nano Banana Pro/2, gpt-image-2, Reve 2.1, Seedream 5.0 Pro (all via OpenRouter).",
       "Aspect preview shows the exact canvas shape before you generate.",
       "Thinking Mode (Off / Low / High) is available on models that support it."
     ],
@@ -5795,11 +5795,15 @@ function mergeModels(remote: StudioModel[] | undefined, fallback: StudioModel[])
   const out: StudioModel[] = remote?.length
     ? remote.map((m) => {
         const local = localById.get(m.id);
-        return local?.degraded
-          ? { ...m, degraded: true, degraded_note: local.degraded_note }
-          : m;
+        let merged = m;
+        if (local?.degraded) merged = { ...merged, degraded: true, degraded_note: local.degraded_note };
+        // Legacy/superseded flags are curated locally; never let a backend
+        // roster refresh resurrect a retired model in the pickers.
+        if (local?.legacy) merged = { ...merged, legacy: true };
+        return merged;
       })
     : [];
+
   const seen = new Set(out.map((m) => m.id));
   for (const m of fallback) {
     if (!seen.has(m.id)) out.push(m);
@@ -5956,13 +5960,18 @@ function writeLastUsedModelId(id: string): void {
 
 
 function preferredStudioModel(models: StudioModel[], preferredId?: string | null) {
+  // A stored preference can point at a retired model (e.g. Seedream 4.5 after
+  // 5.0 Pro landed); those are hidden from the pickers, so never restore one.
+  const usable = (model: StudioModel) => model.configured !== false && model.legacy !== true;
   return (
-    (preferredId ? models.find((model) => model.id === preferredId && model.configured !== false) : undefined) ??
-    models.find((model) => model.id === "google-nb-pro" && model.configured !== false) ??
+    (preferredId ? models.find((model) => model.id === preferredId && usable(model)) : undefined) ??
+    models.find((model) => model.id === "google-nb-pro" && usable(model)) ??
+    models.find(usable) ??
     models[0] ??
     fallbackConfig.models[0]
   );
 }
+
 
 function modelName(config: FrankConfig, modelId: string) {
   return config.models.find((model) => model.id === modelId)?.short_label ?? modelId;
@@ -6618,6 +6627,7 @@ function providerUnlockPriority(model: StudioModel) {
     "google-nb-pro": 1,
     "google-nb-2": 1,
     "openai-gpt-image-2": 2,
+    "seedream-5-pro": 2,
     "seedream-4-5": 2,
     "flux-2-pro": 2,
     "flux-2-max": 3,

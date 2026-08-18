@@ -348,7 +348,9 @@ const OPENROUTER_IMAGE_MAP: Record<string, string> = {
   "google-nb-2": "google/gemini-3.1-flash-image",
   "nano-banana-2": "google/gemini-3.1-flash-image",
   "openai-gpt-image-2": "openai/gpt-image-2",
+  "seedream-5-pro": "bytedance-seed/seedream-5-0-pro",
   "seedream-4-5": "bytedance-seed/seedream-4.5",
+
   "flux-2-pro": "black-forest-labs/flux.2-pro",
   "flux-2-max": "black-forest-labs/flux.2-max",
   "riverflow-2-5-pro": "sourceful/riverflow-v2.5-pro",
@@ -362,7 +364,9 @@ const OPENROUTER_IMAGE_MAP: Record<string, string> = {
 // single-image calls.
 const OPENROUTER_NATIVE_N = new Set<string>([
   "openai/gpt-image-2",
+  "bytedance-seed/seedream-5-0-pro",
   "bytedance-seed/seedream-4.5",
+
   "qwen/qwen-image-3-pro",
 ]);
 
@@ -1326,7 +1330,9 @@ async function handleInference(body: any, userId: string) {
     "google-nb-pro": 4,
     "google-nb-2": 4,
     "openai-gpt-image-2": 10,
+    "seedream-5-pro": 6,
     "seedream-4-5": 6,
+
     "flux-2-pro": 4,
     "flux-2-max": 4,
     "riverflow-2-5-pro": 4,
@@ -2016,7 +2022,7 @@ function classifyReplicateModelError(raw: string, status: string): ProviderRunEr
   // fails within a second, before inference, regardless of prompt or params.
   if (text.includes("e001") || text.includes("modelerror")) {
     return new ProviderRunError(
-      "This model is temporarily unavailable on the provider side. Try Nano Banana Pro, Seedream 5 Pro, or GPT-image-2.",
+      "This model is temporarily unavailable on the provider side. Try Nano Banana Pro, Seedream 5.0 Pro, or GPT-image-2.",
       "provider_unavailable",
       true,
       undefined,

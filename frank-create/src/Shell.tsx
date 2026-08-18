@@ -2,6 +2,7 @@ import React from "react";
 
 import { AppFrame, Icon, SideNav, TopBar } from "./ds";
 import { FeedbackWidget } from "./components/FeedbackWidget";
+import { ReleaseNotesModal } from "./components/ReleaseNotesModal";
 import { hardSignOut } from "./lib/supabaseClient";
 import type { SideNavItem } from "./ds";
 import { NAV_FOOTER, NAV_MAIN, navigate } from "./nav";
@@ -51,6 +52,8 @@ export function Shell({
   maxWidth,
   children,
 }: ShellProps) {
+  const [notesOpen, setNotesOpen] = React.useState(false);
+
   const go = (id: string) => {
     const target = id as Screen;
     if (onSelectInApp) onSelectInApp(target);
@@ -92,22 +95,34 @@ export function Shell({
           selected={screen}
           onSelect={go}
           footer={
-            <button
-              type="button"
-              className="as-nav__item"
-              onClick={() => {
-                void hardSignOut().then(() => window.location.replace("/"));
-              }}
-            >
-              <Icon source="power" size={20} />
-              <span className="as-nav__label">Sign out</span>
-            </button>
+            <>
+              <button
+                type="button"
+                className="as-nav__item"
+                onClick={() => setNotesOpen(true)}
+              >
+                <Icon source="sparkles" size={20} />
+                <span className="as-nav__label">What's new</span>
+              </button>
+              <button
+                type="button"
+                className="as-nav__item"
+                onClick={() => {
+                  void hardSignOut().then(() => window.location.replace("/"));
+                }}
+              >
+                <Icon source="power" size={20} />
+                <span className="as-nav__label">Sign out</span>
+              </button>
+            </>
           }
+
         />
       }
 
     >
       {children}
+      <ReleaseNotesModal forceOpen={notesOpen} onClose={() => setNotesOpen(false)} />
     </AppFrame>
   );
 }
