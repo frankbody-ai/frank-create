@@ -5941,22 +5941,44 @@ function shouldAutoOpenProviderAudit() {
 }
 
 const LAST_MODEL_KEY = "frank.lastUsedModelId";
+const LAST_MODEL_BY_MEDIA_KEY = "frank.lastUsedModelIdByMedia";
 
-function readLastUsedModelId(): string | null {
+function readLastUsedModelId(media?: "image" | "video"): string | null {
   try {
-    return typeof window !== "undefined" ? window.localStorage.getItem(LAST_MODEL_KEY) : null;
+    if (typeof window === "undefined") return null;
+    if (media) {
+      const raw = window.localStorage.getItem(LAST_MODEL_BY_MEDIA_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Record<string, string>;
+        const stored = parsed?.[media];
+        if (typeof stored === "string" && stored) return stored;
+      }
+      return null;
+    }
+    return window.localStorage.getItem(LAST_MODEL_KEY);
   } catch {
     return null;
   }
 }
 
-function writeLastUsedModelId(id: string): void {
+function writeLastUsedModelId(id: string, media?: "image" | "video"): void {
   try {
     window.localStorage.setItem(LAST_MODEL_KEY, id);
+    if (media) {
+      let parsed: Record<string, string> = {};
+      try {
+        parsed = JSON.parse(window.localStorage.getItem(LAST_MODEL_BY_MEDIA_KEY) ?? "{}") ?? {};
+      } catch {
+        parsed = {};
+      }
+      parsed[media] = id;
+      window.localStorage.setItem(LAST_MODEL_BY_MEDIA_KEY, JSON.stringify(parsed));
+    }
   } catch {
     /* storage blocked — the default just doesn't persist */
   }
 }
+
 
 
 function preferredStudioModel(models: StudioModel[], preferredId?: string | null) {
