@@ -348,7 +348,9 @@ const OPENROUTER_IMAGE_MAP: Record<string, string> = {
   "google-nb-2": "google/gemini-3.1-flash-image",
   "nano-banana-2": "google/gemini-3.1-flash-image",
   "openai-gpt-image-2": "openai/gpt-image-2",
+  "seedream-5-pro": "bytedance-seed/seedream-5-0-pro",
   "seedream-4-5": "bytedance-seed/seedream-4.5",
+
   "flux-2-pro": "black-forest-labs/flux.2-pro",
   "flux-2-max": "black-forest-labs/flux.2-max",
   "riverflow-2-5-pro": "sourceful/riverflow-v2.5-pro",
