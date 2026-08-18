@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Badge, Button, Card, IconButton, PageHeader, Spinner, Text, TextField } from "../ds";
 import { promptAgentChat, fetchPromptAgentConfig } from "../lib/api";
+import {
+  deletePromptChat,
+  listPromptChats,
+  loadPromptChat,
+  savePromptChat,
+  type PromptChatSummary,
+} from "../lib/promptChats";
+
 
 interface Props {
   onUsePrompt?: (prompt: string) => void;
