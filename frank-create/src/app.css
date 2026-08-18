@@ -151,8 +151,9 @@
 .studio-rail,
 .upscaler-rail,
 .preset-list-col {
-  flex: 0 1 320px;
-  min-width: 260px;
+  /* 15% narrower than the previous 320px so the rounds panel gains that width. */
+  flex: 0 1 272px;
+  min-width: 221px;
   display: flex;
   flex-direction: column;
   gap: var(--card-gap);
