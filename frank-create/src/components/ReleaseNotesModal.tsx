@@ -53,7 +53,7 @@ export function ReleaseNotesModal({
         {shown.map((release) => (
           <section key={release.id} className="release-notes__entry">
             <Text variant="headingMd" as="h3">{release.title}</Text>
-            <Text variant="bodySm" tone="subdued">{release.date}</Text>
+            <Text variant="bodySm" tone="secondary">{release.date}</Text>
             <ul className="release-notes__list">
               {release.items.map((item, index) => (
                 <li key={index}>
