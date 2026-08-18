@@ -4750,6 +4750,26 @@ export default function App() {
             <button className="lightbox-close" type="button" onClick={() => setLightboxAsset(null)} aria-label="Close preview">
               <Icon source="x-mark" tone="inherit" size={18} />
             </button>
+            {lightboxSiblings.length > 1 ? (
+              <>
+                <button
+                  className="lightbox-nav prev"
+                  type="button"
+                  onClick={() => stepLightbox(-1)}
+                  aria-label="Previous pick"
+                >
+                  <Icon source="chevron-left" tone="inherit" size={20} />
+                </button>
+                <button
+                  className="lightbox-nav next"
+                  type="button"
+                  onClick={() => stepLightbox(1)}
+                  aria-label="Next pick"
+                >
+                  <Icon source="chevron-right" tone="inherit" size={20} />
+                </button>
+              </>
+            ) : null}
             <AssetPreviewMedia asset={lightboxAsset} fallbackIconSize={42} controls />
             <div className="lightbox-meta">
               {lightboxAsset.aspect_ratio ? <span>{formatAspectChip(lightboxAsset.aspect_ratio)}</span> : null}
@@ -4757,9 +4777,11 @@ export default function App() {
                 <span title="Resolution returned by the provider">{lightboxAsset.width} × {lightboxAsset.height}</span>
               ) : null}
               {lightboxAsset.model ? <span>{modelName(config, lightboxAsset.model)}</span> : null}
+              {lightboxSiblings.length > 1 ? (
+                <span>{lightboxIndex + 1} / {lightboxSiblings.length}</span>
+              ) : null}
             </div>
             <div className="lightbox-actions">
-
               <button
                 type="button"
                 onClick={() => {
@@ -4774,59 +4796,8 @@ export default function App() {
                 <Icon source="arrow-down-tray" tone="inherit" size={16} />
                 Save
               </button>
-              {lightboxAsset.approval_status === "approved" ? (
-                <button
-                  type="button"
-                  className="lightbox-approve is-approved"
-                  onClick={() => {
-                    void changeAssetStatus(lightboxAsset, "review");
-                    setLightboxAsset({ ...lightboxAsset, approval_status: "review" });
-                  }}
-                  title="Approved — click to undo"
-                >
-                  <Icon source="check-circle" tone="inherit" size={16} />
-                  Approved
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="lightbox-approve"
-                  onClick={() => {
-                    void changeAssetStatus(lightboxAsset, "approved");
-                    setLightboxAsset({ ...lightboxAsset, approval_status: "approved" });
-                  }}
-                >
-                  <Icon source="check-circle" tone="inherit" size={16} />
-                  Approve
-                </button>
-              )}
-              {lightboxAsset.approval_status !== "rejected" ? (
-                <button
-                  type="button"
-                  className="lightbox-reject"
-                  onClick={() => {
-                    void changeAssetStatus(lightboxAsset, "rejected");
-                    setLightboxAsset({ ...lightboxAsset, approval_status: "rejected" });
-                  }}
-                >
-                  <Icon source="x-mark" tone="inherit" size={16} />
-                  Reject
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="lightbox-reject is-rejected"
-                  onClick={() => {
-                    void changeAssetStatus(lightboxAsset, "review");
-                    setLightboxAsset({ ...lightboxAsset, approval_status: "review" });
-                  }}
-                  title="Rejected — click to undo"
-                >
-                  <Icon source="x-mark" tone="inherit" size={16} />
-                  Rejected
-                </button>
-              )}
             </div>
+
           </div>
         </div>
       ) : null}
