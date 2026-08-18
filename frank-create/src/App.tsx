@@ -1011,6 +1011,20 @@ export default function App() {
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
   const firstOutputAsset = outputAssets[0] ?? null;
   const displayOutputAssets = outputAssets;
+  // Picks from the same run, so the preview can step left/right through a round.
+  const lightboxSiblings = lightboxAsset
+    ? (() => {
+        const group = outputAssets.filter((asset) => asset.turn_id && asset.turn_id === lightboxAsset.turn_id);
+        return group.length ? group : [lightboxAsset];
+      })()
+    : [];
+  const lightboxIndex = lightboxAsset ? lightboxSiblings.findIndex((asset) => asset.id === lightboxAsset.id) : -1;
+  function stepLightbox(delta: number) {
+    if (lightboxIndex < 0 || lightboxSiblings.length < 2) return;
+    const next = (lightboxIndex + delta + lightboxSiblings.length) % lightboxSiblings.length;
+    setLightboxAsset(lightboxSiblings[next] ?? null);
+  }
+
 
   const approvedCount = outputAssets.filter((asset) => asset.approval_status === "approved").length;
   const approvedMotionCount = outputAssets.filter(
