@@ -2022,7 +2022,7 @@ function classifyReplicateModelError(raw: string, status: string): ProviderRunEr
   // fails within a second, before inference, regardless of prompt or params.
   if (text.includes("e001") || text.includes("modelerror")) {
     return new ProviderRunError(
-      "This model is temporarily unavailable on the provider side. Try Nano Banana Pro, Seedream 5 Pro, or GPT-image-2.",
+      "This model is temporarily unavailable on the provider side. Try Nano Banana Pro, Seedream 5.0 Pro, or GPT-image-2.",
       "provider_unavailable",
       true,
       undefined,
