@@ -1,6 +1,6 @@
 import React from "react";
 
-import { AppFrame, Icon, SideNav, TopBar } from "./ds";
+import { AppFrame, SideNav, TopBar } from "./ds";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { ReleaseNotesModal } from "./components/ReleaseNotesModal";
 import { hardSignOut } from "./lib/supabaseClient";
@@ -86,29 +86,27 @@ export function Shell({
 
         />
       }
-        navigation={
-          <SideNav
-            app="design-studio"
-            appName="art-ificial design studio"
-            items={NAV_MAIN.map(toItem)}
-            footerItems={[
-              ...NAV_FOOTER.map(toItem),
-              { id: "signout", label: "Sign out", icon: "power" },
-            ]}
-            selected={screen}
-            onSelect={go}
-            footer={
-              <button
-                type="button"
-                className="as-nav__item"
-                onClick={() => setNotesOpen(true)}
-              >
-                <Icon source="sparkles" size={20} />
-                <span className="as-nav__label">What's new</span>
-              </button>
+      navigation={
+        <SideNav
+          app="design-studio"
+          appName="art-ificial design studio"
+          items={NAV_MAIN.map(toItem)}
+          footerItems={[
+            { id: "whats-new", label: "What's new", icon: "sparkles" },
+            ...NAV_FOOTER.map(toItem),
+            { id: "signout", label: "Sign out", icon: "power" },
+          ]}
+          selected={screen}
+          onSelect={(id) => {
+            if (id === "whats-new") {
+              setNotesOpen(true);
+              return;
             }
-          />
-        }
+            go(id);
+          }}
+        />
+      }
+
 
     >
       {children}
