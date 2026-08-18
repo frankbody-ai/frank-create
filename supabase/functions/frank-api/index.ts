@@ -364,7 +364,9 @@ const OPENROUTER_IMAGE_MAP: Record<string, string> = {
 // single-image calls.
 const OPENROUTER_NATIVE_N = new Set<string>([
   "openai/gpt-image-2",
+  "bytedance-seed/seedream-5-0-pro",
   "bytedance-seed/seedream-4.5",
+
   "qwen/qwen-image-3-pro",
 ]);
 
@@ -1328,7 +1330,9 @@ async function handleInference(body: any, userId: string) {
     "google-nb-pro": 4,
     "google-nb-2": 4,
     "openai-gpt-image-2": 10,
+    "seedream-5-pro": 6,
     "seedream-4-5": 6,
+
     "flux-2-pro": 4,
     "flux-2-max": 4,
     "riverflow-2-5-pro": 4,
