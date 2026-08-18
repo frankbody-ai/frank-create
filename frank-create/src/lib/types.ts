@@ -66,6 +66,9 @@ export interface StudioModel {
   provider_video_model?: string;
   env_vars?: string[];
   status: "ready" | "disabled" | "experimental";
+  /** Superseded model: kept for history labels, hidden from the pickers. */
+  legacy?: boolean;
+
   badge: string;
   max_resolution_label: string;
   description?: string;
