@@ -82,12 +82,8 @@ export function Shell({
           searchPlaceholder={searchPlaceholder}
           searchValue={search ?? ""}
           onSearchChange={onSearchChange}
-          actions={
-            <>
-              {actions}
-              <FeedbackWidget variant="inline" />
-            </>
-          }
+          actions={<>{actions}</>}
+
         />
       }
         navigation={
@@ -116,7 +112,9 @@ export function Shell({
 
     >
       {children}
+      <FeedbackWidget variant="fixed" />
       <ReleaseNotesModal forceOpen={notesOpen} onClose={() => setNotesOpen(false)} />
+
     </AppFrame>
   );
 }
