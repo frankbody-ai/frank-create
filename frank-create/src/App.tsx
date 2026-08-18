@@ -5016,7 +5016,7 @@ export default function App() {
           baseAsset={compareBaseAsset}
           targetAsset={compareTargetAsset}
           onClose={clearCompare}
-          onApprove={(asset) => changeAssetStatus(asset, "approved")}
+          
           onEdit={(asset) => {
             startEditFromAsset(asset);
             clearCompare();
