@@ -3617,8 +3617,6 @@ export default function App() {
       case "studio": return showImageStudio();
       case "prompt": return showPromptGenerator();
       case "upscaler": return showEnhancer();
-      case "presets": return showPresetCreator();
-      case "approved": return showApprovedHot();
       default: return navigate(screen, activeSession?.id ?? null);
     }
   }
