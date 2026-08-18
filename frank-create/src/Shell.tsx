@@ -1,6 +1,6 @@
 import React from "react";
 
-import { AppFrame, Icon, SideNav, TopBar } from "./ds";
+import { AppFrame, SideNav, TopBar } from "./ds";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { ReleaseNotesModal } from "./components/ReleaseNotesModal";
 import { hardSignOut } from "./lib/supabaseClient";
