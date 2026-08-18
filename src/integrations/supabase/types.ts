@@ -523,6 +523,24 @@ export type Database = {
         }
         Relationships: []
       }
+      release_seen: {
+        Row: {
+          last_seen_release_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          last_seen_release_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          last_seen_release_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       sessions: {
         Row: {
           active_model_key: string
