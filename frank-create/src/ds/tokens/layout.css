@@ -16,8 +16,8 @@
 --nav-appname-radius:var(--radius-200);
 --page-max-width:78.75rem;/* 1260 */
 /* Wide working surfaces (Studio, Upscaler) expand on large displays but keep
-   ~15% free margin on each side instead of touching the edges. */
---page-max-width-wide:min(125rem, 70%);/* up to 2000, 15% margin each side */
+   ~15% free space total (≈7.5% each side) so the content never touches the edges. */
+--page-max-width-wide:min(125rem, 85%);/* up to 2000, leaves room for side panel */
 --page-gutter:var(--space-400);
 --page-section-gap:var(--space-400);
 --content-max-width-one-column:62.5rem;/* 1000 */
