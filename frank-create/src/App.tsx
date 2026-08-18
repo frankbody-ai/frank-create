@@ -1104,15 +1104,8 @@ export default function App() {
     setStatusText("Prompt Generator is open.");
   }
 
-  function showApprovedHot() {
-    const firstApproved = firstReviewableAsset(outputAssets.filter((asset) => asset.approval_status === "approved"));
-    setStudioMode("approved");
-    setReviewFilter("approved");
-    setSelectedAsset(firstApproved);
-    setLightboxAsset(null);
-    clearCompare();
-    setStatusText(firstApproved ? "approved only. hot." : "no approved images yet.");
-  }
+
+
 
   async function handleNewSession() {
     const nextMode = mediaKind === "video" ? "video" : "image";
