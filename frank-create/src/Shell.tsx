@@ -55,6 +55,10 @@ export function Shell({
   const [notesOpen, setNotesOpen] = React.useState(false);
 
   const go = (id: string) => {
+    if (id === "signout") {
+      void hardSignOut().then(() => window.location.replace("/"));
+      return;
+    }
     const target = id as Screen;
     if (onSelectInApp) onSelectInApp(target);
     else navigate(target, sessionId);
