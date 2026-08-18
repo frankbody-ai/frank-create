@@ -5765,7 +5765,6 @@ function OutputStrip({
               aria-label={`Open ${asset.title}`}
             >
               <AssetPreviewMedia asset={asset} fallbackIconSize={24} variant="thumb" />
-              <span>{assetStatusCopy(status)}</span>
             </button>
             {asset.width && asset.height ? (
               <span className="output-tile-resolution" title="Resolution returned by the provider">
@@ -5773,32 +5772,6 @@ function OutputStrip({
               </span>
             ) : null}
 
-            {(onQuickApprove || onQuickReject) && asset.kind !== "reference" && asset.kind !== "mask" ? (
-              <div className="output-tile-quick" onClick={(e) => e.stopPropagation()}>
-                {onQuickApprove ? (
-                  <button
-                    type="button"
-                    className={`quick-approve${status === "approved" ? " active" : ""}`}
-                    onClick={() => onQuickApprove(asset)}
-                    aria-label="Approve pick"
-                    title="Approve"
-                  >
-                    <Icon source="check-circle" tone="inherit" size={14} />
-                  </button>
-                ) : null}
-                {onQuickReject ? (
-                  <button
-                    type="button"
-                    className={`quick-reject${status === "rejected" ? " active" : ""}`}
-                    onClick={() => onQuickReject(asset)}
-                    aria-label="Reject pick"
-                    title="Reject"
-                  >
-                    <Icon source="x-mark" tone="inherit" size={14} />
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
           </div>
 
         );
