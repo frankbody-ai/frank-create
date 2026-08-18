@@ -92,17 +92,28 @@ export function Shell({
           selected={screen}
           onSelect={go}
           footer={
-            <button
-              type="button"
-              className="as-nav__item"
-              onClick={() => {
-                void hardSignOut().then(() => window.location.replace("/"));
-              }}
-            >
-              <Icon source="power" size={20} />
-              <span className="as-nav__label">Sign out</span>
-            </button>
+            <>
+              <button
+                type="button"
+                className="as-nav__item"
+                onClick={() => setNotesOpen(true)}
+              >
+                <Icon source="sparkles" size={20} />
+                <span className="as-nav__label">What's new</span>
+              </button>
+              <button
+                type="button"
+                className="as-nav__item"
+                onClick={() => {
+                  void hardSignOut().then(() => window.location.replace("/"));
+                }}
+              >
+                <Icon source="power" size={20} />
+                <span className="as-nav__label">Sign out</span>
+              </button>
+            </>
           }
+
         />
       }
 
