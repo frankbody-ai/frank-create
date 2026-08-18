@@ -293,15 +293,8 @@ export function StudioRail(props: StudioRailProps) {
       </div>
 
       <div className="run-settings__section">
-        <Select
-          label="Style preset"
-          value={selectedPresetKey ?? ""}
-          onChange={(event) => onPresetChange(event.target.value || null)}
-          options={[{ value: "", label: "No preset" }].concat(
-            presets.map((preset) => ({ value: preset.key, label: preset.label }))
-          )}
-          helpText="Appended to the brief as an editable paragraph."
-        />
+        {null}
+
 
         {settings.aspect_ratio ? (
           <AspectPreview
