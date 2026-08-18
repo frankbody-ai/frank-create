@@ -5229,15 +5229,14 @@ function CompareDialog({
   baseAsset,
   targetAsset,
   onClose,
-  onApprove,
   onEdit
 }: {
   baseAsset: Asset;
   targetAsset: Asset;
   onClose: () => void;
-  onApprove: (asset: Asset) => void;
   onEdit: (asset: Asset) => void;
 }) {
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
