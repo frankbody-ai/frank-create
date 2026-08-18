@@ -212,7 +212,7 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     title: "The composer",
     detail: "Write the brief in plain English, then dial in Model, Aspect, Size, Count, Quality, and Thinking Mode right inside this card. Sizes are automatically filtered to match the chosen aspect and model.",
     points: [
-      "Model roster: Nano Banana Pro/2, gpt-image-2, Reve 2.1, Seedream 5.0 Pro (all via Replicate).",
+      "Model roster: Nano Banana Pro/2, gpt-image-2, Reve 2.1, Seedream 5.0 Pro (all via OpenRouter).",
       "Aspect preview shows the exact canvas shape before you generate.",
       "Thinking Mode (Off / Low / High) is available on models that support it."
     ],
@@ -6618,6 +6618,7 @@ function providerUnlockPriority(model: StudioModel) {
     "google-nb-pro": 1,
     "google-nb-2": 1,
     "openai-gpt-image-2": 2,
+    "seedream-5-pro": 2,
     "seedream-4-5": 2,
     "flux-2-pro": 2,
     "flux-2-max": 3,
