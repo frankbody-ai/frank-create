@@ -5795,11 +5795,15 @@ function mergeModels(remote: StudioModel[] | undefined, fallback: StudioModel[])
   const out: StudioModel[] = remote?.length
     ? remote.map((m) => {
         const local = localById.get(m.id);
-        return local?.degraded
-          ? { ...m, degraded: true, degraded_note: local.degraded_note }
-          : m;
+        let merged = m;
+        if (local?.degraded) merged = { ...merged, degraded: true, degraded_note: local.degraded_note };
+        // Legacy/superseded flags are curated locally; never let a backend
+        // roster refresh resurrect a retired model in the pickers.
+        if (local?.legacy) merged = { ...merged, legacy: true };
+        return merged;
       })
     : [];
+
   const seen = new Set(out.map((m) => m.id));
   for (const m of fallback) {
     if (!seen.has(m.id)) out.push(m);
