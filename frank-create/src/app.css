@@ -536,7 +536,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.turn-card { padding: var(--card-padding); border-block-end: 1px solid rgba(255, 255, 255, 0.08); }
+.turn-card { padding: var(--space-600); border-block-end: 1px solid rgba(255, 255, 255, 0.08); }
 .turn-card:last-child { border-block-end: 0; }
 .turn-card-body {
   display: grid;
