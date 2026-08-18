@@ -79,7 +79,7 @@ import {
 
 import { fallbackBrandKit, fallbackConfig } from "./lib/presets";
 import { supabase, hardSignOut } from "./lib/supabaseClient";
-import { assetStatusCopy, createBriefPayload } from "./lib/frankWorkflow";
+import { createBriefPayload } from "./lib/frankWorkflow";
 import {
   buildTurnRequest,
   aspectRatioParts,
