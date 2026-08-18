@@ -2046,7 +2046,28 @@ export default function App() {
     event.target.value = "";
   }
 
+  /** Files dropped straight onto the picker's upload tile from Finder. */
+  async function handlePickerFiles(files: File[]) {
+    const images = files.filter((file) => file.type.startsWith("image/"));
+    if (!images.length) return;
+    setReferencePickerBusy(true);
+    setReferencePickerNote(null);
+    try {
+      const created = await addReferenceFiles(images, { attach: false });
+      if (created?.length) {
+        setReferenceLibrary((current) => [...created, ...current]);
+        setReferencePickerPage(0);
+        setReferencePickerSelection((current) =>
+          Array.from(new Set([...current, ...created.map((asset) => asset.id)])).slice(0, referencePickerLimit)
+        );
+      }
+    } finally {
+      setReferencePickerBusy(false);
+    }
+  }
+
   async function handlePickerUpload(event: ChangeEvent<HTMLInputElement>) {
+
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
     if (!files.length) return;
