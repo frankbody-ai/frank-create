@@ -140,9 +140,11 @@ export function isUpscaleModel(model: StudioModel | undefined | null): boolean {
 
 export function modelsForMedia(models: StudioModel[], media: "image" | "video"): StudioModel[] {
   return models.filter((model) =>
-    !isUpscaleModel(model) && (media === "video" ? isVideoModel(model) : !isVideoModel(model))
+    !isUpscaleModel(model) && model.legacy !== true
+    && (media === "video" ? isVideoModel(model) : !isVideoModel(model))
   );
 }
+
 
 /** Enhancer roster: upscale-capable models for the requested media kind. */
 export function upscaleModelsForMedia(models: StudioModel[], media: "image" | "video"): StudioModel[] {
