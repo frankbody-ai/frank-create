@@ -536,7 +536,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.turn-card { padding: var(--card-padding); border-block-end: 1px solid rgba(255, 255, 255, 0.08); }
+.turn-card { padding: var(--space-600); border-block-end: 1px solid rgba(255, 255, 255, 0.08); }
 .turn-card:last-child { border-block-end: 0; }
 .turn-card-body {
   display: grid;
@@ -678,10 +678,22 @@
 .output-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-  gap: var(--space-200);
+  gap: var(--space-400);
 }
 .turn-row-single .output-grid,
 .compare-run-grid .output-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* The picks grid follows the width of its own card, not the viewport: two up as
+   today, three then four as the visual column widens on large displays. */
+.turn-visual { container-type: inline-size; }
+@container (min-width: 900px) {
+  .turn-row-single .output-grid:not(:has(> :nth-child(3))) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .turn-row-single .output-grid:has(> :nth-child(3)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container (min-width: 1280px) {
+  .turn-row-single .output-grid:has(> :nth-child(4)) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+/* One pick keeps a single large tile rather than a quarter-width thumbnail. */
+.turn-row-single .output-grid:not(:has(> :nth-child(2))) { grid-template-columns: minmax(0, 1fr); }
 .output-tile,
 .output-skeleton,
 .output-placeholder {
