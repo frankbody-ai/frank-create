@@ -3612,6 +3612,7 @@ export default function App() {
       search={roundSearch}
       onSearchChange={setRoundSearch}
       searchPlaceholder="Search sessions and picks"
+      maxWidth="var(--page-max-width-wide)"
     >
       {desktopNotice ? (
         <Banner tone="warning" title="Desktop only" onDismiss={() => setDesktopNotice(null)}>
