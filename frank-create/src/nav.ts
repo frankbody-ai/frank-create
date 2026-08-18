@@ -12,8 +12,6 @@ export type Screen =
   | "studio"
   | "prompt"
   | "upscaler"
-  | "presets"
-  | "approved"
   | "review"
   | "admin"
   | "health"
@@ -27,7 +25,7 @@ export interface NavEntry {
 }
 
 /** The screens that live inside `App` and switch by mode rather than by route. */
-export const IN_APP_SCREENS = ["studio", "prompt", "upscaler", "presets", "approved"] as const;
+export const IN_APP_SCREENS = ["studio", "prompt", "upscaler"] as const;
 export type InAppScreen = (typeof IN_APP_SCREENS)[number];
 
 export function isInApp(screen: Screen): screen is InAppScreen {
@@ -38,10 +36,8 @@ export const NAV_MAIN: NavEntry[] = [
   { id: "studio", label: "Studio", icon: "bolt" },
   { id: "prompt", label: "Prompt generator", icon: "chat-bubble-left-right" },
   { id: "upscaler", label: "Upscaler", icon: "arrow-trending-up" },
-  { id: "presets", label: "Presets", icon: "rectangle-stack" },
-  { id: "approved", label: "Approved", icon: "check-circle" },
-  { id: "review", label: "Review board", icon: "users" },
 ];
+
 
 export const NAV_FOOTER: NavEntry[] = [
   { id: "admin", label: "Admin portal", icon: "shield-check" },
