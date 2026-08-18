@@ -5273,12 +5273,10 @@ function CompareDialog({
 function ComparePane({
   label,
   asset,
-  onApprove,
   onEdit
 }: {
   label: string;
   asset: Asset;
-  onApprove: (asset: Asset) => void;
   onEdit: (asset: Asset) => void;
 }) {
   const settings = parseJsonRecord(asset.settings_json);
@@ -5293,20 +5291,16 @@ function ComparePane({
         <p className="eyebrow">{label}</p>
         <h3>{asset.title}</h3>
         <div className="compare-meta">
-          <span>{assetStatusCopy(asset.approval_status)}</span>
           <span>{asset.model ?? "model pending"}</span>
           <span>{dimensions}</span>
           {settings.aspect_ratio ? <span>{String(settings.aspect_ratio)}</span> : null}
         </div>
         {asset.notes ? <p>{asset.notes}</p> : <p>No notes yet.</p>}
         <div className="compare-actions">
-          <button type="button" onClick={() => onApprove(asset)}>
-            <Icon source="check-circle" tone="inherit" size={15} />
-            Approve
-          </button>
           <button type="button" onClick={() => onEdit(asset)}>
             <Icon source="sparkles" tone="inherit" size={15} />
             Edit
+
           </button>
         </div>
       </div>
