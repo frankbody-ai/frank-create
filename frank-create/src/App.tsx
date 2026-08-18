@@ -5261,8 +5261,9 @@ function CompareDialog({
           </button>
         </header>
         <div className="compare-grid">
-          <ComparePane label="Base pick" asset={baseAsset} onApprove={onApprove} onEdit={onEdit} />
-          <ComparePane label="Challenger" asset={targetAsset} onApprove={onApprove} onEdit={onEdit} />
+          <ComparePane label="Base pick" asset={baseAsset} onEdit={onEdit} />
+          <ComparePane label="Challenger" asset={targetAsset} onEdit={onEdit} />
+
         </div>
       </div>
     </div>
