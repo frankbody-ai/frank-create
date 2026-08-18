@@ -699,8 +699,8 @@
 @container (min-width: 1500px) {
   .turn-row-single .output-grid:has(> :nth-child(6)) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
-/* One pick keeps a single large tile rather than a quarter-width thumbnail. */
-.turn-row-single .output-grid:not(:has(> :nth-child(2))) { grid-template-columns: minmax(0, 1fr); }
+/* One pick still occupies two columns so the tile never fills the whole wide row. */
+.turn-row-single .output-grid:not(:has(> :nth-child(2))) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .output-tile,
 .output-skeleton,
 .output-placeholder {
