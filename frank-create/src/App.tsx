@@ -1091,10 +1091,6 @@ export default function App() {
     setStatusText("Studio is open.");
   }
 
-  function showPresetCreator() {
-    setStudioMode("presets");
-    setStatusText("Preset Creator is open.");
-  }
 
   function showEnhancer() {
     setStudioMode("upscaler");
