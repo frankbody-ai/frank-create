@@ -332,22 +332,58 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
         title="Prompt generator"
         subtitle="Describe the outcome and the agent assembles the prompt. Runs on GPT-5.6 Sol via Lovable AI."
         actions={
-          <Button
-            icon="arrow-path"
-            disabled={busy || !messages.length}
-            onClick={() => {
-              setMessages([]);
-              setAttachments([]);
-              setWizard(null);
-              setError(null);
-              inputRef.current?.focus();
-            }}
-
-          >
-            Start a new chat
-          </Button>
+          <>
+            <Button
+              icon="clock"
+              pressed={historyOpen}
+              onClick={() => setHistoryOpen((open) => !open)}
+            >
+              History{chats.length ? ` (${chats.length})` : ""}
+            </Button>
+            <Button icon="arrow-path" disabled={busy || !messages.length} onClick={startNewChat}>
+              Start a new chat
+            </Button>
+          </>
         }
       />
+
+      {historyOpen ? (
+        <Card title="Past conversations" subtitle="Reopen a thread to keep working on it.">
+          {chats.length ? (
+            <ul className="prompt-chat-history">
+              {chats.map((chat) => (
+                <li key={chat.id} className={chat.id === chatId ? "is-active" : ""}>
+                  <button type="button" onClick={() => void openChat(chat.id)}>
+                    <span className="prompt-chat-history__title">{chat.title}</span>
+                    <span className="prompt-chat-history__meta">
+                      {new Date(chat.updated_at).toLocaleString()}
+                      {chat.skill ? ` · ${chat.skill}` : ""}
+                    </span>
+                  </button>
+                  <IconButton
+                    icon="trash"
+                    label="Delete conversation"
+                    size="micro"
+                    onClick={() => {
+                      void deletePromptChat(chat.id)
+                        .then(() => {
+                          if (chat.id === chatId) startNewChat();
+                          refreshChats();
+                        })
+                        .catch((err) => console.error("[prompt-chat] delete failed", err));
+                    }}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Text as="p" tone="secondary">
+              No saved conversations yet — the thread saves itself as soon as the agent replies.
+            </Text>
+          )}
+        </Card>
+      ) : null}
+
 
       <Card title="Skill" subtitle={activeSkill?.hint}>
         <div className="skill-chips" role="group" aria-label="Agent skills">
