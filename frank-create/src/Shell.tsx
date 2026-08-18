@@ -112,7 +112,9 @@ export function Shell({
 
     >
       {children}
+      <FeedbackWidget variant="fixed" />
       <ReleaseNotesModal forceOpen={notesOpen} onClose={() => setNotesOpen(false)} />
+
     </AppFrame>
   );
 }
