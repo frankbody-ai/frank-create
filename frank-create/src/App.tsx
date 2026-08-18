@@ -5741,10 +5741,10 @@ function OutputStrip({
 
       {assets.map((asset) => {
         const ratio = asset.width && asset.height ? `${asset.width} / ${asset.height}` : undefined;
-        const status = asset.approval_status ?? "review";
         return (
           <div
-            className={`output-tile${selectedAssetId === asset.id ? " selected" : ""} status-${status}`}
+            className={`output-tile${selectedAssetId === asset.id ? " selected" : ""}`}
+
             key={asset.id}
             draggable
             onDragStart={(event) => {
