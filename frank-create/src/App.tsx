@@ -5706,9 +5706,7 @@ function OutputStrip({
   pendingCount = 1,
   pendingAspect,
   selectedAssetId,
-  onSelect,
-  onQuickApprove,
-  onQuickReject
+  onSelect
 }: {
   assets: Asset[];
   emptyLabel?: string;
@@ -5717,8 +5715,7 @@ function OutputStrip({
   pendingAspect?: string;
   selectedAssetId?: string;
   onSelect: (asset: Asset) => void;
-  onQuickApprove?: (asset: Asset) => void;
-  onQuickReject?: (asset: Asset) => void;
+
 
 }) {
   if (!assets.length && !pending) {
