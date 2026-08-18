@@ -82,12 +82,8 @@ export function Shell({
           searchPlaceholder={searchPlaceholder}
           searchValue={search ?? ""}
           onSearchChange={onSearchChange}
-          actions={
-            <>
-              {actions}
-              <FeedbackWidget variant="inline" />
-            </>
-          }
+          actions={<>{actions}</>}
+
         />
       }
         navigation={
