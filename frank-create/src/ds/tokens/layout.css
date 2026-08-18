@@ -15,9 +15,9 @@
 --nav-appname-height:3rem;/* 48 — the reserved application-name plate at the top of the nav */
 --nav-appname-radius:var(--radius-200);
 --page-max-width:78.75rem;/* 1260 */
-/* Wide working surfaces (Studio, Upscaler) grow with the window instead of
-   sitting in a 1260px band on large displays. */
---page-max-width-wide:min(125rem, 100%);/* up to 2000 */
+/* Wide working surfaces (Studio, Upscaler) expand on large displays but keep
+   ~15% free margin on each side instead of touching the edges. */
+--page-max-width-wide:min(125rem, 70%);/* up to 2000, 15% margin each side */
 --page-gutter:var(--space-400);
 --page-section-gap:var(--space-400);
 --content-max-width-one-column:62.5rem;/* 1000 */
