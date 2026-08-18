@@ -1010,10 +1010,8 @@ export default function App() {
 
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
   const firstOutputAsset = outputAssets[0] ?? null;
-  const displayOutputAssets =
-    reviewFilter === "approved" || studioMode === "approved"
-      ? outputAssets.filter((asset) => asset.approval_status === "approved")
-      : outputAssets;
+  const displayOutputAssets = outputAssets;
+
   const approvedCount = outputAssets.filter((asset) => asset.approval_status === "approved").length;
   const approvedMotionCount = outputAssets.filter(
     (asset) => asset.approval_status === "approved" && asset.media_type === "video"
