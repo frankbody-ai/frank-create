@@ -3706,23 +3706,8 @@ export default function App() {
             setStatusText("Prompt loaded into the Studio composer.");
           }}
         />
-      ) : studioMode === "presets" ? (
-        <PresetCreator
-          builtinPresets={config.promptPresets}
-          customPresets={customPresets}
-          setCustomPresets={setCustomPresets}
-          onStatus={setStatusText}
-        />
-      ) : studioMode === "approved" ? (
-        <ApprovedScreen
-          assets={outputAssets}
-          sessionId={activeSession?.id ?? null}
-          search={roundSearch}
-          onOpenAsset={(asset) => setLightboxAsset(asset)}
-          onDownloadAsset={(asset) => void downloadAssetFile(asset)}
-          onStatus={setStatusText}
-        />
       ) : (
+
       <>
         <PageHeader
           title="Studio"
