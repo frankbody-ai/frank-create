@@ -5960,13 +5960,18 @@ function writeLastUsedModelId(id: string): void {
 
 
 function preferredStudioModel(models: StudioModel[], preferredId?: string | null) {
+  // A stored preference can point at a retired model (e.g. Seedream 4.5 after
+  // 5.0 Pro landed); those are hidden from the pickers, so never restore one.
+  const usable = (model: StudioModel) => model.configured !== false && model.legacy !== true;
   return (
-    (preferredId ? models.find((model) => model.id === preferredId && model.configured !== false) : undefined) ??
-    models.find((model) => model.id === "google-nb-pro" && model.configured !== false) ??
+    (preferredId ? models.find((model) => model.id === preferredId && usable(model)) : undefined) ??
+    models.find((model) => model.id === "google-nb-pro" && usable(model)) ??
+    models.find(usable) ??
     models[0] ??
     fallbackConfig.models[0]
   );
 }
+
 
 function modelName(config: FrankConfig, modelId: string) {
   return config.models.find((model) => model.id === modelId)?.short_label ?? modelId;
