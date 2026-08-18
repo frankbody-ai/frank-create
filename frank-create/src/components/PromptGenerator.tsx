@@ -151,14 +151,67 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<string[]>([]);
   const [wizard, setWizard] = useState<WizardState | null>(null);
+  const [chatId, setChatId] = useState<string | null>(null);
+  const [chats, setChats] = useState<PromptChatSummary[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const savedSignature = useRef<string>("");
   const fileRef = useRef<HTMLInputElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
+  function refreshChats() {
+    listPromptChats()
+      .then(setChats)
+      .catch(() => {
+        /* history is a convenience — never block the composer */
+      });
+  }
 
   useEffect(() => {
     inputRef.current?.focus();
+    refreshChats();
   }, []);
+
+  /** Every settled exchange is written back so the thread survives navigation. */
+  useEffect(() => {
+    if (busy || !messages.length) return;
+    const signature = `${chatId ?? "new"}:${messages.length}:${messages[messages.length - 1]?.content.slice(0, 80)}`;
+    if (savedSignature.current === signature) return;
+    savedSignature.current = signature;
+    void savePromptChat(chatId, skill, messages)
+      .then((id) => {
+        if (id && id !== chatId) setChatId(id);
+        refreshChats();
+      })
+      .catch((err) => console.error("[prompt-chat] save failed", err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, busy]);
+
+  async function openChat(id: string) {
+    try {
+      const loaded = await loadPromptChat(id);
+      setChatId(id);
+      setMessages(loaded);
+      setWizard(null);
+      setAttachments([]);
+      setError(null);
+      savedSignature.current = `${id}:${loaded.length}:${loaded[loaded.length - 1]?.content.slice(0, 80) ?? ""}`;
+      setHistoryOpen(false);
+      onStatus?.("Conversation reopened.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not open that conversation.");
+    }
+  }
+
+  function startNewChat() {
+    setChatId(null);
+    setMessages([]);
+    setAttachments([]);
+    setWizard(null);
+    setError(null);
+    savedSignature.current = "";
+    inputRef.current?.focus();
+  }
 
   useEffect(() => {
     let alive = true;
@@ -167,6 +220,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
         if (!alive) return;
         const active = (res.config.skills || []).filter((s) => s.is_active);
         if (!active.length) return;
+
         setSkills(active.map((s) => ({ key: s.key, label: s.label || s.key, hint: s.hint })));
         if (!active.some((s) => s.key === skill)) setSkill(active[0]!.key);
       })
