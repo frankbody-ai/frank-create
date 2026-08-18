@@ -4519,8 +4519,7 @@ export default function App() {
 
 
                         selectedAssetId={selectedAsset?.id}
-                        onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
-                        onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
+
                       />
 
                       </div>
