@@ -55,6 +55,10 @@ export function Shell({
   const [notesOpen, setNotesOpen] = React.useState(false);
 
   const go = (id: string) => {
+    if (id === "signout") {
+      void hardSignOut().then(() => window.location.replace("/"));
+      return;
+    }
     const target = id as Screen;
     if (onSelectInApp) onSelectInApp(target);
     else navigate(target, sessionId);
@@ -86,16 +90,18 @@ export function Shell({
           }
         />
       }
-      navigation={
-        <SideNav
-          app="design-studio"
-          appName="art-ificial design studio"
-          items={NAV_MAIN.map(toItem)}
-          footerItems={NAV_FOOTER.map(toItem)}
-          selected={screen}
-          onSelect={go}
-          footer={
-            <>
+        navigation={
+          <SideNav
+            app="design-studio"
+            appName="art-ificial design studio"
+            items={NAV_MAIN.map(toItem)}
+            footerItems={[
+              ...NAV_FOOTER.map(toItem),
+              { id: "signout", label: "Sign out", icon: "power" },
+            ]}
+            selected={screen}
+            onSelect={go}
+            footer={
               <button
                 type="button"
                 className="as-nav__item"
@@ -104,21 +110,9 @@ export function Shell({
                 <Icon source="sparkles" size={20} />
                 <span className="as-nav__label">What's new</span>
               </button>
-              <button
-                type="button"
-                className="as-nav__item"
-                onClick={() => {
-                  void hardSignOut().then(() => window.location.replace("/"));
-                }}
-              >
-                <Icon source="power" size={20} />
-                <span className="as-nav__label">Sign out</span>
-              </button>
-            </>
-          }
-
-        />
-      }
+            }
+          />
+        }
 
     >
       {children}
