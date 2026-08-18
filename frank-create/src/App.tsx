@@ -742,7 +742,16 @@ export default function App() {
     const pool = modelsForMedia(config.models, kind).filter(
       (model) => model.status !== "disabled" && model.id !== exceptId
     );
-    return pool.find((model) => model.status === "ready" && !model.degraded) ?? pool[0] ?? null;
+    // A model the user picked before for this media kind wins over any default.
+    const remembered = readLastUsedModelId(kind);
+    const restored = remembered ? pool.find((model) => model.id === remembered) : null;
+    return restored ?? pool.find((model) => model.status === "ready" && !model.degraded) ?? pool[0] ?? null;
+  }
+
+  function selectModel(id: string) {
+    setSelectedModelId(id);
+    const model = config.models.find((item) => item.id === id);
+    writeLastUsedModelId(id, model ? (isVideoModel(model) ? "video" : "image") : undefined);
   }
 
   function switchMediaKind(kind: "image" | "video" | "compare") {
@@ -750,7 +759,7 @@ export default function App() {
     setCompareApproved(false);
     const media = kind === "compare" ? compareMedia : kind;
     const next = pickModelForMedia(media);
-    if (next && next.id !== selectedModelId) setSelectedModelId(next.id);
+    if (next && next.id !== selectedModelId) selectModel(next.id);
     if (kind === "compare") {
       const primaryId = next?.id ?? selectedModelId;
       const second = pickModelForMedia(media, primaryId);
@@ -769,11 +778,12 @@ export default function App() {
     setCompareMedia(media);
     setCompareApproved(false);
     const primary = pickModelForMedia(media);
-    if (primary && primary.id !== selectedModelId) setSelectedModelId(primary.id);
+    if (primary && primary.id !== selectedModelId) selectModel(primary.id);
     const second = pickModelForMedia(media, primary?.id ?? selectedModelId);
     setCompareModelBId(second?.id ?? "");
     setStatusText(media === "video" ? "Comparing two video models." : "Comparing two image models.");
   }
+
 
 
   function resetStudioSettings() {
