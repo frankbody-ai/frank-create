@@ -79,7 +79,7 @@ import {
 
 import { fallbackBrandKit, fallbackConfig } from "./lib/presets";
 import { supabase, hardSignOut } from "./lib/supabaseClient";
-import { assetStatusCopy, createBriefPayload } from "./lib/frankWorkflow";
+import { createBriefPayload } from "./lib/frankWorkflow";
 import {
   buildTurnRequest,
   aspectRatioParts,
@@ -113,8 +113,8 @@ import {
 import type { StudioFieldErrors } from "./lib/studio";
 
 import { StudioRail } from "./components/StudioRail";
-import { ApprovedScreen } from "./components/ApprovedScreen";
-import { PresetCreator } from "./components/PresetCreator";
+
+
 import { PromptGenerator } from "./components/PromptGenerator";
 import Enhancer from "./components/Enhancer";
 
@@ -1010,10 +1010,36 @@ export default function App() {
 
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
   const firstOutputAsset = outputAssets[0] ?? null;
-  const displayOutputAssets =
-    reviewFilter === "approved" || studioMode === "approved"
-      ? outputAssets.filter((asset) => asset.approval_status === "approved")
-      : outputAssets;
+  const displayOutputAssets = outputAssets;
+  // Picks from the same run, so the preview can step left/right through a round.
+  const lightboxSiblings = lightboxAsset
+    ? (() => {
+        const group = outputAssets.filter((asset) => asset.turn_id && asset.turn_id === lightboxAsset.turn_id);
+        return group.length ? group : [lightboxAsset];
+      })()
+    : [];
+  const lightboxIndex = lightboxAsset ? lightboxSiblings.findIndex((asset) => asset.id === lightboxAsset.id) : -1;
+  function stepLightbox(delta: number) {
+    if (lightboxIndex < 0 || lightboxSiblings.length < 2) return;
+    const next = (lightboxIndex + delta + lightboxSiblings.length) % lightboxSiblings.length;
+    setLightboxAsset(lightboxSiblings[next] ?? null);
+  }
+
+  useEffect(() => {
+    if (!lightboxAsset) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setLightboxAsset(null);
+      if (event.key === "ArrowRight") stepLightbox(1);
+      if (event.key === "ArrowLeft") stepLightbox(-1);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxAsset, lightboxSiblings.length, lightboxIndex]);
+
+
+
+
   const approvedCount = outputAssets.filter((asset) => asset.approval_status === "approved").length;
   const approvedMotionCount = outputAssets.filter(
     (asset) => asset.approval_status === "approved" && asset.media_type === "video"
@@ -1065,10 +1091,6 @@ export default function App() {
     setStatusText("Studio is open.");
   }
 
-  function showPresetCreator() {
-    setStudioMode("presets");
-    setStatusText("Preset Creator is open.");
-  }
 
   function showEnhancer() {
     setStudioMode("upscaler");
@@ -1082,15 +1104,8 @@ export default function App() {
     setStatusText("Prompt Generator is open.");
   }
 
-  function showApprovedHot() {
-    const firstApproved = firstReviewableAsset(outputAssets.filter((asset) => asset.approval_status === "approved"));
-    setStudioMode("approved");
-    setReviewFilter("approved");
-    setSelectedAsset(firstApproved);
-    setLightboxAsset(null);
-    clearCompare();
-    setStatusText(firstApproved ? "approved only. hot." : "no approved images yet.");
-  }
+
+
 
   async function handleNewSession() {
     const nextMode = mediaKind === "video" ? "video" : "image";
@@ -2020,7 +2035,28 @@ export default function App() {
     event.target.value = "";
   }
 
+  /** Files dropped straight onto the picker's upload tile from Finder. */
+  async function handlePickerFiles(files: File[]) {
+    const images = files.filter((file) => file.type.startsWith("image/"));
+    if (!images.length) return;
+    setReferencePickerBusy(true);
+    setReferencePickerNote(null);
+    try {
+      const created = await addReferenceFiles(images, { attach: false });
+      if (created?.length) {
+        setReferenceLibrary((current) => [...created, ...current]);
+        setReferencePickerPage(0);
+        setReferencePickerSelection((current) =>
+          Array.from(new Set([...current, ...created.map((asset) => asset.id)])).slice(0, referencePickerLimit)
+        );
+      }
+    } finally {
+      setReferencePickerBusy(false);
+    }
+  }
+
   async function handlePickerUpload(event: ChangeEvent<HTMLInputElement>) {
+
     const files = Array.from(event.target.files ?? []);
     event.target.value = "";
     if (!files.length) return;
@@ -3016,30 +3052,8 @@ export default function App() {
 
 
 
-  async function changeAssetStatus(asset: Asset, approval_status: Asset["approval_status"]) {
-    const optimistic = { ...asset, approval_status };
-    setAssets((current) => current.map((item) => (item.id === asset.id ? optimistic : item)));
-    setSelectedAsset(optimistic);
-    syncCompareAsset(optimistic);
 
-    try {
-      if (connection === "online") {
-        const updated = await updateAsset(asset.id, { approval_status });
-        setAssets((current) => current.map((item) => (item.id === updated.asset.id ? updated.asset : item)));
-        setSelectedAsset(updated.asset);
-        syncCompareAsset(updated.asset);
-      }
 
-      setStatusText(assetStatusCopy(approval_status));
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error("[approval] updateAsset failed", { assetId: asset.id, approval_status, error });
-      setAssets((current) => current.map((item) => (item.id === asset.id ? asset : item)));
-      setSelectedAsset(asset);
-      syncCompareAsset(asset);
-      setStatusText(error instanceof Error ? `Approval failed: ${error.message}` : "Could not update review status.");
-    }
-  }
 
   async function toggleFavorite(asset: Asset) {
     const optimistic = { ...asset, favorite: !asset.favorite };
@@ -3570,8 +3584,6 @@ export default function App() {
       case "studio": return showImageStudio();
       case "prompt": return showPromptGenerator();
       case "upscaler": return showEnhancer();
-      case "presets": return showPresetCreator();
-      case "approved": return showApprovedHot();
       default: return navigate(screen, activeSession?.id ?? null);
     }
   }
@@ -3608,7 +3620,7 @@ export default function App() {
       screen={studioMode}
       onSelectInApp={goToScreen}
       sessionId={activeSession?.id ?? null}
-      approvedCount={approvedCount}
+      
       search={roundSearch}
       onSearchChange={setRoundSearch}
       searchPlaceholder="Search sessions and picks"
@@ -3659,23 +3671,8 @@ export default function App() {
             setStatusText("Prompt loaded into the Studio composer.");
           }}
         />
-      ) : studioMode === "presets" ? (
-        <PresetCreator
-          builtinPresets={config.promptPresets}
-          customPresets={customPresets}
-          setCustomPresets={setCustomPresets}
-          onStatus={setStatusText}
-        />
-      ) : studioMode === "approved" ? (
-        <ApprovedScreen
-          assets={outputAssets}
-          sessionId={activeSession?.id ?? null}
-          search={roundSearch}
-          onOpenAsset={(asset) => setLightboxAsset(asset)}
-          onDownloadAsset={(asset) => void downloadAssetFile(asset)}
-          onStatus={setStatusText}
-        />
       ) : (
+
       <>
         <PageHeader
           title="Studio"
@@ -4500,8 +4497,7 @@ export default function App() {
 
 
                         selectedAssetId={selectedAsset?.id}
-                        onQuickApprove={(asset) => changeAssetStatus(asset, "approved")}
-                        onQuickReject={(asset) => changeAssetStatus(asset, "rejected")}
+
                       />
 
                       </div>
@@ -4732,6 +4728,26 @@ export default function App() {
             <button className="lightbox-close" type="button" onClick={() => setLightboxAsset(null)} aria-label="Close preview">
               <Icon source="x-mark" tone="inherit" size={18} />
             </button>
+            {lightboxSiblings.length > 1 ? (
+              <>
+                <button
+                  className="lightbox-nav prev"
+                  type="button"
+                  onClick={() => stepLightbox(-1)}
+                  aria-label="Previous pick"
+                >
+                  <Icon source="chevron-left" tone="inherit" size={20} />
+                </button>
+                <button
+                  className="lightbox-nav next"
+                  type="button"
+                  onClick={() => stepLightbox(1)}
+                  aria-label="Next pick"
+                >
+                  <Icon source="chevron-right" tone="inherit" size={20} />
+                </button>
+              </>
+            ) : null}
             <AssetPreviewMedia asset={lightboxAsset} fallbackIconSize={42} controls />
             <div className="lightbox-meta">
               {lightboxAsset.aspect_ratio ? <span>{formatAspectChip(lightboxAsset.aspect_ratio)}</span> : null}
@@ -4739,9 +4755,11 @@ export default function App() {
                 <span title="Resolution returned by the provider">{lightboxAsset.width} × {lightboxAsset.height}</span>
               ) : null}
               {lightboxAsset.model ? <span>{modelName(config, lightboxAsset.model)}</span> : null}
+              {lightboxSiblings.length > 1 ? (
+                <span>{lightboxIndex + 1} / {lightboxSiblings.length}</span>
+              ) : null}
             </div>
             <div className="lightbox-actions">
-
               <button
                 type="button"
                 onClick={() => {
@@ -4756,59 +4774,8 @@ export default function App() {
                 <Icon source="arrow-down-tray" tone="inherit" size={16} />
                 Save
               </button>
-              {lightboxAsset.approval_status === "approved" ? (
-                <button
-                  type="button"
-                  className="lightbox-approve is-approved"
-                  onClick={() => {
-                    void changeAssetStatus(lightboxAsset, "review");
-                    setLightboxAsset({ ...lightboxAsset, approval_status: "review" });
-                  }}
-                  title="Approved — click to undo"
-                >
-                  <Icon source="check-circle" tone="inherit" size={16} />
-                  Approved
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="lightbox-approve"
-                  onClick={() => {
-                    void changeAssetStatus(lightboxAsset, "approved");
-                    setLightboxAsset({ ...lightboxAsset, approval_status: "approved" });
-                  }}
-                >
-                  <Icon source="check-circle" tone="inherit" size={16} />
-                  Approve
-                </button>
-              )}
-              {lightboxAsset.approval_status !== "rejected" ? (
-                <button
-                  type="button"
-                  className="lightbox-reject"
-                  onClick={() => {
-                    void changeAssetStatus(lightboxAsset, "rejected");
-                    setLightboxAsset({ ...lightboxAsset, approval_status: "rejected" });
-                  }}
-                >
-                  <Icon source="x-mark" tone="inherit" size={16} />
-                  Reject
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="lightbox-reject is-rejected"
-                  onClick={() => {
-                    void changeAssetStatus(lightboxAsset, "review");
-                    setLightboxAsset({ ...lightboxAsset, approval_status: "review" });
-                  }}
-                  title="Rejected — click to undo"
-                >
-                  <Icon source="x-mark" tone="inherit" size={16} />
-                  Rejected
-                </button>
-              )}
             </div>
+
           </div>
         </div>
       ) : null}
@@ -4851,8 +4818,17 @@ export default function App() {
                     type="button"
                     className="reference-picker-upload"
                     onClick={() => referencePickerInputRef.current?.click()}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = "copy";
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      void handlePickerFiles(Array.from(event.dataTransfer.files || []));
+                    }}
                     disabled={referencePickerBusy}
                   >
+
                     <Icon source="arrow-up-tray" tone="inherit" size={22} />
                     <strong>{referencePickerBusy ? "Uploading…" : "Upload from computer"}</strong>
                     <span>PNG, JPG or WEBP · you can also paste or drop</span>
@@ -4998,7 +4974,7 @@ export default function App() {
           baseAsset={compareBaseAsset}
           targetAsset={compareTargetAsset}
           onClose={clearCompare}
-          onApprove={(asset) => changeAssetStatus(asset, "approved")}
+          
           onEdit={(asset) => {
             startEditFromAsset(asset);
             clearCompare();
@@ -5211,15 +5187,14 @@ function CompareDialog({
   baseAsset,
   targetAsset,
   onClose,
-  onApprove,
   onEdit
 }: {
   baseAsset: Asset;
   targetAsset: Asset;
   onClose: () => void;
-  onApprove: (asset: Asset) => void;
   onEdit: (asset: Asset) => void;
 }) {
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -5244,8 +5219,9 @@ function CompareDialog({
           </button>
         </header>
         <div className="compare-grid">
-          <ComparePane label="Base pick" asset={baseAsset} onApprove={onApprove} onEdit={onEdit} />
-          <ComparePane label="Challenger" asset={targetAsset} onApprove={onApprove} onEdit={onEdit} />
+          <ComparePane label="Base pick" asset={baseAsset} onEdit={onEdit} />
+          <ComparePane label="Challenger" asset={targetAsset} onEdit={onEdit} />
+
         </div>
       </div>
     </div>
@@ -5255,12 +5231,10 @@ function CompareDialog({
 function ComparePane({
   label,
   asset,
-  onApprove,
   onEdit
 }: {
   label: string;
   asset: Asset;
-  onApprove: (asset: Asset) => void;
   onEdit: (asset: Asset) => void;
 }) {
   const settings = parseJsonRecord(asset.settings_json);
@@ -5275,20 +5249,16 @@ function ComparePane({
         <p className="eyebrow">{label}</p>
         <h3>{asset.title}</h3>
         <div className="compare-meta">
-          <span>{assetStatusCopy(asset.approval_status)}</span>
           <span>{asset.model ?? "model pending"}</span>
           <span>{dimensions}</span>
           {settings.aspect_ratio ? <span>{String(settings.aspect_ratio)}</span> : null}
         </div>
         {asset.notes ? <p>{asset.notes}</p> : <p>No notes yet.</p>}
         <div className="compare-actions">
-          <button type="button" onClick={() => onApprove(asset)}>
-            <Icon source="check-circle" tone="inherit" size={15} />
-            Approve
-          </button>
           <button type="button" onClick={() => onEdit(asset)}>
             <Icon source="sparkles" tone="inherit" size={15} />
             Edit
+
           </button>
         </div>
       </div>
@@ -5687,9 +5657,7 @@ function OutputStrip({
   pendingCount = 1,
   pendingAspect,
   selectedAssetId,
-  onSelect,
-  onQuickApprove,
-  onQuickReject
+  onSelect
 }: {
   assets: Asset[];
   emptyLabel?: string;
@@ -5698,8 +5666,7 @@ function OutputStrip({
   pendingAspect?: string;
   selectedAssetId?: string;
   onSelect: (asset: Asset) => void;
-  onQuickApprove?: (asset: Asset) => void;
-  onQuickReject?: (asset: Asset) => void;
+
 
 }) {
   if (!assets.length && !pending) {
@@ -5725,10 +5692,10 @@ function OutputStrip({
 
       {assets.map((asset) => {
         const ratio = asset.width && asset.height ? `${asset.width} / ${asset.height}` : undefined;
-        const status = asset.approval_status ?? "review";
         return (
           <div
-            className={`output-tile${selectedAssetId === asset.id ? " selected" : ""} status-${status}`}
+            className={`output-tile${selectedAssetId === asset.id ? " selected" : ""}`}
+
             key={asset.id}
             draggable
             onDragStart={(event) => {
@@ -5746,7 +5713,6 @@ function OutputStrip({
               aria-label={`Open ${asset.title}`}
             >
               <AssetPreviewMedia asset={asset} fallbackIconSize={24} variant="thumb" />
-              <span>{assetStatusCopy(status)}</span>
             </button>
             {asset.width && asset.height ? (
               <span className="output-tile-resolution" title="Resolution returned by the provider">
@@ -5754,32 +5720,6 @@ function OutputStrip({
               </span>
             ) : null}
 
-            {(onQuickApprove || onQuickReject) && asset.kind !== "reference" && asset.kind !== "mask" ? (
-              <div className="output-tile-quick" onClick={(e) => e.stopPropagation()}>
-                {onQuickApprove ? (
-                  <button
-                    type="button"
-                    className={`quick-approve${status === "approved" ? " active" : ""}`}
-                    onClick={() => onQuickApprove(asset)}
-                    aria-label="Approve pick"
-                    title="Approve"
-                  >
-                    <Icon source="check-circle" tone="inherit" size={14} />
-                  </button>
-                ) : null}
-                {onQuickReject ? (
-                  <button
-                    type="button"
-                    className={`quick-reject${status === "rejected" ? " active" : ""}`}
-                    onClick={() => onQuickReject(asset)}
-                    aria-label="Reject pick"
-                    title="Reject"
-                  >
-                    <Icon source="x-mark" tone="inherit" size={14} />
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
           </div>
 
         );

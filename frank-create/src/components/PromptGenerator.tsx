@@ -1,6 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Badge, Button, Card, IconButton, PageHeader, Spinner, Text, TextField } from "../ds";
 import { promptAgentChat, fetchPromptAgentConfig } from "../lib/api";
+import {
+  deletePromptChat,
+  listPromptChats,
+  loadPromptChat,
+  savePromptChat,
+  type PromptChatSummary,
+} from "../lib/promptChats";
+
 
 interface Props {
   onUsePrompt?: (prompt: string) => void;
@@ -143,14 +151,67 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<string[]>([]);
   const [wizard, setWizard] = useState<WizardState | null>(null);
+  const [chatId, setChatId] = useState<string | null>(null);
+  const [chats, setChats] = useState<PromptChatSummary[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const savedSignature = useRef<string>("");
   const fileRef = useRef<HTMLInputElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
+  function refreshChats() {
+    listPromptChats()
+      .then(setChats)
+      .catch(() => {
+        /* history is a convenience — never block the composer */
+      });
+  }
 
   useEffect(() => {
     inputRef.current?.focus();
+    refreshChats();
   }, []);
+
+  /** Every settled exchange is written back so the thread survives navigation. */
+  useEffect(() => {
+    if (busy || !messages.length) return;
+    const signature = `${chatId ?? "new"}:${messages.length}:${messages[messages.length - 1]?.content.slice(0, 80)}`;
+    if (savedSignature.current === signature) return;
+    savedSignature.current = signature;
+    void savePromptChat(chatId, skill, messages)
+      .then((id) => {
+        if (id && id !== chatId) setChatId(id);
+        refreshChats();
+      })
+      .catch((err) => console.error("[prompt-chat] save failed", err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, busy]);
+
+  async function openChat(id: string) {
+    try {
+      const loaded = await loadPromptChat(id);
+      setChatId(id);
+      setMessages(loaded);
+      setWizard(null);
+      setAttachments([]);
+      setError(null);
+      savedSignature.current = `${id}:${loaded.length}:${loaded[loaded.length - 1]?.content.slice(0, 80) ?? ""}`;
+      setHistoryOpen(false);
+      onStatus?.("Conversation reopened.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not open that conversation.");
+    }
+  }
+
+  function startNewChat() {
+    setChatId(null);
+    setMessages([]);
+    setAttachments([]);
+    setWizard(null);
+    setError(null);
+    savedSignature.current = "";
+    inputRef.current?.focus();
+  }
 
   useEffect(() => {
     let alive = true;
@@ -159,6 +220,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
         if (!alive) return;
         const active = (res.config.skills || []).filter((s) => s.is_active);
         if (!active.length) return;
+
         setSkills(active.map((s) => ({ key: s.key, label: s.label || s.key, hint: s.hint })));
         if (!active.some((s) => s.key === skill)) setSkill(active[0]!.key);
       })
@@ -270,22 +332,58 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
         title="Prompt generator"
         subtitle="Describe the outcome and the agent assembles the prompt. Runs on GPT-5.6 Sol via Lovable AI."
         actions={
-          <Button
-            icon="arrow-path"
-            disabled={busy || !messages.length}
-            onClick={() => {
-              setMessages([]);
-              setAttachments([]);
-              setWizard(null);
-              setError(null);
-              inputRef.current?.focus();
-            }}
-
-          >
-            Start a new chat
-          </Button>
+          <>
+            <Button
+              icon="clock"
+              pressed={historyOpen}
+              onClick={() => setHistoryOpen((open) => !open)}
+            >
+              History{chats.length ? ` (${chats.length})` : ""}
+            </Button>
+            <Button icon="arrow-path" disabled={busy || !messages.length} onClick={startNewChat}>
+              Start a new chat
+            </Button>
+          </>
         }
       />
+
+      {historyOpen ? (
+        <Card title="Past conversations" subtitle="Reopen a thread to keep working on it.">
+          {chats.length ? (
+            <ul className="prompt-chat-history">
+              {chats.map((chat) => (
+                <li key={chat.id} className={chat.id === chatId ? "is-active" : ""}>
+                  <button type="button" onClick={() => void openChat(chat.id)}>
+                    <span className="prompt-chat-history__title">{chat.title}</span>
+                    <span className="prompt-chat-history__meta">
+                      {new Date(chat.updated_at).toLocaleString()}
+                      {chat.skill ? ` · ${chat.skill}` : ""}
+                    </span>
+                  </button>
+                  <IconButton
+                    icon="trash"
+                    label="Delete conversation"
+                    size="micro"
+                    onClick={() => {
+                      void deletePromptChat(chat.id)
+                        .then(() => {
+                          if (chat.id === chatId) startNewChat();
+                          refreshChats();
+                        })
+                        .catch((err) => console.error("[prompt-chat] delete failed", err));
+                    }}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Text as="p" tone="secondary">
+              No saved conversations yet — the thread saves itself as soon as the agent replies.
+            </Text>
+          )}
+        </Card>
+      ) : null}
+
 
       <Card title="Skill" subtitle={activeSkill?.hint}>
         <div className="skill-chips" role="group" aria-label="Agent skills">

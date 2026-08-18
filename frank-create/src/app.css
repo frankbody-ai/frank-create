@@ -1867,3 +1867,24 @@
 .release-notes__list li {
   padding-inline-start: 2px;
 }
+
+/* Step through picks from the same run inside the full-screen preview. */
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border, rgba(0, 0, 0, 0.12));
+  background: var(--color-surface, #fff);
+  color: inherit;
+  cursor: pointer;
+  z-index: 3;
+}
+.lightbox-nav.prev { left: -22px; }
+.lightbox-nav.next { right: -22px; }
+.lightbox-nav:hover { filter: brightness(0.96); }

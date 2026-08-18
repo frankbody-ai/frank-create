@@ -68,7 +68,7 @@ export function Shell({
     id: entry.id,
     label: entry.label,
     icon: entry.icon,
-    badge: entry.id === "approved" && approvedCount ? approvedCount : undefined,
+    badge: undefined,
   });
 
   return (
