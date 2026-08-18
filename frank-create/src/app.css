@@ -1797,3 +1797,28 @@
   padding: var(--space-300) var(--space-500) var(--space-400);
   border-top: var(--border-width-025) solid var(--color-border-secondary);
 }
+
+/* ---- What's new release banner ------------------------------------------ */
+.release-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.release-notes__entry {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.release-notes__list {
+  margin: 8px 0 0;
+  padding-inline-start: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.release-notes__list li {
+  padding-inline-start: 2px;
+}
