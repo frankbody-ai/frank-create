@@ -3052,30 +3052,8 @@ export default function App() {
 
 
 
-  async function changeAssetStatus(asset: Asset, approval_status: Asset["approval_status"]) {
-    const optimistic = { ...asset, approval_status };
-    setAssets((current) => current.map((item) => (item.id === asset.id ? optimistic : item)));
-    setSelectedAsset(optimistic);
-    syncCompareAsset(optimistic);
 
-    try {
-      if (connection === "online") {
-        const updated = await updateAsset(asset.id, { approval_status });
-        setAssets((current) => current.map((item) => (item.id === updated.asset.id ? updated.asset : item)));
-        setSelectedAsset(updated.asset);
-        syncCompareAsset(updated.asset);
-      }
 
-      setStatusText(assetStatusCopy(approval_status));
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error("[approval] updateAsset failed", { assetId: asset.id, approval_status, error });
-      setAssets((current) => current.map((item) => (item.id === asset.id ? asset : item)));
-      setSelectedAsset(asset);
-      syncCompareAsset(asset);
-      setStatusText(error instanceof Error ? `Approval failed: ${error.message}` : "Could not update review status.");
-    }
-  }
 
   async function toggleFavorite(asset: Asset) {
     const optimistic = { ...asset, favorite: !asset.favorite };
