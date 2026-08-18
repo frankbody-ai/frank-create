@@ -3655,7 +3655,7 @@ export default function App() {
       screen={studioMode}
       onSelectInApp={goToScreen}
       sessionId={activeSession?.id ?? null}
-      approvedCount={approvedCount}
+      
       search={roundSearch}
       onSearchChange={setRoundSearch}
       searchPlaceholder="Search sessions and picks"
