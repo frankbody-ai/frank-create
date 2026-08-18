@@ -722,11 +722,18 @@
   border-radius: inherit;
 }
 .output-tile.selected img,
-.output-tile.selected video { box-shadow: inset 0 0 0 2px #fff; }
+.output-tile.selected video,
 .output-tile.status-approved img,
-.output-tile.status-approved video { box-shadow: inset 0 0 0 2px var(--color-success-fill); }
+.output-tile.status-approved video,
 .output-tile.status-rejected img,
-.output-tile.status-rejected video { box-shadow: inset 0 0 0 2px var(--color-critical-fill); }
+.output-tile.status-rejected video { outline-offset: -2px; }
+.output-tile.selected img,
+.output-tile.selected video { outline: 2px solid #fff; }
+.output-tile.status-approved img,
+.output-tile.status-approved video { outline: 2px solid var(--color-success-fill); }
+.output-tile.status-rejected img,
+.output-tile.status-rejected video { outline: 2px solid var(--color-critical-fill); }
+
 
 
 .output-tile-select { position: absolute; inset: 0; border: 0; background: transparent; cursor: pointer; }
