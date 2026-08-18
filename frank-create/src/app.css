@@ -701,21 +701,33 @@
 }
 /* One pick still occupies two columns so the tile never fills the whole wide row. */
 .turn-row-single .output-grid:not(:has(> :nth-child(2))) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.output-grid { align-items: start; }
 .output-tile,
 .output-skeleton,
 .output-placeholder {
   position: relative;
   aspect-ratio: var(--asset-aspect, 1);
   border-radius: var(--radius-200);
-  background: rgba(255, 255, 255, 0.07);
   overflow: hidden;
 }
-.output-tile { border: 0; padding: 0; cursor: pointer; }
+.output-skeleton,
+.output-placeholder { background: rgba(255, 255, 255, 0.07); }
+.output-tile { border: 0; padding: 0; cursor: pointer; background: transparent; }
 .output-tile img,
-.output-tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.output-tile.selected { box-shadow: 0 0 0 2px #fff; }
-.output-tile.status-approved { box-shadow: 0 0 0 2px var(--color-success-fill); }
-.output-tile.status-rejected { box-shadow: 0 0 0 2px var(--color-critical-fill); }
+.output-tile video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: inherit;
+}
+.output-tile.selected img,
+.output-tile.selected video { box-shadow: 0 0 0 2px #fff; }
+.output-tile.status-approved img,
+.output-tile.status-approved video { box-shadow: 0 0 0 2px var(--color-success-fill); }
+.output-tile.status-rejected img,
+.output-tile.status-rejected video { box-shadow: 0 0 0 2px var(--color-critical-fill); }
+
 .output-tile-select { position: absolute; inset: 0; border: 0; background: transparent; cursor: pointer; }
 .output-tile-resolution {
   position: absolute;
