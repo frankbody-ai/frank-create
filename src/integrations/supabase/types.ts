@@ -523,6 +523,77 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_chat_messages: {
+        Row: {
+          chat_id: string
+          content: string
+          created_at: string
+          hidden: boolean
+          id: string
+          images_json: Json
+          role: string
+          seq: number
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          content?: string
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          images_json?: Json
+          role: string
+          seq?: number
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          content?: string
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          images_json?: Json
+          role?: string
+          seq?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_chats: {
+        Row: {
+          created_at: string
+          id: string
+          skill: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          skill?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          skill?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       release_seen: {
         Row: {
           last_seen_release_id: string
