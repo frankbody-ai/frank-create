@@ -1025,6 +1025,20 @@ export default function App() {
     setLightboxAsset(lightboxSiblings[next] ?? null);
   }
 
+  useEffect(() => {
+    if (!lightboxAsset) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setLightboxAsset(null);
+      if (event.key === "ArrowRight") stepLightbox(1);
+      if (event.key === "ArrowLeft") stepLightbox(-1);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxAsset, lightboxSiblings.length, lightboxIndex]);
+
+
+
 
   const approvedCount = outputAssets.filter((asset) => asset.approval_status === "approved").length;
   const approvedMotionCount = outputAssets.filter(
