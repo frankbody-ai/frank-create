@@ -40,6 +40,9 @@
 .as-frame__nav{position:sticky;top:var(--topbar-height);flex:0 0 var(--sidenav-width);height:calc(100vh - var(--topbar-height));z-index:var(--z-100)}
 .as-frame__content{flex:1 1 auto;min-width:0;min-height:calc(100vh - var(--topbar-height));background:var(--color-bg);border-start-start-radius:var(--radius-container)}
 .as-frame__page{display:flex;flex-direction:column;gap:var(--page-section-gap);width:100%;margin-inline:auto;padding:var(--space-400) var(--page-gutter) var(--space-1600);container-type:inline-size}
+/* Very wide displays get a slightly larger gutter so the widened content
+   column still reads as inset rather than edge to edge. */
+@media (min-width:90rem){.as-frame__page{padding-inline:var(--space-800)}}
 
 .as-page-header{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;row-gap:var(--space-100)}
 .as-page-header__title{grid-column:1;grid-row:1;display:flex;align-items:center;flex-wrap:nowrap;gap:var(--space-300);min-width:0;min-height:var(--font-line-height-800)}
