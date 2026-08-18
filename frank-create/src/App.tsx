@@ -4840,8 +4840,17 @@ export default function App() {
                     type="button"
                     className="reference-picker-upload"
                     onClick={() => referencePickerInputRef.current?.click()}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = "copy";
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      void handlePickerFiles(Array.from(event.dataTransfer.files || []));
+                    }}
                     disabled={referencePickerBusy}
                   >
+
                     <Icon source="arrow-up-tray" tone="inherit" size={22} />
                     <strong>{referencePickerBusy ? "Uploading…" : "Upload from computer"}</strong>
                     <span>PNG, JPG or WEBP · you can also paste or drop</span>
