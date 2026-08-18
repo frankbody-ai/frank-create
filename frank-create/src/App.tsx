@@ -4667,7 +4667,7 @@ export default function App() {
                   onMediaKindChange={switchMediaKind}
                   models={mediaModels}
                   selectedModelId={selectedModelId}
-                  onModelChange={(id) => { setSelectedModelId(id); writeLastUsedModelId(id); }}
+                  onModelChange={(id) => selectModel(id)}
                   settings={settings}
                   onSettingsChange={(patch) => setSettings((current) => ({ ...current, ...patch }))}
                   onAspectChange={handleAspectChange}
