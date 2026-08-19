@@ -637,7 +637,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
           data-paste-scope="prompt-agent"
           onSubmit={(event) => {
             event.preventDefault();
-            void send(input, { wizardKickoff: !messages.length });
+            void send(input, { wizardKickoff: runWizardNext });
           }}
         >
 
