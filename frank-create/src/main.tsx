@@ -6,8 +6,6 @@ import { AuthGate } from "./AuthGate";
 import { StatusBanner } from "./components/StatusBanner";
 import { ErrorToast } from "./components/ErrorToast";
 import { HealthPage } from "./components/HealthPage";
-import { ReviewBoardPage } from "./components/ReviewBoardPage";
-import { CliffAccessPage } from "./components/CliffAccessPage";
 import { AdminPortal } from "./components/AdminPortal";
 import { SettingsPage } from "./components/SettingsPage";
 import { SmallScreenNotice } from "./components/SmallScreenNotice";
@@ -39,15 +37,7 @@ function Router() {
     case "oauth":
       return <OAuthConsentPage />;
     case "health":
-      return (
-<HealthPage />
-      );
-    case "cliff":
-      return (
-        <AuthGate>
-          <CliffAccessPage />
-        </AuthGate>
-      );
+      return <HealthPage />;
     case "admin":
       return (
         <AuthGate>
@@ -58,12 +48,6 @@ function Router() {
       return (
         <AuthGate>
           <SettingsPage />
-        </AuthGate>
-      );
-    case "review":
-      return (
-        <AuthGate>
-          <ReviewBoardPage sessionId={route.sessionId} />
         </AuthGate>
       );
     default:
