@@ -15,30 +15,40 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
-    id: "2026-08-19-inline-edit-upscaler",
+    id: "2026-08-19-sessions-in-sidebar",
     date: "19 August 2026",
-    title: "Edit straight from the preview, plus a simpler upscaler",
+    title: "Sessions live in the sidebar",
     items: [
-      "Click any image and it now opens full screen with a composer underneath — describe the change you want, hit send, and the new version opens in place so you can keep iterating without leaving the preview.",
-      "The prompt box clears itself after every Generate, so a new idea starts from a clean slate instead of the last one.",
-      "Prompt Generator now hands your reference images over to Studio along with the prompt — no more re-uploading after the wizard.",
-      "Upscaler is back to one clean card: drop a file or click to browse, and the source you picked shows as a compact chip in the settings rail.",
-      "Brief Mix has been retired.",
+      "Switch, rename and archive sessions from the left menu.",
+      "\u201cNew session\u201d starts with a clean run history.",
     ],
   },
   {
-
+    id: "2026-08-19-inline-edit-upscaler",
+    date: "19 August 2026",
+    title: "Edit from the preview",
+    items: [
+      "Open an image full screen and edit it with the composer underneath.",
+      "The prompt box clears after every Generate.",
+      "Prompt Generator sends its reference images to Studio.",
+      "Upscaler is back to one simple drop card.",
+      "Brief Mix retired.",
+    ],
+  },
+  {
     id: "2026-08-18-seedream-5",
     date: "18 August 2026",
-    title: "Seedream 5.0 Pro + a tidier studio",
+    title: "Seedream 5.0 Pro",
     items: [
-      "Seedream 4.5 is replaced by Seedream 5.0 Pro (ByteDance) — sharper editing control, more lifelike commercial scenes, same native multi-image batches. Older rounds keep their original model label.",
-      "The central studio view is cleaned up: prompts on round cards are clamped to 25 words with an expand toggle, and the info column no longer crowds the imagery.",
-      "Reference picker shows a full 10 tiles per page with no trailing gaps, and quick actions no longer flash in while a session loads.",
-      "New: this What's new banner. Substantial changes will show up here the next time you sign in.",
+      "Seedream 4.5 replaced by Seedream 5.0 Pro.",
+      "Tidier round cards and reference picker.",
+      "This What\u2019s new banner \u2014 now cumulative, so nothing gets missed.",
     ],
   },
 ];
+
+/** How many entries to replay when the stored marker no longer matches a release. */
+const UNKNOWN_REPLAY_LIMIT = 5;
 
 export const LATEST_RELEASE_ID = RELEASES[0]?.id ?? "";
 
@@ -63,9 +73,9 @@ export async function unseenReleases(): Promise<ReleaseNote[]> {
     if (!lastSeen) return RELEASES;
     if (lastSeen === LATEST_RELEASE_ID) return [];
     const index = RELEASES.findIndex((release) => release.id === lastSeen);
-    // Unknown id (release removed or renamed): only surface the newest entry
-    // rather than replaying the whole history.
-    return index === -1 ? RELEASES.slice(0, 1) : RELEASES.slice(0, index);
+    // Unknown id (release removed or renamed): replay a short recent window so
+    // nothing is silently skipped, without dumping the whole history.
+    return index === -1 ? RELEASES.slice(0, UNKNOWN_REPLAY_LIMIT) : RELEASES.slice(0, index);
   } catch {
     return [];
   }

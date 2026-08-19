@@ -3696,7 +3696,7 @@ export default function App() {
 
   /** Nav clicks: the five in-shell screens are a mode change, the rest are routes. */
   function goToScreen(screen: Screen) {
-    setSessionMenuOpen(false);
+    
     switch (screen) {
       case "studio": return showImageStudio();
       case "prompt": return showPromptGenerator();
