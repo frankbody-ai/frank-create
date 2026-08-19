@@ -3809,21 +3809,6 @@ export default function App() {
           title="Studio"
           subtitle="Brief the shot in plain English. References and settings are optional."
           badge={activeSession ? <Badge tone="neutral">{activeSession.name}</Badge> : null}
-          actions={
-            <>
-              <Button icon="plus" onClick={() => void handleNewSession()}>
-                New session
-              </Button>
-              <Button
-                variant="primary"
-                icon="bolt"
-                disabled={!prompt.trim() || hasStudioFieldErrors(fieldErrors)}
-                onClick={() => void handleGenerate()}
-              >
-                {primaryActionLabel}
-              </Button>
-            </>
-          }
         />
 
         {/* The session metric strip was removed on purpose — the studio starts here. */}
@@ -3831,6 +3816,21 @@ export default function App() {
 
         <div className="studio-columns">
           <div className="studio-main">
+            <div className="studio-top-actions">
+              <Button icon="plus" fullWidth onClick={() => void handleNewSession()}>
+                New session
+              </Button>
+              <Button
+                variant="primary"
+                icon="bolt"
+                fullWidth
+                disabled={!prompt.trim() || hasStudioFieldErrors(fieldErrors)}
+                onClick={() => void handleGenerate()}
+              >
+                {primaryActionLabel}
+              </Button>
+            </div>
+
               <form
                 className="composer"
                 onSubmit={handleGenerate}
