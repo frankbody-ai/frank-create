@@ -136,7 +136,6 @@ import type {
   ProviderPreflight,
   ProviderReadiness,
   PromptPreset,
-  PromptRemixVariant,
   Project,
   StudioModel,
   StudioSession,
