@@ -531,8 +531,7 @@ export default function App() {
         setTurns(turnResult.turns);
         setAssets(assetResult.assets);
         setSelectedAsset(firstReviewableAsset(assetResult.assets));
-        }
-        setSelectedAsset(firstReviewableAsset(assetResult.assets));
+
         setConnection("online");
         setStatusText("Studio is connected.");
         setStudioBooted(true);
