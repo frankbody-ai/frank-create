@@ -1406,13 +1406,25 @@
 .payload-modal-overlay,
 .compare-modal,
 .session-cancel-modal,
-.mask-painter-backdrop,
+.mask-painter-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-520);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-500);
+  background: rgba(0, 0, 0, 0.72);
+  overflow: auto;
+}
+
 .lightbox-inner,
 .reference-picker,
 .payload-modal,
 .compare-modal-inner,
 .session-cancel-card,
 .mask-painter {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-300);
@@ -1424,6 +1436,7 @@
   box-shadow: var(--shadow-modal);
   overflow: auto;
 }
+
 .lightbox-inner.is-viewer { background: var(--color-bg-inverse); color: var(--color-text-inverse); }
 .lightbox-inner img,
 .lightbox-inner video,
