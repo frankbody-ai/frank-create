@@ -4761,6 +4761,8 @@ export default function App() {
                   compareApproved={compareApproved}
                   onCompareApprovedChange={setCompareApproved}
                   compareCostLabel={compareCostLabel}
+                  videoAllowed={videoAllowed}
+
 
                 />
 
