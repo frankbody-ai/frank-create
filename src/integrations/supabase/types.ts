@@ -672,6 +672,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_features: {
+        Row: {
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          video_enabled: boolean
+        }
+        Insert: {
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          video_enabled?: boolean
+        }
+        Update: {
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          video_enabled?: boolean
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -706,6 +727,7 @@ export type Database = {
           id: string
           last_sign_in_at: string
           role: Database["public"]["Enums"]["app_role"]
+          video_enabled: boolean
         }[]
       }
       admin_set_role: {
@@ -713,6 +735,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _target: string
         }
+        Returns: undefined
+      }
+      admin_set_video_access: {
+        Args: { _enabled: boolean; _target: string }
         Returns: undefined
       }
       delete_email: {
