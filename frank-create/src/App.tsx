@@ -3799,58 +3799,8 @@ export default function App() {
           badge={activeSession ? <Badge tone="neutral">{activeSession.name}</Badge> : null}
           actions={
             <>
-              <Popover
-                active={sessionMenuOpen}
-                onClose={() => setSessionMenuOpen(false)}
-                align="end"
-                width={280}
-                activator={
-                  <Button icon="folder" disclosure onClick={() => setSessionMenuOpen((v) => !v)}>
-                    Switch session
-                  </Button>
-                }
-              >
-                <ActionList
-                  sections={[
-                    {
-                      title: "Sessions",
-                      items: sessions.map((session) => ({
-                        content: session.name,
-                        active: session.id === activeSession?.id,
-                        onAction: () => {
-                          setSessionMenuOpen(false);
-                          void selectSession(session);
-                        }
-                      }))
-                    },
-                    {
-                      items: [
-                        {
-                          content: "Rename this session",
-                          icon: "pencil-square",
-                          disabled: !activeSession,
-                          onAction: () => {
-                            setSessionMenuOpen(false);
-                            if (activeSession) renameSession(activeSession);
-                          }
-                        },
-                        {
-                          content: "Archive this session",
-                          icon: "trash",
-                          destructive: true,
-                          disabled: !activeSession,
-                          onAction: () => {
-                            setSessionMenuOpen(false);
-                            if (activeSession) confirmArchiveSession(activeSession);
-                          }
-                        }
-                      ]
-                    }
-                  ]}
-                />
-              </Popover>
               <Button icon="plus" onClick={() => void handleNewSession()}>
-                Add session
+                New session
               </Button>
               <Button
                 variant="primary"
