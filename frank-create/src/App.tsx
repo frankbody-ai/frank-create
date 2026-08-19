@@ -230,7 +230,7 @@ export default function App() {
   type GenPhase = "idle" | "queued" | "running" | "completed" | "failed";
   const [genPhase, setGenPhase] = useState<GenPhase>("idle");
   const [genError, setGenError] = useState<{ message: string; code?: string; retryable?: boolean; httpStatus?: number; raw?: string; requestId?: string } | null>(null);
-  const [genErrorOpen, setGenErrorOpen] = useState(false);
+  
   const [desktopNotice, setDesktopNotice] = useState<string | null>(null);
   const [videoStartedAt, setVideoStartedAt] = useState<number | null>(null);
   const [videoNowTick, setVideoNowTick] = useState(Date.now());
@@ -273,7 +273,7 @@ export default function App() {
           code: "client_timeout",
           retryable: true,
         });
-        setGenErrorOpen(true);
+        
         const staleIds = new Set(stale.map((g) => g.id));
         setInflightGens((current) => {
           const remaining = current.filter((g) => !staleIds.has(g.id));
@@ -1524,7 +1524,6 @@ export default function App() {
     setBusy(true);
     setGenPhase("queued");
     setGenError(null);
-    setGenErrorOpen(false);
     setStatusText(activePromptMode === "generate" ? "Preparing the next round..." : "Preparing the edit brief...");
     const inflightId = makeLocalId("gen");
     const inflightEntry: InflightGen = {
@@ -2100,7 +2099,7 @@ export default function App() {
     setBusy(true);
     setGenPhase("running");
     setGenError(null);
-    setGenErrorOpen(false);
+    
     setStatusText(`Running ${modelName(config, modelA.id)} vs ${modelName(config, modelB.id)}...`);
     const compareFirstFrame = videoFirstFrame;
     const compareLastFrame = videoLastFrame;
@@ -3260,133 +3259,6 @@ export default function App() {
 
 
 
-              <div className="status-strip">
-                <div className={`gen-progress phase-${genPhase}`} role="status" aria-live="polite">
-                  {(["queued", "running", genPhase === "failed" ? "failed" : "completed"] as const).map((step, i) => {
-                    const order: GenPhase[] = ["idle", "queued", "running", genPhase === "failed" ? "failed" : "completed"];
-                    const currentIdx = order.indexOf(genPhase);
-                    const stepIdx = i + 1;
-                    const state =
-                      genPhase === "idle" ? "pending" :
-                      genPhase === "failed" && step === "failed" ? "failed" :
-                      stepIdx < currentIdx ? "done" :
-                      stepIdx === currentIdx ? (genPhase === "failed" ? "failed" : genPhase === "completed" ? "done" : "active") :
-                      "pending";
-                    const label = step === "queued" ? "Queued" : step === "running" ? "Running" : step === "failed" ? "Failed" : "Completed";
-                    return (
-                      <span key={step} className={`gen-step gen-step-${state}`}>
-                        <span className="gen-step-dot">{stepIdx}</span>
-                        <span className="gen-step-label">{label}</span>
-                      </span>
-                    );
-                  })}
-                </div>
-                <span>{statusText}</span>
-                {(genPhase === "queued" || genPhase === "running") && busy ? (
-                  <button
-                    type="button"
-                    className="gen-stop-btn"
-                    onClick={() => {
-                      generateAbortRef.current?.abort();
-                      setStatusText("Canceling...");
-                    }}
-                    title="Cancel this generation"
-                  >
-                    <Icon source="no-symbol" tone="inherit" size={12} />
-                    Stop
-                  </button>
-                ) : null}
-                {genPhase === "failed" && genError ? (
-                  <>
-                    {genError.code === "provider_unavailable" ? (
-                      <span className="gen-error-chip outage" title={genError.message}>
-                        <code>provider outage</code>
-                      </span>
-                    ) : genError.code ? (
-                      <span className="gen-error-chip" title={genError.message}>
-                        <code>{genError.code}</code>
-                        {genError.requestId ? <em title={`Replicate request ID: ${genError.requestId}`}>req {genError.requestId.slice(0, 8)}</em> : null}
-                      </span>
-                    ) : null}
-                    {genError.code === "provider_unavailable" && fallbackModel ? (
-                      <button
-                        type="button"
-                        onClick={() => setAutoRetryModelId(fallbackModel.id)}
-                        title={`Re-run the same prompt and references on ${fallbackModel.short_label ?? fallbackModel.label}`}
-                      >
-                        <Icon source="arrow-path" tone="inherit" size={13} />
-                        Switch to {fallbackModel.short_label ?? fallbackModel.label} and retry
-                      </button>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="gen-error-toggle"
-                      onClick={() => setGenErrorOpen((v) => !v)}
-                      aria-expanded={genErrorOpen}
-                    >
-                      {genErrorOpen ? "Hide details" : "Show details"}
-                    </button>
-                  </>
-                ) : null}
-                {retrySafePayload ? (
-                  <button
-                    type="button"
-                    onClick={() => { void handleGenerate(); }}
-                    title="Re-run the last generation with the same inputs"
-
-                  >
-                    <Icon source="arrow-path" tone="inherit" size={13} />
-                    Retry safely
-                  </button>
-                ) : null}
-
-                {statusReadyLink ? (
-                  <button type="button" onClick={() => openStudioLink(statusReadyLink.url, statusReadyLink.label)}>
-                    <Icon source="arrow-top-right-on-square" tone="inherit" size={13} />
-                    Try {statusReadyLink.label} link
-                  </button>
-                ) : null}
-                {statusReadyLink ? (
-                  <button type="button" onClick={() => copyStudioLink(statusReadyLink.url, statusReadyLink.label)}>
-                    <Icon source="document-duplicate" tone="inherit" size={13} />
-                    Copy {statusReadyLink.label} link
-                  </button>
-                ) : null}
-                <span className={`connection-pill ${connection}`}>
-                  <span />
-                  {connection === "online" ? "Studio connected" : connection === "checking" ? "Checking studio" : "Studio offline"}
-                </span>
-              </div>
-              {genPhase === "failed" && genError && genErrorOpen ? (
-                <div className="gen-error-details" role="region" aria-label="Error details">
-                  <dl>
-                    {genError.code ? (<><dt>Code</dt><dd><code>{genError.code}</code></dd></>) : null}
-                    {genError.requestId ? (
-                      <>
-                        <dt>Request ID</dt>
-                        <dd>
-                          <code>{genError.requestId}</code>{" "}
-                          <button
-                            type="button"
-                            className="mini-button"
-                            style={{ padding: "2px 6px", fontSize: 11 }}
-                            onClick={() => { void navigator.clipboard?.writeText(genError.requestId ?? ""); }}
-                            title="Copy request ID"
-                          >
-                            Copy
-                          </button>
-                        </dd>
-                      </>
-                    ) : null}
-                    {typeof genError.httpStatus === "number" ? (<><dt>HTTP</dt><dd>{genError.httpStatus}</dd></>) : null}
-                    {typeof genError.retryable === "boolean" ? (<><dt>Retryable</dt><dd>{genError.retryable ? "yes" : "no"}</dd></>) : null}
-                    <dt>Message</dt><dd>{genError.message}</dd>
-                  </dl>
-                  {genError.raw ? (
-                    <pre className="gen-error-raw">{genError.raw}</pre>
-                  ) : null}
-                </div>
-              ) : null}
           </div>
 
           {settingsRailOpen ? (
