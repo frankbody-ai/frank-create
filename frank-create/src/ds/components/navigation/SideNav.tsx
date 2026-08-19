@@ -29,6 +29,8 @@ export interface SideNavProps extends Omit<React.HTMLAttributes<HTMLElement>, 'o
   footerItems?: SideNavItem[];
   /** Extra controls below the footer items — sign out and the theme picker. */
   footer?: React.ReactNode;
+  /** Panel rendered directly under the main item list — the session organiser. */
+  extra?: React.ReactNode;
 }
 
 /**
