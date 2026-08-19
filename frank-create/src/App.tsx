@@ -3737,7 +3737,19 @@ export default function App() {
       screen={studioMode}
       onSelectInApp={goToScreen}
       sessionId={activeSession?.id ?? null}
-      
+      navExtra={
+        <SessionFolders
+          sessions={sessions}
+          activeSessionId={activeSession?.id ?? null}
+          onSelect={(session) => {
+            if (session.id === activeSession?.id) return;
+            void selectSession(session);
+          }}
+          onRename={renameSession}
+          onArchive={confirmArchiveSession}
+          onNew={() => void handleNewSession()}
+        />
+      }
       search={roundSearch}
       onSearchChange={setRoundSearch}
       searchPlaceholder="Search sessions and picks"
