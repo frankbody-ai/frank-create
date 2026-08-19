@@ -1,7 +1,7 @@
 import React from "react";
 
 import { Icon } from "../ds";
-import type { StudioSession } from "../types";
+import type { StudioSession } from "../lib/types";
 
 export interface SessionFoldersProps {
   sessions: StudioSession[];
