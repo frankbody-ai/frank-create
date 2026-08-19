@@ -3191,6 +3191,12 @@ export default function App() {
       if (turn.model) setSelectedModelId(turn.model);
       if (turn.preset_key) setSelectedPresetKey(turn.preset_key); else setSelectedPresetKey(null);
       setFrankBodyMode(!!turn.frank_body_mode);
+      // Restore the exact reference dock this round ran with, in the same order,
+      // so @refN tags and video frame order stay identical.
+      const refIds = parseJsonList(turn.reference_asset_ids_json).filter((id) =>
+        assets.some((asset) => asset.id === id && asset.kind === "reference"),
+      );
+      if (refIds.length) setActiveReferenceIds(refIds);
       setSettings((current) => ({
         ...current,
         ...parsed,
@@ -3202,6 +3208,7 @@ export default function App() {
       setStatusText(err instanceof Error ? err.message : "Could not retry this round.");
     }
   }
+
 
 
 
