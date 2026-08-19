@@ -16,7 +16,7 @@ export const supabase = createClient(url, key, {
   },
 });
 
-export const ALLOWED_EMAIL_DOMAINS = ["frankbody.com", "autosolutions.ai"];
+export const ALLOWED_EMAIL_DOMAINS = ["frankbody.com", "autosolutions.ai", "alivebody.com.au"];
 
 export function isAllowedEmail(email: string | null | undefined) {
   if (!email) return false;
