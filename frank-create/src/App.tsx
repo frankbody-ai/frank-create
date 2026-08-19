@@ -1,5 +1,4 @@
 import {
-  CSSProperties,
   ChangeEvent,
   FormEvent,
   PointerEvent as ReactPointerEvent,
@@ -131,7 +130,6 @@ export default function App() {
       delete document.body.dataset.feedbackView;
     };
   }, [studioMode]);
-  const [walkthroughStep, setWalkthroughStep] = useState(0);
   const [settings, setSettings] = useState<StudioSettings>(defaultStudioSettings(fallbackConfig.models[0]));
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [lightboxAsset, setLightboxAsset] = useState<Asset | null>(null);
@@ -701,7 +699,6 @@ export default function App() {
   }, [turns, roundSearch, activeSession?.name]);
 
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
-  const firstOutputAsset = outputAssets[0] ?? null;
   const displayOutputAssets = outputAssets;
   // Picks from the same run, so the preview can step left/right through a round.
   const lightboxSiblings = lightboxAsset
@@ -3801,9 +3798,6 @@ function SessionCancelDialog({
   );
 }
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
 
 function CompareDialog({
   baseAsset,

@@ -1411,16 +1411,6 @@
 .compare-modal,
 .session-cancel-modal,
 .mask-painter-backdrop,
-.walkthrough-scrim {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-510);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-600);
-  background: rgba(0, 0, 0, 0.71);
-}
 .lightbox-inner,
 .reference-picker,
 .payload-modal,
@@ -1449,18 +1439,6 @@
 }
 .lightbox-close,
 .reference-picker-close,
-.walkthrough-close {
-  position: absolute;
-  inset-block-start: var(--space-400);
-  inset-inline-end: var(--space-400);
-  display: inline-flex;
-  padding: var(--space-150);
-  border: 0;
-  border-radius: var(--radius-200);
-  background: var(--color-bg-surface);
-  color: var(--color-icon);
-  cursor: pointer;
-}
 .lightbox-meta {
   display: flex;
   flex-wrap: wrap;
@@ -1724,31 +1702,6 @@
   color: var(--color-icon-secondary);
 }
 
-.walkthrough-scrim { background: rgba(0, 0, 0, 0.55); }
-.walkthrough-popover {
-  position: fixed;
-  z-index: var(--z-513);
-  width: min(360px, calc(100vw - var(--space-800)));
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-300);
-  padding: var(--card-padding);
-  border-radius: var(--radius-300);
-  background: var(--color-bg-surface);
-  box-shadow: var(--shadow-popover);
-}
-.walkthrough-actions { display: flex; align-items: center; gap: var(--space-200); }
-.walkthrough-step-count { margin-inline-end: auto; font-size: var(--type-body-sm-size); color: var(--color-text-secondary); }
-.walkthrough-points { display: flex; flex-direction: column; gap: var(--space-150); font-size: var(--type-body-sm-size); }
-.walkthrough-progress { display: flex; gap: var(--space-100); }
-.walkthrough-progress span { width: 6px; height: 6px; border-radius: var(--radius-full); background: var(--color-bg-fill-tertiary); }
-.walkthrough-progress span.active { background: var(--color-bg-fill-brand); }
-.walkthrough-target-highlight {
-  position: relative;
-  z-index: var(--z-512);
-  border-radius: var(--radius-300);
-  box-shadow: 0 0 0 3px var(--color-border-focus), 0 0 0 9999px rgba(0, 0, 0, 0.55);
-}
 
 /* ============================================================
    11. Global chrome — status bar, toasts, feedback, sign-in, gate
