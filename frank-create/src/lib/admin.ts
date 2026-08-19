@@ -53,7 +53,9 @@ export async function listUsersWithRoles(): Promise<AdminUserRow[]> {
   return ((data ?? []) as AdminUserRow[]).map((row) => ({
     ...row,
     video_enabled: Boolean(row.video_enabled),
+    access_approved: Boolean(row.access_approved),
   }));
+
 }
 
 export async function setUserRole(userId: string, role: AppRole): Promise<void> {
