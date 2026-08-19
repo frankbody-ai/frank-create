@@ -647,7 +647,6 @@
 .status-dot.queued { background: var(--color-caution-fill); }
 .status-dot.failed,
 .status-dot.blocked { background: var(--color-critical-icon); }
-.status-dot.review { background: var(--color-info-icon); }
 
 .compare-run-title,
 .compare-side-badge {
@@ -1052,8 +1051,6 @@
    8. Approved, admin, review board
    ============================================================ */
 
-.approved-pick { display: flex; align-items: center; gap: var(--space-250); min-width: 0; }
-.approved-empty { display: flex; flex-direction: column; align-items: center; gap: var(--space-300); }
 
 .admin-toolbar {
   display: flex;
@@ -1103,7 +1100,6 @@
 .agent-skill__row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-300); }
 .agent-skill__spacer { flex: 1 1 auto; }
 
-.handoff-actions { display: flex; flex-wrap: wrap; gap: var(--space-200); }
 .schema-issues {
   margin-top: var(--space-300);
   padding: var(--space-300);
