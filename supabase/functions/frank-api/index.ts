@@ -2355,29 +2355,13 @@ Deno.serve(async (req) => {
 
       const nextMeta = { ...(prev.metadata_json || {}) };
       const patch: Record<string, unknown> = {};
-      if (typeof body.approval_status === "string") {
-        nextMeta.approval_status = body.approval_status;
-      }
       if (typeof body.title === "string") nextMeta.title = body.title;
       patch.metadata_json = nextMeta;
 
       const { data: updated, error } = await sb.from("assets").update(patch).eq("user_id", userId).eq("id", aid).select("*").maybeSingle();
       if (error) return json({ error: { code: "update_failed", message: error.message } }, 400);
-
-      // Audit event when approval status actually changes.
-      const prevStatus = prev.metadata_json?.approval_status || "review";
-      const nextStatus = nextMeta.approval_status || prevStatus;
-      if (nextStatus !== prevStatus) {
-        await sb.from("asset_approval_events").insert({
-          asset_id: aid,
-          session_id: prev.session_id,
-          user_id: userId,
-          prev_status: prevStatus,
-          new_status: nextStatus,
-          note: typeof body.note === "string" ? body.note : null,
-        });
-      }
       return json({ asset: rowToAsset(updated, await signed(updated.storage_path)) });
+
     }
 
     if (assetIdMatch && method === "DELETE") {
