@@ -168,6 +168,9 @@ export default function Enhancer({
           session_id: sessionId,
           model: model.id,
           source_asset_id: source.id,
+          // Library picks can lack a stored file (provider-URL-only outputs), so
+          // always send a usable URL as a fallback for the backend.
+          source_url: source.remote_url || source.preview_url || undefined,
           settings: { ...settings, media }
         },
         { signal: controller.signal }
