@@ -1071,6 +1071,11 @@ export default function App() {
   }
 
   useEffect(() => {
+    if (!lightboxAsset) setLightboxEditText("");
+  }, [lightboxAsset]);
+
+
+  useEffect(() => {
     if (!lightboxAsset) return;
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") setLightboxAsset(null);
