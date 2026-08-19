@@ -1,27 +1,19 @@
 import {
-  ChangeEvent,
-  FormEvent,
   PointerEvent as ReactPointerEvent,
   useEffect,
-  useMemo,
   useRef,
   useState
 } from "react";
 import { createPortal } from "react-dom";
 
 import {
-  Badge,
-  Banner,
-  Button,
   Icon,
-  PageHeader,
-  Pagination,
 
   Spinner,
-} from "./ds";
-import { Shell } from "./Shell";
-import { modeFromUrl, navigate } from "./nav";
-import type { InAppScreen, Screen } from "./nav";
+} from "../ds";
+import { Shell } from "../Shell";
+import { modeFromUrl, navigate } from "../nav";
+import type { InAppScreen, Screen } from "../nav";
 
 import {
   createInferenceTurn,
@@ -37,47 +29,26 @@ import {
   listSessions,
   listTurns,
   updateSession
-} from "./lib/api";
+} from "../lib/api";
 
-import { fallbackBrandKit, fallbackConfig } from "./lib/presets";
-import { supabase, hardSignOut } from "./lib/supabaseClient";
-import { createBriefPayload } from "./lib/frankWorkflow";
+import { fallbackBrandKit, fallbackConfig } from "../lib/presets";
+import { supabase, hardSignOut } from "../lib/supabaseClient";
+import { createBriefPayload } from "../lib/frankWorkflow";
 import {
   buildTurnRequest,
   aspectRatioParts,
-  defaultStudioSettings,
-  filterSizesForAspect,
-  inferenceStatusCopy,
   makeLocalId,
-  normalizeStudioSettingsForModel,
-  parseJsonList,
-  selectModelOptions,
-  validateStudioSettings,
-  hasStudioFieldErrors,
-  maxCountForModel,
-  modelsForMedia,
-  normalizeVideoSettings,
-  isVideoModel,
-  resolveForModel,
-  groupCompareRows,
-  parseCompareMeta,
-  estimateVideoCost,
-  composeReferencePrompt,
-  referenceTagFor,
-  taggedReferences,
-  insertTagAtCaret,
-  unknownReferenceTags,
   buildReferenceManifest,
   expandReferenceTags,
   thumbnailUrl
-} from "./lib/studio";
-import type { StudioFieldErrors } from "./lib/studio";
+} from "../lib/studio";
+import type { StudioFieldErrors } from "../lib/studio";
 
-import { StudioRail } from "./components/StudioRail";
+import { StudioRail } from "../components/StudioRail";
 
 
-import { PromptGenerator } from "./components/PromptGenerator";
-import Enhancer from "./components/Enhancer";
+import { PromptGenerator } from "../components/PromptGenerator";
+import Enhancer from "../components/Enhancer";
 
 import type {
   Asset,
@@ -87,10 +58,10 @@ import type {
   StudioSession,
   StudioSettings,
   StudioTurn
-} from "./lib/types";
-import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
-import { SessionFolders } from "./components/SessionFolders";
-import { clampWords } from "./lib/clampWords";
+} from "../lib/types";
+import { loadLocalAssets, saveLocalAssets } from "../lib/localAssets";
+import { SessionFolders } from "../components/SessionFolders";
+import { clampWords } from "../lib/clampWords";
 
 
 
