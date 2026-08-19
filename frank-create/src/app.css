@@ -198,6 +198,20 @@
   .upscaler-top .upscaler-rail { flex: 1 1 100%; }
 }
 
+.studio-top-actions {
+  display: flex;
+  gap: var(--space-200);
+  width: 100%;
+}
+.studio-top-actions .as-btn {
+  flex: 1 1 50%;
+  min-width: 0;
+  justify-content: center;
+}
+.studio-top-actions .as-btn__label {
+  flex: 0 1 auto;
+}
+
 /* ============================================================
    3. Studio — composer
    ============================================================ */
