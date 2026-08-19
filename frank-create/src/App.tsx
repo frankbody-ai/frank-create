@@ -398,6 +398,9 @@ export default function App() {
   const [referencePreviewAsset, setReferencePreviewAsset] = useState<Asset | null>(null);
   const [referenceDropActive, setReferenceDropActive] = useState(false);
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
+  // The picker fills either the prompt reference dock or the upscaler's source slot.
+  const [referencePickerTarget, setReferencePickerTarget] = useState<"dock" | "upscaler">("dock");
+  const [upscalerSource, setUpscalerSource] = useState<Asset | null>(null);
   // Turn whose provider request body is being inspected via the JSON chip.
   const [payloadTurnId, setPayloadTurnId] = useState<string | null>(null);
 
