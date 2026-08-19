@@ -66,7 +66,6 @@ import {
   listTurns,
   preflightProvider,
   reloadProviderEnv,
-  remixPrompt,
   resetDemo,
   saveProviderEnvKeys,
   sessionReviewBoardUrl,
