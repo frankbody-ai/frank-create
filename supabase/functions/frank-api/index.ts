@@ -2507,6 +2507,15 @@ Deno.serve(async (req) => {
         image_bytes: imageSizes,
         image_bytes_total: imageSizes.reduce((a, b) => a + b, 0),
       }));
+      const totalImageBytes = imageSizes.reduce((sum, size) => sum + size, 0);
+      if (totalImageBytes > 8_000_000) {
+        return json({
+          error: {
+            code: "payload_too_large",
+            message: "Those reference images are too large together. Remove one image or attach smaller versions and try again.",
+          },
+        }, 413);
+      }
 
       const history = incoming
         .filter((m) => m && (typeof m.content === "string" && m.content.trim() || Array.isArray(m.images) && m.images.length))

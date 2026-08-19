@@ -377,7 +377,10 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
       setMessages([...next, { role: "assistant", content: result.reply }]);
       onStatus?.("Prompt Generator replied.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "The agent could not answer. Try again.");
+      const message = err instanceof Error ? err.message : "The agent could not answer. Try again.";
+      setError(message);
+      setWizardNotice(message);
+      onStatus?.(message);
     } finally {
       setBusy(false);
       inputRef.current?.focus();
