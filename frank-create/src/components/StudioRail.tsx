@@ -40,8 +40,11 @@ export interface StudioRailProps {
   compareApproved?: boolean;
   onCompareApprovedChange?: (approved: boolean) => void;
   compareCostLabel?: string | null;
+  /** Video generation is admin-granted per person; off hides every video control. */
+  videoAllowed?: boolean;
 
 }
+
 
 /** Long edge of the aspect thumbnail, in px. Matches --aspect-tile-cap in app.css. */
 const ASPECT_TILE_CAP = 30;
