@@ -2392,18 +2392,8 @@ Deno.serve(async (req) => {
       return json({ asset: row ? rowToAsset(row) : null });
     }
 
-    const approvalHistoryMatch = path.match(/^\/sessions\/([^/]+)\/approval-history$/);
-    if (approvalHistoryMatch && method === "GET") {
-      const sid = approvalHistoryMatch[1];
-      const { data } = await supabase()
-        .from("asset_approval_events")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("session_id", sid)
-        .order("created_at", { ascending: false })
-        .limit(500);
-      return json({ events: data || [] });
-    }
+    // (approval history route removed)
+
 
 
 
