@@ -2764,11 +2764,17 @@ Deno.serve(async (req) => {
       // "reconnecting to backend" banner instead of the real reason.
       const PROMPT_AGENT_MODELS = ["openai/gpt-5.6-sol", "google/gemini-3-flash-preview"];
       const attempts: { model: string; outcome: string; ms: number; status?: number; message?: string }[] = [];
+      // Diagnostics-only switch so the failure branch can be exercised on demand.
+      const simulate = req.headers.get("x-frank-debug-agent-fail") || "";
 
       for (const model of PROMPT_AGENT_MODELS) {
         const callStart = Date.now();
         try {
+          if (simulate === "empty") throw new LovableChatError(0, "simulated empty");
+          if (simulate === "429") throw new LovableChatError(429, "simulated rate limit");
+          if (simulate === "500") throw new LovableChatError(500, "simulated provider outage");
           const reply = await lovableChat([{ role: "system", content: system }, ...history], model);
+
           const cleaned = String(reply || "").trim();
           if (cleaned) {
             attempts.push({ model, outcome: "ok", ms: Date.now() - callStart });
