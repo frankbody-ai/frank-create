@@ -2619,49 +2619,6 @@ Deno.serve(async (req) => {
       return json(result);
     }
 
-    if (path === "/prompt-remix" && method === "POST") {
-      const body = await readJson(req);
-      return json(await handleRemix(body));
-    }
-
-    if (path === "/improve-preset" && method === "POST") {
-      const body = await readJson(req) as { prompt?: string; label?: string; description?: string };
-      const raw = String(body?.prompt || "").trim();
-      if (!raw) return json({ error: { code: "invalid", message: "prompt is required" } }, 400);
-      const label = String(body?.label || "").trim();
-      const description = String(body?.description || "").trim();
-      const system = [
-        "You are a senior prompt engineer specialized in text-to-image models (Nano Banana / Gemini 3 Pro Image, Reve, Seedream, GPT-image-2).",
-        "You rewrite prompt PRESETS that will later be appended to a user's brief for product/lifestyle image generation for Frank Body (body-care brand: coffee scrubs, glossy skin, warm editorial realism, cheeky director-ready tone).",
-        "Craft the preset so it consistently produces high-quality, on-brand imagery when appended to any product brief.",
-        "Techniques to apply where relevant:",
-        "- Structure: subject → composition/framing → lighting → lens/camera → surface/materials → mood → post-processing → negative cues.",
-        "- Be specific and visual (concrete nouns, materials, textures, color temperature in Kelvin or descriptive terms, lens mm, aperture, angle).",
-        "- Prefer positive directives over negations; keep a short 'avoid:' list only if truly needed.",
-        "- Do NOT hard-code aspect ratio, resolution, seed, or model — those are set elsewhere.",
-        "- Use placeholders like [PRODUCT NAME] when the preset should adapt to different products.",
-        "- Keep it reusable: describe style/setup, not a single specific product unless the preset name demands it.",
-        "- Length: 60–180 words. No preamble, no bullet dashes, no markdown headers — output plain prose the model can read as a single directive block.",
-        "Return ONLY the improved preset prompt text. No explanations, no quotes, no labels.",
-      ].join("\n");
-      const userMsg = [
-        label ? `Preset label: ${label}` : "",
-        description ? `Preset purpose: ${description}` : "",
-        "Current preset prompt to improve:",
-        raw,
-      ].filter(Boolean).join("\n\n");
-      try {
-        const improved = await lovableChat([
-          { role: "system", content: system },
-          { role: "user", content: userMsg },
-        ], "openai/gpt-5.5");
-        const cleaned = String(improved || "").trim().replace(/^["'`]+|["'`]+$/g, "");
-        if (!cleaned) return json({ error: { code: "empty", message: "AI returned no content" } }, 502);
-        return json({ prompt: cleaned });
-      } catch (err) {
-        return json({ error: { code: "ai_error", message: errMessage(err) } }, 502);
-      }
-    }
 
     if (path === "/prompt-agent/config" && method === "GET") {
       const cfg = await loadPromptAgentConfig(supabase());
