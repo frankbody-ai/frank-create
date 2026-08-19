@@ -62,7 +62,7 @@ import {
   parseJsonRecord
 } from "./studioFormat";
 
-export function ReferencePickerCard({
+function ReferencePickerCardBase({
   asset,
   active,
   selected,
@@ -191,7 +191,7 @@ export function CompareDialog({
   );
 }
 
-export function ComparePane({
+function ComparePaneBase({
   label,
   asset,
   onEdit
@@ -229,7 +229,7 @@ export function ComparePane({
   );
 }
 
-export function AssetPreviewMedia({
+function AssetPreviewMediaBase({
   asset,
   controls = false,
   fallbackIconSize = 24,
@@ -277,7 +277,7 @@ export function AssetPreviewMedia({
   return <img className="asset-preview-media" src={asset.preview_url} alt={asset.title} />;
 }
 
-export function AssetThumbImage({ asset }: { asset: Asset }) {
+function AssetThumbImageBase({ asset }: { asset: Asset }) {
   const full = asset.preview_url ?? "";
   const [src, setSrc] = useState(() => thumbnailUrl(full, 320, 40, "webp") || full);
   useEffect(() => {
@@ -496,7 +496,7 @@ export function MaskPainterDialog({
   );
 }
 
-export function OutputStrip({
+function OutputStripBase({
   assets,
   emptyLabel = "Waiting for provider output",
   pending = false,
@@ -584,3 +584,13 @@ export function OutputStrip({
 
   );
 }
+
+export const AssetPreviewMedia = memo(AssetPreviewMediaBase);
+
+export const AssetThumbImage = memo(AssetThumbImageBase);
+
+export const OutputStrip = memo(OutputStripBase);
+
+export const ReferencePickerCard = memo(ReferencePickerCardBase);
+
+export const ComparePane = memo(ComparePaneBase);
