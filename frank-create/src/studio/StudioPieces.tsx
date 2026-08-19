@@ -1,4 +1,5 @@
 import {
+  memo,
   PointerEvent as ReactPointerEvent,
   useEffect,
   useRef,
