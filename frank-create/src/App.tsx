@@ -25,7 +25,6 @@ import { modeFromUrl, navigate } from "./nav";
 import type { InAppScreen, Screen } from "./nav";
 
 import {
-  fetchActivationChecklist,
   assetWorkflowReceiptUrl,
   createInferenceTurn,
   fetchTurnStatus,
@@ -34,14 +33,9 @@ import {
   createVideoStoryboard,
   deleteAsset,
   deleteTurn,
-  fetchBrandKit,
   fetchConfig,
   fetchHealth,
-  fetchProviderEnvStatus,
-  listBriefs,
-  listExports,
   listAssets,
-  listProjects,
   listSessions,
   listTurns,
   updateSession
@@ -92,15 +86,8 @@ import type {
   Asset,
   Brief,
   BriefFormState,
-  DemoDoctorStatus,
-  DemoReadinessPackResult,
-  ExportRecord,
-  ExportPreset,
   FrankConfig,
   FrankTask,
-  ProviderAdapterAudit,
-  ProviderEnvStatus,
-  PromptPreset,
   Project,
   StudioModel,
   StudioSession,
@@ -283,10 +270,6 @@ export default function App() {
 
   const [config, setConfig] = useState<FrankConfig>(fallbackConfig);
   const [connection, setConnection] = useState<"checking" | "online" | "offline">("checking");
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [activeProject, setActiveProject] = useState<Project | null>(null);
-  const [activeBrief, setActiveBrief] = useState<Brief | null>(null);
-  const [briefDraft, setBriefDraft] = useState<BriefFormState>(() => makeBriefDraft());
   const [sessions, setSessions] = useState<StudioSession[]>([]);
   const [activeSession, setActiveSession] = useState<StudioSession | null>(null);
   const [turns, setTurns] = useState<StudioTurn[]>([]);
@@ -1130,12 +1113,6 @@ export default function App() {
   }
 
 
-  function hydratePromptFromBrief(brief?: Brief | null) {
-    if (!brief?.prompt) {
-      return;
-    }
-    setPrompt((current) => (current.trim() ? current : brief.prompt ?? ""));
-  }
 
   function insertReferenceTag(tag: string) {
     const el = promptInputRef.current;
@@ -4854,17 +4831,6 @@ function makeBriefDraft(overrides: Partial<BriefFormState> = {}): BriefFormState
   };
 }
 
-function briefToDraft(brief: Brief): BriefFormState {
-  return makeBriefDraft({
-    title: brief.title ?? "",
-    productName: brief.product_name ?? "",
-    taskType: brief.task_type ?? "product-shot-lab",
-    channel: brief.channel ?? "",
-    tone: brief.tone ?? "",
-    prompt: brief.prompt ?? "",
-    negativePrompt: brief.negative_prompt ?? ""
-  });
-}
 
 
 function firstReviewableAsset(assets: Asset[]) {
@@ -4945,49 +4911,9 @@ function modelName(config: FrankConfig, modelId: string) {
   return config.models.find((model) => model.id === modelId)?.short_label ?? modelId;
 }
 
-function selectedAssetReviewMetadata(asset: Asset, assets: Asset[], config: FrankConfig, turns: StudioTurn[]) {
-  const turn = turns.find((item) => item.id === asset.turn_id);
-  const settings = parseJsonRecord(asset.settings_json ?? turn?.settings_json);
-  const workflow = parseJsonRecord(settings.workflow_provenance);
-  const referenceIds = parseJsonList(asset.reference_asset_ids_json ?? turn?.reference_asset_ids_json);
-  const model = config.models.find((item) => item.id === (asset.model ?? turn?.model));
-  const provider = asset.provider ?? turn?.provider ?? model?.provider;
-  const modelLabel = `${providerDisplayName(provider)} / ${model?.short_label ?? asset.model ?? turn?.model ?? "model pending"}`;
-  const settingsLabel = settingsSummary(settings);
-  const dimensionsLabel = asset.width && asset.height ? `${asset.width} x ${asset.height}` : "";
-  const sourceId = asset.source_asset_id ?? turn?.source_asset_id;
-  const sourceLabel = sourceId ? assets.find((item) => item.id === sourceId)?.title ?? sourceId : "";
-  const referenceLabel = `${referenceIds.length} reference${referenceIds.length === 1 ? "" : "s"}`;
-  const workflowLabel = workflowSummary(workflow);
-
-  return {
-    modelLabel,
-    settingsLabel,
-    dimensionsLabel,
-    sourceLabel,
-    workflowLabel,
-    referenceLabel,
-    prompt: asset.prompt ?? turn?.prompt ?? ""
-  };
-}
 
 
 
-function assetWorkflowBridge(asset: Asset, turns: StudioTurn[], workflowProvenance?: Record<string, unknown>) {
-  const turn = turns.find((item) => item.id === asset.turn_id);
-  const settings = workflowProvenance
-    ? { workflow_provenance: workflowProvenance }
-    : (parseJsonRecord(asset.settings_json ?? turn?.settings_json) as Record<string, unknown>);
-  const workflow = workflowProvenance ?? parseJsonRecord(settings.workflow_provenance);
-  const workflowJson = parseJsonRecord(workflow.workflow_json);
-  return {
-    asset_id: asset.id,
-    workflow_key: typeof workflow.workflow_key === "string" ? workflow.workflow_key : asset.model ?? turn?.model ?? null,
-    engine: typeof workflow.engine === "string" ? workflow.engine : asset.provider ?? turn?.provider ?? null,
-    node_types: workflowNodeTypes(workflow, workflowJson),
-    workflow_receipt_url: assetWorkflowReceiptUrl(asset.id)
-  };
-}
 
 function workflowNodeTypes(workflow: Record<string, unknown>, workflowJson: Record<string, unknown>) {
   const localNodeTypes = localWorkflowNodeTypes(typeof workflow.workflow_key === "string" ? workflow.workflow_key : "");
@@ -5014,13 +4940,6 @@ function workflowNodeSortKey(nodeId: string) {
   return Number.isFinite(numeric) ? `0-${numeric.toString().padStart(6, "0")}` : `1-${nodeId}`;
 }
 
-function assetReferenceSummary(id: string, assets: Asset[]) {
-  const asset = assets.find((item) => item.id === id);
-  return {
-    id,
-    title: asset?.title ?? id
-  };
-}
 
 function safeFileStem(value: string) {
   return (
@@ -5033,20 +4952,6 @@ function safeFileStem(value: string) {
   );
 }
 
-function sanitizeWorkflowPayload(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map((item) => sanitizeWorkflowPayload(item));
-  }
-  if (!value || typeof value !== "object") {
-    return value;
-  }
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).map(([key, item]) => [
-      key,
-      isSensitiveWorkflowKey(key) ? "[server-side secret]" : sanitizeWorkflowPayload(item)
-    ])
-  );
-}
 
 function isSensitiveWorkflowKey(key: string) {
   return /api[_-]?key|token|secret|authorization|bearer|password|credential/i.test(key);
@@ -5121,17 +5026,7 @@ function referenceCountLabel(count: number) {
 
 
 
-function activationPathLabel(path: string) {
-  return /models[\\/]+checkpoints$/i.test(path) ? "models\\checkpoints" : path;
-}
 
-function activationModelTotal(checklist: ActivationChecklist) {
-  const explicitTotal = Number(checklist.summary.provider_model_count);
-  if (Number.isFinite(explicitTotal) && explicitTotal > 0) {
-    return explicitTotal;
-  }
-  return Number(checklist.summary.ready_provider_models || 0) + Number(checklist.summary.waiting_provider_models || 0);
-}
 
 
 
@@ -5202,15 +5097,6 @@ function modelReferenceLimitAction(model: StudioModel | undefined, referenceCoun
 }
 
 
-function providerSetup(models: StudioModel[]) {
-  const waitingModels = models.filter((model) => model.configured === false);
-  const envVars = orderProviderEnvVars(
-    Array.from(new Set(waitingModels.flatMap((model) => model.missing_env_vars ?? []))),
-    providerUnlockPlan(models)
-  );
-
-  return { waitingModels, envVars };
-}
 
 function providerUnlockPlan(models: StudioModel[]) {
   const groups = new Map<

@@ -165,8 +165,8 @@ function ReviewBoard({ sessionId }: { sessionId: string }) {
   const [fltFrom, setFltFrom] = useState<string>("");
   const [fltTo, setFltTo] = useState<string>("");
   const [fltQuery, setFltQuery] = useState<string>("");
-  const sortBy: "time" | "asset" | "actor" | "transition" = "time";
-  const sortDir: "asc" | "desc" = "desc";
+  const sortBy = "time" as "time" | "asset" | "actor" | "transition";
+  const sortDir = "desc" as "asc" | "desc";
 
   useEffect(() => {
     if (!toasts.some((t) => t.kind === "progress")) return;
