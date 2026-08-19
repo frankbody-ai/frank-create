@@ -570,11 +570,14 @@ export default function App() {
   const [videoAllowed, setVideoAllowed] = useState(false);
   useEffect(() => {
     let live = true;
-    void getMyVideoAccess()
-      .then((allowed) => { if (live) setVideoAllowed(allowed); })
-      .catch(() => { /* denied by default */ });
+    import("./lib/admin").then(({ getMyVideoAccess }) => {
+      getMyVideoAccess()
+        .then((allowed) => { if (live) setVideoAllowed(allowed); })
+        .catch(() => { /* denied by default */ });
+    });
     return () => { live = false; };
-  }, []);
+  }, [userEmail]);
+
 
   const [compareMedia, setCompareMedia] = useState<"image" | "video">("image");
   const [compareModelBId, setCompareModelBId] = useState<string>("");
