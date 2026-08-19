@@ -3691,9 +3691,11 @@ export default function App() {
       {studioMode === "upscaler" ? (
         <Enhancer
           models={config.models}
-          assets={assets}
           sessionId={activeSession?.id ?? null}
           connection={connection}
+          source={upscalerSource}
+          onPickSource={() => void openReferencePicker("upscaler")}
+          onSourceChange={setUpscalerSource}
           onAssetsCreated={(created) =>
             setAssets((current) => [
               ...created.filter((asset) => !current.some((existing) => existing.id === asset.id)),
@@ -3703,8 +3705,8 @@ export default function App() {
           onStatus={setStatusText}
           onExpandAsset={(asset) => setLightboxAsset(asset)}
           onDownloadAsset={(asset) => void downloadAssetFile(asset)}
-
         />
+
       ) : studioMode === "prompt" ? (
         <PromptGenerator
           onStatus={setStatusText}
