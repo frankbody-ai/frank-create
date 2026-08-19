@@ -2872,31 +2872,6 @@ Deno.serve(async (req) => {
       if (url) return Response.redirect(url, 302);
       return json({ error: { code: "not_found", message: "Asset storage missing" } }, 404);
     }
-    if (path === "/exports" && method === "GET") {
-      const sid = url.searchParams.get("session_id");
-      const q = supabase().from("assets").select("*").eq("user_id", userId).eq("asset_type", "output").order("created_at", { ascending: false });
-      const { data } = sid ? await q.eq("session_id", sid) : await q;
-      const items = (data || []).map((r: any) => ({
-        id: r.id, asset_id: r.id, preset: "default",
-        file_path: r.storage_path, metadata_json: JSON.stringify(r.metadata_json || {}),
-        sync_status: "cloud", created_at: r.created_at,
-      }));
-      return json({ exports: items });
-    }
-    if (path === "/exports" && method === "POST") {
-      const body = await readJson(req);
-      const assetId = body.asset_id;
-      const { data: row, error } = await supabase().from("assets").select("*").eq("id", assetId).eq("user_id", userId).maybeSingle();
-      if (error || !row) return json({ error: { code: "not_found", message: "Asset not found" } }, 404);
-      const dl = await signed(row.storage_path);
-      const record = {
-        id: row.id, asset_id: row.id, preset: body.preset || "default",
-        file_path: row.storage_path, download_url: dl || undefined,
-        metadata_json: JSON.stringify({ preset: body.preset || "default", ...(body.metadata || {}) }),
-        sync_status: "cloud", created_at: nowIso(),
-      };
-      return json({ export: record, download_url: dl, metadata: { preset: body.preset || "default" } });
-    }
     const exportSetMatch = path.match(/^\/assets\/([^/]+)\/export-set$/);
     if (exportSetMatch && method === "POST") {
       const assetId = exportSetMatch[1];
