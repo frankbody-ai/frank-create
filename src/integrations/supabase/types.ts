@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          id: number
+          require_access_approval: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          require_access_approval?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          require_access_approval?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       asset_approval_events: {
         Row: {
           asset_id: string
@@ -674,18 +695,21 @@ export type Database = {
       }
       user_features: {
         Row: {
+          access_approved: boolean
           updated_at: string
           updated_by: string | null
           user_id: string
           video_enabled: boolean
         }
         Insert: {
+          access_approved?: boolean
           updated_at?: string
           updated_by?: string | null
           user_id: string
           video_enabled?: boolean
         }
         Update: {
+          access_approved?: boolean
           updated_at?: string
           updated_by?: string | null
           user_id?: string
@@ -722,6 +746,7 @@ export type Database = {
       admin_list_users: {
         Args: never
         Returns: {
+          access_approved: boolean
           created_at: string
           email: string
           id: string
@@ -729,6 +754,14 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
           video_enabled: boolean
         }[]
+      }
+      admin_set_access_approved: {
+        Args: { _approved: boolean; _target: string }
+        Returns: undefined
+      }
+      admin_set_require_access_approval: {
+        Args: { _enabled: boolean }
+        Returns: undefined
       }
       admin_set_role: {
         Args: {
@@ -766,6 +799,14 @@ export type Database = {
           source_queue: string
         }
         Returns: number
+      }
+      my_access_state: {
+        Args: never
+        Returns: {
+          approved: boolean
+          is_admin: boolean
+          require_approval: boolean
+        }[]
       }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }

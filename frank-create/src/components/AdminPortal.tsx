@@ -22,10 +22,14 @@ import {
   listUsersWithRoles,
   setUserRole,
   setUserVideoAccess,
+  setUserAccessApproved,
+  setRequireAccessApproval,
+  getMyAccessState,
   isCurrentUserAdmin,
   type AdminUserRow,
   type AppRole,
 } from "../lib/admin";
+
 
 import {
   listFeedback,
@@ -150,11 +154,13 @@ export function AdminPortal() {
 
 const USER_COLUMNS: DataTableColumn[] = [
   { key: "email", title: "Email" },
+  { key: "access", title: "Platform access", width: "170px" },
   { key: "role", title: "Role", width: "180px" },
   { key: "video", title: "Video generator", width: "170px" },
   { key: "joined", title: "Joined" },
   { key: "seen", title: "Last sign-in" },
 ];
+
 
 
 function UsersTab({
@@ -170,6 +176,27 @@ function UsersTab({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [requireApproval, setRequireApproval] = useState(false);
+  const [gateBusy, setGateBusy] = useState(false);
+
+  useEffect(() => {
+    void getMyAccessState()
+      .then((s) => setRequireApproval(s.require_approval))
+      .catch(() => { /* leave the gate reported as off */ });
+  }, []);
+
+  const onToggleGate = async (next: boolean) => {
+    setGateBusy(true);
+    try {
+      await setRequireAccessApproval(next);
+      setRequireApproval(next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't change the approval requirement.");
+    } finally {
+      setGateBusy(false);
+    }
+  };
+
 
   const refresh = async () => {
     setRefreshing(true);
@@ -232,11 +259,50 @@ function UsersTab({
       setBusy(null);
     }
   };
+  const onChangeAccess = async (u: AdminUserRow, next: boolean) => {
+    if (
+      !next &&
+      !window.confirm(
+        `Put ${u.email} back on hold? They stay signed up but can't use the platform until you approve them again.`,
+      )
+    )
+      return;
+    setBusy(u.id);
+    try {
+      await setUserAccessApproved(u.id, next);
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't change platform access.");
+    } finally {
+      setBusy(null);
+    }
+  };
 
+  const pending = (users ?? []).filter((u) => !u.access_approved).length;
 
   return (
     <>
       {error ? <Banner tone="critical" title="Something went wrong">{error}</Banner> : null}
+
+      <Card
+        title="Access approval"
+        actions={
+          <Switch
+            label={requireApproval ? "Approval required" : "Open to allowed domains"}
+            checked={requireApproval}
+            disabled={gateBusy}
+            onChange={(next) => void onToggleGate(next)}
+          />
+        }
+      >
+        <Text variant="bodySm" tone="secondary" as="p">
+          {requireApproval
+            ? `New people from an allowed work domain wait on a holding screen until you approve them here. ${pending} waiting.`
+            : "Anyone with an allowed work domain can sign in straight away. Turn this on when you want to approve people one by one."}
+        </Text>
+      </Card>
+
+
 
       <Card padding="none">
         <div className="admin-toolbar">
@@ -258,9 +324,19 @@ function UsersTab({
                 {u.id === meId ? <Badge tone="neutral">you</Badge> : null}
               </div>
             ),
+            access: (
+              <Switch
+                size="small"
+                label={u.access_approved ? "Approved" : "On hold"}
+                checked={u.access_approved}
+                disabled={busy === u.id}
+                onChange={(next) => void onChangeAccess(u, next)}
+              />
+            ),
             role: (
               <Select
                 label="Role"
+
                 labelHidden
                 options={ROLES.map((r) => ({ value: r, label: r }))}
                 value={u.role}

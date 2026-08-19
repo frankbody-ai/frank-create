@@ -9,7 +9,43 @@ export type AdminUserRow = {
   last_sign_in_at: string | null;
   role: AppRole;
   video_enabled: boolean;
+  access_approved: boolean;
 };
+
+export type AccessState = {
+  /** When false, everyone from a whitelisted domain is let straight in. */
+  require_approval: boolean;
+  approved: boolean;
+  is_admin: boolean;
+};
+
+/** Whether this person may use the platform right now. */
+export async function getMyAccessState(): Promise<AccessState> {
+  const { data, error } = await supabase.rpc("my_access_state");
+  if (error) throw new Error(error.message);
+  const row = (Array.isArray(data) ? data[0] : data) as AccessState | undefined;
+  return {
+    require_approval: Boolean(row?.require_approval),
+    approved: Boolean(row?.approved),
+    is_admin: Boolean(row?.is_admin),
+  };
+}
+
+/** Admin-only: hold or grant one person's access to the platform. */
+export async function setUserAccessApproved(userId: string, approved: boolean): Promise<void> {
+  const { error } = await supabase.rpc("admin_set_access_approved", {
+    _target: userId,
+    _approved: approved,
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Admin-only: global switch for "new people wait for approval". */
+export async function setRequireAccessApproval(enabled: boolean): Promise<void> {
+  const { error } = await supabase.rpc("admin_set_require_access_approval", { _enabled: enabled });
+  if (error) throw new Error(error.message);
+}
+
 
 export async function listUsersWithRoles(): Promise<AdminUserRow[]> {
   const { data, error } = await supabase.rpc("admin_list_users");
@@ -17,7 +53,9 @@ export async function listUsersWithRoles(): Promise<AdminUserRow[]> {
   return ((data ?? []) as AdminUserRow[]).map((row) => ({
     ...row,
     video_enabled: Boolean(row.video_enabled),
+    access_approved: Boolean(row.access_approved),
   }));
+
 }
 
 export async function setUserRole(userId: string, role: AppRole): Promise<void> {

@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS, hardSignOut } from "./lib/supabaseClient";
 import { lovable } from "./lib/lovableAuth";
+import { getMyAccessState } from "./lib/admin";
 import { AuthLayout, SignIn, GoogleButton, Button, Spinner, Text } from "./ds";
 
-type Status = "loading" | "signed-out" | "denied" | "ready";
+type Status = "loading" | "signed-out" | "denied" | "pending" | "ready";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
@@ -25,6 +26,17 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         setError(`Access is for ${ALLOWED_EMAIL_DOMAINS.map((d) => "@" + d).join(" and ")} accounts only. (${email ?? "no email"})`);
         return setStatus("denied");
       }
+      // A second gate: admins can require explicit approval per person.
+      try {
+        const access = await getMyAccessState();
+        if (!mounted) return;
+        if (access.require_approval && !access.approved && !access.is_admin) {
+          setError(null);
+          return setStatus("pending");
+        }
+      } catch {
+        /* if the check itself fails, don't lock people out of a working session */
+      }
       setStatus("ready");
     };
 
@@ -35,6 +47,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       sub.subscription.unsubscribe();
     };
   }, []);
+
 
   const signIn = async () => {
     setError(null);
@@ -56,6 +69,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (status === "ready" && session) return <>{children}</>;
 
+  const pending = status === "pending";
+
   return (
     <AuthLayout>
       <SignIn
@@ -64,8 +79,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         app="design-studio"
         appName="art-ificial design studio"
         method="sso"
-        title="Sign in"
-        description="Sign in with your work account."
+        title={pending ? "Waiting for approval" : "Sign in"}
+        description={
+          pending
+            ? `Your account (${session?.user?.email ?? "your work account"}) is on hold until an admin approves it. You'll get in as soon as they do.`
+            : "Sign in with your work account."
+        }
         error={error}
         loading={busy}
         providers={
@@ -76,6 +95,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                 Checking your session
               </Text>
             </div>
+          ) : pending ? (
+            <>
+              <Button size="large" fullWidth onClick={() => window.location.reload()}>
+                Check again
+              </Button>
+              <Button size="large" fullWidth onClick={() => void signOut()}>
+                Sign out
+              </Button>
+            </>
           ) : (
             <>
               <GoogleButton loading={busy} onClick={() => void signIn()} />
@@ -87,8 +115,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             </>
           )
         }
-        note={`Access is limited to ${ALLOWED_EMAIL_DOMAINS.map((d) => d).join(" and ")}. Accounts are created by an admin — ask your team lead if you need access.`}
+        note={
+          pending
+            ? "Ask your team lead to approve your access in the admin portal."
+            : `Access is limited to ${ALLOWED_EMAIL_DOMAINS.map((d) => d).join(" and ")}. Accounts are created by an admin — ask your team lead if you need access.`
+        }
       />
+
     </AuthLayout>
   );
 }
