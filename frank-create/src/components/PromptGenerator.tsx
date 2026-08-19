@@ -632,6 +632,13 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
       ) : null}
 
       <Card>
+        {wizardNotice ? (
+          <div className="agent-composer__notice" role="status">
+            <Text variant="bodySm" tone="caution">
+              {wizardNotice}
+            </Text>
+          </div>
+        ) : null}
         <form
           className="agent-composer"
           data-paste-scope="prompt-agent"
