@@ -2214,83 +2214,6 @@ function withReferenceIdentityLock(prompt: string, referenceCount: number): stri
   ].join("\n");
 }
 
-const REMIX_SHARED_INSTRUCTION = [
-  "Rewrite the existing image-generation brief according to the selected creative direction.",
-  "Preserve all explicit requirements from the original brief, including:",
-  "- Product identity, quantity, packaging, colours and proportions",
-  "- People, setting, props and actions",
-  "- Composition requirements that do not conflict with the selected remix",
-  "- Aspect ratio and output format",
-  "- Any instructions specifying what must not be changed",
-  "Only adjust the photography, framing, lighting, composition and visual atmosphere. Add useful photographic detail where needed, but do not invent new products, branding, text, people or major scene elements.",
-  "Return one cohesive image-generation brief. Do not mention the remix process or provide explanations.",
-].join("\n");
-
-const REMIX_DIRECTIVES: Array<{ key: string; label: string; directive: string }> = [
-  {
-    key: "close_up",
-    label: "CLOSE-UP",
-    directive: [
-      "Transform the original brief into intimate close-up photography.",
-      "Move the camera closer and use tight, intentional cropping to emphasize the most important subject. Highlight tactile details such as skin, packaging, product texture, water, material finishes and product interaction. Use a close-focusing 85–100mm lens aesthetic, shallow depth of field, selective focus and refined background separation.",
-      "Keep essential product branding and defining features visible and accurate. If a person is present, focus on expressive details such as the face, hands, skin or interaction with the product. If the scene is product-only, create a detailed, sensory product composition.",
-      "Preserve the original concept, environment and required elements while making the result feel intimate, dimensional and visually immersive.",
-    ].join("\n"),
-  },
-  {
-    key: "editorial_campaign",
-    label: "EDITORIAL CAMPAIGN",
-    directive: [
-      "Transform the original brief into premium editorial campaign photography.",
-      "Elevate the scene through deliberate art direction, confident composition, sophisticated styling and polished professional lighting. Create a strong visual hierarchy with a clear hero subject, considered negative space and an intentional relationship between the subject, products and environment.",
-      "The result should feel distinctive, aspirational and suitable for a major Frank Body advertising campaign. Use refined beauty photography, dimensional lighting, controlled colour, premium texture and a polished commercial finish without making the image feel generic or overly corporate.",
-      "Preserve the original concept, products, people, setting and actions while increasing the production value and campaign impact.",
-    ].join("\n"),
-  },
-  {
-    key: "candid",
-    label: "CANDID",
-    directive: [
-      "Transform the original brief into candid lifestyle photography.",
-      "Make the scene feel spontaneous, natural and captured in the middle of a real moment. Use relaxed body language, authentic expressions, natural movement, observational framing and slight compositional imperfection. Apply a 35–50mm lifestyle-photography aesthetic with believable environmental light, realistic skin texture and subtle depth of field.",
-      "If a person is present, show an unposed interaction with the product or environment. If the scene is product-only, arrange the products as though they have been naturally placed or recently used, while maintaining an intentional and visually appealing composition.",
-      "Preserve the original concept, products, setting and actions while giving the image an energetic, relatable and effortlessly authentic Frank Body feeling.",
-    ].join("\n"),
-  },
-];
-
-async function handleRemix(body: any) {
-  const prompt = String(body.prompt || "").trim();
-  if (!prompt) return { variants: [] };
-
-  const results = await Promise.all(
-    REMIX_DIRECTIVES.map(async (entry) => {
-      try {
-        const content = await lovableChat([
-          {
-            role: "system",
-            content: [
-              REMIX_SHARED_INSTRUCTION,
-              "",
-              "SELECTED CREATIVE DIRECTION:",
-              entry.directive,
-              "",
-              "Return ONLY the rewritten brief as plain prose. No titles, labels, quotes or markdown.",
-            ].join("\n"),
-          },
-          { role: "user", content: `ORIGINAL BRIEF:\n${prompt}` },
-        ]);
-        const rewritten = String(content || "").trim();
-        if (!rewritten) return null;
-        return { key: entry.key, label: entry.label, prompt: rewritten };
-      } catch {
-        return null;
-      }
-    }),
-  );
-
-  return { variants: results.filter(Boolean) };
-}
 
 
 async function readJson(req: Request): Promise<any> {
@@ -2317,89 +2240,6 @@ Deno.serve(async (req) => {
     if (path === "/config") return json(STUDIO_CONFIG);
     if (path === "/models") return json({ models: STUDIO_CONFIG.models, backlogModels: [], promptPresets: STUDIO_CONFIG.promptPresets });
 
-    if (path === "/provider-status") {
-      return json({
-        summary: {
-          modelCount: 1, readyModels: 1, waitingModels: 0,
-          configuredEnvVars: ["OPENROUTER_API_KEY"], missingEnvVars: [],
-        },
-        providers: [{
-          provider: "openrouter", configured: true, model_count: 1,
-          ready_model_count: 1, waiting_model_count: 0,
-          configured_env_vars: ["OPENROUTER_API_KEY"], missing_env_vars: [],
-          models: ["google-nb-pro"],
-        }],
-        models: [DEFAULT_MODEL],
-        notes: ["OpenRouter is the primary media provider; Replicate is used only as a fallback or for the upscaler."],
-      });
-    }
-    if (path === "/provider-audit") {
-      return json({
-        title: "Provider audit", generated_at: nowIso(),
-        summary: {
-          model_count: 1, runner_registered: 1, missing_runners: 0,
-          ready_models: 1, waiting_for_key: 0, preview_failures: 0,
-          no_spend: true, secret_values_returned: false,
-        },
-        models: [], notes: [],
-      });
-    }
-    if (path === "/activation-checklist") {
-      return json({
-        title: "Activation", status: "ready",
-        summary: {
-          ready_provider_models: 1, provider_model_count: 1,
-          waiting_provider_models: 0, diffusion_ready: true,
-          checkpoint_count: 0, server_key_file: ".env",
-          configured_env_vars: ["LOVABLE_API_KEY"], missing_env_vars: [],
-        },
-        steps: [{ key: "lovable", label: "Lovable AI", status: "ready", detail: "Connected", action: "" }],
-        notes: [],
-      });
-    }
-    if (path === "/demo-doctor") {
-      return json({
-        status: "ready", readyForDemo: true, headline: "Lovable AI connected",
-        summary: {
-          activeSessionCount: 1, outputAssetCount: 0, approvedAssetCount: 0,
-          referenceAssetCount: 0, readyProviderModels: 1, waitingProviderModels: 0,
-        },
-        checks: [], notes: [],
-      });
-    }
-    if (path === "/provider-env") {
-      return json({
-        filePath: ".env", fileExists: true,
-        envVars: ["LOVABLE_API_KEY"], configuredEnvVars: ["LOVABLE_API_KEY"],
-        missingEnvVars: [], notes: [],
-      });
-    }
-    if (path === "/projects") {
-      return json({
-        projects: [{ id: "default", name: "Default", status: "active", created_at: nowIso(), updated_at: nowIso() }],
-      });
-    }
-    if (path.startsWith("/briefs")) return json({ briefs: [] });
-    if (path.startsWith("/runs")) return json({ runs: [] });
-    if (path === "/local-engine/workflow-blueprints") {
-      return json({ blueprints: [], filePath: "cloud:blueprints", note: "Workflow blueprints are not used by the cloud studio." });
-    }
-    if (path === "/local-engine/setup" && method === "POST") {
-      return json({
-        created_dirs: [], readme_path: "cloud:local-engine",
-        localEngine: {
-          diffusion_ready: false, note: "Local engine not available in Lovable preview.",
-          checkpoints: [], ignored_checkpoints: [], recommended_checkpoints: [],
-          setup_steps: [], checkpoint_dir: "models/checkpoints",
-        },
-      });
-    }
-    if (path.startsWith("/local-engine/")) {
-      return json({ ok: false, note: "Local engine not available in Lovable preview." }, 200);
-    }
-    if (path === "/provider-preflight" && method === "POST") {
-      return json({ ok: true, provider: "lovable", checks: [], notes: ["Lovable AI Gateway connected."] });
-    }
 
 
 
@@ -2567,45 +2407,6 @@ Deno.serve(async (req) => {
 
 
 
-    if (path === "/brand-kit" && (method === "GET" || method === "PATCH")) {
-      const sb = supabase();
-      if (method === "GET") {
-        const { data } = await sb.from("brand_kits").select("*").eq("user_id", userId).maybeSingle();
-        const brandKit = data
-          ? {
-              style_guidance: data.style_guidance,
-              negative_prompt: data.negative_prompt,
-              reference_notes: data.reference_notes,
-              updated_at: data.updated_at,
-              sync_status: "cloud",
-            }
-          : { style_guidance: "", negative_prompt: "", reference_notes: "", sync_status: "cloud" };
-        return json({ brandKit, filePath: "cloud:brand_kits" });
-      }
-      const body = await readJson(req);
-      const payload = {
-        user_id: userId,
-        style_guidance: String(body.style_guidance ?? ""),
-        negative_prompt: String(body.negative_prompt ?? ""),
-        reference_notes: String(body.reference_notes ?? ""),
-      };
-      const { data, error } = await sb
-        .from("brand_kits")
-        .upsert(payload, { onConflict: "user_id" })
-        .select()
-        .single();
-      if (error) throw error;
-      return json({
-        brandKit: {
-          style_guidance: data.style_guidance,
-          negative_prompt: data.negative_prompt,
-          reference_notes: data.reference_notes,
-          updated_at: data.updated_at,
-          sync_status: "cloud",
-        },
-        filePath: "cloud:brand_kits",
-      });
-    }
 
     if (path === "/inference/turn" && method === "POST") {
       const body = await readJson(req);
@@ -2619,49 +2420,6 @@ Deno.serve(async (req) => {
       return json(result);
     }
 
-    if (path === "/prompt-remix" && method === "POST") {
-      const body = await readJson(req);
-      return json(await handleRemix(body));
-    }
-
-    if (path === "/improve-preset" && method === "POST") {
-      const body = await readJson(req) as { prompt?: string; label?: string; description?: string };
-      const raw = String(body?.prompt || "").trim();
-      if (!raw) return json({ error: { code: "invalid", message: "prompt is required" } }, 400);
-      const label = String(body?.label || "").trim();
-      const description = String(body?.description || "").trim();
-      const system = [
-        "You are a senior prompt engineer specialized in text-to-image models (Nano Banana / Gemini 3 Pro Image, Reve, Seedream, GPT-image-2).",
-        "You rewrite prompt PRESETS that will later be appended to a user's brief for product/lifestyle image generation for Frank Body (body-care brand: coffee scrubs, glossy skin, warm editorial realism, cheeky director-ready tone).",
-        "Craft the preset so it consistently produces high-quality, on-brand imagery when appended to any product brief.",
-        "Techniques to apply where relevant:",
-        "- Structure: subject → composition/framing → lighting → lens/camera → surface/materials → mood → post-processing → negative cues.",
-        "- Be specific and visual (concrete nouns, materials, textures, color temperature in Kelvin or descriptive terms, lens mm, aperture, angle).",
-        "- Prefer positive directives over negations; keep a short 'avoid:' list only if truly needed.",
-        "- Do NOT hard-code aspect ratio, resolution, seed, or model — those are set elsewhere.",
-        "- Use placeholders like [PRODUCT NAME] when the preset should adapt to different products.",
-        "- Keep it reusable: describe style/setup, not a single specific product unless the preset name demands it.",
-        "- Length: 60–180 words. No preamble, no bullet dashes, no markdown headers — output plain prose the model can read as a single directive block.",
-        "Return ONLY the improved preset prompt text. No explanations, no quotes, no labels.",
-      ].join("\n");
-      const userMsg = [
-        label ? `Preset label: ${label}` : "",
-        description ? `Preset purpose: ${description}` : "",
-        "Current preset prompt to improve:",
-        raw,
-      ].filter(Boolean).join("\n\n");
-      try {
-        const improved = await lovableChat([
-          { role: "system", content: system },
-          { role: "user", content: userMsg },
-        ], "openai/gpt-5.5");
-        const cleaned = String(improved || "").trim().replace(/^["'`]+|["'`]+$/g, "");
-        if (!cleaned) return json({ error: { code: "empty", message: "AI returned no content" } }, 502);
-        return json({ prompt: cleaned });
-      } catch (err) {
-        return json({ error: { code: "ai_error", message: errMessage(err) } }, 502);
-      }
-    }
 
     if (path === "/prompt-agent/config" && method === "GET") {
       const cfg = await loadPromptAgentConfig(supabase());
@@ -2872,31 +2630,6 @@ Deno.serve(async (req) => {
       if (url) return Response.redirect(url, 302);
       return json({ error: { code: "not_found", message: "Asset storage missing" } }, 404);
     }
-    if (path === "/exports" && method === "GET") {
-      const sid = url.searchParams.get("session_id");
-      const q = supabase().from("assets").select("*").eq("user_id", userId).eq("asset_type", "output").order("created_at", { ascending: false });
-      const { data } = sid ? await q.eq("session_id", sid) : await q;
-      const items = (data || []).map((r: any) => ({
-        id: r.id, asset_id: r.id, preset: "default",
-        file_path: r.storage_path, metadata_json: JSON.stringify(r.metadata_json || {}),
-        sync_status: "cloud", created_at: r.created_at,
-      }));
-      return json({ exports: items });
-    }
-    if (path === "/exports" && method === "POST") {
-      const body = await readJson(req);
-      const assetId = body.asset_id;
-      const { data: row, error } = await supabase().from("assets").select("*").eq("id", assetId).eq("user_id", userId).maybeSingle();
-      if (error || !row) return json({ error: { code: "not_found", message: "Asset not found" } }, 404);
-      const dl = await signed(row.storage_path);
-      const record = {
-        id: row.id, asset_id: row.id, preset: body.preset || "default",
-        file_path: row.storage_path, download_url: dl || undefined,
-        metadata_json: JSON.stringify({ preset: body.preset || "default", ...(body.metadata || {}) }),
-        sync_status: "cloud", created_at: nowIso(),
-      };
-      return json({ export: record, download_url: dl, metadata: { preset: body.preset || "default" } });
-    }
     const exportSetMatch = path.match(/^\/assets\/([^/]+)\/export-set$/);
     if (exportSetMatch && method === "POST") {
       const assetId = exportSetMatch[1];
@@ -3084,39 +2817,6 @@ Deno.serve(async (req) => {
     }
 
 
-
-
-    // ---- Demo receipts (minimal stubs) ----
-    if (path === "/demo/reset" && method === "POST") {
-      return json({ ok: true, reset_at: nowIso() });
-    }
-    if (path.startsWith("/demo/") && method === "POST") {
-      const kind = path.slice("/demo/".length);
-      const receipt = {
-        title: `Frank Create ${kind} receipt`,
-        generated_at: nowIso(),
-        session: { user_id: userId },
-        summary: {
-          style_guidance_chars: 0, negative_prompt_chars: 0, reference_notes_chars: 0,
-          reference_asset_count: 0, approved_asset_count: 0,
-          prompt_guided_status: "ready", lora_training_status: "starter",
-          prompt_guided_target: "ready", lora_training_target: "ready",
-        },
-        brand_kit: { style_guidance: "", negative_prompt: "", reference_notes: "", sync_status: "cloud" },
-        reference_assets: [], approved_assets: [],
-        training_recommendation: { status: "ready" },
-        next_inputs: [],
-      };
-      const filename = `${kind}-${Date.now()}`;
-      return json({
-        receipt,
-        markdown_path: `cloud:receipts/${filename}.md`,
-        json_path: `cloud:receipts/${filename}.json`,
-        markdown_file: `${filename}.md`,
-        json_file: `${filename}.json`,
-        markdown_url: "", json_url: "",
-      });
-    }
     return json({ error: { code: "not_found", message: `No handler for ${method} ${path}` } }, 404);
   } catch (err) {
     if (err instanceof AuthError) {
