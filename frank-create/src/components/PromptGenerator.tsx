@@ -154,8 +154,6 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<string[]>([]);
   const [wizard, setWizard] = useState<WizardState | null>(null);
-  /** null = follow the inferred default; true/false = the user forced it. */
-  const [wizardOverride, setWizardOverride] = useState<boolean | null>(null);
   const [wizardNotice, setWizardNotice] = useState<string | null>(null);
   const [chatId, setChatId] = useState<string | null>(null);
   const [chats, setChats] = useState<PromptChatSummary[]>([]);
