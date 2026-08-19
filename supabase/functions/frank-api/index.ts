@@ -314,7 +314,7 @@ function rowToSession(row: any): any {
     project_id: null,
     name: row.title,
     mode: "studio",
-    status: "active",
+    status: row.status ?? "active",
     summary: null,
     created_at: row.created_at,
     updated_at: row.updated_at,
