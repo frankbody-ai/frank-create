@@ -1295,40 +1295,45 @@
 }
 .upscaler-drop--empty strong { font-size: var(--font-size-400); }
 .upscaler-drop--empty span { color: var(--color-text-secondary); font-size: var(--type-body-sm-size); }
-.upscaler-drop--filled {
+.upscaler-drop--empty strong { font-size: var(--font-size-400); }
+.upscaler-drop--empty span { color: var(--color-text-secondary); font-size: var(--type-body-sm-size); }
+
+.upscaler-source-chip {
   display: flex;
   align-items: center;
-  gap: var(--space-400);
-  height: 100%;
-  padding: var(--space-400);
-  border-style: solid;
-  text-align: start;
-}
-.upscaler-drop__thumb {
-  position: relative;
-  flex: 0 0 auto;
-  width: 96px;
-  height: 96px;
+  gap: var(--space-300);
+  padding: var(--space-200);
   border-radius: var(--radius-200);
+  background: var(--color-bg-fill-secondary);
+  border: var(--border-width-025) solid var(--color-border);
+}
+.upscaler-source-chip__thumb {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-150);
   overflow: hidden;
   background: #000;
 }
-.upscaler-drop__thumb img,
-.upscaler-drop__thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.upscaler-drop__tick {
-  position: absolute;
-  inset-block-start: var(--space-150);
-  inset-inline-end: var(--space-150);
+.upscaler-source-chip__thumb img,
+.upscaler-source-chip__thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.upscaler-source-chip__meta { display: flex; flex-direction: column; gap: var(--space-050); min-width: 0; flex: 1 1 auto; }
+.upscaler-source-chip__clear {
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--radius-full);
-  background: var(--color-bg-fill-brand, #111);
-  color: #fff;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background var(--motion-hover), color var(--motion-hover);
 }
-.upscaler-drop__meta { display: flex; flex-direction: column; gap: var(--space-100); min-width: 0; }
-.upscaler-drop__actions { display: flex; gap: var(--space-200); margin-block-start: var(--space-200); }
+.upscaler-source-chip__clear:hover {
+  background: var(--color-bg-fill-hover);
+  color: var(--color-text-primary);
+}
 
 /* Results sit on black so light and dark upscales both read correctly. */
 .upscaler-stage {
