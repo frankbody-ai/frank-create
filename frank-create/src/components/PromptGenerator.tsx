@@ -275,7 +275,6 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     setBusy(true);
     setError(null);
     setWizardNotice(null);
-    setWizardOverride(null);
     try {
       // The wizard kickoff asks for a machine-readable question set. That request
       // and its json answer stay hidden from the thread — the wizard IS their UI.
