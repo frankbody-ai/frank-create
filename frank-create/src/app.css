@@ -1295,8 +1295,7 @@
 }
 .upscaler-drop--empty strong { font-size: var(--font-size-400); }
 .upscaler-drop--empty span { color: var(--color-text-secondary); font-size: var(--type-body-sm-size); }
-.upscaler-drop--empty strong { font-size: var(--font-size-400); }
-.upscaler-drop--empty span { color: var(--color-text-secondary); font-size: var(--type-body-sm-size); }
+
 
 .upscaler-source-chip {
   display: flex;
