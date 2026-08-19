@@ -41,7 +41,6 @@ import {
 
 import { fallbackBrandKit, fallbackConfig } from "./lib/presets";
 import { supabase, hardSignOut } from "./lib/supabaseClient";
-import { createBriefPayload } from "./lib/frankWorkflow";
 import {
   buildTurnRequest,
   aspectRatioParts,
@@ -1228,7 +1227,6 @@ export default function App() {
             kind: "reference",
             media_type: "image",
             favorite: created.asset.favorite ?? false,
-            approval_status: created.asset.approval_status || "review",
             sync_status: "cloud"
           };
         } catch (err) {
@@ -1248,7 +1246,6 @@ export default function App() {
         preview_url: localPreview,
         remote_url: remoteUrl,
         favorite: false,
-        approval_status: "review",
         sync_status: "local"
       });
     }
@@ -1409,7 +1406,6 @@ export default function App() {
       preview_url: localPreview,
       source_asset_id: sourceAsset.id,
       favorite: false,
-      approval_status: "review",
       sync_status: "local"
     };
     setMaskAsset(localMask);
@@ -1621,7 +1617,6 @@ export default function App() {
           width: requestedAspect?.width,
           height: requestedAspect?.height,
           favorite: false,
-          approval_status: "review",
           sync_status: "local",
           created_at: nowIso,
           updated_at: nowIso,
@@ -2258,7 +2253,6 @@ export default function App() {
               id: makeLocalId("asset"),
               kind: "reference",
               favorite: false,
-              approval_status: "review",
               ...referencePayload
             } as Asset);
 

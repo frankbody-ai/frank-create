@@ -1,4 +1,3 @@
-export type ApprovalStatus = "review" | "approved" | "rejected";
 
 export interface FrankTask {
   key: string;
@@ -269,7 +268,6 @@ export interface Asset {
   bytes?: number;
 
   favorite: boolean;
-  approval_status: ApprovalStatus;
   notes?: string;
   sync_status?: string;
   created_at?: string;
@@ -288,15 +286,6 @@ export interface ExportRecord {
   created_at: string;
 }
 
-export interface BriefFormState {
-  title: string;
-  productName: string;
-  taskType: string;
-  channel: string;
-  tone: string;
-  prompt: string;
-  negativePrompt: string;
-}
 
 
 export interface StudioSettings {
