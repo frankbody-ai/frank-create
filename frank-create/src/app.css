@@ -201,9 +201,10 @@
      feed instead of dropping to the very bottom of the page. */
   .studio-columns { flex-direction: column; flex-wrap: nowrap; }
   .studio-columns > .studio-main { display: contents; }
-  .studio-columns > * { order: 1; }
+  .studio-main > * { order: 1; }
   .studio-columns > .studio-rail { order: 2; width: 100%; }
-  .studio-columns > .thread-surface { order: 3; }
+  .studio-main > .thread-surface { order: 3; }
+
   .studio-rail .run-settings { position: static; }
 }
 
