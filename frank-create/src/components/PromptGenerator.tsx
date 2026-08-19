@@ -687,13 +687,6 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
             >
               Attach reference
             </Button>
-            <Button
-              icon={runWizardNext ? "sparkles" : "chat-bubble-left-right"}
-              onClick={() => setWizardOverride(!runWizardNext)}
-              disabled={busy}
-            >
-              {runWizardNext ? "Discovery: on" : "Discovery: off"}
-            </Button>
             <span className="agent-composer__spacer" />
             <Text variant="bodySm" tone="secondary">
               Up to {MAX_ATTACHMENTS} references
