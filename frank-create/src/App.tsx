@@ -11,68 +11,32 @@ import {
 import { createPortal } from "react-dom";
 
 import {
-  ActionList,
   Badge,
   Banner,
   Button,
-  Card,
   Icon,
   PageHeader,
   Pagination,
-  Popover,
 
   Spinner,
-  Text
 } from "./ds";
 import { Shell } from "./Shell";
 import { modeFromUrl, navigate } from "./nav";
 import type { InAppScreen, Screen } from "./nav";
 
 import {
-  fetchActivationChecklist,
-  assetWorkflowReceiptUrl,
-  createAsset,
-  createAssetChannelSet,
-  createBrief,
-  createBrandContextReceipt,
-  createDemoCallBrief,
-  createDemoEvidence,
-  createDemoReadinessPack,
-  createProviderEnvTemplate,
-  createExport,
   createInferenceTurn,
   fetchTurnStatus,
-  createProject,
-  createProviderReadinessReceipt,
   createReference,
   createSession,
-  createSessionHandoff,
   createVideoStoryboard,
   deleteAsset,
   deleteTurn,
-  exportDownloadUrl,
-  fetchBrandKit,
   fetchConfig,
-  fetchDemoDoctor,
   fetchHealth,
-  fetchProviderAudit,
-  fetchProviderEnvStatus,
-  fetchProviderStatus,
-  listBriefs,
-  listExports,
   listAssets,
-  listProjects,
   listSessions,
   listTurns,
-  preflightProvider,
-  reloadProviderEnv,
-  resetDemo,
-  saveProviderEnvKeys,
-  sessionReviewBoardUrl,
-  sessionSyncManifestUrl,
-  updateAsset,
-  updateBrief,
-  updateBrandKit,
   updateSession
 } from "./lib/api";
 
@@ -91,7 +55,6 @@ import {
   selectModelOptions,
   validateStudioSettings,
   hasStudioFieldErrors,
-  preflightModel,
   maxCountForModel,
   modelsForMedia,
   normalizeVideoSettings,
@@ -118,31 +81,15 @@ import { PromptGenerator } from "./components/PromptGenerator";
 import Enhancer from "./components/Enhancer";
 
 import type {
-  ActivationChecklist,
   Asset,
-  BrandKit,
-  Brief,
-  BriefFormState,
-  DemoDoctorStatus,
-  DemoCallDecision,
-  DemoReadinessPackResult,
-  ExportRecord,
-  ExportPreset,
   FrankConfig,
   FrankTask,
-  ProviderAdapterAudit,
-  ProviderEnvStatus,
-  ProviderPreflight,
-  ProviderReadiness,
-  PromptPreset,
-  Project,
   StudioModel,
   StudioSession,
   StudioSettings,
   StudioTurn
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
-import { AspectPreview } from "./components/AspectPreview";
 import { SessionFolders } from "./components/SessionFolders";
 import { clampWords } from "./lib/clampWords";
 
@@ -311,33 +258,16 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
 /** Tiles painted per page in the Add references overlay, upload tile included. */
 const REFERENCE_PICKER_PAGE_SIZE = 9;
 
-const TENANT_THEMES = [
 
-  { id: "frank", label: "frank body", hex: "#F9ABAA" },
-  { id: "snouts", label: "senior snouts", hex: "#FF4D00" },
-  { id: "coreiq", label: "coreiQ", hex: "#ED1B53" },
-  { id: "strength", label: "strength lab", hex: "#C90000" },
-  { id: "ledgify", label: "ledgify", hex: "#372F89" },
-  { id: "enxgy", label: "enxgy", hex: "#00C6E4" }
-] as const;
-
-type TenantThemeId = (typeof TENANT_THEMES)[number]["id"];
 
 export default function App() {
 
   const [config, setConfig] = useState<FrankConfig>(fallbackConfig);
   const [connection, setConnection] = useState<"checking" | "online" | "offline">("checking");
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [briefs, setBriefs] = useState<Brief[]>([]);
-  const [activeProject, setActiveProject] = useState<Project | null>(null);
-  const [activeBrief, setActiveBrief] = useState<Brief | null>(null);
-  const [projectName, setProjectName] = useState("Frank Body Campaign");
-  const [briefDraft, setBriefDraft] = useState<BriefFormState>(() => makeBriefDraft());
   const [sessions, setSessions] = useState<StudioSession[]>([]);
   const [activeSession, setActiveSession] = useState<StudioSession | null>(null);
   const [turns, setTurns] = useState<StudioTurn[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [exports, setExports] = useState<ExportRecord[]>([]);
   const [prompt, setPrompt] = useState("");
   const [selectedModelId, setSelectedModelId] = useState(
     () => preferredStudioModel(fallbackConfig.models, readLastUsedModelId()).id
@@ -345,40 +275,13 @@ export default function App() {
   const [expandedPromptTurnIds, setExpandedPromptTurnIds] = useState<string[]>([]);
   const [selectedPresetKey, setSelectedPresetKey] = useState<string | null>(null);
   const [attachedPresetSnapshot, setAttachedPresetSnapshot] = useState<string | null>(null);
-  const [customPresets, setCustomPresets] = useState<PromptPreset[]>(() => {
-    try {
-      const raw = typeof window !== "undefined" ? window.localStorage.getItem("frank.customPromptPresets") : null;
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed.filter((p) => p && typeof p.key === "string" && typeof p.label === "string" && typeof p.prompt === "string") : [];
-    } catch { return []; }
-  });
-  const customPresetKeys = useMemo(() => new Set(customPresets.map((p) => p.key)), [customPresets]);
-  const [newPresetOpen, setNewPresetOpen] = useState(false);
-  const [newPresetLabel, setNewPresetLabel] = useState("");
-  const [newPresetPrompt, setNewPresetPrompt] = useState("");
-  useEffect(() => {
-    try { window.localStorage.setItem("frank.customPromptPresets", JSON.stringify(customPresets)); } catch { /* ignore */ }
-  }, [customPresets]);
   const [frankBodyMode, setFrankBodyMode] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setUserEmail(s?.user?.email ?? null));
     return () => sub.subscription.unsubscribe();
   }, []);
-  useEffect(() => {
-    let cancelled = false;
-    import("./lib/admin").then(({ isCurrentUserAdmin }) => {
-      isCurrentUserAdmin().then((v) => { if (!cancelled) setIsAdmin(v); }).catch(() => {});
-    });
-    return () => { cancelled = true; };
-  }, [userEmail]);
-  const handleSignOut = async () => {
-    await hardSignOut();
-    window.location.replace("/");
-  };
   const [studioMode, setStudioMode] = useState<InAppScreen>(() => modeFromUrl());
   useEffect(() => {
     document.body.dataset.feedbackView = studioMode;
@@ -389,7 +292,6 @@ export default function App() {
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
   const [walkthroughStep, setWalkthroughStep] = useState(0);
   const [walkthroughAnchor, setWalkthroughAnchor] = useState<WalkthroughAnchor | null>(null);
-  const [reviewFilter, setReviewFilter] = useState<"all" | "approved">("all");
   const [settings, setSettings] = useState<StudioSettings>(defaultStudioSettings(fallbackConfig.models[0]));
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [lightboxAsset, setLightboxAsset] = useState<Asset | null>(null);
@@ -442,49 +344,7 @@ export default function App() {
   // saved for run provenance but are never hydrated into a new run.
   const [activeReferenceIds, setActiveReferenceIds] = useState<string[]>([]);
 
-  const [assetNotesDraft, setAssetNotesDraft] = useState("");
-  const [providerReadiness, setProviderReadiness] = useState<ProviderReadiness | null>(null);
-  const [activationChecklist, setActivationChecklist] = useState<ActivationChecklist | null>(null);
-  const [providerEnvStatus, setProviderEnvStatus] = useState<ProviderEnvStatus | null>(null);
-  const [providerKeyDraft, setProviderKeyDraft] = useState<Record<string, string>>({});
-  const [providerPreflight, setProviderPreflight] = useState<ProviderPreflight | null>(null);
-  const [providerAudit, setProviderAudit] = useState<ProviderAdapterAudit | null>(null);
-  const [brandKit, setBrandKit] = useState<BrandKit>(fallbackBrandKit);
-  const [brandKitDraft, setBrandKitDraft] = useState<BrandKit>(fallbackBrandKit);
-  const [demoDoctor, setDemoDoctor] = useState<DemoDoctorStatus | null>(null);
-  const [checkingProviders, setCheckingProviders] = useState(false);
-  const [checkingProviderPreflight, setCheckingProviderPreflight] = useState(false);
-  const [checkingProviderAudit, setCheckingProviderAudit] = useState(false);
-  const [savingProviderReceipt, setSavingProviderReceipt] = useState(false);
-  const [checkingDemoDoctor, setCheckingDemoDoctor] = useState(false);
-  const [resettingDemo, setResettingDemo] = useState(false);
-  const [savingDemoEvidence, setSavingDemoEvidence] = useState(false);
-  const [savingCallBrief, setSavingCallBrief] = useState(false);
-  const [buildingReadinessPack, setBuildingReadinessPack] = useState(false);
-  const [demoEvidencePath, setDemoEvidencePath] = useState("");
-  const [demoEvidenceUrl, setDemoEvidenceUrl] = useState("");
-  const [callBriefPath, setCallBriefPath] = useState("");
-  const [callBriefUrl, setCallBriefUrl] = useState("");
-  const [callDecision, setCallDecision] = useState<DemoCallDecision | null>(null);
-  const [providerReceiptPath, setProviderReceiptPath] = useState("");
-  const [providerReceiptUrl, setProviderReceiptUrl] = useState("");
-  const [brandContextPath, setBrandContextPath] = useState("");
-  const [brandContextUrl, setBrandContextUrl] = useState("");
-  const [activationChecklistPath, setActivationChecklistPath] = useState("");
-  const [activationChecklistUrl, setActivationChecklistUrl] = useState("");
-  const [readinessPackPath, setReadinessPackPath] = useState("");
-  const [readinessPackUrl, setReadinessPackUrl] = useState("");
-  const [readinessPackSha, setReadinessPackSha] = useState("");
-  const [implementationManifestPath, setImplementationManifestPath] = useState("");
-  const [implementationManifestUrl, setImplementationManifestUrl] = useState("");
-  const [readinessPackManifest, setReadinessPackManifest] = useState<DemoReadinessPackResult["manifest"] | null>(null);
-  const [providerEnvBusy, setProviderEnvBusy] = useState(false);
   const [maskPainterBusy, setMaskPainterBusy] = useState(false);
-  const [brandKitBusy, setBrandKitBusy] = useState(false);
-  const [brandContextBusy, setBrandContextBusy] = useState(false);
-  const [briefBusy, setBriefBusy] = useState(false);
-  const [handoffBusy, setHandoffBusy] = useState(false);
-  const [handoffProofText, setHandoffProofText] = useState("");
   const [busy, setBusy] = useState(false);
   // `compareGroup` ties the two sides of a side-by-side run together so the
   // timeline shows one loading round with two slots, not two separate rounds.
@@ -631,26 +491,10 @@ export default function App() {
           nextSessions = [created.session];
         }
 
-        const [
-          turnResult,
-          assetResult,
-          exportResult,
-          providerEnvResult,
-          activationChecklistResult,
-          brandKitResult,
-          projectResult
-        ] = await Promise.all([
+        const [turnResult, assetResult] = await Promise.all([
           listTurns(nextSession.id),
-          listAssets({ sessionId: nextSession.id }),
-          listExports().catch(() => ({ exports: [] })),
-          fetchProviderEnvStatus().catch(() => null),
-          fetchActivationChecklist().catch(() => null),
-          fetchBrandKit().catch(() => null),
-          listProjects().catch(() => ({ projects: [] }))
+          listAssets({ sessionId: nextSession.id })
         ]);
-        const projectForSession =
-          projectResult.projects.find((project) => project.id === nextSession.project_id) ?? projectResult.projects[0] ?? null;
-        const briefResult = projectForSession ? await listBriefs(projectForSession.id).catch(() => ({ briefs: [] })) : { briefs: [] };
 
         if (cancelled) {
           return;
@@ -658,29 +502,13 @@ export default function App() {
 
         setConfig(freshConfig);
         setSelectedModelId(preferredStudioModel(freshConfig.models, readLastUsedModelId()).id);
-        setProjects(projectResult.projects);
-        setActiveProject(projectForSession);
-        setProjectName(projectForSession?.name ?? "Frank Body Campaign");
-        const initialBrief = briefResult.briefs[0] ?? null;
-        setBriefs(briefResult.briefs);
-        setActiveBrief(initialBrief);
-        if (initialBrief) {
-          setBriefDraft(briefToDraft(initialBrief));
-          hydratePromptFromBrief(initialBrief);
-        }
         setSessions(nextSessions);
         setActiveSession(nextSession);
         setActiveReferenceIds([]);
         setTurns(turnResult.turns);
         setAssets(assetResult.assets);
-        setExports(filterExportsForAssets(exportResult.exports, assetResult.assets));
-        setProviderEnvStatus(providerEnvResult);
-        setActivationChecklist(activationChecklistResult);
-        if (brandKitResult?.brandKit) {
-          setBrandKit(brandKitResult.brandKit);
-          setBrandKitDraft(brandKitResult.brandKit);
-        }
         setSelectedAsset(firstReviewableAsset(assetResult.assets));
+
         setConnection("online");
         setStatusText("Studio is connected.");
         setStudioBooted(true);
@@ -699,7 +527,6 @@ export default function App() {
         setSessions([localSession]);
       setActiveSession(localSession);
       setConnection("offline");
-      setExports([]);
       const persisted = loadLocalAssets();
       if (persisted.length) {
         setAssets(persisted);
@@ -729,12 +556,6 @@ export default function App() {
     saveLocalAssets(assets);
   }, [assets, connection]);
 
-  useEffect(() => {
-    if (connection !== "online" || providerAudit || checkingProviderAudit || !shouldAutoOpenProviderAudit()) {
-      return;
-    }
-    void checkProviderAdapterAudit();
-  }, [connection, providerAudit, checkingProviderAudit]);
 
 
   const selectedModel = useMemo(
@@ -764,13 +585,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryRunToken]);
 
-  const providerAuditMode = shouldAutoOpenProviderAudit();
   const modelOptions = useMemo(() => selectModelOptions(config.models, selectedModelId), [config.models, selectedModelId]);
-  const allowedSizesForAspect = useMemo(
-    () => filterSizesForAspect(modelOptions.allowedImageSizes, settings.aspect_ratio),
-    [modelOptions.allowedImageSizes, settings.aspect_ratio]
-  );
-  const modelHasSizes = (modelOptions.allowedImageSizes?.length ?? 0) > 0;
   // In side-by-side mode the model pool follows the compare sub-media toggle.
   const effectiveMedia: "image" | "video" = mediaKind === "compare" ? compareMedia : mediaKind;
   const mediaModels = useMemo(() => modelsForMedia(config.models, effectiveMedia), [config.models, effectiveMedia]);
@@ -889,36 +704,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedModelId, config.models]);
 
-  const providerSetupState = useMemo(
-    () => (connection === "online" ? providerSetup(config.models) : { waitingModels: [], envVars: [] }),
-    [config.models, connection]
-  );
-  const providerUnlockRows = useMemo(() => (connection === "online" ? providerUnlockPlan(config.models) : []), [config.models, connection]);
-  const providerKeyEnvVars = useMemo(() => {
-    if (connection !== "online") {
-      return [];
-    }
-    const missingFromStatus = providerEnvStatus?.missingEnvVars ?? [];
-    if (missingFromStatus.length) {
-      return orderProviderEnvVars(missingFromStatus, providerUnlockRows);
-    }
-    if (providerSetupState.envVars.length) {
-      return providerSetupState.envVars;
-    }
-    return orderProviderEnvVars(providerEnvStatus?.envVars ?? [], providerUnlockRows);
-  }, [connection, providerEnvStatus?.envVars, providerEnvStatus?.missingEnvVars, providerSetupState.envVars, providerUnlockRows]);
-  const providerKeyDraftHasValues = useMemo(
-    () => Object.values(providerKeyDraft).some((value) => value.trim().length > 0),
-    [providerKeyDraft]
-  );
-  const promptPresets = useMemo(
-    () => [...config.promptPresets, ...customPresets],
-    [config.promptPresets, customPresets]
-  );
-  const activePreset = useMemo(
-    () => promptPresets.find((preset) => preset.key === selectedPresetKey) ?? promptPresets[0],
-    [promptPresets, selectedPresetKey]
-  );
+  const promptPresets = useMemo(() => config.promptPresets, [config.promptPresets]);
   const productTaskShortcuts = useMemo(
     () => config.tasks.filter((task) => !["product-shot-lab", "prompt-remix"].includes(task.key)),
     [config.tasks]
@@ -962,11 +748,6 @@ export default function App() {
 
 
 
-  function startMaskPainter(asset: Asset) {
-    setEditSourceAsset(asset);
-    setMaskAsset(null);
-    setMaskPainterAsset(asset);
-  }
 
   useEffect(() => {
     if (!selectedModel) {
@@ -977,14 +758,8 @@ export default function App() {
     if (!selectedModel.capabilities.masked_edit) {
       setMaskAsset(null);
     }
-    setProviderPreflight(null);
   }, [selectedModel]);
 
-  useEffect(() => {
-    setAssetNotesDraft(selectedAsset?.notes ?? "");
-  }, [selectedAsset?.id]);
-
-  const activeReferenceIdSet = useMemo(() => new Set(activeReferenceIds), [activeReferenceIds]);
   // Dock order (activeReferenceIds) drives @refN tags and video frame order.
   const referenceAssets = activeReferenceIds
     .map((id) => assets.find((asset) => asset.id === id && asset.kind === "reference"))
@@ -1126,11 +901,6 @@ export default function App() {
 
 
 
-  const approvedCount = outputAssets.filter((asset) => asset.approval_status === "approved").length;
-  const approvedMotionCount = outputAssets.filter(
-    (asset) => asset.approval_status === "approved" && asset.media_type === "video"
-  ).length;
-  const favoriteCount = outputAssets.filter((asset) => asset.favorite).length;
   const promptMode = editSourceAsset ? (maskAsset ? "masked_edit" : "edit") : "generate";
   const primaryActionLabel =
     mediaKind === "compare"
@@ -1143,36 +913,9 @@ export default function App() {
             ? "Edit"
             : "Generate";
 
-  const selectedExportPresets = useMemo(
-    () => (selectedAsset ? exportPresetsForAsset(config.exportPresets, selectedAsset) : []),
-    [config.exportPresets, selectedAsset]
-  );
-  const imageExportPresetCount = useMemo(
-    () => config.exportPresets.filter((preset) => (preset.media_types ?? ["image"]).includes("image")).length,
-    [config.exportPresets]
-  );
-  const selectedAssetMetadata = useMemo(
-    () => (selectedAsset ? selectedAssetReviewMetadata(selectedAsset, assets, config, turns) : null),
-    [assets, config, selectedAsset, turns]
-  );
-  const cliffGuideSteps = useMemo(
-    () => buildCliffGuideSteps(outputAssets, referenceAssets, approvedCount, approvedMotionCount),
-    [approvedCount, approvedMotionCount, outputAssets, referenceAssets]
-  );
-  const cliffGuideProofs = useMemo(
-    () => buildCliffGuideProofs(demoDoctor, readinessPackManifest),
-    [demoDoctor, readinessPackManifest]
-  );
-  const launchReadinessItems = useMemo(
-    () => buildLaunchReadinessItems(config, providerSetupState.waitingModels.length, demoDoctor, activationChecklist, readinessPackSha),
-    [activationChecklist, config, demoDoctor, providerSetupState.waitingModels.length, readinessPackSha]
-  );
-  const mainDemoSession = useMemo(() => sessions.find(isMainDemoSession) ?? null, [sessions]);
-  const showMainDemoAction = Boolean(mainDemoSession && activeSession?.id !== mainDemoSession.id);
 
   function showImageStudio() {
     setStudioMode("studio");
-    setReviewFilter("all");
     setSettingsRailOpen(true);
     setStatusText("Studio is open.");
   }
@@ -1195,21 +938,8 @@ export default function App() {
 
   async function handleNewSession() {
     const nextMode = mediaKind === "video" ? "video" : "image";
-    const sessionSubject =
-      activeBrief?.product_name?.trim() || briefDraft.productName.trim() || activeProject?.name.trim();
-    const sessionSubjectLabel = sessionSubject || activeBrief?.title || "this campaign";
-    const sessionName = sessionSubject
-      ? `${sessionSubject} ${nextMode === "video" ? "Motion" : "Studio"}`
-      : nextMode === "video"
-        ? "New video session"
-        : "New image session";
-    const carriedPrompt = activeBrief?.prompt || briefDraft.prompt;
-    const sessionPayload = {
-      name: sessionName,
-      mode: nextMode,
-      project_id: activeProject?.id,
-      summary: activeBrief?.title
-    };
+    const sessionName = nextMode === "video" ? "New video session" : "New image session";
+    const sessionPayload = { name: sessionName, mode: nextMode };
 
     if (connection === "online") {
       const created = await createSession(sessionPayload);
@@ -1218,17 +948,11 @@ export default function App() {
       setActiveReferenceIds([]);
       setTurns([]);
       setAssets([]);
-      setExports([]);
       setSelectedAsset(null);
-      setHandoffProofText("");
-      setPrompt(carriedPrompt || "");
+      setPrompt("");
       clearEditSource();
       clearCompare();
-      setStatusText(
-        activeProject || activeBrief
-          ? `New session in ${sessionSubjectLabel}. Job jacket carried over.`
-          : "New session. Fresh canvas."
-      );
+      setStatusText("New session. Fresh canvas.");
       return;
     }
 
@@ -1238,27 +962,11 @@ export default function App() {
     setActiveReferenceIds([]);
     setTurns([]);
     setAssets([]);
-    setExports([]);
     setSelectedAsset(null);
-    setHandoffProofText("");
-    setPrompt(carriedPrompt || "");
+    setPrompt("");
     clearEditSource();
     clearCompare();
-    setStatusText(
-      activeProject || activeBrief
-        ? `Local preview in ${sessionSubjectLabel}. Job jacket carried over.`
-        : "Local preview session ready."
-    );
-  }
-
-  async function returnToMainDemo() {
-    if (!mainDemoSession) {
-      setStatusText("Main demo session is not loaded yet.");
-      return;
-    }
-
-    await selectSession(mainDemoSession);
-    setStatusText("Back to the Frank Body demo.");
+    setStatusText("Local preview session ready.");
   }
 
   async function selectSession(session: StudioSession) {
@@ -1266,7 +974,6 @@ export default function App() {
     setActiveReferenceIds([]);
     setReferencePreviewAsset(null);
     setSelectedAsset(null);
-    setHandoffProofText("");
     clearEditSource();
     clearCompare();
 
@@ -1274,21 +981,12 @@ export default function App() {
       return;
     }
 
-    const projectForSession = projects.find((project) => project.id === session.project_id) ?? activeProject;
-    const [turnResult, assetResult, exportResult, briefResult] = await Promise.all([
+    const [turnResult, assetResult] = await Promise.all([
       listTurns(session.id),
-      listAssets({ sessionId: session.id }),
-      listExports().catch(() => ({ exports: [] })),
-      projectForSession ? listBriefs(projectForSession.id).catch(() => ({ briefs: [] })) : Promise.resolve({ briefs: [] })
+      listAssets({ sessionId: session.id })
     ]);
     setTurns(turnResult.turns);
     setAssets(assetResult.assets);
-    setExports(filterExportsForAssets(exportResult.exports, assetResult.assets));
-    setActiveProject(projectForSession ?? null);
-    setProjectName(projectForSession?.name ?? "Frank Body Campaign");
-    setBriefs(briefResult.briefs);
-    setActiveBrief(briefResult.briefs[0] ?? null);
-    setBriefDraft(briefResult.briefs[0] ? briefToDraft(briefResult.briefs[0]) : makeBriefDraft());
     setSelectedAsset(firstReviewableAsset(assetResult.assets));
   }
 
@@ -1309,7 +1007,6 @@ export default function App() {
     setActiveReferenceIds([]);
     setTurns([]);
     setAssets([]);
-    setExports([]);
     setSelectedAsset(null);
     clearEditSource();
     clearCompare();
@@ -1336,262 +1033,7 @@ export default function App() {
     await archiveSession(target);
   }
 
-  async function checkProviderReadiness() {
-    setCheckingProviders(true);
-    try {
-      const readiness = await fetchProviderStatus();
-      setProviderReadiness(readiness);
-      if (readiness.models.length) {
-        setConfig((current) => ({ ...current, models: readiness.models }));
-      }
-      setStatusText(
-        `${readiness.summary.readyModels} provider ${readiness.summary.readyModels === 1 ? "model" : "models"} ready. Keys stay server-side.`
-      );
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Provider check failed.");
-    } finally {
-      setCheckingProviders(false);
-    }
-  }
 
-  async function checkSelectedModelPreflight() {
-    if (!selectedModel) {
-      return;
-    }
-    if (connection !== "online") {
-      setStatusText("Connect to the studio backend to check the selected model.");
-      return;
-    }
-
-    const kind = mediaKind === "video" ? "video" : promptMode;
-    const videoSourceAsset =
-      selectedAsset && selectedAsset.kind !== "reference" && selectedAsset.media_type !== "video"
-        ? selectedAsset
-        : outputAssets.find((asset) => asset.approval_status === "approved" && asset.media_type !== "video") ??
-          outputAssets.find((asset) => asset.media_type !== "video");
-
-    setCheckingProviderPreflight(true);
-    try {
-      const result = await preflightProvider({
-        session_id: activeSession?.id,
-        kind,
-        model: selectedModel.id,
-        prompt,
-        settings,
-        reference_asset_ids: selectedReferenceAssets.map((asset) => asset.id),
-        frank_body_mode: frankBodyMode,
-        preset_key: selectedPresetKey ?? undefined,
-        edit_source_asset_id: kind === "video" ? videoSourceAsset?.id : editSourceAsset?.id,
-        mask_asset_id: kind === "masked_edit" ? maskAsset?.id : undefined
-      });
-      setProviderPreflight(result);
-      setStatusText(result.ready ? `${result.model_label ?? selectedModel.short_label ?? selectedModel.label} preflight ready.` : result.message);
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Selected model preflight failed.");
-    } finally {
-      setCheckingProviderPreflight(false);
-    }
-  }
-
-  async function checkProviderAdapterAudit() {
-    if (connection !== "online") {
-      setStatusText("Connect to the studio backend to audit provider adapters.");
-      return;
-    }
-
-    setCheckingProviderAudit(true);
-    try {
-      const audit = await fetchProviderAudit();
-      setProviderAudit(audit);
-      setStatusText(
-        `${audit.summary.runner_registered} / ${audit.summary.model_count} provider adapters audited with no external calls.`
-      );
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Provider adapter audit failed.");
-    } finally {
-      setCheckingProviderAudit(false);
-    }
-  }
-
-  async function runDemoDoctor() {
-    setCheckingDemoDoctor(true);
-    try {
-      const report = await fetchDemoDoctor();
-      setDemoDoctor(report);
-      hydrateLatestDemoArtifacts(report);
-      setStatusText(report.readyForDemo ? "Demo Doctor says this is ready for Cliff." : "Demo Doctor found setup jobs.");
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Demo Doctor could not run.");
-    } finally {
-      setCheckingDemoDoctor(false);
-    }
-  }
-
-  async function resetDemoFromDoctor() {
-    setResettingDemo(true);
-    try {
-      const result = await resetDemo({ create_assets: true });
-      const seededAssets = result.assets ?? [];
-      const seededOutputs = seededAssets.filter((asset) => !["reference", "mask"].includes(asset.kind));
-      const turnSettings = parseJsonRecord(result.turn.settings_json) as Partial<StudioSettings>;
-
-      setSessions([result.session]);
-      setActiveSession(result.session);
-      setProjects([result.project]);
-      setActiveProject(result.project);
-      setProjectName(result.project.name);
-      setBriefs([result.brief]);
-      setActiveBrief(result.brief);
-      setBriefDraft(briefToDraft(result.brief));
-      setTurns([result.turn]);
-      setAssets(seededAssets);
-      setExports([]);
-      setSelectedAsset(firstReviewableAsset(seededOutputs));
-      setLightboxAsset(null);
-      clearEditSource();
-      clearCompare();
-      setPrompt(result.brief.prompt ?? result.turn.prompt ?? "");
-      setSelectedPresetKey(result.turn.preset_key ?? result.brief.task_type ?? null);
-      setAttachedPresetSnapshot(null);
-      setSettings((current) => ({ ...current, ...turnSettings }));
-      setDemoDoctor(result.doctor);
-      setDemoEvidencePath("");
-      setDemoEvidenceUrl("");
-      setCallBriefPath("");
-      setCallBriefUrl("");
-      setCallDecision(null);
-      setProviderReceiptPath("");
-      setProviderReceiptUrl("");
-      setBrandContextPath("");
-      setBrandContextUrl("");
-      setActivationChecklistPath("");
-      setActivationChecklistUrl("");
-      setReadinessPackPath("");
-      setReadinessPackUrl("");
-      setReadinessPackSha("");
-      setImplementationManifestPath("");
-      setImplementationManifestUrl("");
-      setReadinessPackManifest(null);
-      setHandoffProofText("");
-      setStatusText("Demo reset. Fresh Frank Body starter session loaded.");
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not reset the Frank demo.");
-    } finally {
-      setResettingDemo(false);
-    }
-  }
-
-  function hydrateLatestDemoArtifacts(report: DemoDoctorStatus) {
-    if (report.summary.demoEvidenceReady) {
-      setDemoEvidencePath("frank-create-demo-evidence-latest.md");
-      setDemoEvidenceUrl("/api/frank/demo/evidence/frank-create-demo-evidence-latest.md");
-    } else {
-      setDemoEvidencePath("");
-      setDemoEvidenceUrl("");
-    }
-
-    if (report.summary.callBriefReady) {
-      setCallBriefPath("frank-create-call-brief-latest.md");
-      setCallBriefUrl("/api/frank/demo/call-brief/frank-create-call-brief-latest.md");
-    } else {
-      setCallBriefPath("");
-      setCallBriefUrl("");
-    }
-    setCallDecision(null);
-
-    if (report.summary.providerReadinessReceiptReady) {
-      setProviderReceiptPath("frank-create-provider-readiness-latest.md");
-      setProviderReceiptUrl("/api/frank/demo/provider-readiness/frank-create-provider-readiness-latest.md");
-    } else {
-      setProviderReceiptPath("");
-      setProviderReceiptUrl("");
-    }
-
-    if (report.summary.brandContextReceiptReady) {
-      setBrandContextPath("frank-create-brand-context-latest.md");
-      setBrandContextUrl("/api/frank/demo/brand-context/frank-create-brand-context-latest.md");
-    } else {
-      setBrandContextPath("");
-      setBrandContextUrl("");
-    }
-
-    if (report.summary.activationChecklistReady) {
-      setActivationChecklistPath("frank-create-activation-checklist-latest.md");
-      setActivationChecklistUrl("/api/frank/demo/activation-checklist/frank-create-activation-checklist-latest.md");
-    } else {
-      setActivationChecklistPath("");
-      setActivationChecklistUrl("");
-    }
-
-    if (report.summary.readinessPackReady) {
-      setReadinessPackPath("frank-create-cliff-readiness-latest.zip");
-      setReadinessPackUrl("/api/frank/demo/readiness-pack/frank-create-cliff-readiness-latest.zip");
-      setReadinessPackSha(report.summary.readinessPackSha256 ?? "");
-      setImplementationManifestPath("frank-create-implementation-manifest-latest.md");
-      setImplementationManifestUrl("/api/frank/demo/readiness-pack/frank-create-implementation-manifest-latest.md");
-      setReadinessPackManifest(null);
-    } else {
-      setReadinessPackPath("");
-      setReadinessPackUrl("");
-      setReadinessPackSha("");
-      setImplementationManifestPath("");
-      setImplementationManifestUrl("");
-      setReadinessPackManifest(null);
-    }
-  }
-
-  async function saveDemoEvidence() {
-    setSavingDemoEvidence(true);
-    try {
-      const result = await createDemoEvidence({ base_url: window.location.origin });
-      setDemoEvidencePath(result.latest_markdown_file ?? result.latest_markdown_path ?? result.markdown_file ?? result.markdown_path);
-      setDemoEvidenceUrl(result.latest_markdown_url ?? result.markdown_url);
-      openStudioLink(result.latest_markdown_url ?? result.markdown_url, "Demo evidence", `Demo evidence saved: ${result.markdown_file}`);
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not save demo evidence.");
-    } finally {
-      setSavingDemoEvidence(false);
-    }
-  }
-
-  async function saveCallBrief() {
-    setSavingCallBrief(true);
-    try {
-      const result = await createDemoCallBrief({ base_url: window.location.origin });
-      setCallBriefPath(result.latest_markdown_file ?? result.latest_markdown_path ?? result.markdown_file ?? result.markdown_path);
-      setCallBriefUrl(result.latest_markdown_url ?? result.markdown_url);
-      setCallDecision(result.brief.call_decision ?? null);
-      openStudioLink(result.latest_markdown_url ?? result.markdown_url, "Call brief", `Call brief saved: ${result.latest_markdown_file ?? result.markdown_file}`);
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not save the call brief.");
-    } finally {
-      setSavingCallBrief(false);
-    }
-  }
-
-  async function saveProviderReadinessReceipt() {
-    if (connection !== "online") {
-      setStatusText("Connect to the studio backend to save the provider receipt.");
-      return;
-    }
-
-    setSavingProviderReceipt(true);
-    try {
-      const result = await createProviderReadinessReceipt();
-      setProviderReceiptPath(result.latest_markdown_file ?? result.latest_markdown_path ?? result.markdown_file ?? result.markdown_path);
-      setProviderReceiptUrl(result.latest_markdown_url ?? result.markdown_url);
-      setProviderAudit(result.receipt.adapter_audit);
-      openStudioLink(
-        result.latest_markdown_url ?? result.markdown_url,
-        "Provider receipt",
-        `Provider receipt saved: ${result.latest_markdown_file ?? result.markdown_file}`
-      );
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not save provider readiness receipt.");
-    } finally {
-      setSavingProviderReceipt(false);
-    }
-  }
 
   function openStudioLink(url: string | undefined, label: string, openingText?: string) {
     if (!url) {
@@ -1615,284 +1057,8 @@ export default function App() {
     }
   }
 
-  async function copyProviderKeyPlan() {
-    const plan = providerKeyPlanText({
-      rows: providerUnlockRows,
-      envVars: providerSetupState.envVars,
-      readyModels: providerReadiness?.summary.readyModels,
-      modelCount: providerReadiness?.summary.modelCount ?? config.models.filter((model) => model.provider !== "local").length,
-      keyFilePath: providerEnvStatus?.filePath ?? "user\\frank_create\\provider_keys.env"
-    });
 
-    try {
-      if (!navigator.clipboard?.writeText) {
-        throw new Error("Clipboard API unavailable");
-      }
-      await navigator.clipboard.writeText(plan);
-      setStatusText("Provider key plan copied for Cliff. No secret values included.");
-    } catch {
-      setStatusText("Could not copy the provider key plan. Use the visible Cliff key order instead.");
-    }
-  }
 
-  async function copyProductionUnlockPlan() {
-    if (!activationChecklist) {
-      setStatusText("Run the activation checklist before copying the production unlock plan.");
-      return;
-    }
-
-    const plan = productionUnlockPlanText(activationChecklist);
-    try {
-      if (!navigator.clipboard?.writeText) {
-        throw new Error("Clipboard API unavailable");
-      }
-      await navigator.clipboard.writeText(plan);
-      setStatusText("Production unlock plan copied for Cliff. No secret values included.");
-    } catch {
-      setStatusText("Could not copy the production unlock plan. Use the visible activation checklist instead.");
-    }
-  }
-
-  async function buildReadinessPack() {
-    setBuildingReadinessPack(true);
-    try {
-      const result = await createDemoReadinessPack({ base_url: window.location.origin });
-      setDemoEvidencePath(
-        result.evidence.latest_markdown_file ??
-          result.evidence.markdown_file ??
-          result.evidence.latest_markdown_path ??
-          result.evidence.markdown_path
-      );
-      setDemoEvidenceUrl(result.evidence.latest_markdown_url ?? result.evidence.markdown_url);
-      if (result.call_brief) {
-        setCallBriefPath(
-          result.call_brief.latest_markdown_file ??
-            result.call_brief.markdown_file ??
-            result.call_brief.latest_markdown_path ??
-            result.call_brief.markdown_path
-        );
-        setCallBriefUrl(result.call_brief.latest_markdown_url ?? result.call_brief.markdown_url);
-      }
-      if (result.provider_readiness) {
-        setProviderReceiptPath(
-          result.provider_readiness.latest_markdown_file ??
-            result.provider_readiness.markdown_file ??
-            result.provider_readiness.latest_markdown_path ??
-            result.provider_readiness.markdown_path
-        );
-        setProviderReceiptUrl(result.provider_readiness.latest_markdown_url ?? result.provider_readiness.markdown_url);
-        setProviderAudit(result.provider_readiness.receipt.adapter_audit);
-      }
-      if (result.brand_context) {
-        setBrandContextPath(
-          result.brand_context.latest_markdown_file ??
-            result.brand_context.markdown_file ??
-            result.brand_context.latest_markdown_path ??
-            result.brand_context.markdown_path
-        );
-        setBrandContextUrl(result.brand_context.latest_markdown_url ?? result.brand_context.markdown_url);
-      }
-      if (result.activation_checklist) {
-        setActivationChecklistPath(
-          result.activation_checklist.latest_markdown_file ??
-            result.activation_checklist.markdown_file ??
-            result.activation_checklist.latest_markdown_path ??
-            result.activation_checklist.markdown_path
-        );
-        setActivationChecklistUrl(result.activation_checklist.latest_markdown_url ?? result.activation_checklist.markdown_url);
-      }
-      setReadinessPackPath(result.latest_file_name ?? result.latest_file_path ?? result.file_name ?? result.file_path);
-      setReadinessPackUrl(result.latest_download_url ?? result.download_url);
-      setReadinessPackSha(result.latest_checksum_sha256 ?? result.checksum_sha256 ?? "");
-      setImplementationManifestPath(result.latest_implementation_manifest_path ? "frank-create-implementation-manifest-latest.md" : "");
-      setImplementationManifestUrl(result.latest_implementation_manifest_url ?? "");
-      setReadinessPackManifest(result.manifest);
-      openStudioLink(result.latest_download_url ?? result.download_url, "Call pack", `Call pack built: ${result.latest_file_name ?? result.file_name}`);
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not build the call pack.");
-    } finally {
-      setBuildingReadinessPack(false);
-    }
-  }
-
-  async function createServerKeyFile() {
-    setProviderEnvBusy(true);
-    try {
-      const status = await createProviderEnvTemplate();
-      setProviderEnvStatus(status);
-      setStatusText(status.created ? "Server key file created. Fill it, then reload keys." : "Server key file is already there.");
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not create the server key file.");
-    } finally {
-      setProviderEnvBusy(false);
-    }
-  }
-
-  async function reloadServerKeys() {
-    setProviderEnvBusy(true);
-    try {
-      const status = await reloadProviderEnv();
-      setProviderEnvStatus(status);
-      if (status.readiness) {
-        setProviderReadiness(status.readiness);
-        if (status.readiness.models.length) {
-          setConfig((current) => ({ ...current, models: status.readiness!.models }));
-        }
-      }
-      const loadedCount = status.loadedEnvVars?.length ?? 0;
-      const ignoredPlaceholderCount = status.ignoredPlaceholderEnvVars?.length ?? 0;
-      setStatusText(
-        ignoredPlaceholderCount
-          ? `${ignoredPlaceholderCount} placeholder key ${ignoredPlaceholderCount === 1 ? "value was" : "values were"} ignored. Paste rotated keys, then reload.`
-          : loadedCount
-          ? `${loadedCount} server key ${loadedCount === 1 ? "name" : "names"} reloaded.`
-          : "No filled server keys found yet."
-      );
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not reload server keys.");
-    } finally {
-      setProviderEnvBusy(false);
-    }
-  }
-
-  function updateProviderKeyDraft(envVar: string, value: string) {
-    setProviderKeyDraft((current) => ({ ...current, [envVar]: value }));
-  }
-
-  async function saveServerKeys() {
-    const keys = Object.fromEntries(
-      Object.entries(providerKeyDraft)
-        .map(([envVar, value]) => [envVar, value.trim()])
-        .filter(([, value]) => value)
-    );
-
-    if (!Object.keys(keys).length) {
-      setStatusText("Paste at least one rotated provider key first.");
-      return;
-    }
-
-    setProviderEnvBusy(true);
-    try {
-      const status = await saveProviderEnvKeys(keys);
-      setProviderEnvStatus(status);
-      if (status.readiness) {
-        setProviderReadiness(status.readiness);
-        if (status.readiness.models.length) {
-          setConfig((current) => ({ ...current, models: status.readiness!.models }));
-        }
-      }
-      setProviderKeyDraft({});
-      const savedCount = status.savedEnvVars?.length ?? 0;
-      const ignoredPlaceholderCount = status.ignoredPlaceholderEnvVars?.length ?? 0;
-      setStatusText(
-        ignoredPlaceholderCount
-          ? `${ignoredPlaceholderCount} placeholder key ${ignoredPlaceholderCount === 1 ? "value was" : "values were"} ignored. Paste rotated keys before saving.`
-          : savedCount
-          ? `${savedCount} server key ${savedCount === 1 ? "name" : "names"} saved. Secret values stayed server-side.`
-          : "No provider keys were saved."
-      );
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not save server keys.");
-    } finally {
-      setProviderEnvBusy(false);
-    }
-  }
-
-  async function saveBrandKit() {
-    setBrandKitBusy(true);
-    try {
-      if (connection !== "online") {
-        setBrandKit(brandKitDraft);
-        setStatusText("Connect to the studio backend to save the Brand Kit.");
-        return;
-      }
-      const updated = await updateBrandKit(brandKitDraft);
-      setBrandKit(updated.brandKit);
-      setBrandKitDraft(updated.brandKit);
-      setStatusText("Brand kit saved for Frank Body Mode.");
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not save the Brand Kit.");
-    } finally {
-      setBrandKitBusy(false);
-    }
-  }
-
-  async function saveBrandContextBrief() {
-    if (connection !== "online") {
-      setStatusText("Connect to the studio backend to save the brand context brief.");
-      return;
-    }
-
-    setBrandContextBusy(true);
-    try {
-      const result = await createBrandContextReceipt({ session_id: activeSession?.id });
-      setBrandContextPath(result.latest_markdown_file ?? result.latest_markdown_path ?? result.markdown_file ?? result.markdown_path);
-      setBrandContextUrl(result.latest_markdown_url ?? result.markdown_url);
-      const refs = result.receipt.summary.reference_asset_count;
-      openStudioLink(
-        result.latest_markdown_url ?? result.markdown_url,
-        "Brand context",
-        `Brand context brief saved: ${refs} reference ${refs === 1 ? "asset" : "assets"} counted.`
-      );
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not save the brand context brief.");
-    } finally {
-      setBrandContextBusy(false);
-    }
-  }
-
-  async function saveProjectBrief() {
-    if (!activeSession) {
-      setStatusText("Open a session before saving a brief.");
-      return;
-    }
-
-    setBriefBusy(true);
-    try {
-      if (connection !== "online") {
-        setStatusText("Connect to the studio backend to save the brief.");
-        return;
-      }
-
-      const cleanProjectName = projectName.trim() || briefDraft.productName.trim() || "Frank Body Campaign";
-      let project = activeProject;
-      if (!project || project.name !== cleanProjectName) {
-        const createdProject = await createProject({ name: cleanProjectName, client: "Frank Body", status: "active" });
-        project = createdProject.project;
-        setProjects((current) => [project!, ...current.filter((item) => item.id !== project!.id)]);
-      }
-
-      const briefPayload = createBriefPayload({ ...briefDraft, title: "" }, project.id);
-      const savedBrief =
-        activeBrief && activeBrief.project_id === project.id
-          ? await updateBrief(activeBrief.id, briefPayload)
-          : await createBrief(briefPayload);
-      const updatedSession = await updateSession(activeSession.id, {
-        project_id: project.id,
-        summary: savedBrief.brief.title
-      });
-
-      setActiveProject(project);
-      setProjectName(project.name);
-      setActiveBrief(savedBrief.brief);
-      setBriefDraft(briefToDraft(savedBrief.brief));
-      setBriefs((current) => [savedBrief.brief, ...current.filter((item) => item.id !== savedBrief.brief.id)]);
-      setActiveSession(updatedSession.session);
-      setSessions((current) => current.map((session) => (session.id === updatedSession.session.id ? updatedSession.session : session)));
-      if (!prompt.trim() && savedBrief.brief.prompt) {
-        setPrompt(savedBrief.brief.prompt);
-      }
-      setStatusText(
-        activeBrief && activeBrief.project_id === project.id
-          ? "Brief updated. Job jacket is current."
-          : "Brief saved. The studio has a job jacket now."
-      );
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not save the campaign brief.");
-    } finally {
-      setBriefBusy(false);
-    }
-  }
 
   function inspectAsset(asset: Asset) {
 
@@ -1912,29 +1078,13 @@ export default function App() {
     setLightboxAsset(asset);
   }
 
-  function startCompare(asset: Asset) {
-    setCompareBaseAsset(asset);
-    setCompareTargetAsset(null);
-    setLightboxAsset(null);
-    setStatusText("Choose another output to compare.");
-  }
 
   function clearCompare() {
     setCompareBaseAsset(null);
     setCompareTargetAsset(null);
   }
 
-  function syncCompareAsset(asset: Asset) {
-    setCompareBaseAsset((current) => (current?.id === asset.id ? asset : current));
-    setCompareTargetAsset((current) => (current?.id === asset.id ? asset : current));
-  }
 
-  function hydratePromptFromBrief(brief?: Brief | null) {
-    if (!brief?.prompt) {
-      return;
-    }
-    setPrompt((current) => (current.trim() ? current : brief.prompt ?? ""));
-  }
 
   function insertReferenceTag(tag: string) {
     const el = promptInputRef.current;
@@ -2126,11 +1276,6 @@ export default function App() {
     }
   }
 
-  async function handleReferenceUpload(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
-    await addReferenceFiles(files);
-    event.target.value = "";
-  }
 
   /** Files dropped straight onto the picker's upload tile from Finder. */
   async function handlePickerFiles(files: File[]) {
@@ -3197,50 +2342,7 @@ export default function App() {
 
 
 
-  async function toggleFavorite(asset: Asset) {
-    const optimistic = { ...asset, favorite: !asset.favorite };
-    setAssets((current) => current.map((item) => (item.id === asset.id ? optimistic : item)));
-    setSelectedAsset(optimistic);
-    syncCompareAsset(optimistic);
 
-    try {
-      if (connection === "online") {
-        const updated = await updateAsset(asset.id, { favorite: !asset.favorite });
-        setAssets((current) => current.map((item) => (item.id === updated.asset.id ? updated.asset : item)));
-        setSelectedAsset(updated.asset);
-        syncCompareAsset(updated.asset);
-      }
-    } catch (error) {
-      setAssets((current) => current.map((item) => (item.id === asset.id ? asset : item)));
-      setSelectedAsset(asset);
-      syncCompareAsset(asset);
-      setStatusText(error instanceof Error ? error.message : "Could not update favorite.");
-    }
-  }
-
-  async function saveAssetNotes(asset: Asset) {
-    const optimistic = { ...asset, notes: assetNotesDraft };
-    setAssets((current) => current.map((item) => (item.id === asset.id ? optimistic : item)));
-    setSelectedAsset(optimistic);
-    syncCompareAsset(optimistic);
-
-    try {
-      if (connection === "online") {
-        const updated = await updateAsset(asset.id, { notes: assetNotesDraft });
-        setAssets((current) => current.map((item) => (item.id === updated.asset.id ? updated.asset : item)));
-        setSelectedAsset(updated.asset);
-        syncCompareAsset(updated.asset);
-      }
-
-      setStatusText("Note saved for the next round.");
-    } catch (error) {
-      setAssets((current) => current.map((item) => (item.id === asset.id ? asset : item)));
-      setSelectedAsset(asset);
-      syncCompareAsset(asset);
-      setAssetNotesDraft(asset.notes ?? "");
-      setStatusText(error instanceof Error ? error.message : "Could not save review note.");
-    }
-  }
 
   async function useAssetAsReference(asset: Asset) {
     if (!activeSession) {
@@ -3304,7 +2406,6 @@ export default function App() {
       }
       setTurns((current) => current.filter((t) => t.id !== turn.id));
       setAssets((current) => current.filter((a) => !turnAssetIds.has(a.id)));
-      setExports((current) => current.filter((r) => !turnAssetIds.has(r.asset_id)));
       setSelectedAsset((current) => (current && turnAssetIds.has(current.id) ? null : current));
       if (lightboxAsset && turnAssetIds.has(lightboxAsset.id)) setLightboxAsset(null);
       if (editSourceAsset && turnAssetIds.has(editSourceAsset.id)) {
@@ -3347,67 +2448,8 @@ export default function App() {
 
 
 
-  async function removeAssetFromSession(asset: Asset) {
-    try {
-      if (connection === "online") {
-        await deleteAsset(asset.id);
-      }
-      setAssets((current) => current.filter((item) => item.id !== asset.id));
-      setExports((current) => current.filter((record) => record.asset_id !== asset.id));
-      setSelectedAsset((current) => {
-        if (current?.id !== asset.id) {
-          return current;
-        }
-        return assets.find((item) => item.id !== asset.id && !["reference", "mask"].includes(item.kind)) ?? null;
-      });
-      if (lightboxAsset?.id === asset.id) {
-        setLightboxAsset(null);
-      }
-      if (compareBaseAsset?.id === asset.id || compareTargetAsset?.id === asset.id) {
-        clearCompare();
-      }
-      if (editSourceAsset?.id === asset.id) {
-        clearEditSource();
-      }
-      if (maskAsset?.id === asset.id) {
-        setMaskAsset(null);
-      }
-      setStatusText(asset.kind === "reference" ? "Reference removed from this session." : "Asset removed from this session.");
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not remove this asset.");
-    }
-  }
 
-  async function copyRunBrief(asset: Asset) {
-    const brief = selectedAssetRunBrief(asset, assets, config, turns);
-    try {
-      if (!navigator.clipboard?.writeText) {
-        throw new Error("Clipboard API unavailable");
-      }
-      await navigator.clipboard.writeText(brief);
-      setStatusText("Run brief copied for the handoff.");
-    } catch {
-      setStatusText("Could not copy the run brief. Use the export metadata instead.");
-    }
-  }
 
-  function downloadWorkflowJson(asset: Asset) {
-    try {
-      const workflowJson = selectedAssetWorkflowJson(asset, assets, config, turns);
-      const blob = new Blob([JSON.stringify(workflowJson, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `${safeFileStem(asset.title || asset.id)}-workflow.json`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
-      setStatusText("Workflow JSON downloaded for this pick.");
-    } catch {
-      setStatusText("Could not download workflow JSON for this pick.");
-    }
-  }
 
   // Save the file itself. The backend has no /assets/:id/download route, and
   // opening the signed storage URL in a tab just previews it, so fetch the
@@ -3443,128 +2485,6 @@ export default function App() {
 
 
 
-  async function exportAsset(asset: Asset, preset: ExportPreset) {
-    if (connection !== "online") {
-      setStatusText("Connect to the studio backend to export this pick.");
-      return;
-    }
-
-    try {
-      const created = await createExport({
-        asset_id: asset.id,
-        preset: preset.key,
-        file_path: `user/frank_create/exports/${asset.id}-${preset.key}.json`,
-        metadata: {
-          preset,
-          asset,
-          session: activeSession,
-          model: selectedModel,
-          app: "Frank Create Image Studio"
-        }
-      });
-      const exportRecord = normalizeExportRecord(created.export, {
-        asset_id: asset.id,
-        preset: preset.key,
-        download_url: created.download_url
-      });
-      setExports((current) => [exportRecord, ...current.filter((item) => item.id !== exportRecord.id)]);
-      openStudioLink(created.download_url || exportDownloadUrl(created.export.id), preset.label, `${preset.label} export pack saved.`);
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Export pack needs another look.");
-    }
-  }
-
-  async function exportChannelSet(asset: Asset) {
-    const presets = exportPresetsForAsset(config.exportPresets, asset)
-      .filter((preset) => preset.key !== "video-storyboard")
-      .map((preset) => preset.key);
-
-    if (!presets.length) {
-      setStatusText("No image channel presets for this asset.");
-      return;
-    }
-
-    if (connection !== "online") {
-      setStatusText("Connect to the studio backend to export a channel set.");
-      return;
-    }
-
-    try {
-      const created = await createAssetChannelSet(asset.id, {
-        presets,
-        metadata: {
-          asset,
-          session: activeSession,
-          model: selectedModel,
-          app: "Frank Create Image Studio"
-        }
-      });
-      const exportRecord = normalizeExportRecord(created.export, {
-        asset_id: asset.id,
-        preset: "channel-set",
-        download_url: created.download_url
-      });
-      setExports((current) => [exportRecord, ...current.filter((item) => item.id !== exportRecord.id)]);
-      const count = Number(created.metadata.preset_count ?? presets.length);
-      openStudioLink(created.download_url || exportDownloadUrl(created.export.id), "Channel set", `${count} channel packs saved.`);
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Channel set export needs another look.");
-    }
-  }
-
-  async function exportSessionHandoff() {
-    if (!activeSession) {
-      return;
-    }
-
-    setHandoffBusy(true);
-    setStatusText("Packing the approved direction...");
-    try {
-      const created = await createSessionHandoff(activeSession.id);
-      const exportRecord = normalizeExportRecord(created.handoff, {
-        preset: "session-handoff",
-        download_url: created.download_url,
-        metadata_json: JSON.stringify(created.metadata ?? {})
-      });
-      setExports((current) => [exportRecord, ...current.filter((item) => item.id !== exportRecord.id)]);
-      const assetCount = Number(created.metadata.asset_count ?? approvedCount);
-      const videoCount = Number(created.metadata.video_count ?? 0);
-      const imageCount = Number(created.metadata.image_count ?? assetCount);
-      const channelExportFiles = Number(created.metadata.channel_export_file_count ?? imageCount * imageExportPresetCount);
-      const channelExportSets = Number(created.metadata.channel_export_set_count ?? imageCount);
-      const label =
-        videoCount > 0
-          ? `${assetCount} approved asset${assetCount === 1 ? "" : "s"} (${imageCount} image${imageCount === 1 ? "" : "s"}, ${videoCount} motion)`
-          : `${assetCount} approved image${assetCount === 1 ? "" : "s"}`;
-      setHandoffProofText(
-        `Packed ${channelExportFiles} channel-ready exports across ${channelExportSets} approved image${channelExportSets === 1 ? "" : "s"}.`
-      );
-      openStudioLink(created.download_url || exportDownloadUrl(created.handoff.id), "Cliff Pack", `${label} packed for Cliff.`);
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Approve at least one image before exporting a handoff pack.");
-    } finally {
-      setHandoffBusy(false);
-    }
-  }
-
-  function openSessionReviewBoard() {
-    if (!activeSession || approvedCount === 0) {
-      setStatusText("Approve at least one image before opening a review board.");
-      return;
-    }
-    const url = `#/review/${encodeURIComponent(activeSession.id)}`;
-    const opened = window.open(url, "_blank");
-    setStatusText(opened ? "Opening the visual review board." : `Review board: ${url}`);
-  }
-
-  function openSessionSyncManifest() {
-    if (!activeSession) {
-      setStatusText("Start a session before opening a sync manifest.");
-      return;
-    }
-    openStudioLink(sessionSyncManifestUrl(activeSession.id), "Sync manifest", "Opening the FrankHub sync manifest.");
-  }
-
   function attachPreset(nextKey: string | null) {
     const preset = nextKey ? promptPresets.find((p) => p.key === nextKey) ?? null : null;
     setPrompt((current) => {
@@ -3588,9 +2508,6 @@ export default function App() {
   }
 
 
-  function selectPreset(preset: PromptPreset) {
-    attachPreset(preset.key);
-  }
 
 
   function selectTaskShortcut(task: FrankTask) {
@@ -3603,32 +2520,7 @@ export default function App() {
     setStatusText(`${task.label} is loaded.`);
   }
 
-  function makeAnotherRound(asset: Asset, direction: "similar" | "cleanup" | "campaign") {
-    const presetKey =
-      direction === "cleanup" ? "clean-ecom" : direction === "campaign" ? "campaign-variants" : selectedPresetKey;
-    const preset = promptPresets.find((item) => item.key === presetKey) ?? activePreset;
-    const editModel =
-      selectedModel?.capabilities.edit
-        ? selectedModel
-        : config.models.find((model) => model.capabilities.edit && model.configured !== false) ??
-          config.models.find((model) => model.capabilities.edit);
-    if (editModel) {
-      setSelectedModelId(editModel.id);
-    }
-    setSelectedPresetKey(preset?.key ?? selectedPresetKey);
-    setAttachedPresetSnapshot(null);
-    startEditFromAsset(asset);
-    setPrompt(nextRoundPrompt(asset, direction, preset));
-    setSettings((current) => ({ ...current, count: Math.min(4, maxCountForModel(selectedModel)) }));
-    setLightboxAsset(null);
-    clearCompare();
-    setStatusText("Next round is briefed from this pick.");
-  }
 
-  function startWalkthrough() {
-    setWalkthroughStep(0);
-    setWalkthroughOpen(true);
-  }
 
   const activeWalkthroughStep = WALKTHROUGH_STEPS[walkthroughStep] ?? WALKTHROUGH_STEPS[0];
   const activeWalkthroughTarget = walkthroughOpen ? activeWalkthroughStep.target : null;
@@ -5442,9 +4334,6 @@ function taskShortcutIcon(taskKey: string) {
   return <Icon source="arrow-path" tone="inherit" size={15} />;
 }
 
-function formatCount(count: number, singular: string, plural = `${singular}s`) {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
 
 function AssetPreviewMedia({
   asset,
@@ -5901,112 +4790,20 @@ function chooseLaunchSession(sessions: StudioSession[]) {
   return sessions.find(isMainDemoSession) ?? sessions[0];
 }
 
-function makeBriefDraft(overrides: Partial<BriefFormState> = {}): BriefFormState {
-  return {
-    title: "",
-    productName: "",
-    taskType: "product-shot-lab",
-    channel: "PDP / paid social",
-    tone: "Cheeky but premium",
-    prompt: "",
-    negativePrompt: "",
-    ...overrides
-  };
-}
 
-function briefToDraft(brief: Brief): BriefFormState {
-  return makeBriefDraft({
-    title: brief.title ?? "",
-    productName: brief.product_name ?? "",
-    taskType: brief.task_type ?? "product-shot-lab",
-    channel: brief.channel ?? "",
-    tone: brief.tone ?? "",
-    prompt: brief.prompt ?? "",
-    negativePrompt: brief.negative_prompt ?? ""
-  });
-}
 
-function exportPresetsForAsset(presets: ExportPreset[], asset: Asset) {
-  const mediaType = asset.media_type ?? "image";
-  return presets.filter((preset) => (preset.media_types ?? ["image"]).includes(mediaType));
-}
 
 function firstReviewableAsset(assets: Asset[]) {
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
   return outputAssets.find((asset) => (asset.media_type ?? "image") !== "video") ?? outputAssets[0] ?? null;
 }
 
-function filterExportsForAssets(records: ExportRecord[], assets: Asset[]) {
-  const assetIds = new Set(assets.map((asset) => asset.id));
-  return records.filter((record) => assetIds.has(record.asset_id));
-}
 
-function normalizeExportRecord(record: ExportRecord, fallback: Partial<ExportRecord>) {
-  return {
-    ...fallback,
-    ...record,
-    asset_id: record.asset_id ?? fallback.asset_id ?? "",
-    preset: record.preset ?? fallback.preset ?? "export-pack",
-    metadata_json: record.metadata_json ?? fallback.metadata_json ?? "{}",
-    sync_status: record.sync_status ?? fallback.sync_status ?? "local",
-    remote_id: record.remote_id ?? fallback.remote_id,
-    created_at: record.created_at ?? new Date().toISOString()
-  } as ExportRecord;
-}
 
-function exportRecordLabel(record: ExportRecord, presets: ExportPreset[]) {
-  if (record.preset === "session-handoff") {
-    return "Cliff Pack";
-  }
-  return presets.find((preset) => preset.key === record.preset)?.label ?? titleize(record.preset ?? "export-pack");
-}
 
-function exportRecordMeta(record: ExportRecord, assets: Asset[]) {
-  const created = record.created_at ? new Date(record.created_at) : null;
-  const createdLabel = created && !Number.isNaN(created.getTime()) ? created.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "saved";
-  if (record.preset === "session-handoff") {
-    const metadata = parseExportMetadata(record.metadata_json);
-    const assetCount = Number(metadata.asset_count ?? metadata.approved_assets ?? 0);
-    const referenceCount = Number(metadata.reference_count ?? metadata.references ?? 0);
-    const videoCount = Number(metadata.video_count ?? metadata.approved_videos ?? 0);
-    const parts = [
-      `${assetCount} approved`,
-      videoCount > 0 ? `${videoCount} motion` : null,
-      `${referenceCount} refs`
-    ].filter(Boolean);
-    return `${parts.join(" / ")} / ${createdLabel}`;
-  }
-  const asset = assets.find((item) => item.id === record.asset_id);
-  return `${asset?.title ?? "Export pack"} / ${createdLabel}`;
-}
 
-function parseExportMetadata(metadataJson?: string) {
-  if (!metadataJson) {
-    return {} as Record<string, unknown>;
-  }
-  try {
-    const parsed = JSON.parse(metadataJson);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
-  } catch {
-    return {} as Record<string, unknown>;
-  }
-}
 
-function titleize(value: string) {
-  return value
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
 
-function shouldAutoOpenProviderAudit() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  return new URLSearchParams(window.location.search).get("provider_audit") === "1";
-}
 
 const LAST_MODEL_KEY = "frank.lastUsedModelId";
 const LAST_MODEL_BY_MEDIA_KEY = "frank.lastUsedModelIdByMedia";
@@ -6067,145 +4864,13 @@ function modelName(config: FrankConfig, modelId: string) {
   return config.models.find((model) => model.id === modelId)?.short_label ?? modelId;
 }
 
-function selectedAssetReviewMetadata(asset: Asset, assets: Asset[], config: FrankConfig, turns: StudioTurn[]) {
-  const turn = turns.find((item) => item.id === asset.turn_id);
-  const settings = parseJsonRecord(asset.settings_json ?? turn?.settings_json);
-  const workflow = parseJsonRecord(settings.workflow_provenance);
-  const referenceIds = parseJsonList(asset.reference_asset_ids_json ?? turn?.reference_asset_ids_json);
-  const model = config.models.find((item) => item.id === (asset.model ?? turn?.model));
-  const provider = asset.provider ?? turn?.provider ?? model?.provider;
-  const modelLabel = `${providerDisplayName(provider)} / ${model?.short_label ?? asset.model ?? turn?.model ?? "model pending"}`;
-  const settingsLabel = settingsSummary(settings);
-  const dimensionsLabel = asset.width && asset.height ? `${asset.width} x ${asset.height}` : "";
-  const sourceId = asset.source_asset_id ?? turn?.source_asset_id;
-  const sourceLabel = sourceId ? assets.find((item) => item.id === sourceId)?.title ?? sourceId : "";
-  const referenceLabel = `${referenceIds.length} reference${referenceIds.length === 1 ? "" : "s"}`;
-  const workflowLabel = workflowSummary(workflow);
 
-  return {
-    modelLabel,
-    settingsLabel,
-    dimensionsLabel,
-    sourceLabel,
-    workflowLabel,
-    referenceLabel,
-    prompt: asset.prompt ?? turn?.prompt ?? ""
-  };
-}
 
-function selectedAssetRunBrief(asset: Asset, assets: Asset[], config: FrankConfig, turns: StudioTurn[]) {
-  const turn = turns.find((item) => item.id === asset.turn_id);
-  const metadata = selectedAssetReviewMetadata(asset, assets, config, turns);
-  const workflowBridge = assetWorkflowBridge(asset, turns);
-  const referenceIds = parseJsonList(asset.reference_asset_ids_json ?? turn?.reference_asset_ids_json);
-  const referenceNames = referenceIds
-    .map((id) => assets.find((item) => item.id === id)?.title ?? id)
-    .filter(Boolean);
-  const approval = asset.approval_status === "approved" ? "Approved" : titleize(asset.approval_status ?? "review");
-  const status = `${approval}${asset.favorite ? " / favorite" : ""}`;
-  const lines = [
-    "Frank Create Run Brief",
-    `Asset: ${asset.title}`,
-    `Status: ${status}`,
-    `Media: ${asset.media_type ?? "image"}`,
-    metadata.modelLabel ? `Model: ${metadata.modelLabel}` : "",
-    metadata.settingsLabel ? `Settings: ${metadata.settingsLabel}` : "",
-    metadata.dimensionsLabel ? `Size: ${metadata.dimensionsLabel}` : "",
-    metadata.workflowLabel ? `Workflow: ${metadata.workflowLabel}` : "",
-    workflowBridge.workflow_receipt_url ? `Workflow receipt: ${workflowBridge.workflow_receipt_url}` : "",
-    metadata.sourceLabel ? `Source: ${metadata.sourceLabel}` : "",
-    `References: ${referenceNames.length ? referenceNames.join(", ") : metadata.referenceLabel}`,
-    metadata.prompt ? `Prompt: ${metadata.prompt}` : "",
-    asset.notes ? `Review notes: ${asset.notes}` : "",
-    `Sync: ${asset.sync_status ?? "local"}`,
-    asset.file_path ? `File: ${asset.file_path}` : "",
-    turn?.id ? `Turn: ${turn.id}` : "",
-    "Provider keys: server-side only; no secrets included."
-  ];
-  return lines.filter(Boolean).join("\n");
-}
 
-function selectedAssetWorkflowJson(asset: Asset, assets: Asset[], config: FrankConfig, turns: StudioTurn[]) {
-  const turn = turns.find((item) => item.id === asset.turn_id);
-  const settings = sanitizeWorkflowPayload(parseJsonRecord(asset.settings_json ?? turn?.settings_json)) as Record<string, unknown>;
-  const workflowProvenance = parseJsonRecord(settings.workflow_provenance);
-  const referenceIds = parseJsonList(asset.reference_asset_ids_json ?? turn?.reference_asset_ids_json);
-  const sourceId = asset.source_asset_id ?? turn?.source_asset_id;
-  const model = config.models.find((item) => item.id === (asset.model ?? turn?.model));
-  const workflowBridge = assetWorkflowBridge(asset, turns, workflowProvenance);
 
-  return {
-    product: "Frank Create",
-    asset_id: asset.id,
-    asset_title: asset.title,
-    media_type: asset.media_type ?? "image",
-    provider: asset.provider ?? turn?.provider ?? model?.provider ?? null,
-    model: asset.model ?? turn?.model ?? model?.id ?? null,
-    prompt: asset.prompt ?? turn?.prompt ?? "",
-    settings,
-    workflow_provenance: workflowProvenance,
-    workflow_bridge: workflowBridge,
-    source: sourceId ? assetReferenceSummary(sourceId, assets) : null,
-    references: referenceIds.map((id) => assetReferenceSummary(id, assets)),
-    approval_status: asset.approval_status ?? "review",
-    favorite: Boolean(asset.favorite),
-    sync_status: asset.sync_status ?? "local",
-    file_path: asset.file_path ?? "",
-    created_at: asset.created_at ?? null,
-    updated_at: asset.updated_at ?? null,
-    turn_id: turn?.id ?? asset.turn_id ?? null,
-    provider_keys: "server-side only; no secrets included"
-  };
-}
 
-function assetWorkflowBridge(asset: Asset, turns: StudioTurn[], workflowProvenance?: Record<string, unknown>) {
-  const turn = turns.find((item) => item.id === asset.turn_id);
-  const settings = workflowProvenance
-    ? { workflow_provenance: workflowProvenance }
-    : (parseJsonRecord(asset.settings_json ?? turn?.settings_json) as Record<string, unknown>);
-  const workflow = workflowProvenance ?? parseJsonRecord(settings.workflow_provenance);
-  const workflowJson = parseJsonRecord(workflow.workflow_json);
-  return {
-    asset_id: asset.id,
-    workflow_key: typeof workflow.workflow_key === "string" ? workflow.workflow_key : asset.model ?? turn?.model ?? null,
-    engine: typeof workflow.engine === "string" ? workflow.engine : asset.provider ?? turn?.provider ?? null,
-    node_types: workflowNodeTypes(workflow, workflowJson),
-    workflow_receipt_url: assetWorkflowReceiptUrl(asset.id)
-  };
-}
 
-function workflowNodeTypes(workflow: Record<string, unknown>, workflowJson: Record<string, unknown>) {
-  const localNodeTypes = localWorkflowNodeTypes(typeof workflow.workflow_key === "string" ? workflow.workflow_key : "");
-  if (localNodeTypes.length) {
-    return localNodeTypes;
-  }
-  if (Array.isArray(workflow.node_types)) {
-    return workflow.node_types.filter((item): item is string => typeof item === "string" && item.length > 0);
-  }
-  return Object.entries(workflowJson)
-    .sort(([left], [right]) => workflowNodeSortKey(left).localeCompare(workflowNodeSortKey(right)))
-    .map(([, node]) => parseJsonRecord(node).class_type)
-    .filter((item): item is string => typeof item === "string" && item.length > 0);
-}
 
-function localWorkflowNodeTypes(workflowKey: string) {
-  const byWorkflow: Record<string, string[]> = {
-  };
-  return byWorkflow[workflowKey] ?? [];
-}
-
-function workflowNodeSortKey(nodeId: string) {
-  const numeric = Number.parseInt(nodeId, 10);
-  return Number.isFinite(numeric) ? `0-${numeric.toString().padStart(6, "0")}` : `1-${nodeId}`;
-}
-
-function assetReferenceSummary(id: string, assets: Asset[]) {
-  const asset = assets.find((item) => item.id === id);
-  return {
-    id,
-    title: asset?.title ?? id
-  };
-}
 
 function safeFileStem(value: string) {
   return (
@@ -6218,57 +4883,10 @@ function safeFileStem(value: string) {
   );
 }
 
-function sanitizeWorkflowPayload(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map((item) => sanitizeWorkflowPayload(item));
-  }
-  if (!value || typeof value !== "object") {
-    return value;
-  }
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).map(([key, item]) => [
-      key,
-      isSensitiveWorkflowKey(key) ? "[server-side secret]" : sanitizeWorkflowPayload(item)
-    ])
-  );
-}
 
-function isSensitiveWorkflowKey(key: string) {
-  return /api[_-]?key|token|secret|authorization|bearer|password|credential/i.test(key);
-}
 
-function settingsSummary(settings: Record<string, unknown>) {
-  const aspect = typeof settings.aspect_ratio === "string" ? settings.aspect_ratio : "";
-  const size = typeof settings.image_size === "string" || typeof settings.image_size === "number" ? String(settings.image_size) : "";
-  const countValue = Number(settings.count ?? 0);
-  const count = Number.isFinite(countValue) && countValue > 0 ? Math.trunc(countValue) : 0;
-  const pieces = [aspect, size].filter(Boolean);
-  if (count) {
-    pieces.push(`${count} ${count === 1 ? "variant" : "variants"}`);
-  }
-  return pieces.join(" / ");
-}
 
-function workflowSummary(workflow: Record<string, unknown>) {
-  const workflowKey = typeof workflow.workflow_key === "string" ? workflow.workflow_key : "";
-  const engine = typeof workflow.engine === "string" ? workflow.engine : "";
-  const checkpoint = typeof workflow.checkpoint_name === "string" ? workflow.checkpoint_name : "";
-  if (!workflowKey && !engine) {
-    return "";
-  }
-  const label = [workflowKey, engine].filter(Boolean).join(" / ");
-  return checkpoint ? `${label} / ${checkpoint}` : label;
-}
 
-function providerDisplayName(provider?: string) {
-  const names: Record<string, string> = {
-    google: "Google",
-    local: "Local",
-    openai: "OpenAI",
-    replicate: "Replicate"
-  };
-  return provider ? names[provider] ?? titleize(provider) : "Provider";
-}
 
 function turnEmptyLabel(turn: StudioTurn) {
   if (turn.status === "blocked") {
@@ -6304,132 +4922,14 @@ function referenceCountLabel(count: number) {
   return `${count} reference${count === 1 ? "" : "s"}`;
 }
 
-function doctorStatusIcon(status: "ready" | "warning" | "fail") {
-  if (status === "ready") {
-    return "OK";
-  }
-  if (status === "warning") {
-    return "!";
-  }
-  return "Fix";
-}
 
-function activationStatusIcon(status: ActivationChecklist["steps"][number]["status"]) {
-  if (status === "ready") {
-    return "OK";
-  }
-  if (status === "recommended") {
-    return "Tip";
-  }
-  return "Do";
-}
 
-function activationPathLabel(path: string) {
-  return /models[\\/]+checkpoints$/i.test(path) ? "models\\checkpoints" : path;
-}
 
-function activationModelTotal(checklist: ActivationChecklist) {
-  const explicitTotal = Number(checklist.summary.provider_model_count);
-  if (Number.isFinite(explicitTotal) && explicitTotal > 0) {
-    return explicitTotal;
-  }
-  return Number(checklist.summary.ready_provider_models || 0) + Number(checklist.summary.waiting_provider_models || 0);
-}
 
-function activationChecklistInlineStatus(checklist: ActivationChecklist) {
-  const count = checklist.steps.length;
-  return `Activation checklist tracked: ${count} unlock ${count === 1 ? "step" : "steps"}`;
-}
 
-function demoDoctorSummary(doctor: DemoDoctorStatus) {
-  const smokeCopy = doctor.summary.workflowSmokeOk ? "workflow smoke passed" : "run workflow smoke";
-  return `${doctor.summary.outputAssetCount} outputs, ${doctor.summary.referenceAssetCount} refs, ${smokeCopy}, ${doctor.summary.waitingProviderModels} live models waiting.`;
-}
 
-function buildLaunchReadinessItems(
-  config: FrankConfig,
-  waitingModelCount: number,
-  doctor: DemoDoctorStatus | null,
-  checklist: ActivationChecklist | null,
-  readinessPackSha: string
-) {
-  const liveWaiting = checklist?.summary.waiting_provider_models ?? doctor?.summary.waitingProviderModels ?? waitingModelCount;
-  const packReady = Boolean(readinessPackSha || doctor?.summary.readinessPackReady);
-  const demoIsCurated = doctor ? doctor.summary.demoCurated !== false : true;
-  return [
-    {
-      key: "local-demo",
-      status: doctor?.readyForDemo === false || !demoIsCurated ? "warning" : "ready",
-      badge: doctor?.readyForDemo === false || !demoIsCurated ? "Do" : "OK",
-      label: !demoIsCurated ? "Reset demo before Cliff" : "Local demo ready",
-      detail: !demoIsCurated
-        ? `${doctor?.summary.imageOutputAssetCount ?? doctor?.summary.outputAssetCount ?? 0} visible image outputs; use Reset demo for the clean seed.`
-        : doctor?.summary.workflowSmokeOk
-          ? "Smoke-tested generate, edit, approve, export, and handoff."
-          : "Generate, edit, approve, export, and handoff are wired to the cloud backend."
-    },
-    {
-      key: "live-keys",
-      status: liveWaiting ? "warning" : "ready",
-      badge: liveWaiting ? "Do" : "OK",
-      label: liveWaiting ? `${liveWaiting} live key models waiting` : "Live APIs unlocked",
-      detail: liveWaiting
-        ? "Use Provider Setup for rotated server-side keys; no browser secrets."
-        : "Provider proxy can run the visible live model roster."
-    },
-    {
-      key: "proof-pack",
-      status: packReady ? "ready" : "recommended",
-      badge: packReady ? "OK" : "Tip",
-      label: packReady ? "Proof pack ready" : "Build proof pack",
-      detail: readinessPackSha ? `Verified SHA-256 ${readinessPackSha.slice(0, 12)}...` : "Run Demo Doctor, then build the call pack before sending."
-    }
-  ];
-}
 
-function buildCliffGuideSteps(outputAssets: Asset[], referenceAssets: Asset[], approvedCount: number, approvedMotionCount: number) {
-  const reviewableImages = outputAssets.filter((asset) => (asset.media_type ?? "image") !== "video");
-  return [
-    {
-      label: "Image Studio",
-      detail: "Open with sessions, prompt thread, references, model picker, and Frank Body Mode.",
-      status: outputAssets.length ? `${outputAssets.length} outputs` : "seed demo"
-    },
-    {
-      label: "Product Shot Lab",
-      detail: "Use the product presets, run a local round, then approve the best shot.",
-      status: referenceAssets.length ? `${referenceAssets.length} refs` : "add refs"
-    },
-    {
-      label: "Paint edit mask",
-      detail: "Select an image, paint a retouch mask, save it into Masked Edit, then make another round.",
-      status: reviewableImages.length ? "image ready" : "need image"
-    },
-    {
-      label: "Video Lab",
-      detail: "Turn an approved image into a motion storyboard and export the storyboard ZIP.",
-      status: approvedMotionCount ? `${approvedMotionCount} motion` : "storyboard path"
-    }
-  ];
-}
 
-function buildCliffGuideProofs(doctor: DemoDoctorStatus | null, manifest: DemoReadinessPackResult["manifest"] | null) {
-  const screenshots = manifest?.screenshot_count ?? 0;
-  const browserQaChecks = new Set(
-    (manifest?.browser_qa?.checks ?? [])
-      .filter((check) => check.status === "ready" || check.browser_status === "ready")
-      .map((check) => check.key)
-  );
-  return [
-    doctor?.summary.workflowSmokeOk ? "Workflow smoke passed" : "Run workflow smoke",
-    doctor?.summary.activationChecklistReady ? "Production checklist ready" : "Build call pack for checklist",
-    screenshots > 0 ? `${screenshots} QA screenshots ready` : "Build call pack for screenshots",
-    manifest?.cliff_pack?.status === "included" ? "Cliff Pack included" : "Export Cliff Pack before sending",
-    browserQaChecks.has("studio_model_preflight") ? "Model preflight proved" : "Run selected model preflight",
-    browserQaChecks.has("studio_local_generate") ? "Local Generate proved" : "Run local Generate proof",
-    browserQaChecks.has("studio_masked_edit_generate") ? "Masked edit proved" : "Run masked edit proof"
-  ];
-}
 
 function turnErrorCopy(turn: StudioTurn) {
   if (!turn.error_json) {
@@ -6466,40 +4966,8 @@ function parseJsonRecord(value?: unknown) {
   }
 }
 
-function nextRoundPrompt(asset: Asset, direction: "similar" | "cleanup" | "campaign", preset?: PromptPreset) {
-  const note = asset.notes?.trim();
-  const base =
-    direction === "cleanup"
-      ? "Make another round from this selected image. Clean up product edges, label clarity, lighting, and small retouching issues while keeping the product structure accurate."
-      : direction === "campaign"
-        ? "Make another campaign round from this selected image. Keep the product recognizable, push the set styling, and create director-ready variants with Frank Body attitude."
-        : "Make another round like this selected image. Preserve the strongest composition, product scale, label plausibility, and Frank Body palette while exploring better variants.";
-  const parts = [base];
-  if (preset?.prompt) {
-    parts.push(`Preset direction: ${preset.prompt}`);
-  }
-  if (note) {
-    parts.push(`Review note to honor: ${note}`);
-  }
-  return parts.join("\n\n");
-}
 
-function missingKeyCopy(model: StudioModel) {
-  if (model.configured !== false) {
-    return "";
-  }
 
-  const envVars = model.missing_env_vars ?? [];
-  if (!envVars.length) {
-    return " / needs key";
-  }
-
-  return ` / needs ${envVars[0]}${envVars.length > 1 ? ` (+${envVars.length - 1})` : ""}`;
-}
-
-function missingKeyTitle(model: StudioModel) {
-  return model.configured === false ? (model.missing_env_vars ?? []).join(" or ") : undefined;
-}
 
 function modelMissingKeyAction(model?: StudioModel) {
   if (!model || model.provider === "local" || model.configured !== false) {
@@ -6526,183 +4994,12 @@ function modelReferenceLimitAction(model: StudioModel | undefined, referenceCoun
   } before making this round.`;
 }
 
-function providerPreflightStatusLabel(status: ProviderPreflight["status"]) {
-  if (status === "ready") {
-    return "Preflight ready";
-  }
-  if (status === "blocked") {
-    return "Preflight blocked";
-  }
-  return "Preflight unsupported";
-}
 
-function providerSetup(models: StudioModel[]) {
-  const waitingModels = models.filter((model) => model.configured === false);
-  const envVars = orderProviderEnvVars(
-    Array.from(new Set(waitingModels.flatMap((model) => model.missing_env_vars ?? []))),
-    providerUnlockPlan(models)
-  );
 
-  return { waitingModels, envVars };
-}
 
-function providerUnlockPlan(models: StudioModel[]) {
-  const groups = new Map<
-    string,
-    {
-      id: string;
-      envVars: string[];
-      models: StudioModel[];
-      priority: number;
-    }
-  >();
 
-  for (const model of models) {
-    if (model.provider === "local") {
-      continue;
-    }
 
-    const envVars = providerModelEnvVars(model);
-    if (!envVars.length) {
-      continue;
-    }
 
-    const key = envVars.join("|");
-    const existing = groups.get(key);
-    if (existing) {
-      existing.models.push(model);
-      existing.priority = Math.min(existing.priority, providerUnlockPriority(model));
-    } else {
-      groups.set(key, {
-        id: key,
-        envVars,
-        models: [model],
-        priority: providerUnlockPriority(model)
-      });
-    }
-  }
-
-  return Array.from(groups.values())
-    .sort((left, right) => left.priority - right.priority || left.id.localeCompare(right.id))
-    .map((group) => {
-      const modelLabels = group.models.map((model) => model.short_label ?? model.label);
-      const capabilityCopy = capabilitySummary(group.models);
-      const groupReady = group.models.every((model) => model.configured);
-      return {
-        id: group.id,
-        envVars: group.envVars,
-        label: modelLabels.join(" + "),
-        keyCopy: groupReady
-          ? `${joinWithOr(group.envVars)} ready`
-          : group.envVars.length === 1
-            ? `Add ${group.envVars[0]}`
-            : `Use one of ${joinWithOr(group.envVars)}`,
-        capabilityCopy
-      };
-    });
-}
-
-function orderProviderEnvVars(envVars: string[], rows: ReturnType<typeof providerUnlockPlan>) {
-  const desiredOrder = rows.flatMap((row) => row.envVars);
-  const priority = new Map(desiredOrder.map((envVar, index) => [envVar, index]));
-  return Array.from(new Set(envVars)).sort((left, right) => {
-    const leftPriority = priority.get(left) ?? Number.MAX_SAFE_INTEGER;
-    const rightPriority = priority.get(right) ?? Number.MAX_SAFE_INTEGER;
-    return leftPriority - rightPriority || left.localeCompare(right);
-  });
-}
-
-function providerModelEnvVars(model: StudioModel) {
-  const envVars = model.env_vars?.length
-    ? model.env_vars
-    : model.missing_env_vars?.length
-      ? model.missing_env_vars
-      : model.configured_env_var
-        ? [model.configured_env_var]
-        : [];
-
-  return Array.from(new Set(envVars));
-}
-
-function providerKeyPlanText({
-  rows,
-  envVars,
-  readyModels,
-  modelCount,
-  keyFilePath
-}: {
-  rows: ReturnType<typeof providerUnlockPlan>;
-  envVars: string[];
-  readyModels?: number;
-  modelCount: number;
-  keyFilePath: string;
-}) {
-  const lines = [
-    "Frank Create Provider Key Plan",
-    "",
-    `Server key file: ${keyFilePath}`,
-    `Provider readiness: ${readyModels ?? 0} / ${modelCount} live provider models ready`,
-    "Provider secret values are not included. Paste rotated keys only into Provider Setup or the local server key file.",
-    ""
-  ];
-
-  if (rows.length) {
-    lines.push("Cliff key order:");
-    rows.forEach((row, index) => {
-      lines.push(`${index + 1}. ${row.label}`);
-      lines.push(`   Keys: ${row.keyCopy}`);
-      lines.push(`   Unlocks: ${row.capabilityCopy}`);
-    });
-  } else {
-    lines.push("Cliff key order: all visible provider rows are unlocked.");
-  }
-
-  if (envVars.length) {
-    lines.push("", `Missing env vars: ${envVars.join(", ")}`);
-  }
-
-  lines.push("", "Rotate any exposed token before live provider use.");
-  return lines.join("\n");
-}
-
-function productionUnlockPlanText(checklist: ActivationChecklist) {
-  const summary = checklist.summary;
-  const lines = [
-    "Frank Create Production Unlock Plan",
-    "",
-    `Status: ${checklist.status}`,
-    `Live model paths unlocked: ${summary.ready_provider_models} / ${activationModelTotal(checklist)}`,
-    `Server key file: ${summary.server_key_file || "user\\frank_create\\provider_keys.env"}`,
-    `Local checkpoints detected: ${summary.checkpoint_count}`,
-    "Allowed provider env vars: GOOGLE_API_KEY, REPLICATE_API_TOKEN, OPENAI_API_KEY",
-    "No provider secret values are included.",
-    ""
-  ];
-
-  lines.push("Actions:");
-  checklist.steps.forEach((step, index) => {
-    lines.push(`${index + 1}. ${step.label} (${step.status})`);
-    lines.push(`   ${step.detail}`);
-    lines.push(`   Action: ${step.action}`);
-    if (step.env_vars?.length) {
-      lines.push(`   Env vars: ${step.env_vars.join(", ")}`);
-    }
-    if (step.path) {
-      const checkpointNote = step.minimum_checkpoint_mb ? `; minimum ${step.minimum_checkpoint_mb} MB` : "";
-      lines.push(`   Path: ${activationPathLabel(step.path)}${checkpointNote}`);
-    }
-  });
-
-  if (summary.missing_env_vars?.length) {
-    lines.push("", `Missing env vars: ${summary.missing_env_vars.join(", ")}`);
-  }
-  if (checklist.notes.length) {
-    lines.push("", "Notes:");
-    checklist.notes.forEach((note) => lines.push(`- ${note}`));
-  }
-  lines.push("", "Paste rotated keys only into Provider Setup or the local server key file.");
-  return lines.join("\n");
-}
 
 function parseReadyStatusLink(text: string) {
   const match = text.match(/^(.+?) link ready: (.+)$/);
@@ -6712,60 +5009,10 @@ function parseReadyStatusLink(text: string) {
   return { label: match[1], url: match[2] };
 }
 
-function providerUnlockPriority(model: StudioModel) {
-  const priorities: Record<string, number> = {
-    "google-nb-pro": 1,
-    "google-nb-2": 1,
-    "openai-gpt-image-2": 2,
-    "seedream-5-pro": 2,
-    "seedream-4-5": 2,
-    "flux-2-pro": 2,
-    "flux-2-max": 3,
-    "riverflow-2-5-pro": 3,
-    "qwen-image-3-pro": 3,
-    "krea-2-large": 3,
-    "mai-image-2-5-pro": 3,
-    "grok-imagine-image": 3
-  };
-
-  return priorities[model.id] ?? 99;
-}
 
 
-function capabilitySummary(models: StudioModel[]) {
-  const capabilities = models.reduce(
-    (result, model) => ({
-      generation: result.generation || model.capabilities.generation,
-      edit: result.edit || model.capabilities.edit,
-      masked_edit: result.masked_edit || model.capabilities.masked_edit,
-      video: result.video || model.capabilities.video
-    }),
-    { generation: false, edit: false, masked_edit: false, video: false }
-  );
-  const labels = [
-    capabilities.generation ? "gen" : "",
-    capabilities.edit ? "edit" : "",
-    capabilities.masked_edit ? "mask" : "",
-    capabilities.video ? "video" : ""
-  ].filter(Boolean);
-  const badges = Array.from(new Set(models.map((model) => model.badge).filter(Boolean)));
 
-  return [labels.join(" + "), badges.join(" / ")].filter(Boolean).join(" / ");
-}
 
-function providerAuditOperationSummary(operationKinds: string[] = [], requestPreviews?: Record<string, unknown>) {
-  const previewCount = Object.keys(requestPreviews ?? {}).length || operationKinds.length;
-  const labels = operationKinds.map((kind) => kind.replace(/_/g, " "));
-  return `${previewCount} ops: ${labels.join(", ") || "none"}`;
-}
-
-function joinWithOr(values: string[]) {
-  if (values.length <= 1) {
-    return values[0] ?? "";
-  }
-
-  return `${values.slice(0, -1).join(", ")} or ${values[values.length - 1]}`;
-}
 
 function referenceUrlForGeneration(asset: Asset) {
   return asset.remote_url || asset.preview_url || asset.file_path;

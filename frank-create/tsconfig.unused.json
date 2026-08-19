@@ -1,0 +1,1 @@
+{ "extends": "./tsconfig.app.json", "compilerOptions": { "noUnusedLocals": true, "composite": false, "incremental": false, "tsBuildInfoFile": null } }
