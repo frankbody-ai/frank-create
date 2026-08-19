@@ -557,6 +557,8 @@ export default function App() {
   // Set by "Switch model and retry": once the picker has re-rendered on the new
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
+  const [retryRunToken, setRetryRunToken] = useState(0);
+
   const [settingsRailOpen, setSettingsRailOpen] = useState(true);
 
   const [mediaKind, setMediaKind] = useState<"image" | "video" | "compare">("image");
@@ -730,6 +732,14 @@ export default function App() {
     void handleGenerate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRetryModelId, selectedModelId]);
+  // Round-level retry: retryTurn refills prompt/model/settings/references, then
+  // bumps this token so the run fires on the committed state, not a stale closure.
+  useEffect(() => {
+    if (!retryRunToken) return;
+    void handleGenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retryRunToken]);
+
   const providerAuditMode = shouldAutoOpenProviderAudit();
   const modelOptions = useMemo(() => selectModelOptions(config.models, selectedModelId), [config.models, selectedModelId]);
   const allowedSizesForAspect = useMemo(
@@ -3191,17 +3201,24 @@ export default function App() {
       if (turn.model) setSelectedModelId(turn.model);
       if (turn.preset_key) setSelectedPresetKey(turn.preset_key); else setSelectedPresetKey(null);
       setFrankBodyMode(!!turn.frank_body_mode);
+      // Restore the exact reference dock this round ran with, in the same order,
+      // so @refN tags and video frame order stay identical.
+      const refIds = parseJsonList(turn.reference_asset_ids_json).filter((id) =>
+        assets.some((asset) => asset.id === id && asset.kind === "reference"),
+      );
+      if (refIds.length) setActiveReferenceIds(refIds);
       setSettings((current) => ({
         ...current,
         ...parsed,
         ...(typeof overrideCount === "number" ? { count: Math.max(1, Math.min(maxCountForModel(config.models.find((m) => m.id === turn.model) ?? selectedModel), overrideCount)) } : {}),
       }));
       setStatusText(typeof overrideCount === "number" ? `Retrying ${overrideCount} missing…` : "Retrying with previous settings…");
-      window.setTimeout(() => { void handleGenerate(); }, 60);
+      setRetryRunToken((token) => token + 1);
     } catch (err) {
       setStatusText(err instanceof Error ? err.message : "Could not retry this round.");
     }
   }
+
 
 
 

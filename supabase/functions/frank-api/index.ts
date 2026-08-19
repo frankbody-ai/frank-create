@@ -997,7 +997,15 @@ function mapOpenrouterHttpError(status: number, text: string): ProviderRunError 
   if (status === 401 || status === 403) return new ProviderRunError(`OpenRouter auth failed: ${msg}`, "auth_failed", false, status, text);
   if (status === 402) return new ProviderRunError("OpenRouter credits exhausted. Top up the OpenRouter account.", "quota_exhausted", false, status, text);
   if (status === 429) return new ProviderRunError("OpenRouter is rate limited. Try again in a moment.", "rate_limited", true, status, text);
-  if (status === 400 || status === 422) return new ProviderRunError(`Invalid request: ${msg}`, "invalid_params", false, status, text);
+  if (status === 400 || status === 404 || status === 422) {
+    // "No provider for X" / "no endpoints found" is a routing outage on
+    // OpenRouter's side, not a bad payload — it must fall back to Replicate.
+    if (/no provider|no endpoints|no allowed providers|not available/i.test(msg)) {
+      return new ProviderRunError(`OpenRouter has no provider for this model right now: ${msg}`, "provider_unavailable", true, status, text);
+    }
+    return new ProviderRunError(`Invalid request: ${msg}`, "invalid_params", false, status, text);
+  }
+
   if (status >= 500) return new ProviderRunError(`OpenRouter is busy (${status}). Try again in a moment.`, "provider_unavailable", true, status, text);
   return new ProviderRunError(`OpenRouter error ${status}: ${msg}`, "provider_error", false, status, text);
 }
