@@ -663,7 +663,7 @@ export default function App() {
           return;
         }
         // Ride out transient backend degradation before falling back to local mode.
-        if (attempt < 3) {
+        if (attempt < 5) {
           setStatusText("Backend is warming up — retrying…");
           await new Promise((r) => setTimeout(r, attempt * 1500));
           if (!cancelled) await bootstrap(attempt + 1);
@@ -679,17 +679,24 @@ export default function App() {
         setAssets(persisted);
         setSelectedAsset(firstReviewableAsset(persisted));
       }
-        setStatusText("Preview backend offline. You can stage rounds here; live provider runs happen locally.");
+        setStatusText("Preview backend offline — reconnecting in the background.");
         setStudioBooted(true);
+        // Keep trying: a degraded edge container usually recovers within a
+        // minute, and we want the studio to come back online on its own.
+        retryTimer = window.setTimeout(() => {
+          if (!cancelled) void bootstrap(1);
+        }, 15_000);
       }
     }
 
-
+    let retryTimer = 0;
     bootstrap();
     return () => {
       cancelled = true;
+      if (retryTimer) window.clearTimeout(retryTimer);
     };
   }, []);
+
 
   useEffect(() => {
     if (connection !== "offline") return;
