@@ -635,7 +635,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
           data-paste-scope="prompt-agent"
           onSubmit={(event) => {
             event.preventDefault();
-            void send(input, { wizardKickoff: true });
+            void send(input, { wizardKickoff: shouldRunWizard(input) });
           }}
         >
 
@@ -683,7 +683,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               if (event.key !== "Enter") return;
               if (event.shiftKey) return;
               event.preventDefault();
-              void send(input, { wizardKickoff: true });
+              void send(input, { wizardKickoff: shouldRunWizard(input) });
             }}
 
           />
