@@ -904,6 +904,32 @@ export default function App() {
     setMaskPainterAsset(null);
   }
 
+  // Run an edit round straight from the full-screen preview. The lightbox stays
+  // open and jumps to the first new pick, so edits can be chained.
+  async function submitLightboxEdit() {
+    const asset = lightboxAsset;
+    const text = lightboxEditText.trim();
+    if (!asset || !text || lightboxEditBusy) return;
+    if (!selectedModel?.capabilities.edit) {
+      setStatusText(
+        `${selectedModel?.short_label ?? selectedModel?.label ?? "This model"} cannot edit images yet — pick an edit-capable model.`
+      );
+      return;
+    }
+    setLightboxEditBusy(true);
+    try {
+      const created = await handleGenerate(undefined, { prompt: text, editSourceAsset: asset });
+      if (created?.length) {
+        setLightboxEditText("");
+        setLightboxAsset(created[0]);
+      }
+    } finally {
+      setLightboxEditBusy(false);
+    }
+  }
+
+
+
   function startMaskPainter(asset: Asset) {
     setEditSourceAsset(asset);
     setMaskAsset(null);
