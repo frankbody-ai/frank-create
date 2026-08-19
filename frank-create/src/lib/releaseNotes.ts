@@ -15,6 +15,15 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-08-19-speed-cleanup",
+    date: "19 August 2026",
+    title: "Faster start-up",
+    items: [
+      "Cut old demo-era code and extra start-up calls, so the studio loads quicker.",
+    ],
+  },
+  {
+
     id: "2026-08-19-access-approval",
     date: "19 August 2026",
     title: "Approval-based access",
