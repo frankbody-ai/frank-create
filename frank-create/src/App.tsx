@@ -2418,7 +2418,7 @@ export default function App() {
         const el = document.querySelector<HTMLElement>('[data-studio-invalid="true"]');
         el?.focus?.();
       }
-      return;
+      return null;
     }
 
     const referencePairs = selectedReferenceAssets
@@ -2427,28 +2427,28 @@ export default function App() {
         typeof pair.url === "string" && /^https?:\/\//.test(pair.url));
     const generationReferenceUrls = referencePairs.map((pair) => pair.url);
     const generationReferenceAssets = referencePairs.map((pair) => pair.asset);
-    const unknownTags = unknownReferenceTags(prompt, generationReferenceAssets.length);
+    const unknownTags = unknownReferenceTags(promptText, generationReferenceAssets.length);
     if (unknownTags.length) {
       setStatusText(`${unknownTags.join(", ")} ${unknownTags.length === 1 ? "does" : "do"} not match a loaded reference. Remove the tag or add the image.`);
-      return;
+      return null;
     }
-    const providerPrompt = composeReferencePrompt(prompt, generationReferenceAssets);
+    const providerPrompt = composeReferencePrompt(promptText, generationReferenceAssets);
     if (selectedReferenceAssets.length && !generationReferenceUrls.length) {
       setStatusText("Reference images are still uploading. Try again in a moment.");
-      return;
+      return null;
     }
 
     setBusy(true);
     setGenPhase("queued");
     setGenError(null);
     setGenErrorOpen(false);
-    setStatusText(promptMode === "generate" ? "Preparing the next round..." : "Preparing the edit brief...");
+    setStatusText(activePromptMode === "generate" ? "Preparing the next round..." : "Preparing the edit brief...");
     const inflightId = makeLocalId("gen");
     const inflightEntry: InflightGen = {
       id: inflightId,
       modelId: selectedModel.id,
       modelLabel: modelName(config, selectedModel.id),
-      prompt: prompt,
+      prompt: promptText,
       aspect: settings.aspect_ratio,
       count: Math.max(1, settings.count),
       startedAt: Date.now(),
@@ -2460,26 +2460,28 @@ export default function App() {
     const request = buildTurnRequest({
       sessionId: activeSession.id,
       modelId: selectedModel.id,
-      prompt,
-      promptMode,
+      prompt: promptText,
+      promptMode: activePromptMode,
       frankBodyMode,
       presetKey: selectedPresetKey ?? undefined,
       settings,
       referenceAssetIds: selectedReferenceAssets.map((asset) => asset.id),
       referenceImageUrls: generationReferenceUrls,
       providerPrompt,
-      editSourceAssetId: editSourceAsset?.id,
-      maskAssetId: promptMode === "masked_edit" ? maskAsset?.id : undefined
+      editSourceAssetId: editSource?.id,
+      maskAssetId: activePromptMode === "masked_edit" ? maskAsset?.id : undefined
     });
 
-    // The request owns the snapshot above. Empty the visible dock immediately,
-    // before waiting for the provider, so the next run always starts clean.
+    // The request owns the snapshot above. Empty the visible dock and the
+    // composer immediately, before waiting for the provider, so the next run
+    // always starts clean.
     clearReferenceDock();
+    if (!override) setPrompt("");
 
     if (connection !== "online") {
       // Auto-name the session from the first prompt if it still has the default name.
       if (activeSession && (!activeSession.name || /^(new session|launch image studio|untitled)/i.test(activeSession.name)) && turns.length === 0) {
-        const autoName = prompt.trim().replace(/\s+/g, " ").slice(0, 40) || activeSession.name;
+        const autoName = promptText.trim().replace(/\s+/g, " ").slice(0, 40) || activeSession.name;
         if (autoName && autoName !== activeSession.name) {
           const renamed = { ...activeSession, name: autoName };
           setActiveSession(renamed);
