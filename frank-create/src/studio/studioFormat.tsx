@@ -9,7 +9,6 @@ import { createPortal } from "react-dom";
 import {
   Icon,
 
-  Spinner,
 } from "../ds";
 import { Shell } from "../Shell";
 import { modeFromUrl, navigate } from "../nav";
@@ -36,11 +35,9 @@ import { supabase, hardSignOut } from "../lib/supabaseClient";
 import { createBriefPayload } from "../lib/frankWorkflow";
 import {
   buildTurnRequest,
-  aspectRatioParts,
   makeLocalId,
   buildReferenceManifest,
   expandReferenceTags,
-  thumbnailUrl
 } from "../lib/studio";
 import type { StudioFieldErrors } from "../lib/studio";
 

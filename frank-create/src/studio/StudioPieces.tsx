@@ -35,11 +35,7 @@ import { fallbackBrandKit, fallbackConfig } from "../lib/presets";
 import { supabase, hardSignOut } from "../lib/supabaseClient";
 import { createBriefPayload } from "../lib/frankWorkflow";
 import {
-  buildTurnRequest,
   aspectRatioParts,
-  makeLocalId,
-  buildReferenceManifest,
-  expandReferenceTags,
   thumbnailUrl
 } from "../lib/studio";
 import type { StudioFieldErrors } from "../lib/studio";
@@ -52,12 +48,7 @@ import Enhancer from "../components/Enhancer";
 
 import type {
   Asset,
-  FrankConfig,
-  FrankTask,
-  StudioModel,
   StudioSession,
-  StudioSettings,
-  StudioTurn
 } from "../lib/types";
 import { loadLocalAssets, saveLocalAssets } from "../lib/localAssets";
 import { SessionFolders } from "../components/SessionFolders";
