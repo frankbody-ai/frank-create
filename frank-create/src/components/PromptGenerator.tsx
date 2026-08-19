@@ -214,6 +214,8 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
       setChatId(id);
       setMessages(loaded);
       setWizard(null);
+      setWizardOverride(null);
+      setWizardNotice(null);
       setAttachments([]);
       setError(null);
       savedSignature.current = `${id}:${loaded.length}:${loaded[loaded.length - 1]?.content.slice(0, 80) ?? ""}`;
