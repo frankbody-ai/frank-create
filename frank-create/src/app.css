@@ -199,11 +199,12 @@
 
   /* Narrow layout: the settings rail slots between the composer and the rounds
      feed instead of dropping to the very bottom of the page. */
-  .studio-columns { flex-direction: column; flex-wrap: nowrap; }
+  .studio-columns { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
   .studio-columns > .studio-main { display: contents; }
-  .studio-main > * { order: 1; }
-  .studio-columns > .studio-rail { order: 2; width: 100%; }
+  .studio-main > * { order: 1; width: 100%; align-self: stretch; }
+  .studio-columns > .studio-rail { order: 2; width: 100%; min-width: 0; align-self: stretch; }
   .studio-main > .thread-surface { order: 3; }
+
 
   .studio-rail .run-settings { position: static; }
 }
