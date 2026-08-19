@@ -4998,17 +4998,6 @@ function modelReferenceLimitAction(model: StudioModel | undefined, referenceCoun
 
 
 
-function providerModelEnvVars(model: StudioModel) {
-  const envVars = model.env_vars?.length
-    ? model.env_vars
-    : model.missing_env_vars?.length
-      ? model.missing_env_vars
-      : model.configured_env_var
-        ? [model.configured_env_var]
-        : [];
-
-  return Array.from(new Set(envVars));
-}
 
 
 
@@ -5020,55 +5009,10 @@ function parseReadyStatusLink(text: string) {
   return { label: match[1], url: match[2] };
 }
 
-function providerUnlockPriority(model: StudioModel) {
-  const priorities: Record<string, number> = {
-    "google-nb-pro": 1,
-    "google-nb-2": 1,
-    "openai-gpt-image-2": 2,
-    "seedream-5-pro": 2,
-    "seedream-4-5": 2,
-    "flux-2-pro": 2,
-    "flux-2-max": 3,
-    "riverflow-2-5-pro": 3,
-    "qwen-image-3-pro": 3,
-    "krea-2-large": 3,
-    "mai-image-2-5-pro": 3,
-    "grok-imagine-image": 3
-  };
-
-  return priorities[model.id] ?? 99;
-}
 
 
-function capabilitySummary(models: StudioModel[]) {
-  const capabilities = models.reduce(
-    (result, model) => ({
-      generation: result.generation || model.capabilities.generation,
-      edit: result.edit || model.capabilities.edit,
-      masked_edit: result.masked_edit || model.capabilities.masked_edit,
-      video: result.video || model.capabilities.video
-    }),
-    { generation: false, edit: false, masked_edit: false, video: false }
-  );
-  const labels = [
-    capabilities.generation ? "gen" : "",
-    capabilities.edit ? "edit" : "",
-    capabilities.masked_edit ? "mask" : "",
-    capabilities.video ? "video" : ""
-  ].filter(Boolean);
-  const badges = Array.from(new Set(models.map((model) => model.badge).filter(Boolean)));
-
-  return [labels.join(" + "), badges.join(" / ")].filter(Boolean).join(" / ");
-}
 
 
-function joinWithOr(values: string[]) {
-  if (values.length <= 1) {
-    return values[0] ?? "";
-  }
-
-  return `${values.slice(0, -1).join(", ")} or ${values[values.length - 1]}`;
-}
 
 function referenceUrlForGeneration(asset: Asset) {
   return asset.remote_url || asset.preview_url || asset.file_path;
