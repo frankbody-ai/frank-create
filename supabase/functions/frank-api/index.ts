@@ -271,7 +271,7 @@ function rowToAsset(row: any, signedUrl = ""): any {
 
     favorite: !!meta.favorite,
     notes: meta.notes,
-    notes: meta.notes,
+
     created_at: row.created_at,
     updated_at: row.created_at,
   };
