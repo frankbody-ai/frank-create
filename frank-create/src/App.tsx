@@ -66,7 +66,6 @@ import {
   listTurns,
   preflightProvider,
   reloadProviderEnv,
-  remixPrompt,
   resetDemo,
   saveProviderEnvKeys,
   sessionReviewBoardUrl,
@@ -136,7 +135,6 @@ import type {
   ProviderPreflight,
   ProviderReadiness,
   PromptPreset,
-  PromptRemixVariant,
   Project,
   StudioModel,
   StudioSession,
@@ -340,7 +338,6 @@ export default function App() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [exports, setExports] = useState<ExportRecord[]>([]);
   const [prompt, setPrompt] = useState("");
-  const [promptRemixes, setPromptRemixes] = useState<PromptRemixVariant[]>([]);
   const [selectedModelId, setSelectedModelId] = useState(
     () => preferredStudioModel(fallbackConfig.models, readLastUsedModelId()).id
   );
@@ -484,7 +481,6 @@ export default function App() {
   const [briefBusy, setBriefBusy] = useState(false);
   const [handoffBusy, setHandoffBusy] = useState(false);
   const [handoffProofText, setHandoffProofText] = useState("");
-  const [remixBusy, setRemixBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   // `compareGroup` ties the two sides of a side-by-side run together so the
   // timeline shows one loading round with two slots, not two separate rounds.
@@ -1156,7 +1152,6 @@ export default function App() {
       setSelectedAsset(null);
       setHandoffProofText("");
       setPrompt(carriedPrompt || "");
-      setPromptRemixes([]);
       clearEditSource();
       clearCompare();
       setStatusText(
@@ -1177,7 +1172,6 @@ export default function App() {
     setSelectedAsset(null);
     setHandoffProofText("");
     setPrompt(carriedPrompt || "");
-    setPromptRemixes([]);
     clearEditSource();
     clearCompare();
     setStatusText(
@@ -1387,7 +1381,6 @@ export default function App() {
       clearEditSource();
       clearCompare();
       setPrompt(result.brief.prompt ?? result.turn.prompt ?? "");
-      setPromptRemixes([]);
       setSelectedPresetKey(result.turn.preset_key ?? result.brief.task_type ?? null);
       setAttachedPresetSnapshot(null);
       setSettings((current) => ({ ...current, ...turnSettings }));
@@ -2368,34 +2361,6 @@ export default function App() {
     }
   }
 
-  async function handlePromptRemix() {
-    const seedPrompt = prompt.trim() || activePreset?.prompt || "";
-    if (!seedPrompt) {
-      setStatusText("Give the Art Dept. a brief first.");
-      return;
-    }
-
-    setRemixBusy(true);
-    try {
-      const result = await remixPrompt({
-        prompt: seedPrompt,
-        preset_key: selectedPresetKey ?? "",
-        frank_body_mode: frankBodyMode
-      });
-      setPromptRemixes(result.variants);
-      setStatusText("Brief remixed. Pick a direction.");
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Brief remix needs another look.");
-    } finally {
-      setRemixBusy(false);
-    }
-  }
-
-  function applyPromptRemix(variant: PromptRemixVariant) {
-    setPrompt(variant.prompt);
-    setPromptRemixes([]);
-    setStatusText(`${variant.label} direction loaded.`);
-  }
 
 
 
@@ -3267,7 +3232,7 @@ export default function App() {
     try {
       const parsed = JSON.parse(turn.settings_json || "{}") as Partial<StudioSettings>;
       setPrompt(turn.prompt || "");
-      setPromptRemixes([]);
+      
       setAttachedPresetSnapshot(null);
       if (turn.model) setSelectedModelId(turn.model);
       if (turn.preset_key) setSelectedPresetKey(turn.preset_key); else setSelectedPresetKey(null);
@@ -3973,16 +3938,6 @@ export default function App() {
 
 
 
-                {promptRemixes.length ? (
-                  <div className="prompt-remix-panel" aria-label="Brief remix directions">
-                    {promptRemixes.map((variant) => (
-                      <button key={variant.key} type="button" onClick={() => applyPromptRemix(variant)}>
-                        <strong>{variant.label}</strong>
-                        <span>{variant.prompt}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
 
                 <div
                   className={`composer-actions${referenceDropActive ? " reference-drop-active" : ""}${referenceAssets.length ? " composer-actions--icons" : ""}`}
@@ -4101,17 +4056,6 @@ export default function App() {
                       </button>
                     ) : null}
                     <div className="action-compact-pile">
-                      <button
-                        className="secondary-button remix-button"
-                        type="button"
-                        onClick={handlePromptRemix}
-                        disabled={remixBusy}
-                        title="Brief Mix"
-                        aria-label="Brief Mix"
-                      >
-                        {remixBusy ? <Spinner size="small" /> : <Icon source="sparkles" tone="inherit" size={14} />}
-                        <span className="action-label">Brief Mix&nbsp;&nbsp;<br /></span>
-                      </button>
                       <button
                         className="secondary-button danger-button composer-cancel-button"
                         type="button"

@@ -131,11 +131,6 @@ export interface PromptPreset {
   prompt: string;
 }
 
-export interface PromptRemixVariant {
-  key: string;
-  label: string;
-  prompt: string;
-}
 
 export interface BrandKit {
   style_guidance: string;

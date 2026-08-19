@@ -395,16 +395,6 @@
 .task-shortcut-list small { display: block; font-size: var(--type-body-sm-size); color: var(--color-text-secondary); }
 .task-shortcut-icon { display: inline-flex; color: var(--color-icon); }
 
-.prompt-remix-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-200);
-  padding: var(--space-300);
-  border-radius: var(--radius-200);
-  background: var(--color-ai-surface);
-  box-shadow: inset 0 0 0 1px var(--color-ai-border);
-  font-size: var(--type-body-sm-size);
-}
 
 /* ============================================================
    4. Studio — references
