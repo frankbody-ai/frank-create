@@ -324,9 +324,19 @@ function UsersTab({
                 {u.id === meId ? <Badge tone="neutral">you</Badge> : null}
               </div>
             ),
+            access: (
+              <Switch
+                size="small"
+                label={u.access_approved ? "Approved" : "On hold"}
+                checked={u.access_approved}
+                disabled={busy === u.id}
+                onChange={(next) => void onChangeAccess(u, next)}
+              />
+            ),
             role: (
               <Select
                 label="Role"
+
                 labelHidden
                 options={ROLES.map((r) => ({ value: r, label: r }))}
                 value={u.role}
