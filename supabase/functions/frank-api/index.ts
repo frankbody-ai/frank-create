@@ -141,31 +141,34 @@ async function storeOrFallback(args: {
 }
 
 const DEFAULT_MODEL = {
-  id: "nano-banana-pro",
-  label: "Lovable AI · Nano Banana",
-  short_label: "Nano Banana",
-  provider: "lovable",
-  provider_model: "google/gemini-2.5-flash-image",
+  id: "google-nb-pro",
+  label: "Gemini 3 Pro Image / Nano Banana Pro",
+  short_label: "Nano Banana Pro",
+  provider: "openrouter",
+  provider_model: "google/gemini-3-pro-image",
   status: "ready" as const,
-  badge: "Ready",
-  max_resolution_label: "1024×1024",
-  description: "Lovable AI image generation (Gemini 2.5 Flash Image).",
+  badge: "4K",
+  max_resolution_label: "4K",
+  description: "Nano Banana Pro (Gemini 3 Pro Image) via OpenRouter — 1K / 2K / 4K, wide aspect enum, up to 14 reference images.",
   capabilities: { generation: true, edit: true, masked_edit: false, video: false },
-  allowed_aspect_ratios: ["1:1", "3:4", "4:3", "16:9", "9:16"],
-  allowed_image_sizes: ["512x512", "1024x1024", "1024x1536", "1536x1024"],
-  reference_image_limit: 3,
-  cost_label: "Lovable credits",
+  allowed_aspect_ratios: ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
+  allowed_image_sizes: ["1K", "2K", "4K"],
+  reference_image_limit: 14,
+  max_count: 4,
+  cost_label: "premium",
   configured: true,
-  configured_env_var: "LOVABLE_API_KEY",
   missing_env_vars: [],
 };
 
-const DEFAULT_CONFIG = {
+const STUDIO_CONFIG = {
   tasks: [
-    { key: "generate", label: "Generate", description: "Create a new image from a prompt.", providers: ["lovable"] },
-    { key: "edit", label: "Edit", description: "Edit an existing image.", providers: ["lovable"] },
+    { key: "generate", label: "Generate", description: "Create a new image from a prompt.", providers: ["openrouter"] },
+    { key: "edit", label: "Edit", description: "Edit an existing image.", providers: ["openrouter"] },
   ],
-  providers: [{ key: "lovable", label: "Lovable AI", type: "api", status: "ready" }],
+  providers: [
+    { key: "openrouter", label: "OpenRouter", type: "api", status: "ready" },
+    { key: "replicate", label: "Replicate", type: "api", status: "curated" },
+  ],
   exportPresets: [
     { key: "original", label: "Original", size: "source", format: "png", media_types: ["image"] },
     { key: "square_1080", label: "Square 1080", size: "1080x1080", format: "jpg", media_types: ["image"] },
@@ -224,11 +227,11 @@ const DEFAULT_CONFIG = {
     },
   ],
   localEngine: {
-    active_engine: "lovable",
+    active_engine: "openrouter",
     diffusion_ready: true,
     checkpoint_count: 0,
     checkpoints: [],
-    note: "Running on Lovable AI Gateway — no local checkpoints required.",
+    note: "OpenRouter is the primary media provider; Replicate is used only as a fallback or for the upscaler.",
   },
   voice: {
     appTitle: "Frank Create",
@@ -252,7 +255,7 @@ function rowToAsset(row: any, signedUrl = ""): any {
     kind: row.asset_type || "output",
     title: meta.title || "Generated image",
     media_type: meta.media_type || "image",
-    provider: "lovable",
+    provider: meta.provider || "lovable",
     model: row.model_key || undefined,
     prompt: row.prompt_snapshot || undefined,
     file_path: row.storage_path,
@@ -281,8 +284,8 @@ function rowToTurn(row: any): any {
     id: row.id,
     session_id: row.session_id,
     kind: settings.kind || "generate",
-    provider: "lovable",
-    model: settings.model || "nano-banana-pro",
+    provider: settings.provider || "lovable",
+    model: settings.model || "google-nb-pro",
     prompt: row.prompt_text || "",
     settings_json: JSON.stringify(settings.settings || {}),
     frank_body_mode: !!settings.frank_body_mode,
@@ -639,6 +642,8 @@ async function handleVideo(body: any, userId: string) {
       duration: reqSettings.duration ?? null,
       resolution: reqSettings.video_resolution ?? null,
       bytes: bytes.byteLength,
+      provider: "openrouter",
+      provider_model: slug,
       ...(returnedSize.width && returnedSize.height ? { width: returnedSize.width, height: returnedSize.height } : {}),
       ...stored.meta,
     },
@@ -652,6 +657,8 @@ async function handleVideo(body: any, userId: string) {
     output_asset_ids: [assetId],
     requested_count: 1,
     provider_request: providerRequest,
+    provider: "openrouter",
+    provider_model: slug,
   };
 
   await sb.from("messages").update({ settings_snapshot_json: completedSnapshot }).eq("id", turnId);
@@ -663,7 +670,7 @@ async function handleVideo(body: any, userId: string) {
     }),
     status: "complete" as const,
     assets: [rowToAsset(assetIns.data, await signed(storagePath))],
-    providerPayload: { provider: "replicate", model: slug },
+    providerPayload: { provider: "openrouter", model: slug },
   };
 }
 
@@ -1333,8 +1340,7 @@ async function handleInference(body: any, userId: string) {
   if (!prompt.trim()) throw new Error("Prompt is required");
 
   const turnId = crypto.randomUUID();
-  const modelId: string = body.model || "nano-banana-pro";
-  const gatewayModel = MODEL_MAP[modelId] || "google/gemini-2.5-flash-image";
+  const modelId: string = body.model || "google-nb-pro";
   const reqSettings: any = body.settings || {};
   const settingsSnapshot: any = {
     kind: body.kind || "generate",
@@ -1381,6 +1387,7 @@ async function handleInference(body: any, userId: string) {
   let providerRequest: unknown = null;
   // Set when the round had to be re-run on Replicate after OpenRouter failed.
   let usedFallback: { from: string; to: string; reason: string } | null = null;
+  const openrouterModel = OPENROUTER_IMAGE_MAP[modelId] as string | undefined;
 
   try {
     const refIds: string[] = [
@@ -1398,143 +1405,74 @@ async function handleInference(body: any, userId: string) {
     const providerPrompt = clientProviderPrompt
       ? clientProviderPrompt
       : (refUrls.length ? withReferenceIdentityLock(prompt, refUrls.length) : prompt);
-    const openrouterModel = OPENROUTER_IMAGE_MAP[modelId];
-    const replicateSlug = openrouterModel ? undefined : REPLICATE_MAP[modelId];
-    if (openrouterModel) {
-      // Primary path: OpenRouter's dedicated /v1/images endpoint. Models that
-      // support n>1 get one call; the rest are fanned out in parallel.
-      const nativeN = OPENROUTER_NATIVE_N.has(openrouterModel);
-      const calls = nativeN ? 1 : count;
-      const results: PromiseSettledResult<Array<{ b64?: string; url?: string; mime: string }>>[] = [];
-      // Multiple simultaneous 4K calls can trip OpenRouter's Cloudflare worker
-      // resource ceiling (1102) even though each provider job itself succeeds.
-      // Models without native `n` therefore run one request at a time.
-      for (let call = 0; call < calls; call++) {
-        try {
-          const images = await openrouterImage(providerPrompt, refUrls, {
-            model: openrouterModel,
-            aspectRatio: reqSettings.aspect_ratio,
-            size: reqSettings.image_size || reqSettings.size,
-            quality: reqSettings.quality,
-            n: nativeN ? count : 1,
-            onRequest: (record) => { providerRequest = record; },
-          });
-          results.push({ status: "fulfilled", value: images });
-        } catch (reason) {
-          results.push({ status: "rejected", reason });
-        }
-      }
+    if (!openrouterModel) {
+      throw new ProviderRunError(`Model ${modelId} is not supported on OpenRouter.`, "unsupported_model", false);
+    }
 
-      for (const result of results) {
-        if (result.status === "fulfilled") generatedImages.push(...result.value);
-        else {
-          const m = mapReplicateError(result.reason);
-          partialErrors.push({ code: m.code, message: m.message, retryable: m.retryable, status: m.status });
-        }
-      }
-      if (!generatedImages.length) {
-        const first = results.find((r) => r.status === "rejected") as PromiseRejectedResult | undefined;
-        const reason = first?.reason ?? new ProviderRunError("OpenRouter returned no images.", "provider_error", true);
-        const fallbackSlug = REPLICATE_IMAGE_FALLBACK[modelId];
-        const replicateKey = getReplicateGatewayKey();
-        if (!fallbackSlug || !replicateKey || !shouldFallbackToReplicate(reason)) throw reason;
-
-        const mappedReason = mapReplicateError(reason);
-        console.warn("[frank-api] openrouter failed, falling back to replicate", {
-          model: modelId, slug: fallbackSlug, code: mappedReason.code,
-        });
-        const fallbackInput = {
-          aspect_ratio: reqSettings.aspect_ratio,
+    // Primary path: OpenRouter's dedicated /v1/images endpoint. Models that
+    // support n>1 get one call; the rest are fanned out in parallel.
+    const nativeN = OPENROUTER_NATIVE_N.has(openrouterModel);
+    const calls = nativeN ? 1 : count;
+    const results: PromiseSettledResult<Array<{ b64?: string; url?: string; mime: string }>>[] = [];
+    // Multiple simultaneous 4K calls can trip OpenRouter's Cloudflare worker
+    // resource ceiling (1102) even though each provider job itself succeeds.
+    // Models without native `n` therefore run one request at a time.
+    for (let call = 0; call < calls; call++) {
+      try {
+        const images = await openrouterImage(providerPrompt, refUrls, {
+          model: openrouterModel,
+          aspectRatio: reqSettings.aspect_ratio,
           size: reqSettings.image_size || reqSettings.size,
-          reference_images: refUrls,
-        };
-        const fallbackBody = { version_or_model: fallbackSlug, input: buildReplicateInput(fallbackSlug, providerPrompt, fallbackInput) };
-        providerRequest = providerRequestRecord(
-          `POST https://api.replicate.com/v1/models/${fallbackSlug}/predictions`,
-          fallbackBody,
-        );
-        const fallbackRuns = await Promise.allSettled(
-          Array.from({ length: count }, () => runReplicate(fallbackSlug, providerPrompt, fallbackInput, replicateKey)),
-        );
-        for (const run of fallbackRuns) {
-          if (run.status === "fulfilled" && run.value) generatedImages.push({ url: run.value, mime: "image/png" });
-          else if (run.status === "rejected") {
-            const m = mapReplicateError(run.reason);
-            partialErrors.push({ code: m.code, message: m.message, retryable: m.retryable, status: m.status, request_id: m.requestId });
-          }
-        }
-        if (!generatedImages.length) throw reason;
-        usedFallback = { from: "openrouter", to: "replicate", reason: mappedReason.message };
+          quality: reqSettings.quality,
+          n: nativeN ? count : 1,
+          onRequest: (record) => { providerRequest = record; },
+        });
+        results.push({ status: "fulfilled", value: images });
+      } catch (reason) {
+        results.push({ status: "rejected", reason });
       }
-    } else if (replicateSlug) {
+    }
 
-
+    for (const result of results) {
+      if (result.status === "fulfilled") generatedImages.push(...result.value);
+      else {
+        const m = mapReplicateError(result.reason);
+        partialErrors.push({ code: m.code, message: m.message, retryable: m.retryable, status: m.status });
+      }
+    }
+    if (!generatedImages.length) {
+      const first = results.find((r) => r.status === "rejected") as PromiseRejectedResult | undefined;
+      const reason = first?.reason ?? new ProviderRunError("OpenRouter returned no images.", "provider_error", true);
+      const fallbackSlug = REPLICATE_IMAGE_FALLBACK[modelId];
       const replicateKey = getReplicateGatewayKey();
-      if (!replicateKey) throw new Error("Replicate is not connected for this model yet.");
-      // Long models (Riverflow 4K, Seedream, agentic runs) routinely outlive a
-      // single HTTP request. Create the predictions, hand the ids back to the
-      // client, and let it poll /inference/status until they finish.
-      const input = {
+      if (!fallbackSlug || !replicateKey || !shouldFallbackToReplicate(reason)) throw reason;
+
+      const mappedReason = mapReplicateError(reason);
+      console.warn("[frank-api] openrouter failed, falling back to replicate", {
+        model: modelId, slug: fallbackSlug, code: mappedReason.code,
+      });
+      const fallbackInput = {
         aspect_ratio: reqSettings.aspect_ratio,
         size: reqSettings.image_size || reqSettings.size,
         reference_images: refUrls,
       };
-      const replicateBody = { version_or_model: replicateSlug, input: buildReplicateInput(replicateSlug, providerPrompt, input) };
-      providerRequest = providerRequestRecord(`POST https://api.replicate.com/v1/models/${replicateSlug}/predictions`, replicateBody);
-      const created = await Promise.allSettled(
-        Array.from({ length: count }, () =>
-          createReplicatePrediction(replicateSlug, buildReplicateInput(replicateSlug, providerPrompt, input), replicateKey)
-        )
+      const fallbackBody = { version_or_model: fallbackSlug, input: buildReplicateInput(fallbackSlug, providerPrompt, fallbackInput) };
+      providerRequest = providerRequestRecord(
+        `POST https://api.replicate.com/v1/models/${fallbackSlug}/predictions`,
+        fallbackBody,
       );
-
-      const predictionIds: string[] = [];
-      const createErrors: unknown[] = [];
-      for (const result of created) {
-        if (result.status === "fulfilled" && result.value) predictionIds.push(result.value);
-        else createErrors.push(result.status === "rejected" ? result.reason : new ProviderRunError("Replicate did not return a prediction ID.", "provider_error", true));
+      const fallbackRuns = await Promise.allSettled(
+        Array.from({ length: count }, () => runReplicate(fallbackSlug, providerPrompt, fallbackInput, replicateKey)),
+      );
+      for (const run of fallbackRuns) {
+        if (run.status === "fulfilled" && run.value) generatedImages.push({ url: run.value, mime: "image/png" });
+        else if (run.status === "rejected") {
+          const m = mapReplicateError(run.reason);
+          partialErrors.push({ code: m.code, message: m.message, retryable: m.retryable, status: m.status, request_id: m.requestId });
+        }
       }
-      for (const err of createErrors) {
-        const m = mapReplicateError(err);
-        partialErrors.push({ code: m.code, message: m.message, retryable: m.retryable, status: m.status, request_id: m.requestId });
-      }
-      if (!predictionIds.length) {
-        throw createErrors[0] ?? new ProviderRunError("Replicate did not start any prediction.", "provider_error", true);
-      }
-      const runningSnapshot = {
-        ...settingsSnapshot,
-        status: "running",
-        provider: "replicate",
-        replicate_slug: replicateSlug,
-        prediction_ids: predictionIds,
-        requested_count: count,
-        partial_errors: partialErrors.length ? partialErrors : undefined,
-        provider_request: providerRequest,
-        started_at: nowIso(),
-      };
-      await sb.from("messages").update({ settings_snapshot_json: runningSnapshot }).eq("id", turnId);
-      return {
-
-        turn: rowToTurn({
-          id: turnId, session_id: sessionId, role: "user",
-          message_type: settingsSnapshot.kind, prompt_text: prompt,
-          settings_snapshot_json: runningSnapshot,
-          seq: nextSeq, created_at: nowIso(),
-        }),
-        status: "running" as const,
-        assets: [],
-        providerPayload: { provider: "replicate", model: replicateSlug, prediction_ids: predictionIds },
-        localEngine: "cloud" as const,
-      };
-    } else {
-
-      for (let i = 0; i < count; i++) {
-        generatedImages.push(await lovableImage(providerPrompt, refUrls, {
-          gatewayModel,
-          aspectRatio: reqSettings.aspect_ratio,
-          size: reqSettings.image_size || reqSettings.size,
-          thinkingBudget: Number(reqSettings.thinking_budget ?? body.thinking_budget ?? 0),
-        }));
-      }
+      if (!generatedImages.length) throw reason;
+      usedFallback = { from: "openrouter", to: "replicate", reason: mappedReason.message };
     }
   } catch (err) {
     const mapped = mapReplicateError(err);
@@ -1564,13 +1502,18 @@ async function handleInference(body: any, userId: string) {
     };
   }
 
+  const providerPayload = usedFallback
+    ? { provider: "replicate", model: REPLICATE_IMAGE_FALLBACK[modelId], fallback_from: "openrouter" as const }
+    : { provider: "openrouter", model: openrouterModel! };
+
   const insertedAssets: any[] = await persistImageAssets({
     userId, sessionId, turnId, prompt, modelId,
     aspectRatio: reqSettings.aspect_ratio,
     requestedSize: reqSettings.image_size || reqSettings.size || null,
+    provider: providerPayload.provider,
+    providerModel: providerPayload.model,
     images: generatedImages,
   });
-
 
   const assetIds = insertedAssets.map((asset) => asset.id);
 
@@ -1581,6 +1524,8 @@ async function handleInference(body: any, userId: string) {
     requested_count: count,
     partial_errors: partialErrors.length ? partialErrors : undefined,
     provider_request: providerRequest,
+    provider: providerPayload.provider,
+    provider_model: providerPayload.model,
     fallback: usedFallback ?? undefined,
   };
   await sb.from("messages").update({
@@ -1597,12 +1542,7 @@ async function handleInference(body: any, userId: string) {
     }),
     status: "complete" as const,
     assets,
-    providerPayload: usedFallback
-      ? { provider: "replicate", model: REPLICATE_IMAGE_FALLBACK[modelId], fallback_from: "openrouter" }
-      : OPENROUTER_IMAGE_MAP[modelId]
-      ? { provider: "openrouter", model: OPENROUTER_IMAGE_MAP[modelId] }
-      : { provider: "lovable", model: gatewayModel },
-
+    providerPayload,
     localEngine: "cloud" as const,
   };
 }
@@ -1617,6 +1557,8 @@ async function persistImageAssets(args: {
   modelId: string;
   aspectRatio?: string;
   requestedSize?: string | null;
+  provider: string;
+  providerModel?: string;
   images: Array<{ b64?: string; url?: string; mime: string }>;
 }): Promise<any[]> {
   const sb = supabase();
@@ -1659,6 +1601,8 @@ async function persistImageAssets(args: {
           bytes: bytes.byteLength,
           width: real?.width,
           height: real?.height,
+          provider: args.provider,
+          provider_model: args.providerModel ?? null,
           ...stored.meta,
         };
       })(),
@@ -1769,6 +1713,8 @@ async function handleTurnStatus(body: any, userId: string) {
     modelId: snapshot.model || snapshot.model_key || "",
     aspectRatio: snapshot.aspect_ratio ?? snapshot.settings?.aspect_ratio,
     requestedSize: snapshot.image_size ?? snapshot.settings?.image_size ?? null,
+    provider: "replicate",
+    providerModel: snapshot.provider_model || REPLICATE_IMAGE_FALLBACK[snapshot.model || snapshot.model_key] || snapshot.model || snapshot.model_key || "",
     images,
   });
 
@@ -2340,23 +2286,23 @@ Deno.serve(async (req) => {
     if (path === "/health" || path === "/") {
       return json({ ok: true, product: "frank-create", store: "lovable-cloud" });
     }
-    if (path === "/config") return json(DEFAULT_CONFIG);
-    if (path === "/models") return json({ models: DEFAULT_CONFIG.models, backlogModels: [], promptPresets: DEFAULT_CONFIG.promptPresets });
+    if (path === "/config") return json(STUDIO_CONFIG);
+    if (path === "/models") return json({ models: STUDIO_CONFIG.models, backlogModels: [], promptPresets: STUDIO_CONFIG.promptPresets });
 
     if (path === "/provider-status") {
       return json({
         summary: {
           modelCount: 1, readyModels: 1, waitingModels: 0,
-          configuredEnvVars: ["LOVABLE_API_KEY"], missingEnvVars: [],
+          configuredEnvVars: ["OPENROUTER_API_KEY"], missingEnvVars: [],
         },
         providers: [{
-          provider: "lovable", configured: true, model_count: 1,
+          provider: "openrouter", configured: true, model_count: 1,
           ready_model_count: 1, waiting_model_count: 0,
-          configured_env_vars: ["LOVABLE_API_KEY"], missing_env_vars: [],
-          models: ["nano-banana-pro"],
+          configured_env_vars: ["OPENROUTER_API_KEY"], missing_env_vars: [],
+          models: ["google-nb-pro"],
         }],
         models: [DEFAULT_MODEL],
-        notes: ["Connected to Lovable AI Gateway."],
+        notes: ["OpenRouter is the primary media provider; Replicate is used only as a fallback or for the upscaler."],
       });
     }
     if (path === "/provider-audit") {
