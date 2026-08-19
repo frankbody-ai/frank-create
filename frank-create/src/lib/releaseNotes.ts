@@ -15,6 +15,14 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-08-19-image-cost",
+    date: "19 August 2026",
+    title: "Image cost estimates",
+    items: [
+      "Image runs now show an estimated price based on model, size and number of copies.",
+    ],
+  },
+  {
     id: "2026-08-19-preview-fix",
     date: "19 August 2026",
     title: "Preview and layout fixes",
