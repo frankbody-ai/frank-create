@@ -69,6 +69,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (status === "ready" && session) return <>{children}</>;
 
+  const pending = status === "pending";
+
   return (
     <AuthLayout>
       <SignIn
@@ -77,8 +79,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         app="design-studio"
         appName="art-ificial design studio"
         method="sso"
-        title="Sign in"
-        description="Sign in with your work account."
+        title={pending ? "Waiting for approval" : "Sign in"}
+        description={
+          pending
+            ? `Your account (${session?.user?.email ?? "your work account"}) is on hold until an admin approves it. You'll get in as soon as they do.`
+            : "Sign in with your work account."
+        }
         error={error}
         loading={busy}
         providers={
@@ -89,6 +95,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
                 Checking your session
               </Text>
             </div>
+          ) : pending ? (
+            <>
+              <Button size="large" fullWidth onClick={() => window.location.reload()}>
+                Check again
+              </Button>
+              <Button size="large" fullWidth onClick={() => void signOut()}>
+                Sign out
+              </Button>
+            </>
           ) : (
             <>
               <GoogleButton loading={busy} onClick={() => void signIn()} />
@@ -100,8 +115,13 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             </>
           )
         }
-        note={`Access is limited to ${ALLOWED_EMAIL_DOMAINS.map((d) => d).join(" and ")}. Accounts are created by an admin — ask your team lead if you need access.`}
+        note={
+          pending
+            ? "Ask your team lead to approve your access in the admin portal."
+            : `Access is limited to ${ALLOWED_EMAIL_DOMAINS.map((d) => d).join(" and ")}. Accounts are created by an admin — ask your team lead if you need access.`
+        }
       />
+
     </AuthLayout>
   );
 }
