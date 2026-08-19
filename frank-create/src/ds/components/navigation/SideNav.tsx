@@ -37,7 +37,7 @@ export interface SideNavProps extends Omit<React.HTMLAttributes<HTMLElement>, 'o
  * Fixed 240px navigation on #EBEBEB — one step darker than the canvas so the
  * content area reads as raised. Icon colour never changes on hover or selection.
  */
-export function SideNav({ items = [], selected, onSelect, footerItems = [], footer, app, appName, appAction, className = '', style, ...rest }: SideNavProps) {
+export function SideNav({ items = [], selected, onSelect, footerItems = [], footer, extra, app, appName, appAction, className = '', style, ...rest }: SideNavProps) {
 
   const renderItem = (item: SideNavItem) => {
     if (item.group) {
@@ -84,6 +84,7 @@ export function SideNav({ items = [], selected, onSelect, footerItems = [], foot
         {appAction && <Icon source="chevron-up-down" size={16} tone="secondary" />}
       </div>
       <ul className="as-nav__list as-nav__list--main">{items.map(renderItem)}</ul>
+      {extra && <div className="as-nav__extra">{extra}</div>}
       {footerItems.length > 0 && <ul className="as-nav__list as-nav__list--footer">{footerItems.map(renderItem)}</ul>}
       {footer && <div className="as-nav__footer-extra">{footer}</div>}
 
