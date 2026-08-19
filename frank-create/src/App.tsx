@@ -566,9 +566,30 @@ export default function App() {
 
   const [mediaKind, setMediaKind] = useState<"image" | "video" | "compare">("image");
 
+  // Video generation is off for everyone until an admin grants it.
+  const [videoAllowed, setVideoAllowed] = useState(false);
+  useEffect(() => {
+    let live = true;
+    import("./lib/admin").then(({ getMyVideoAccess }) => {
+      getMyVideoAccess()
+        .then((allowed) => { if (live) setVideoAllowed(allowed); })
+        .catch(() => { /* denied by default */ });
+    });
+    return () => { live = false; };
+  }, [userEmail]);
+
+
   const [compareMedia, setCompareMedia] = useState<"image" | "video">("image");
   const [compareModelBId, setCompareModelBId] = useState<string>("");
   const [compareApproved, setCompareApproved] = useState(false);
+
+  useEffect(() => {
+    if (videoAllowed) return;
+    setMediaKind((current) => (current === "video" ? "image" : current));
+    setCompareMedia((current) => (current === "video" ? "image" : current));
+  }, [videoAllowed]);
+
+
 
   useEffect(() => {
     if (videoStartedAt == null) return;
@@ -775,9 +796,14 @@ export default function App() {
   }
 
   function switchMediaKind(kind: "image" | "video" | "compare") {
+    if (kind === "video" && !videoAllowed) {
+      setStatusText("Video generation is off for your account. Ask an admin to switch it on.");
+      return;
+    }
     setMediaKind(kind);
     setCompareApproved(false);
     const media = kind === "compare" ? compareMedia : kind;
+
     const next = pickModelForMedia(media);
     if (next && next.id !== selectedModelId) selectModel(next.id);
     if (kind === "compare") {
@@ -795,8 +821,13 @@ export default function App() {
   }
 
   function switchCompareMedia(media: "image" | "video") {
+    if (media === "video" && !videoAllowed) {
+      setStatusText("Video generation is off for your account. Ask an admin to switch it on.");
+      return;
+    }
     setCompareMedia(media);
     setCompareApproved(false);
+
     const primary = pickModelForMedia(media);
     if (primary && primary.id !== selectedModelId) selectModel(primary.id);
     const second = pickModelForMedia(media, primary?.id ?? selectedModelId);
@@ -4730,6 +4761,8 @@ export default function App() {
                   compareApproved={compareApproved}
                   onCompareApprovedChange={setCompareApproved}
                   compareCostLabel={compareCostLabel}
+                  videoAllowed={videoAllowed}
+
 
                 />
 

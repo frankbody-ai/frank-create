@@ -15,6 +15,16 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-08-19-video-access-switch",
+    date: "19 August 2026",
+    title: "Video generation is now permission-based",
+    items: [
+      "Video mode is off by default and only an admin can switch it on.",
+      "Admins toggle it per person in Admin portal \u2192 Users.",
+    ],
+  },
+  {
+
     id: "2026-08-19-sessions-in-sidebar",
     date: "19 August 2026",
     title: "Sessions live in the sidebar",

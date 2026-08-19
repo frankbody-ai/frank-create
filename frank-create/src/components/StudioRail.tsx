@@ -40,8 +40,11 @@ export interface StudioRailProps {
   compareApproved?: boolean;
   onCompareApprovedChange?: (approved: boolean) => void;
   compareCostLabel?: string | null;
+  /** Video generation is admin-granted per person; off hides every video control. */
+  videoAllowed?: boolean;
 
 }
+
 
 /** Long edge of the aspect thumbnail, in px. Matches --aspect-tile-cap in app.css. */
 const ASPECT_TILE_CAP = 30;
@@ -68,9 +71,11 @@ export function StudioRail(props: StudioRailProps) {
     settings, onSettingsChange, onAspectChange, presets, selectedPresetKey,
     onPresetChange, fieldErrors, referenceCount, onReset,
     compareMedia = "image", onCompareMediaChange, compareModelBId, onCompareModelBChange,
-    compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel
+    compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel,
+    videoAllowed = true
 
   } = props;
+
 
   const isCompare = mediaKind === "compare";
   const model = models.find((item) => item.id === selectedModelId) ?? models[0];
@@ -109,9 +114,11 @@ export function StudioRail(props: StudioRailProps) {
           <Button pressed={mediaKind === "image"} onClick={() => onMediaKindChange("image")}>
             Image
           </Button>
-          <Button pressed={mediaKind === "video"} onClick={() => onMediaKindChange("video")}>
-            Video
-          </Button>
+          {videoAllowed ? (
+            <Button pressed={mediaKind === "video"} onClick={() => onMediaKindChange("video")}>
+              Video
+            </Button>
+          ) : null}
           <Button pressed={isCompare} onClick={() => onMediaKindChange("compare")}>
             Compare
           </Button>
@@ -124,8 +131,11 @@ export function StudioRail(props: StudioRailProps) {
             <span className="run-settings__label">Compare on</span>
             <div className="chip-row">
               {chip("Images", compareMedia === "image", () => onCompareMediaChange?.("image"))}
-              {chip("Videos", compareMedia === "video", () => onCompareMediaChange?.("video"))}
+              {videoAllowed
+                ? chip("Videos", compareMedia === "video", () => onCompareMediaChange?.("video"))
+                : null}
             </div>
+
             <Text variant="bodySm" tone="secondary" as="p">
               Compare runs one output per side from the same brief and settings.
             </Text>

@@ -10,19 +10,23 @@ import {
   PageHeader,
   Select,
   Spinner,
+  Switch,
   Tabs,
   Text,
 } from "../ds";
+
 import type { DataTableColumn } from "../ds";
 import { Shell } from "../Shell";
 import { adminTabFromUrl, navigate } from "../nav";
 import {
   listUsersWithRoles,
   setUserRole,
+  setUserVideoAccess,
   isCurrentUserAdmin,
   type AdminUserRow,
   type AppRole,
 } from "../lib/admin";
+
 import {
   listFeedback,
   updateFeedbackStatus,
@@ -147,9 +151,11 @@ export function AdminPortal() {
 const USER_COLUMNS: DataTableColumn[] = [
   { key: "email", title: "Email" },
   { key: "role", title: "Role", width: "180px" },
+  { key: "video", title: "Video generator", width: "170px" },
   { key: "joined", title: "Joined" },
   { key: "seen", title: "Last sign-in" },
 ];
+
 
 function UsersTab({
   meId,
@@ -215,6 +221,19 @@ function UsersTab({
     }
   };
 
+  const onChangeVideo = async (u: AdminUserRow, next: boolean) => {
+    setBusy(u.id);
+    try {
+      await setUserVideoAccess(u.id, next);
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't change video access.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+
   return (
     <>
       {error ? <Banner tone="critical" title="Something went wrong">{error}</Banner> : null}
@@ -249,8 +268,18 @@ function UsersTab({
                 onChange={(e) => void onChangeRole(u, e.target.value as AppRole)}
               />
             ),
+            video: (
+              <Switch
+                size="small"
+                label={u.video_enabled ? "On" : "Off"}
+                checked={u.video_enabled}
+                disabled={busy === u.id}
+                onChange={(next) => void onChangeVideo(u, next)}
+              />
+            ),
             joined: fmt(u.created_at),
             seen: fmt(u.last_sign_in_at),
+
           }))}
           emptyState={
             <Text as="p" tone="secondary">
