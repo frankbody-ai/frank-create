@@ -3087,36 +3087,6 @@ Deno.serve(async (req) => {
 
 
     // ---- Demo receipts (minimal stubs) ----
-    if (path === "/demo/reset" && method === "POST") {
-      return json({ ok: true, reset_at: nowIso() });
-    }
-    if (path.startsWith("/demo/") && method === "POST") {
-      const kind = path.slice("/demo/".length);
-      const receipt = {
-        title: `Frank Create ${kind} receipt`,
-        generated_at: nowIso(),
-        session: { user_id: userId },
-        summary: {
-          style_guidance_chars: 0, negative_prompt_chars: 0, reference_notes_chars: 0,
-          reference_asset_count: 0, approved_asset_count: 0,
-          prompt_guided_status: "ready", lora_training_status: "starter",
-          prompt_guided_target: "ready", lora_training_target: "ready",
-        },
-        brand_kit: { style_guidance: "", negative_prompt: "", reference_notes: "", sync_status: "cloud" },
-        reference_assets: [], approved_assets: [],
-        training_recommendation: { status: "ready" },
-        next_inputs: [],
-      };
-      const filename = `${kind}-${Date.now()}`;
-      return json({
-        receipt,
-        markdown_path: `cloud:receipts/${filename}.md`,
-        json_path: `cloud:receipts/${filename}.json`,
-        markdown_file: `${filename}.md`,
-        json_file: `${filename}.json`,
-        markdown_url: "", json_url: "",
-      });
-    }
     return json({ error: { code: "not_found", message: `No handler for ${method} ${path}` } }, 404);
   } catch (err) {
     if (err instanceof AuthError) {
