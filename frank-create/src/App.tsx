@@ -313,9 +313,6 @@ export default function App() {
   const [expandedPromptTurnIds, setExpandedPromptTurnIds] = useState<string[]>([]);
   const [selectedPresetKey, setSelectedPresetKey] = useState<string | null>(null);
   const [attachedPresetSnapshot, setAttachedPresetSnapshot] = useState<string | null>(null);
-  useEffect(() => {
-    try { window.localStorage.setItem("frank.customPromptPresets", JSON.stringify(customPresets)); } catch { /* ignore */ }
-  }, [customPresets]);
   const [frankBodyMode, setFrankBodyMode] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   useEffect(() => {
@@ -323,13 +320,6 @@ export default function App() {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setUserEmail(s?.user?.email ?? null));
     return () => sub.subscription.unsubscribe();
   }, []);
-  useEffect(() => {
-    let cancelled = false;
-    import("./lib/admin").then(({ isCurrentUserAdmin }) => {
-      isCurrentUserAdmin().then((v) => { if (!cancelled) setIsAdmin(v); }).catch(() => {});
-    });
-    return () => { cancelled = true; };
-  }, [userEmail]);
   const [studioMode, setStudioMode] = useState<InAppScreen>(() => modeFromUrl());
   useEffect(() => {
     document.body.dataset.feedbackView = studioMode;
@@ -575,9 +565,7 @@ export default function App() {
         setSelectedModelId(preferredStudioModel(freshConfig.models, readLastUsedModelId()).id);
         setProjects(projectResult.projects);
         setActiveProject(projectForSession);
-        setProjectName(projectForSession?.name ?? "Frank Body Campaign");
         const initialBrief = briefResult.briefs[0] ?? null;
-        setBriefs(briefResult.briefs);
         setActiveBrief(initialBrief);
         if (initialBrief) {
           setBriefDraft(briefToDraft(initialBrief));
@@ -588,12 +576,9 @@ export default function App() {
         setActiveReferenceIds([]);
         setTurns(turnResult.turns);
         setAssets(assetResult.assets);
-        setExports(filterExportsForAssets(exportResult.exports, assetResult.assets));
         setProviderEnvStatus(providerEnvResult);
         setActivationChecklist(activationChecklistResult);
         if (brandKitResult?.brandKit) {
-          setBrandKit(brandKitResult.brandKit);
-          setBrandKitDraft(brandKitResult.brandKit);
         }
         setSelectedAsset(firstReviewableAsset(assetResult.assets));
         setConnection("online");
@@ -614,7 +599,6 @@ export default function App() {
         setSessions([localSession]);
       setActiveSession(localSession);
       setConnection("offline");
-      setExports([]);
       const persisted = loadLocalAssets();
       if (persisted.length) {
         setAssets(persisted);
@@ -644,12 +628,6 @@ export default function App() {
     saveLocalAssets(assets);
   }, [assets, connection]);
 
-  useEffect(() => {
-    if (connection !== "online" || providerAudit || checkingProviderAudit || !shouldAutoOpenProviderAudit()) {
-      return;
-    }
-    void checkProviderAdapterAudit();
-  }, [connection, providerAudit, checkingProviderAudit]);
 
 
   const selectedModel = useMemo(
@@ -803,10 +781,7 @@ export default function App() {
     [config.models, connection]
   );
   const providerUnlockRows = useMemo(() => (connection === "online" ? providerUnlockPlan(config.models) : []), [config.models, connection]);
-  const promptPresets = useMemo(
-    () => [...config.promptPresets, ...customPresets],
-    [config.promptPresets, customPresets]
-  );
+  const promptPresets = useMemo(() => config.promptPresets, [config.promptPresets]);
   const activePreset = useMemo(
     () => promptPresets.find((preset) => preset.key === selectedPresetKey) ?? promptPresets[0],
     [promptPresets, selectedPresetKey]
@@ -864,7 +839,6 @@ export default function App() {
     if (!selectedModel.capabilities.masked_edit) {
       setMaskAsset(null);
     }
-    setProviderPreflight(null);
   }, [selectedModel]);
 
   useEffect(() => {
@@ -1032,7 +1006,6 @@ export default function App() {
 
   function showImageStudio() {
     setStudioMode("studio");
-    setReviewFilter("all");
     setSettingsRailOpen(true);
     setStatusText("Studio is open.");
   }
@@ -1078,9 +1051,7 @@ export default function App() {
       setActiveReferenceIds([]);
       setTurns([]);
       setAssets([]);
-      setExports([]);
       setSelectedAsset(null);
-      setHandoffProofText("");
       setPrompt(carriedPrompt || "");
       clearEditSource();
       clearCompare();
@@ -1098,9 +1069,7 @@ export default function App() {
     setActiveReferenceIds([]);
     setTurns([]);
     setAssets([]);
-    setExports([]);
     setSelectedAsset(null);
-    setHandoffProofText("");
     setPrompt(carriedPrompt || "");
     clearEditSource();
     clearCompare();
@@ -1117,7 +1086,6 @@ export default function App() {
     setActiveReferenceIds([]);
     setReferencePreviewAsset(null);
     setSelectedAsset(null);
-    setHandoffProofText("");
     clearEditSource();
     clearCompare();
 
@@ -1134,10 +1102,7 @@ export default function App() {
     ]);
     setTurns(turnResult.turns);
     setAssets(assetResult.assets);
-    setExports(filterExportsForAssets(exportResult.exports, assetResult.assets));
     setActiveProject(projectForSession ?? null);
-    setProjectName(projectForSession?.name ?? "Frank Body Campaign");
-    setBriefs(briefResult.briefs);
     setActiveBrief(briefResult.briefs[0] ?? null);
     setBriefDraft(briefResult.briefs[0] ? briefToDraft(briefResult.briefs[0]) : makeBriefDraft());
     setSelectedAsset(firstReviewableAsset(assetResult.assets));
@@ -1160,7 +1125,6 @@ export default function App() {
     setActiveReferenceIds([]);
     setTurns([]);
     setAssets([]);
-    setExports([]);
     setSelectedAsset(null);
     clearEditSource();
     clearCompare();
@@ -2570,7 +2534,6 @@ export default function App() {
       }
       setTurns((current) => current.filter((t) => t.id !== turn.id));
       setAssets((current) => current.filter((a) => !turnAssetIds.has(a.id)));
-      setExports((current) => current.filter((r) => !turnAssetIds.has(r.asset_id)));
       setSelectedAsset((current) => (current && turnAssetIds.has(current.id) ? null : current));
       if (lightboxAsset && turnAssetIds.has(lightboxAsset.id)) setLightboxAsset(null);
       if (editSourceAsset && turnAssetIds.has(editSourceAsset.id)) {
