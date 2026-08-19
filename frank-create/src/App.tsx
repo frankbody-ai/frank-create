@@ -340,7 +340,6 @@ export default function App() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [exports, setExports] = useState<ExportRecord[]>([]);
   const [prompt, setPrompt] = useState("");
-  const [promptRemixes, setPromptRemixes] = useState<PromptRemixVariant[]>([]);
   const [selectedModelId, setSelectedModelId] = useState(
     () => preferredStudioModel(fallbackConfig.models, readLastUsedModelId()).id
   );
