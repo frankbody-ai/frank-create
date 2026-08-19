@@ -821,8 +821,13 @@ export default function App() {
   }
 
   function switchCompareMedia(media: "image" | "video") {
+    if (media === "video" && !videoAllowed) {
+      setStatusText("Video generation is off for your account. Ask an admin to switch it on.");
+      return;
+    }
     setCompareMedia(media);
     setCompareApproved(false);
+
     const primary = pickModelForMedia(media);
     if (primary && primary.id !== selectedModelId) selectModel(primary.id);
     const second = pickModelForMedia(media, primary?.id ?? selectedModelId);
