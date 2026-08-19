@@ -16,10 +16,6 @@ export interface ShellProps {
    * Only `App` passes this — everywhere else a nav click is a real navigation.
    */
   onSelectInApp?: (screen: Screen) => void;
-  /** Session the review board should open. */
-  sessionId?: string | null;
-  /** Count beside the Approved item. Omitted when zero. */
-  approvedCount?: number;
   /** Top-bar search. Each screen filters its own primary list with this. */
   search?: string;
   onSearchChange?: (value: string) => void;
@@ -45,8 +41,6 @@ export interface ShellProps {
 export function Shell({
   screen,
   onSelectInApp,
-  sessionId,
-  approvedCount,
   search,
   onSearchChange,
   searchPlaceholder = "Search sessions and picks",
@@ -64,7 +58,7 @@ export function Shell({
     }
     const target = id as Screen;
     if (onSelectInApp) onSelectInApp(target);
-    else navigate(target, sessionId);
+    else navigate(target);
   };
 
   const toItem = (entry: (typeof NAV_MAIN)[number]): SideNavItem => ({

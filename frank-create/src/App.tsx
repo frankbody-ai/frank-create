@@ -2394,14 +2394,14 @@ export default function App() {
 
 
 
-  /** Nav clicks: the five in-shell screens are a mode change, the rest are routes. */
+  /** Nav clicks: the in-shell screens are a mode change, the rest are routes. */
   function goToScreen(screen: Screen) {
     
     switch (screen) {
       case "studio": return showImageStudio();
       case "prompt": return showPromptGenerator();
       case "upscaler": return showEnhancer();
-      default: return navigate(screen, activeSession?.id ?? null);
+      default: return navigate(screen);
     }
   }
 
@@ -2436,7 +2436,6 @@ export default function App() {
     <Shell
       screen={studioMode}
       onSelectInApp={goToScreen}
-      sessionId={activeSession?.id ?? null}
       navExtra={
         <SessionFolders
           sessions={sessions}
