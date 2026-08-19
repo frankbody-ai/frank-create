@@ -3023,6 +3023,7 @@ export default function App() {
     const compareFirstFrame = videoFirstFrame;
     const compareLastFrame = videoLastFrame;
     clearReferenceDock();
+    setPrompt("");
 
     const runSide = async ({ side, model }: { side: "A" | "B"; model: StudioModel }) => {
       const resolved = resolveForModel(model, settings, { referenceCount });
