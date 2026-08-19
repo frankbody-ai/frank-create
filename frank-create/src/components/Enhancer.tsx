@@ -241,67 +241,33 @@ export default function Enhancer({
                 }}
               />
 
-              {source ? (
-                <div className="upscaler-drop upscaler-drop--filled">
-                  <div className="upscaler-drop__thumb">
-                    {sourceIsVideo ? (
-                      <video src={sourcePreview} muted playsInline preload="metadata" />
-                    ) : (
-                      <img
-                        src={thumbnailUrl(sourcePreview, 480, 60, "webp") || sourcePreview}
-                        alt={source.title || "Source"}
-                        decoding="async"
-                      />
-                    )}
-                    <span className="upscaler-drop__tick" aria-hidden="true">
-                      <Icon source="check" tone="inherit" size={16} />
-                    </span>
-                  </div>
-                  <div className="upscaler-drop__meta">
-                    <Text fontWeight="medium">{source.title || "Source"}</Text>
-                    <Text variant="bodySm" tone="secondary">
-                      {source.width && source.height ? `${source.width} × ${source.height} · ` : ""}
-                      ready to upscale
-                    </Text>
-                    <div className="upscaler-drop__actions">
-                      <Button size="micro" onClick={onPickSource}>
-                        Change
-                      </Button>
-                      <Button size="micro" onClick={() => onSourceChange(null)}>
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  className={`upscaler-drop upscaler-drop--empty ${dragging ? "is-dragging" : ""}`}
-                  onClick={onPickSource}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    event.dataTransfer.dropEffect = "copy";
-                    setDragging(true);
-                  }}
-                  onDragLeave={() => setDragging(false)}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    setDragging(false);
-                    void handleUpload(Array.from(event.dataTransfer.files || []));
-                  }}
-                  disabled={uploading}
-                >
-                  <Icon source="arrow-up-tray" tone="inherit" size={24} />
-                  <strong>
-                    {uploading
-                      ? "Uploading…"
-                      : `Drop ${media === "video" ? "a clip" : "an image"} here, or click to browse`}
-                  </strong>
-                  <span>
-                    Pick from this session's generations and uploads, or drop / paste a file straight in.
-                  </span>
-                </button>
-              )}
+              <button
+                type="button"
+                className={`upscaler-drop upscaler-drop--empty ${dragging ? "is-dragging" : ""}`}
+                onClick={onPickSource}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "copy";
+                  setDragging(true);
+                }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  setDragging(false);
+                  void handleUpload(Array.from(event.dataTransfer.files || []));
+                }}
+                disabled={uploading}
+              >
+                <Icon source="arrow-up-tray" tone="inherit" size={24} />
+                <strong>
+                  {uploading
+                    ? "Uploading…"
+                    : `Drop ${media === "video" ? "a clip" : "an image"} here, or click to browse`}
+                </strong>
+                <span>
+                  Pick from this session's generations and uploads, or drop / paste a file straight in.
+                </span>
+              </button>
             </div>
 
             <aside className="upscaler-rail" aria-label="Upscaler settings">
