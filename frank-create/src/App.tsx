@@ -1977,7 +1977,8 @@ export default function App() {
   }
 
 
-  const referencePickerLimit = Math.min(10, modelOptions.referenceLimit || 10);
+  const referencePickerLimit =
+    referencePickerTarget === "upscaler" ? 1 : Math.min(10, modelOptions.referenceLimit || 10);
   const referencePickerRangeStart = referenceLibrary.length
     ? referencePickerPage * REFERENCE_PICKER_PAGE_SIZE + 1
     : 0;
@@ -1991,7 +1992,8 @@ export default function App() {
   );
 
 
-  async function openReferencePicker() {
+  async function openReferencePicker(target: "dock" | "upscaler" = "dock") {
+    setReferencePickerTarget(target);
     setReferencePickerOpen(true);
     setReferencePickerSelection([]);
     setReferencePickerPage(0);
@@ -2015,6 +2017,11 @@ export default function App() {
 
   function togglePickerSelection(asset: Asset) {
     setReferencePickerNote(null);
+    // Single-pick mode for the upscaler: tapping a tile swaps the selection.
+    if (referencePickerTarget === "upscaler") {
+      setReferencePickerSelection((current) => (current[0] === asset.id ? [] : [asset.id]));
+      return;
+    }
     setReferencePickerSelection((current) => {
       if (current.includes(asset.id)) return current.filter((id) => id !== asset.id);
       if (current.length >= referencePickerLimit) {
@@ -2031,6 +2038,13 @@ export default function App() {
       .filter((asset): asset is Asset => Boolean(asset));
     if (!picks.length) {
       setReferencePickerOpen(false);
+      return;
+    }
+    if (referencePickerTarget === "upscaler") {
+      setUpscalerSource(picks[0]);
+      setReferencePickerSelection([]);
+      setReferencePickerOpen(false);
+      setStatusText(`${picks[0].title || "Source"} is ready to upscale.`);
       return;
     }
     setReferencePickerBusy(true);
