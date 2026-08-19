@@ -4840,8 +4840,12 @@ export default function App() {
               <Icon source="x-mark" tone="inherit" size={18} />
             </button>
             <header className="reference-picker-header">
-              <h3>Add references</h3>
-              <p>Pick up to {referencePickerLimit} images — newest first. Uploads land here preselected.</p>
+              <h3>{referencePickerTarget === "upscaler" ? "Pick a source" : "Add references"}</h3>
+              <p>
+                {referencePickerTarget === "upscaler"
+                  ? "Pick one image to upscale — newest first. Uploads land here selected."
+                  : `Pick up to ${referencePickerLimit} images — newest first. Uploads land here preselected.`}
+              </p>
             </header>
             <input
               ref={referencePickerInputRef}
