@@ -82,7 +82,6 @@ import Enhancer from "./components/Enhancer";
 
 import type {
   Asset,
-  BriefFormState,
   FrankConfig,
   FrankTask,
   StudioModel,
@@ -4805,13 +4804,6 @@ function firstReviewableAsset(assets: Asset[]) {
 
 
 
-function titleize(value: string) {
-  return value
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
 
 
 const LAST_MODEL_KEY = "frank.lastUsedModelId";
@@ -4878,16 +4870,7 @@ function modelName(config: FrankConfig, modelId: string) {
 
 
 
-function localWorkflowNodeTypes(workflowKey: string) {
-  const byWorkflow: Record<string, string[]> = {
-  };
-  return byWorkflow[workflowKey] ?? [];
-}
 
-function workflowNodeSortKey(nodeId: string) {
-  const numeric = Number.parseInt(nodeId, 10);
-  return Number.isFinite(numeric) ? `0-${numeric.toString().padStart(6, "0")}` : `1-${nodeId}`;
-}
 
 
 function safeFileStem(value: string) {
@@ -5014,61 +4997,6 @@ function modelReferenceLimitAction(model: StudioModel | undefined, referenceCoun
 
 
 
-function providerUnlockPlan(models: StudioModel[]) {
-  const groups = new Map<
-    string,
-    {
-      id: string;
-      envVars: string[];
-      models: StudioModel[];
-      priority: number;
-    }
-  >();
-
-  for (const model of models) {
-    if (model.provider === "local") {
-      continue;
-    }
-
-    const envVars = providerModelEnvVars(model);
-    if (!envVars.length) {
-      continue;
-    }
-
-    const key = envVars.join("|");
-    const existing = groups.get(key);
-    if (existing) {
-      existing.models.push(model);
-      existing.priority = Math.min(existing.priority, providerUnlockPriority(model));
-    } else {
-      groups.set(key, {
-        id: key,
-        envVars,
-        models: [model],
-        priority: providerUnlockPriority(model)
-      });
-    }
-  }
-
-  return Array.from(groups.values())
-    .sort((left, right) => left.priority - right.priority || left.id.localeCompare(right.id))
-    .map((group) => {
-      const modelLabels = group.models.map((model) => model.short_label ?? model.label);
-      const capabilityCopy = capabilitySummary(group.models);
-      const groupReady = group.models.every((model) => model.configured);
-      return {
-        id: group.id,
-        envVars: group.envVars,
-        label: modelLabels.join(" + "),
-        keyCopy: groupReady
-          ? `${joinWithOr(group.envVars)} ready`
-          : group.envVars.length === 1
-            ? `Add ${group.envVars[0]}`
-            : `Use one of ${joinWithOr(group.envVars)}`,
-        capabilityCopy
-      };
-    });
-}
 
 
 function providerModelEnvVars(model: StudioModel) {
