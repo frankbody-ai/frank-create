@@ -641,16 +641,6 @@ export const fallbackConfig: FrankConfig = {
         "Realistic retail shelf or branded display mock for Frank Body [PRODUCT NAME]. Pharmacy or beauty retailer environment — e.g. Chemist Warehouse, MECCA, Target. Correct shelf height, accurate product facings, packaging readable, brand block clear, campaign headline space, sharp typography."
     }
   ],
-  exportPresets: [
-    { key: "pdp", label: "PDP", size: "1600 x 2000", format: "PNG/JPG", media_types: ["image"] },
-    { key: "email-hero", label: "Email hero", size: "2400 x 1350", format: "JPG", media_types: ["image"] },
-    { key: "instagram-feed", label: "Instagram feed", size: "1080 x 1350", format: "JPG", media_types: ["image"] },
-    { key: "instagram-story", label: "Instagram story", size: "1080 x 1920", format: "JPG", media_types: ["image"] },
-    { key: "paid-social", label: "Paid social", size: "1200 x 628", format: "JPG", media_types: ["image"] },
-    { key: "transparent-png", label: "Transparent PNG", size: "source", format: "PNG", media_types: ["image"] },
-    { key: "high-res-master", label: "High-res master", size: "source/upscaled", format: "PNG/TIFF", media_types: ["image"] },
-    { key: "video-storyboard", label: "Motion storyboard", size: "source loop", format: "GIF + JSON", media_types: ["video"] }
-  ],
   voice: {
     appTitle: "The Art Dept.",
     labTitle: "Frank Body Image Studio",
