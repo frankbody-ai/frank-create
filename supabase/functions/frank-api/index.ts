@@ -225,7 +225,7 @@ const STUDIO_CONFIG = {
       prompt:
         "Realistic retail shelf or branded display mock for Frank Body [PRODUCT NAME]. Pharmacy or beauty retailer environment — e.g. Chemist Warehouse, MECCA, Target. Correct shelf height, accurate product facings, packaging readable, brand block clear, campaign headline space, sharp typography.",
     },
-  ],,
+  ],
   localEngine: {
     active_engine: "openrouter",
     diffusion_ready: true,
@@ -239,7 +239,7 @@ const STUDIO_CONFIG = {
     primaryAction: "Generate",
     emptyState: "Describe an image to get started.",
     approved: "Approved",
-  },,
+  },
   advancedGraphUrl: "",
 };
 
