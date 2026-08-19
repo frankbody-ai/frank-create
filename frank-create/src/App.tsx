@@ -1154,7 +1154,6 @@ export default function App() {
       setSelectedAsset(null);
       setHandoffProofText("");
       setPrompt(carriedPrompt || "");
-      setPromptRemixes([]);
       clearEditSource();
       clearCompare();
       setStatusText(
@@ -1175,7 +1174,6 @@ export default function App() {
     setSelectedAsset(null);
     setHandoffProofText("");
     setPrompt(carriedPrompt || "");
-    setPromptRemixes([]);
     clearEditSource();
     clearCompare();
     setStatusText(
@@ -1385,7 +1383,6 @@ export default function App() {
       clearEditSource();
       clearCompare();
       setPrompt(result.brief.prompt ?? result.turn.prompt ?? "");
-      setPromptRemixes([]);
       setSelectedPresetKey(result.turn.preset_key ?? result.brief.task_type ?? null);
       setAttachedPresetSnapshot(null);
       setSettings((current) => ({ ...current, ...turnSettings }));
@@ -3237,7 +3234,7 @@ export default function App() {
     try {
       const parsed = JSON.parse(turn.settings_json || "{}") as Partial<StudioSettings>;
       setPrompt(turn.prompt || "");
-      setPromptRemixes([]);
+      
       setAttachedPresetSnapshot(null);
       if (turn.model) setSelectedModelId(turn.model);
       if (turn.preset_key) setSelectedPresetKey(turn.preset_key); else setSelectedPresetKey(null);
