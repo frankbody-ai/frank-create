@@ -22,7 +22,7 @@
 .as-nav__app[role="button"]{cursor:pointer;transition:background-color var(--motion-hover)}
 .as-nav__app[role="button"]:hover{background:var(--color-bg-surface-hover)}
 .as-nav__app-name{flex:1 1 auto;min-width:0;font-size:var(--type-heading-md-size);line-height:var(--type-heading-md-line);font-weight:var(--type-heading-md-weight);color:var(--color-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.as-nav__list--main{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.as-nav__list--main{flex:0 0 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain}
 .as-nav__list--footer{flex:0 0 auto;margin-top:auto;padding-top:var(--space-200);border-top:var(--border-width-025) solid var(--color-border-secondary)}
 .as-nav__item{display:flex;align-items:center;gap:var(--space-200);width:100%;height:var(--space-800);padding-inline:var(--space-200);border:0;border-radius:var(--radius-200);background:transparent;font-size:var(--type-body-md-size);line-height:var(--type-body-md-line);font-weight:var(--font-weight-regular);color:var(--color-text);text-align:start;cursor:pointer;transition:background-color var(--motion-hover)}
 .as-nav__item:hover{background:var(--color-nav-item-hover)}
