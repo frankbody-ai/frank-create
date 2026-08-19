@@ -3939,16 +3939,6 @@ export default function App() {
 
 
 
-                {promptRemixes.length ? (
-                  <div className="prompt-remix-panel" aria-label="Brief remix directions">
-                    {promptRemixes.map((variant) => (
-                      <button key={variant.key} type="button" onClick={() => applyPromptRemix(variant)}>
-                        <strong>{variant.label}</strong>
-                        <span>{variant.prompt}</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
 
                 <div
                   className={`composer-actions${referenceDropActive ? " reference-drop-active" : ""}${referenceAssets.length ? " composer-actions--icons" : ""}`}
@@ -4067,17 +4057,6 @@ export default function App() {
                       </button>
                     ) : null}
                     <div className="action-compact-pile">
-                      <button
-                        className="secondary-button remix-button"
-                        type="button"
-                        onClick={handlePromptRemix}
-                        disabled={remixBusy}
-                        title="Brief Mix"
-                        aria-label="Brief Mix"
-                      >
-                        {remixBusy ? <Spinner size="small" /> : <Icon source="sparkles" tone="inherit" size={14} />}
-                        <span className="action-label">Brief Mix&nbsp;&nbsp;<br /></span>
-                      </button>
                       <button
                         className="secondary-button danger-button composer-cancel-button"
                         type="button"
