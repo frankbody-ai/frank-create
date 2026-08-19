@@ -2694,9 +2694,31 @@ Deno.serve(async (req) => {
     }
 
     if (path === "/prompt-agent" && method === "POST") {
-
-      const body = await readJson(req) as { messages?: { role?: string; content?: string; images?: string[] }[]; skill?: string };
+      const diagStart = Date.now();
+      const rawBody = await req.text();
+      const bodyBytes = rawBody.length;
+      let body: { messages?: { role?: string; content?: string; images?: string[] }[]; skill?: string } = {};
+      try { body = JSON.parse(rawBody || "{}"); } catch {
+        console.log(JSON.stringify({ tag: "prompt-agent", phase: "parse_failed", user_id: userId, body_bytes: bodyBytes }));
+        return json({ error: { code: "invalid", message: "Malformed request body" } }, 400);
+      }
       const incoming = Array.isArray(body?.messages) ? body.messages : [];
+      const imageSizes: number[] = [];
+      for (const m of incoming) {
+        for (const u of Array.isArray(m?.images) ? m.images : []) {
+          if (typeof u === "string") imageSizes.push(u.length);
+        }
+      }
+      console.log(JSON.stringify({
+        tag: "prompt-agent", phase: "received", user_id: userId,
+        skill: String(body?.skill || "brief-to-prompt"),
+        message_count: incoming.length,
+        body_bytes: bodyBytes,
+        image_count: imageSizes.length,
+        image_bytes: imageSizes,
+        image_bytes_total: imageSizes.reduce((a, b) => a + b, 0),
+      }));
+
       const history = incoming
         .filter((m) => m && (typeof m.content === "string" && m.content.trim() || Array.isArray(m.images) && m.images.length))
         .slice(-20)
@@ -2726,17 +2748,31 @@ Deno.serve(async (req) => {
 
 
       try {
+        const callStart = Date.now();
         const reply = await lovableChat(
           [{ role: "system", content: system }, ...history],
           "openai/gpt-5.6-sol",
         );
         const cleaned = String(reply || "").trim();
+        console.log(JSON.stringify({
+          tag: "prompt-agent", phase: cleaned ? "ok" : "empty", user_id: userId,
+          body_bytes: bodyBytes, image_count: imageSizes.length,
+          model_ms: Date.now() - callStart, total_ms: Date.now() - diagStart,
+          reply_chars: cleaned.length,
+        }));
         if (!cleaned) return json({ error: { code: "empty", message: "AI returned no content" } }, 502);
         return json({ reply: cleaned, model: "openai/gpt-5.6-sol", skill });
       } catch (err) {
+        console.log(JSON.stringify({
+          tag: "prompt-agent", phase: "ai_error", user_id: userId,
+          body_bytes: bodyBytes, image_count: imageSizes.length,
+          image_bytes_total: imageSizes.reduce((a, b) => a + b, 0),
+          total_ms: Date.now() - diagStart, message: errMessage(err),
+        }));
         return json({ error: { code: "ai_error", message: errMessage(err) } }, 502);
       }
     }
+
 
 
 
