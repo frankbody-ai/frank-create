@@ -2880,6 +2880,7 @@ export default function App() {
       lastFrameAsset
     );
     clearReferenceDock();
+    setPrompt("");
 
     const ctrl = new AbortController();
     videoAbortRef.current = ctrl;
