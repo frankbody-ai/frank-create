@@ -2497,6 +2497,7 @@ export default function App() {
         thinking_budget: settings.thinking_budget ?? 0,
         reference_images: generationReferenceUrls,
       };
+      let producedAssets: Asset[] | null = null;
       try {
         setGenPhase("running");
         setStatusText("Model is running...");
