@@ -2770,6 +2770,7 @@ Deno.serve(async (req) => {
       for (const model of PROMPT_AGENT_MODELS) {
         const callStart = Date.now();
         try {
+          if (simulate === "primary-500" && model === PROMPT_AGENT_MODELS[0]) throw new LovableChatError(500, "simulated primary outage");
           if (simulate === "empty") throw new LovableChatError(0, "simulated empty");
           if (simulate === "429") throw new LovableChatError(429, "simulated rate limit");
           if (simulate === "500") throw new LovableChatError(500, "simulated provider outage");
