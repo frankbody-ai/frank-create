@@ -357,6 +357,17 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const visibleMessages = messages.filter((message) => !message.hidden);
   const activeQuestion = wizard ? wizard.questions[wizard.index] : null;
 
+  // Discovery runs on every NEW brief, not just the first one in a conversation:
+  // an empty thread, or a thread whose last reply already delivered a prompt.
+  // Short imperative edits stay conversational so revisions are not interrupted.
+  const lastVisibleAssistant = [...visibleMessages].reverse().find((m) => m.role === "assistant");
+  const threadAwaitsNewBrief =
+    !visibleMessages.length || (!!lastVisibleAssistant && parseAgentReply(lastVisibleAssistant.content).phase === "final");
+  const wizardDefault = threadAwaitsNewBrief && !looksLikeTweak(input);
+  const runWizardNext = wizardOverride ?? wizardDefault;
+
+
+
 
   return (
     <>
