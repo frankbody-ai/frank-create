@@ -61,21 +61,6 @@ function parseWizardQuestions(reply: string): WizardQuestion[] | null {
   }
 }
 
-/**
- * A short imperative edit ("make the background darker", "warmer light") is a
- * revision of the prompt just delivered, not a new brief — those must reach the
- * agent as conversation instead of restarting discovery. Anything longer, or
- * anything that reads like a subject description, counts as a fresh brief.
- */
-function looksLikeTweak(text: string): boolean {
-  const trimmed = text.trim();
-  if (!trimmed) return false;
-  const words = trimmed.split(/\s+/);
-  if (words.length > 14) return false;
-  return /^(make|add|remove|change|swap|use|try|drop|keep|less|more|fewer|brighter|darker|warmer|cooler|tighter|wider|zoom|crop|shorter|longer|again|redo|instead|no|without|put|move|fix|adjust|tone|soften|sharpen)\b/i.test(
-    trimmed
-  );
-}
 
 
 
@@ -169,8 +154,6 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<string[]>([]);
   const [wizard, setWizard] = useState<WizardState | null>(null);
-  /** null = follow the inferred default; true/false = the user forced it. */
-  const [wizardOverride, setWizardOverride] = useState<boolean | null>(null);
   const [wizardNotice, setWizardNotice] = useState<string | null>(null);
   const [chatId, setChatId] = useState<string | null>(null);
   const [chats, setChats] = useState<PromptChatSummary[]>([]);
@@ -214,7 +197,6 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
       setChatId(id);
       setMessages(loaded);
       setWizard(null);
-      setWizardOverride(null);
       setWizardNotice(null);
       setAttachments([]);
       setError(null);
@@ -231,7 +213,6 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     setMessages([]);
     setAttachments([]);
     setWizard(null);
-    setWizardOverride(null);
     setWizardNotice(null);
     setError(null);
     savedSignature.current = "";
@@ -294,7 +275,6 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     setBusy(true);
     setError(null);
     setWizardNotice(null);
-    setWizardOverride(null);
     try {
       // The wizard kickoff asks for a machine-readable question set. That request
       // and its json answer stay hidden from the thread — the wizard IS their UI.
@@ -357,14 +337,6 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const visibleMessages = messages.filter((message) => !message.hidden);
   const activeQuestion = wizard ? wizard.questions[wizard.index] : null;
 
-  // Discovery runs on every NEW brief, not just the first one in a conversation:
-  // an empty thread, or a thread whose last reply already delivered a prompt.
-  // Short imperative edits stay conversational so revisions are not interrupted.
-  const lastVisibleAssistant = [...visibleMessages].reverse().find((m) => m.role === "assistant");
-  const threadAwaitsNewBrief =
-    !visibleMessages.length || (!!lastVisibleAssistant && parseAgentReply(lastVisibleAssistant.content).phase === "final");
-  const wizardDefault = threadAwaitsNewBrief && !looksLikeTweak(input);
-  const runWizardNext = wizardOverride ?? wizardDefault;
 
 
 
@@ -644,7 +616,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
           data-paste-scope="prompt-agent"
           onSubmit={(event) => {
             event.preventDefault();
-            void send(input, { wizardKickoff: runWizardNext });
+            void send(input, { wizardKickoff: true });
           }}
         >
 
@@ -692,7 +664,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               if (event.key !== "Enter") return;
               if (event.shiftKey) return;
               event.preventDefault();
-              void send(input, { wizardKickoff: runWizardNext });
+              void send(input, { wizardKickoff: true });
             }}
 
           />
@@ -714,13 +686,6 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               disabled={busy || attachments.length >= MAX_ATTACHMENTS}
             >
               Attach reference
-            </Button>
-            <Button
-              icon={runWizardNext ? "sparkles" : "chat-bubble-left-right"}
-              onClick={() => setWizardOverride(!runWizardNext)}
-              disabled={busy}
-            >
-              {runWizardNext ? "Discovery: on" : "Discovery: off"}
             </Button>
             <span className="agent-composer__spacer" />
             <Text variant="bodySm" tone="secondary">
