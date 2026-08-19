@@ -94,6 +94,7 @@ export function Shell({
           app="design-studio"
           appName="art-ificial design studio"
           items={NAV_MAIN.map(toItem)}
+          extra={navExtra}
           footerItems={[
             { id: "whats-new", label: "What's new", icon: "sparkles" },
             ...NAV_FOOTER.map(toItem),
