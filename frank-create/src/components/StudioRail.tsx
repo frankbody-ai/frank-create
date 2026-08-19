@@ -114,9 +114,11 @@ export function StudioRail(props: StudioRailProps) {
           <Button pressed={mediaKind === "image"} onClick={() => onMediaKindChange("image")}>
             Image
           </Button>
-          <Button pressed={mediaKind === "video"} onClick={() => onMediaKindChange("video")}>
-            Video
-          </Button>
+          {videoAllowed ? (
+            <Button pressed={mediaKind === "video"} onClick={() => onMediaKindChange("video")}>
+              Video
+            </Button>
+          ) : null}
           <Button pressed={isCompare} onClick={() => onMediaKindChange("compare")}>
             Compare
           </Button>
@@ -129,8 +131,11 @@ export function StudioRail(props: StudioRailProps) {
             <span className="run-settings__label">Compare on</span>
             <div className="chip-row">
               {chip("Images", compareMedia === "image", () => onCompareMediaChange?.("image"))}
-              {chip("Videos", compareMedia === "video", () => onCompareMediaChange?.("video"))}
+              {videoAllowed
+                ? chip("Videos", compareMedia === "video", () => onCompareMediaChange?.("video"))
+                : null}
             </div>
+
             <Text variant="bodySm" tone="secondary" as="p">
               Compare runs one output per side from the same brief and settings.
             </Text>
