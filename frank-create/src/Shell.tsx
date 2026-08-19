@@ -26,6 +26,8 @@ export interface ShellProps {
   searchPlaceholder?: string;
   /** Extra controls inserted into the top bar before feedback and sign out. */
   actions?: React.ReactNode;
+  /** Panel rendered inside the side nav under the main items — the session organiser. */
+  navExtra?: React.ReactNode;
   /** Content column cap. 1000px for single-column reading views. */
   maxWidth?: string;
   children?: React.ReactNode;
