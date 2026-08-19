@@ -2312,8 +2312,8 @@ Deno.serve(async (req) => {
         source_asset_id: typeof body.source_asset_id === "string" ? body.source_asset_id : null,
         width: typeof body.width === "number" ? body.width : null,
         height: typeof body.height === "number" ? body.height : null,
-        approval_status: "review",
       };
+
       const { data, error } = await supabase().from("assets").insert({
         id: crypto.randomUUID(),
         user_id: userId,
