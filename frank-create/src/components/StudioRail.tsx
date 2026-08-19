@@ -2,7 +2,7 @@ import React from "react";
 
 import { Badge, Button, ButtonGroup, Card, Checkbox, Select, Text } from "../ds";
 import type { PromptPreset, StudioModel, StudioSettings } from "../lib/types";
-import { estimateVideoCost, filterSizesForAspect, maxCountForModel, modelCostBadge, modelRateLabel } from "../lib/studio";
+import { estimateImageCost, estimateVideoCost, filterSizesForAspect, maxCountForModel, modelCostBadge, modelRateLabel } from "../lib/studio";
 import type { StudioAdjustment, StudioFieldErrors } from "../lib/studio";
 import { AspectPreview } from "./AspectPreview";
 
@@ -89,7 +89,7 @@ export function StudioRail(props: StudioRailProps) {
     : [];
   const countCap = isVideo || isCompare ? 1 : maxCountForModel(model);
   const counts = Array.from({ length: Math.min(countCap, 10) }, (_, index) => index + 1);
-  const costEstimate = isVideo ? estimateVideoCost(model, settings) : null;
+  const costEstimate = isVideo ? estimateVideoCost(model, settings) : estimateImageCost(model, settings);
   const badge = isVideo ? tierBadge(model) : null;
   const pendingAdjustments = compareAdjustments.filter((entry) => entry.items.length);
 

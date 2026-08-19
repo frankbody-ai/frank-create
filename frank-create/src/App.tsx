@@ -60,6 +60,7 @@ import {
   resolveForModel,
   groupCompareRows,
   parseCompareMeta,
+  estimateImageCost,
   estimateVideoCost,
   composeReferencePrompt,
   referenceTagFor,
@@ -716,9 +717,10 @@ export default function App() {
     return errors;
   }, [mediaKind, baseFieldErrors, compareModelB, modelOptions.model?.id, compareNeedsApproval, compareApproved]);
   const compareCostLabel = useMemo(() => {
-    if (mediaKind !== "compare" || compareMedia !== "video" || !compareResolved) return null;
-    const a = estimateVideoCost(modelOptions.model, compareResolved.a.settings);
-    const b = estimateVideoCost(compareModelB, compareResolved.b.settings);
+    if (mediaKind !== "compare" || !compareResolved) return null;
+    const estimate = compareMedia === "video" ? estimateVideoCost : estimateImageCost;
+    const a = estimate(modelOptions.model, compareResolved.a.settings);
+    const b = estimate(compareModelB, compareResolved.b.settings);
     if (!a && !b) return null;
     return `A ${a ?? "—"} · B ${b ?? "—"}`;
   }, [mediaKind, compareMedia, compareResolved, modelOptions.model, compareModelB]);
