@@ -71,9 +71,11 @@ export function StudioRail(props: StudioRailProps) {
     settings, onSettingsChange, onAspectChange, presets, selectedPresetKey,
     onPresetChange, fieldErrors, referenceCount, onReset,
     compareMedia = "image", onCompareMediaChange, compareModelBId, onCompareModelBChange,
-    compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel
+    compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel,
+    videoAllowed = true
 
   } = props;
+
 
   const isCompare = mediaKind === "compare";
   const model = models.find((item) => item.id === selectedModelId) ?? models[0];
