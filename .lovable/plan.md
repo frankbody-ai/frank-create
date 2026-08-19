@@ -33,9 +33,10 @@ src/lib/modelMemory.ts           last-used model persistence
 
 Pure helpers (formatters, label builders, model preference, settings-for-task) move first since they carry no state; then the presentational pieces; then the remaining stateful blocks. Each move is verified by build + tests before the next.
 
-## 3. Trim the walkthrough
+## 3. Remove the walkthrough
 
-The guided walkthrough (~95 references, its own overlay, anchors and measuring code) is early-stage onboarding. Recommend deleting it unless you still want it — say the word and it stays untouched.
+The guided walkthrough goes: overlay component, step definitions, anchor measuring, and every trigger and state flag tied to it (~95 references).
+
 
 ## 4. Performance pass on what remains
 
