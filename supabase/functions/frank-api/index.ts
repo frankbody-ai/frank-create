@@ -3084,9 +3084,6 @@ Deno.serve(async (req) => {
     }
 
 
-
-
-    // ---- Demo receipts (minimal stubs) ----
     return json({ error: { code: "not_found", message: `No handler for ${method} ${path}` } }, 404);
   } catch (err) {
     if (err instanceof AuthError) {
