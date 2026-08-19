@@ -26,6 +26,8 @@ export interface ShellProps {
   searchPlaceholder?: string;
   /** Extra controls inserted into the top bar before feedback and sign out. */
   actions?: React.ReactNode;
+  /** Panel rendered inside the side nav under the main items — the session organiser. */
+  navExtra?: React.ReactNode;
   /** Content column cap. 1000px for single-column reading views. */
   maxWidth?: string;
   children?: React.ReactNode;
@@ -49,6 +51,7 @@ export function Shell({
   onSearchChange,
   searchPlaceholder = "Search sessions and picks",
   actions,
+  navExtra,
   maxWidth,
   children,
 }: ShellProps) {
@@ -91,6 +94,7 @@ export function Shell({
           app="design-studio"
           appName="art-ificial design studio"
           items={NAV_MAIN.map(toItem)}
+          extra={navExtra}
           footerItems={[
             { id: "whats-new", label: "What's new", icon: "sparkles" },
             ...NAV_FOOTER.map(toItem),

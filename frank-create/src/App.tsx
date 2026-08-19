@@ -143,6 +143,7 @@ import type {
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
+import { SessionFolders } from "./components/SessionFolders";
 import { clampWords } from "./lib/clampWords";
 
 
@@ -3692,7 +3693,6 @@ export default function App() {
     }
   }, []);
 
-  const [sessionMenuOpen, setSessionMenuOpen] = useState(false);
 
   /** Nav clicks: the five in-shell screens are a mode change, the rest are routes. */
   function goToScreen(screen: Screen) {
@@ -3737,7 +3737,19 @@ export default function App() {
       screen={studioMode}
       onSelectInApp={goToScreen}
       sessionId={activeSession?.id ?? null}
-      
+      navExtra={
+        <SessionFolders
+          sessions={sessions}
+          activeSessionId={activeSession?.id ?? null}
+          onSelect={(session) => {
+            if (session.id === activeSession?.id) return;
+            void selectSession(session);
+          }}
+          onRename={renameSession}
+          onArchive={confirmArchiveSession}
+          onNew={() => void handleNewSession()}
+        />
+      }
       search={roundSearch}
       onSearchChange={setRoundSearch}
       searchPlaceholder="Search sessions and picks"
@@ -3799,58 +3811,8 @@ export default function App() {
           badge={activeSession ? <Badge tone="neutral">{activeSession.name}</Badge> : null}
           actions={
             <>
-              <Popover
-                active={sessionMenuOpen}
-                onClose={() => setSessionMenuOpen(false)}
-                align="end"
-                width={280}
-                activator={
-                  <Button icon="folder" disclosure onClick={() => setSessionMenuOpen((v) => !v)}>
-                    Switch session
-                  </Button>
-                }
-              >
-                <ActionList
-                  sections={[
-                    {
-                      title: "Sessions",
-                      items: sessions.map((session) => ({
-                        content: session.name,
-                        active: session.id === activeSession?.id,
-                        onAction: () => {
-                          setSessionMenuOpen(false);
-                          void selectSession(session);
-                        }
-                      }))
-                    },
-                    {
-                      items: [
-                        {
-                          content: "Rename this session",
-                          icon: "pencil-square",
-                          disabled: !activeSession,
-                          onAction: () => {
-                            setSessionMenuOpen(false);
-                            if (activeSession) renameSession(activeSession);
-                          }
-                        },
-                        {
-                          content: "Archive this session",
-                          icon: "trash",
-                          destructive: true,
-                          disabled: !activeSession,
-                          onAction: () => {
-                            setSessionMenuOpen(false);
-                            if (activeSession) confirmArchiveSession(activeSession);
-                          }
-                        }
-                      ]
-                    }
-                  ]}
-                />
-              </Popover>
               <Button icon="plus" onClick={() => void handleNewSession()}>
-                Add session
+                New session
               </Button>
               <Button
                 variant="primary"
