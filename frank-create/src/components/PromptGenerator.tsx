@@ -337,9 +337,6 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const visibleMessages = messages.filter((message) => !message.hidden);
   const activeQuestion = wizard ? wizard.questions[wizard.index] : null;
 
-  // The wizard always runs for every user message; the agent is asked to
-  // produce a discovery question set before any final prompt.
-  const runWizardNext = true;
 
 
 
