@@ -1498,6 +1498,60 @@
 .lightbox-actions .lightbox-approve:hover,
 .lightbox-actions .lightbox-reject:hover { background: var(--color-bg-surface); }
 
+/* Inline "edit this image" composer inside the full-screen preview. */
+.lightbox-edit {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-200);
+  width: 100%;
+  padding: var(--space-150);
+  border: var(--border-width-025) solid var(--color-border-inverse, rgba(255, 255, 255, 0.4));
+  border-radius: var(--radius-300);
+  background: rgba(255, 255, 255, 0.1);
+}
+.lightbox-edit-input {
+  flex: 1;
+  min-height: 2.25rem;
+  max-height: 7rem;
+  padding: var(--space-150) var(--space-200);
+  border: 0;
+  border-radius: var(--radius-200);
+  background: transparent;
+  color: var(--color-text-inverse);
+  font: inherit;
+  font-size: var(--type-body-sm-size);
+  resize: none;
+}
+.lightbox-edit-input::placeholder { color: var(--color-text-inverse-secondary); }
+.lightbox-edit-input:focus { outline: none; }
+.lightbox-edit-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 0;
+  border-radius: var(--radius-full, 999px);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.lightbox-edit-send:disabled { opacity: 0.45; cursor: not-allowed; }
+.lightbox-edit-status {
+  margin: 0;
+  font-size: var(--type-body-sm-size);
+  color: var(--color-text-inverse-secondary);
+}
+.lightbox-edit-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  animation: lightbox-edit-spin 0.8s linear infinite;
+}
+@keyframes lightbox-edit-spin { to { transform: rotate(360deg); } }
+
 
 .reference-picker { width: min(880px, 100%); }
 .reference-picker-header,

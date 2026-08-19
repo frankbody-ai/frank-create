@@ -392,6 +392,9 @@ export default function App() {
   const [settings, setSettings] = useState<StudioSettings>(defaultStudioSettings(fallbackConfig.models[0]));
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [lightboxAsset, setLightboxAsset] = useState<Asset | null>(null);
+  // Inline "edit this image" composer inside the lightbox (ChatGPT-style).
+  const [lightboxEditText, setLightboxEditText] = useState("");
+  const [lightboxEditBusy, setLightboxEditBusy] = useState(false);
   const [referencePreviewAsset, setReferencePreviewAsset] = useState<Asset | null>(null);
   const [referenceDropActive, setReferenceDropActive] = useState(false);
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
@@ -901,6 +904,32 @@ export default function App() {
     setMaskPainterAsset(null);
   }
 
+  // Run an edit round straight from the full-screen preview. The lightbox stays
+  // open and jumps to the first new pick, so edits can be chained.
+  async function submitLightboxEdit() {
+    const asset = lightboxAsset;
+    const text = lightboxEditText.trim();
+    if (!asset || !text || lightboxEditBusy) return;
+    if (!selectedModel?.capabilities.edit) {
+      setStatusText(
+        `${selectedModel?.short_label ?? selectedModel?.label ?? "This model"} cannot edit images yet — pick an edit-capable model.`
+      );
+      return;
+    }
+    setLightboxEditBusy(true);
+    try {
+      const created = await handleGenerate(undefined, { prompt: text, editSourceAsset: asset });
+      if (created?.length) {
+        setLightboxEditText("");
+        setLightboxAsset(created[0]);
+      }
+    } finally {
+      setLightboxEditBusy(false);
+    }
+  }
+
+
+
   function startMaskPainter(asset: Asset) {
     setEditSourceAsset(asset);
     setMaskAsset(null);
@@ -1042,9 +1071,18 @@ export default function App() {
   }
 
   useEffect(() => {
+    if (!lightboxAsset) setLightboxEditText("");
+  }, [lightboxAsset]);
+
+
+  useEffect(() => {
     if (!lightboxAsset) return;
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") setLightboxAsset(null);
+      // Arrow keys stay with the inline edit field while it has focus.
+      const target = event.target as HTMLElement | null;
+      const typing = !!target && /^(input|textarea)$/i.test(target.tagName);
+      if (typing) return;
       if (event.key === "ArrowRight") stepLightbox(1);
       if (event.key === "ArrowLeft") stepLightbox(-1);
     }
@@ -2365,39 +2403,48 @@ export default function App() {
 
 
 
-  async function handleGenerate(event?: FormEvent) {
+  async function handleGenerate(
+    event?: FormEvent,
+    override?: { prompt?: string; editSourceAsset?: Asset }
+  ): Promise<Asset[] | null> {
     event?.preventDefault();
-    if (!activeSession || !selectedModel || !prompt.trim()) {
+    const promptText = override?.prompt ?? prompt;
+    const editSource = override?.editSourceAsset ?? editSourceAsset;
+    const activePromptMode: typeof promptMode = editSource
+      ? (!override && maskAsset ? "masked_edit" : "edit")
+      : "generate";
+    if (!activeSession || !selectedModel || !promptText.trim()) {
       setStatusText("Give the studio a prompt first.");
-      return;
+      return null;
     }
 
-    if (mediaKind === "compare") {
+    if (!override && mediaKind === "compare") {
       await handleCompareGenerate();
-      return;
+      return null;
     }
 
-    if (mediaKind === "video" || isVideoModel(selectedModel)) {
+    if (!override && (mediaKind === "video" || isVideoModel(selectedModel))) {
       await handleVideoGenerate();
-      return;
+      return null;
     }
 
 
-    if (promptMode === "edit" && !selectedModel.capabilities.edit) {
+    if (activePromptMode === "edit" && !selectedModel.capabilities.edit) {
       setStatusText(`${selectedModel.short_label ?? selectedModel.label} cannot edit images yet.`);
-      return;
+      return null;
     }
 
-    if (promptMode === "masked_edit" && !selectedModel.capabilities.masked_edit) {
+    if (activePromptMode === "masked_edit" && !selectedModel.capabilities.masked_edit) {
       setStatusText(`${selectedModel.short_label ?? selectedModel.label} cannot use masks yet.`);
-      return;
+      return null;
     }
 
     const referenceLimitMessage = modelReferenceLimitAction(selectedModel, selectedReferenceAssets.length);
     if (referenceLimitMessage) {
       setStatusText(referenceLimitMessage);
-      return;
+      return null;
     }
+
 
     const preflightErrors = validateStudioSettings(selectedModel, settings, {
       referenceCount: selectedReferenceAssets.length
@@ -2409,7 +2456,7 @@ export default function App() {
         const el = document.querySelector<HTMLElement>('[data-studio-invalid="true"]');
         el?.focus?.();
       }
-      return;
+      return null;
     }
 
     const referencePairs = selectedReferenceAssets
@@ -2418,28 +2465,28 @@ export default function App() {
         typeof pair.url === "string" && /^https?:\/\//.test(pair.url));
     const generationReferenceUrls = referencePairs.map((pair) => pair.url);
     const generationReferenceAssets = referencePairs.map((pair) => pair.asset);
-    const unknownTags = unknownReferenceTags(prompt, generationReferenceAssets.length);
+    const unknownTags = unknownReferenceTags(promptText, generationReferenceAssets.length);
     if (unknownTags.length) {
       setStatusText(`${unknownTags.join(", ")} ${unknownTags.length === 1 ? "does" : "do"} not match a loaded reference. Remove the tag or add the image.`);
-      return;
+      return null;
     }
-    const providerPrompt = composeReferencePrompt(prompt, generationReferenceAssets);
+    const providerPrompt = composeReferencePrompt(promptText, generationReferenceAssets);
     if (selectedReferenceAssets.length && !generationReferenceUrls.length) {
       setStatusText("Reference images are still uploading. Try again in a moment.");
-      return;
+      return null;
     }
 
     setBusy(true);
     setGenPhase("queued");
     setGenError(null);
     setGenErrorOpen(false);
-    setStatusText(promptMode === "generate" ? "Preparing the next round..." : "Preparing the edit brief...");
+    setStatusText(activePromptMode === "generate" ? "Preparing the next round..." : "Preparing the edit brief...");
     const inflightId = makeLocalId("gen");
     const inflightEntry: InflightGen = {
       id: inflightId,
       modelId: selectedModel.id,
       modelLabel: modelName(config, selectedModel.id),
-      prompt: prompt,
+      prompt: promptText,
       aspect: settings.aspect_ratio,
       count: Math.max(1, settings.count),
       startedAt: Date.now(),
@@ -2451,26 +2498,28 @@ export default function App() {
     const request = buildTurnRequest({
       sessionId: activeSession.id,
       modelId: selectedModel.id,
-      prompt,
-      promptMode,
+      prompt: promptText,
+      promptMode: activePromptMode,
       frankBodyMode,
       presetKey: selectedPresetKey ?? undefined,
       settings,
       referenceAssetIds: selectedReferenceAssets.map((asset) => asset.id),
       referenceImageUrls: generationReferenceUrls,
       providerPrompt,
-      editSourceAssetId: editSourceAsset?.id,
-      maskAssetId: promptMode === "masked_edit" ? maskAsset?.id : undefined
+      editSourceAssetId: editSource?.id,
+      maskAssetId: activePromptMode === "masked_edit" ? maskAsset?.id : undefined
     });
 
-    // The request owns the snapshot above. Empty the visible dock immediately,
-    // before waiting for the provider, so the next run always starts clean.
+    // The request owns the snapshot above. Empty the visible dock and the
+    // composer immediately, before waiting for the provider, so the next run
+    // always starts clean.
     clearReferenceDock();
+    if (!override) setPrompt("");
 
     if (connection !== "online") {
       // Auto-name the session from the first prompt if it still has the default name.
       if (activeSession && (!activeSession.name || /^(new session|launch image studio|untitled)/i.test(activeSession.name)) && turns.length === 0) {
-        const autoName = prompt.trim().replace(/\s+/g, " ").slice(0, 40) || activeSession.name;
+        const autoName = promptText.trim().replace(/\s+/g, " ").slice(0, 40) || activeSession.name;
         if (autoName && autoName !== activeSession.name) {
           const renamed = { ...activeSession, name: autoName };
           setActiveSession(renamed);
@@ -2486,6 +2535,7 @@ export default function App() {
         thinking_budget: settings.thinking_budget ?? 0,
         reference_images: generationReferenceUrls,
       };
+      let producedAssets: Asset[] | null = null;
       try {
         setGenPhase("running");
         setStatusText("Model is running...");
@@ -2549,6 +2599,7 @@ export default function App() {
         setTurns((current) => [...current, turn]);
         setAssets((current) => [...newAssets, ...current]);
         setSelectedAsset(newAssets[0]);
+        producedAssets = newAssets;
         setStatusText(`Generated ${newAssets.length} pick${newAssets.length === 1 ? "" : "s"} via Lovable AI.`);
         setRetrySafePayload(null);
         setGenPhase("completed");
@@ -2601,17 +2652,19 @@ export default function App() {
         setBusy(false);
       }
 
-      return;
+      return producedAssets;
     }
 
     const missingKeyMessage = modelMissingKeyAction(selectedModel);
     if (missingKeyMessage) {
       setStatusText(missingKeyMessage);
-      return;
+      return null;
     }
 
+    let onlineAssets: Asset[] | null = null;
     try {
       let result = await createInferenceTurn(request);
+
       setTurns((current) => [...current, result.turn]);
 
       // The backend hands back "running" for providers that can outlive one
@@ -2658,7 +2711,8 @@ export default function App() {
         if (result.status === "complete" && result.assets?.length) {
           setAssets((current) => [...result.assets!, ...current]);
           setSelectedAsset(result.assets[0]);
-          if (promptMode !== "generate") {
+          onlineAssets = result.assets;
+          if (activePromptMode !== "generate" && !override) {
             setEditSourceAsset(null);
             setMaskAsset(null);
           }
@@ -2683,6 +2737,7 @@ export default function App() {
       // (e.g. 4 images). Re-read the session so every produced image lands.
       void reconcileSessionAssets();
     }
+    return onlineAssets;
   }
 
   // Poll a "running" turn until the backend reports complete/failed. Turn cards
@@ -2863,6 +2918,7 @@ export default function App() {
       lastFrameAsset
     );
     clearReferenceDock();
+    setPrompt("");
 
     const ctrl = new AbortController();
     videoAbortRef.current = ctrl;
@@ -3005,6 +3061,7 @@ export default function App() {
     const compareFirstFrame = videoFirstFrame;
     const compareLastFrame = videoLastFrame;
     clearReferenceDock();
+    setPrompt("");
 
     const runSide = async ({ side, model }: { side: "A" | "B"; model: StudioModel }) => {
       const resolved = resolveForModel(model, settings, { referenceCount });
@@ -4800,17 +4857,48 @@ export default function App() {
                 <span>{lightboxIndex + 1} / {lightboxSiblings.length}</span>
               ) : null}
             </div>
-            <div className="lightbox-actions">
-              <button
-                type="button"
-                onClick={() => {
-                  startEditFromAsset(lightboxAsset);
-                  setLightboxAsset(null);
+            {lightboxAsset.media_type !== "video" ? (
+              <form
+                className="lightbox-edit"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void submitLightboxEdit();
                 }}
               >
-                <Icon source="sparkles" tone="inherit" size={16} />
-                Edit this
-              </button>
+                <textarea
+                  className="lightbox-edit-input"
+                  rows={1}
+                  value={lightboxEditText}
+                  placeholder={
+                    selectedModel?.capabilities.edit
+                      ? `Describe the change — ${modelName(config, selectedModel.id)} will run a new round`
+                      : "Pick an edit-capable model to edit from here"
+                  }
+                  disabled={lightboxEditBusy}
+                  onChange={(event) => setLightboxEditText(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void submitLightboxEdit();
+                    }
+                  }}
+                />
+                <button
+                  className="lightbox-edit-send"
+                  type="submit"
+                  disabled={lightboxEditBusy || !lightboxEditText.trim() || !selectedModel?.capabilities.edit}
+                  aria-label="Run edit"
+                >
+                  {lightboxEditBusy ? (
+                    <span className="lightbox-edit-spinner" aria-hidden="true" />
+                  ) : (
+                    <Icon source="paper-airplane" tone="inherit" size={16} />
+                  )}
+                </button>
+              </form>
+            ) : null}
+            {lightboxEditBusy ? <p className="lightbox-edit-status">Running the edit…</p> : null}
+            <div className="lightbox-actions">
               <button type="button" onClick={() => void downloadAssetFile(lightboxAsset)}>
                 <Icon source="arrow-down-tray" tone="inherit" size={16} />
                 Save
