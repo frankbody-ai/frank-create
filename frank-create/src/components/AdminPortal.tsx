@@ -217,6 +217,19 @@ function UsersTab({
     }
   };
 
+  const onChangeVideo = async (u: AdminUserRow, next: boolean) => {
+    setBusy(u.id);
+    try {
+      await setUserVideoAccess(u.id, next);
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't change video access.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+
   return (
     <>
       {error ? <Banner tone="critical" title="Something went wrong">{error}</Banner> : null}
