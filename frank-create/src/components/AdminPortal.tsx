@@ -264,8 +264,18 @@ function UsersTab({
                 onChange={(e) => void onChangeRole(u, e.target.value as AppRole)}
               />
             ),
+            video: (
+              <Switch
+                size="small"
+                label={u.video_enabled ? "On" : "Off"}
+                checked={u.video_enabled}
+                disabled={busy === u.id}
+                onChange={(next) => void onChangeVideo(u, next)}
+              />
+            ),
             joined: fmt(u.created_at),
             seen: fmt(u.last_sign_in_at),
+
           }))}
           emptyState={
             <Text as="p" tone="secondary">
