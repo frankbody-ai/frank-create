@@ -2219,6 +2219,8 @@ export default function App() {
   useEffect(() => {
     function onGlobalPaste(event: ClipboardEvent) {
       if (event.defaultPrevented) return;
+      // The upscaler owns paste on its own screen (pasted file becomes the source).
+      if (studioMode === "upscaler") return;
       const target = event.target as HTMLElement | null;
       // Let dedicated composers (which preventDefault themselves) handle their own paste.
       if (target?.closest?.("[data-paste-scope]")) return;
@@ -2229,7 +2231,7 @@ export default function App() {
     }
     window.addEventListener("paste", onGlobalPaste);
     return () => window.removeEventListener("paste", onGlobalPaste);
-  }, [activeSession?.id, modelOptions.referenceLimit, connection]);
+  }, [activeSession?.id, modelOptions.referenceLimit, connection, studioMode]);
 
 
   function handlePromptDragOver(event: React.DragEvent<HTMLElement>) {
