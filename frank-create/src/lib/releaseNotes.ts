@@ -17,11 +17,13 @@ export const RELEASES: ReleaseNote[] = [
   {
     id: "2026-08-19-preview-fix",
     date: "19 August 2026",
-    title: "Image preview fixed",
+    title: "Preview and layout fixes",
     items: [
       "Clicking an image opens the full-screen preview again.",
+      "On narrow screens the model settings now sit under the composer, above the rounds.",
     ],
   },
+
 
   {
     id: "2026-08-19-leaner-app",
