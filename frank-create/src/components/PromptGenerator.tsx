@@ -685,7 +685,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               if (event.key !== "Enter") return;
               if (event.shiftKey) return;
               event.preventDefault();
-              void send(input, { wizardKickoff: !messages.length });
+              void send(input, { wizardKickoff: runWizardNext });
             }}
 
           />
