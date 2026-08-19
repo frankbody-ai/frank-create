@@ -514,25 +514,10 @@ export default function App() {
           nextSessions = [created.session];
         }
 
-        const [
-          turnResult,
-          assetResult,
-          providerEnvResult,
-          activationChecklistResult,
-          brandKitResult,
-          projectResult
-        ] = await Promise.all([
+        const [turnResult, assetResult] = await Promise.all([
           listTurns(nextSession.id),
-          listAssets({ sessionId: nextSession.id }),
-          listExports().catch(() => ({ exports: [] })),
-          fetchProviderEnvStatus().catch(() => null),
-          fetchActivationChecklist().catch(() => null),
-          fetchBrandKit().catch(() => null),
-          listProjects().catch(() => ({ projects: [] }))
+          listAssets({ sessionId: nextSession.id })
         ]);
-        const projectForSession =
-          projectResult.projects.find((project) => project.id === nextSession.project_id) ?? projectResult.projects[0] ?? null;
-        const briefResult = projectForSession ? await listBriefs(projectForSession.id).catch(() => ({ briefs: [] })) : { briefs: [] };
 
         if (cancelled) {
           return;
@@ -540,22 +525,12 @@ export default function App() {
 
         setConfig(freshConfig);
         setSelectedModelId(preferredStudioModel(freshConfig.models, readLastUsedModelId()).id);
-        setProjects(projectResult.projects);
-        setActiveProject(projectForSession);
-        const initialBrief = briefResult.briefs[0] ?? null;
-        setActiveBrief(initialBrief);
-        if (initialBrief) {
-          setBriefDraft(briefToDraft(initialBrief));
-          hydratePromptFromBrief(initialBrief);
-        }
         setSessions(nextSessions);
         setActiveSession(nextSession);
         setActiveReferenceIds([]);
         setTurns(turnResult.turns);
         setAssets(assetResult.assets);
-        setProviderEnvStatus(providerEnvResult);
-        setActivationChecklist(activationChecklistResult);
-        if (brandKitResult?.brandKit) {
+        setSelectedAsset(firstReviewableAsset(assetResult.assets));
         }
         setSelectedAsset(firstReviewableAsset(assetResult.assets));
         setConnection("online");
