@@ -483,7 +483,6 @@ export default function App() {
   const [briefBusy, setBriefBusy] = useState(false);
   const [handoffBusy, setHandoffBusy] = useState(false);
   const [handoffProofText, setHandoffProofText] = useState("");
-  const [remixBusy, setRemixBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   // `compareGroup` ties the two sides of a side-by-side run together so the
   // timeline shows one loading round with two slots, not two separate rounds.
