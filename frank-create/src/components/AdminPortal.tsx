@@ -176,6 +176,27 @@ function UsersTab({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [requireApproval, setRequireApproval] = useState(false);
+  const [gateBusy, setGateBusy] = useState(false);
+
+  useEffect(() => {
+    void getMyAccessState()
+      .then((s) => setRequireApproval(s.require_approval))
+      .catch(() => { /* leave the gate reported as off */ });
+  }, []);
+
+  const onToggleGate = async (next: boolean) => {
+    setGateBusy(true);
+    try {
+      await setRequireAccessApproval(next);
+      setRequireApproval(next);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't change the approval requirement.");
+    } finally {
+      setGateBusy(false);
+    }
+  };
+
 
   const refresh = async () => {
     setRefreshing(true);
