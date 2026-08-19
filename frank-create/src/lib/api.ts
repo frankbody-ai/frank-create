@@ -16,7 +16,6 @@ import type {
   ProviderReadiness,
   ProviderReadinessReceiptResult,
   ProviderPreflight,
-  PromptRemixVariant,
   Project,
   Run,
   StudioSession,
@@ -104,12 +103,6 @@ export async function createProviderReadinessReceipt() {
   return fetchJson<ProviderReadinessReceiptResult>("/demo/provider-readiness", { method: "POST" });
 }
 
-export async function remixPrompt(payload: { prompt: string; preset_key: string; frank_body_mode: boolean }) {
-  return fetchJson<{ variants: PromptRemixVariant[] }>("/prompt-remix", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
 
 export async function improvePresetPrompt(payload: { prompt: string; label?: string; description?: string }) {
   return fetchJson<{ prompt: string }>("/improve-preset", {
