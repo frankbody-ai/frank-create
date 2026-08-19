@@ -2189,6 +2189,58 @@ export default function App() {
     return createdAssets;
   }
 
+  /**
+   * Prompt Generator handoff: the reference images used in that conversation
+   * (data URLs) become real session references attached to the next run, so the
+   * prompt and its visual context arrive in Studio together.
+   */
+  async function adoptPromptGeneratorReferences(images: string[]) {
+    if (!images.length) {
+      setStatusText("Prompt loaded into the Studio composer.");
+      return;
+    }
+    if (!activeSession) {
+      setStatusText("Prompt loaded. Start a session to carry the reference images over.");
+      return;
+    }
+    const limit = modelOptions.referenceLimit || images.length;
+    const picked = images.slice(0, limit);
+    setStatusText("Loading prompt and references into the Studio composer...");
+    const files: File[] = [];
+    for (const [index, src] of picked.entries()) {
+      try {
+        const blob = await (await fetch(src)).blob();
+        const ext = (blob.type.split("/")[1] || "png").split("+")[0];
+        files.push(new File([blob], `prompt-ref-${index + 1}.${ext}`, { type: blob.type || "image/png" }));
+      } catch (err) {
+        console.error("[frank] could not convert prompt reference", err);
+      }
+    }
+    if (!files.length) {
+      setStatusText("Prompt loaded, but the reference images could not be transferred.");
+      return;
+    }
+    const created = await addReferenceFiles(files, { attach: true });
+    const modelLabel = modelOptions.model?.short_label ?? modelOptions.model?.label ?? "This model";
+    if (!created.length) {
+      setStatusText("Prompt loaded, but the reference images could not be uploaded.");
+    } else if (picked.length < images.length) {
+      setStatusText(
+        `Prompt loaded with ${created.length} of ${images.length} references — ${modelLabel} accepts ${limit}.`
+      );
+    } else if (created.length < files.length) {
+      setStatusText(
+        `Prompt loaded with ${created.length} of ${files.length} references — ${files.length - created.length} failed to upload.`
+      );
+    } else {
+      setStatusText(
+        `Prompt loaded with ${created.length} reference${created.length === 1 ? "" : "s"} from the Prompt Generator.`
+      );
+    }
+  }
+
+
+
 
   function imagesFromClipboard(data: DataTransfer | null | undefined) {
     const items = Array.from(data?.items ?? []);
