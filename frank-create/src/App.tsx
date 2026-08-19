@@ -796,9 +796,14 @@ export default function App() {
   }
 
   function switchMediaKind(kind: "image" | "video" | "compare") {
+    if (kind === "video" && !videoAllowed) {
+      setStatusText("Video generation is off for your account. Ask an admin to switch it on.");
+      return;
+    }
     setMediaKind(kind);
     setCompareApproved(false);
     const media = kind === "compare" ? compareMedia : kind;
+
     const next = pickModelForMedia(media);
     if (next && next.id !== selectedModelId) selectModel(next.id);
     if (kind === "compare") {
