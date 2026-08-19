@@ -1434,7 +1434,37 @@ async function handleInference(body: any, userId: string) {
       }
       if (!generatedImages.length) {
         const first = results.find((r) => r.status === "rejected") as PromiseRejectedResult | undefined;
-        throw first?.reason ?? new ProviderRunError("OpenRouter returned no images.", "provider_error", true);
+        const reason = first?.reason ?? new ProviderRunError("OpenRouter returned no images.", "provider_error", true);
+        const fallbackSlug = REPLICATE_IMAGE_FALLBACK[modelId];
+        const replicateKey = getReplicateGatewayKey();
+        if (!fallbackSlug || !replicateKey || !shouldFallbackToReplicate(reason)) throw reason;
+
+        const mappedReason = mapReplicateError(reason);
+        console.warn("[frank-api] openrouter failed, falling back to replicate", {
+          model: modelId, slug: fallbackSlug, code: mappedReason.code,
+        });
+        const fallbackInput = {
+          aspect_ratio: reqSettings.aspect_ratio,
+          size: reqSettings.image_size || reqSettings.size,
+          reference_images: refUrls,
+        };
+        const fallbackBody = { version_or_model: fallbackSlug, input: buildReplicateInput(fallbackSlug, providerPrompt, fallbackInput) };
+        providerRequest = providerRequestRecord(
+          `POST https://api.replicate.com/v1/models/${fallbackSlug}/predictions`,
+          fallbackBody,
+        );
+        const fallbackRuns = await Promise.allSettled(
+          Array.from({ length: count }, () => runReplicate(fallbackSlug, providerPrompt, fallbackInput, replicateKey)),
+        );
+        for (const run of fallbackRuns) {
+          if (run.status === "fulfilled" && run.value) generatedImages.push({ url: run.value, mime: "image/png" });
+          else if (run.status === "rejected") {
+            const m = mapReplicateError(run.reason);
+            partialErrors.push({ code: m.code, message: m.message, retryable: m.retryable, status: m.status, request_id: m.requestId });
+          }
+        }
+        if (!generatedImages.length) throw reason;
+        usedFallback = { from: "openrouter", to: "replicate", reason: mappedReason.message };
       }
     } else if (replicateSlug) {
 
