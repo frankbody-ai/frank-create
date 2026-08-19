@@ -2567,45 +2567,6 @@ Deno.serve(async (req) => {
 
 
 
-    if (path === "/brand-kit" && (method === "GET" || method === "PATCH")) {
-      const sb = supabase();
-      if (method === "GET") {
-        const { data } = await sb.from("brand_kits").select("*").eq("user_id", userId).maybeSingle();
-        const brandKit = data
-          ? {
-              style_guidance: data.style_guidance,
-              negative_prompt: data.negative_prompt,
-              reference_notes: data.reference_notes,
-              updated_at: data.updated_at,
-              sync_status: "cloud",
-            }
-          : { style_guidance: "", negative_prompt: "", reference_notes: "", sync_status: "cloud" };
-        return json({ brandKit, filePath: "cloud:brand_kits" });
-      }
-      const body = await readJson(req);
-      const payload = {
-        user_id: userId,
-        style_guidance: String(body.style_guidance ?? ""),
-        negative_prompt: String(body.negative_prompt ?? ""),
-        reference_notes: String(body.reference_notes ?? ""),
-      };
-      const { data, error } = await sb
-        .from("brand_kits")
-        .upsert(payload, { onConflict: "user_id" })
-        .select()
-        .single();
-      if (error) throw error;
-      return json({
-        brandKit: {
-          style_guidance: data.style_guidance,
-          negative_prompt: data.negative_prompt,
-          reference_notes: data.reference_notes,
-          updated_at: data.updated_at,
-          sync_status: "cloud",
-        },
-        filePath: "cloud:brand_kits",
-      });
-    }
 
     if (path === "/inference/turn" && method === "POST") {
       const body = await readJson(req);
