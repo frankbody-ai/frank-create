@@ -1,13 +1,13 @@
 import type {
   Asset,
   EnhanceSettings,
-  ExportRecord,
   FrankConfig,
   StudioSession,
   StudioTurn,
   TurnRequest,
   VideoRequest
 } from "./types";
+
 
 // The SPA talks to the `frank-api` Lovable Cloud function for everything.
 const frankBase = "https://amwfmlqvaranonhyvqbj.supabase.co/functions/v1/frank-api";
