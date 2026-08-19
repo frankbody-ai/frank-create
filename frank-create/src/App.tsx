@@ -273,7 +273,7 @@ export default function App() {
           code: "client_timeout",
           retryable: true,
         });
-        setGenErrorOpen(true);
+        
         const staleIds = new Set(stale.map((g) => g.id));
         setInflightGens((current) => {
           const remaining = current.filter((g) => !staleIds.has(g.id));
