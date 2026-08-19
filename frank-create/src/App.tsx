@@ -3710,10 +3710,10 @@ export default function App() {
       ) : studioMode === "prompt" ? (
         <PromptGenerator
           onStatus={setStatusText}
-          onUsePrompt={(value) => {
+          onUsePrompt={(value, images) => {
             setPrompt(value);
             showImageStudio();
-            setStatusText("Prompt loaded into the Studio composer.");
+            void adoptPromptGeneratorReferences(images ?? []);
           }}
         />
       ) : (
