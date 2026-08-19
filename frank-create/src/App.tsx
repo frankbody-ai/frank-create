@@ -2365,39 +2365,48 @@ export default function App() {
 
 
 
-  async function handleGenerate(event?: FormEvent) {
+  async function handleGenerate(
+    event?: FormEvent,
+    override?: { prompt?: string; editSourceAsset?: Asset }
+  ): Promise<Asset[] | null> {
     event?.preventDefault();
-    if (!activeSession || !selectedModel || !prompt.trim()) {
+    const promptText = override?.prompt ?? prompt;
+    const editSource = override?.editSourceAsset ?? editSourceAsset;
+    const activePromptMode: typeof promptMode = editSource
+      ? (!override && maskAsset ? "masked_edit" : "edit")
+      : "generate";
+    if (!activeSession || !selectedModel || !promptText.trim()) {
       setStatusText("Give the studio a prompt first.");
-      return;
+      return null;
     }
 
-    if (mediaKind === "compare") {
+    if (!override && mediaKind === "compare") {
       await handleCompareGenerate();
-      return;
+      return null;
     }
 
-    if (mediaKind === "video" || isVideoModel(selectedModel)) {
+    if (!override && (mediaKind === "video" || isVideoModel(selectedModel))) {
       await handleVideoGenerate();
-      return;
+      return null;
     }
 
 
-    if (promptMode === "edit" && !selectedModel.capabilities.edit) {
+    if (activePromptMode === "edit" && !selectedModel.capabilities.edit) {
       setStatusText(`${selectedModel.short_label ?? selectedModel.label} cannot edit images yet.`);
-      return;
+      return null;
     }
 
-    if (promptMode === "masked_edit" && !selectedModel.capabilities.masked_edit) {
+    if (activePromptMode === "masked_edit" && !selectedModel.capabilities.masked_edit) {
       setStatusText(`${selectedModel.short_label ?? selectedModel.label} cannot use masks yet.`);
-      return;
+      return null;
     }
 
     const referenceLimitMessage = modelReferenceLimitAction(selectedModel, selectedReferenceAssets.length);
     if (referenceLimitMessage) {
       setStatusText(referenceLimitMessage);
-      return;
+      return null;
     }
+
 
     const preflightErrors = validateStudioSettings(selectedModel, settings, {
       referenceCount: selectedReferenceAssets.length
