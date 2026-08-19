@@ -4848,17 +4848,48 @@ export default function App() {
                 <span>{lightboxIndex + 1} / {lightboxSiblings.length}</span>
               ) : null}
             </div>
-            <div className="lightbox-actions">
-              <button
-                type="button"
-                onClick={() => {
-                  startEditFromAsset(lightboxAsset);
-                  setLightboxAsset(null);
+            {lightboxAsset.media_type !== "video" ? (
+              <form
+                className="lightbox-edit"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void submitLightboxEdit();
                 }}
               >
-                <Icon source="sparkles" tone="inherit" size={16} />
-                Edit this
-              </button>
+                <textarea
+                  className="lightbox-edit-input"
+                  rows={1}
+                  value={lightboxEditText}
+                  placeholder={
+                    selectedModel?.capabilities.edit
+                      ? `Describe the change — ${modelName(config, selectedModel.id)} will run a new round`
+                      : "Pick an edit-capable model to edit from here"
+                  }
+                  disabled={lightboxEditBusy}
+                  onChange={(event) => setLightboxEditText(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void submitLightboxEdit();
+                    }
+                  }}
+                />
+                <button
+                  className="lightbox-edit-send"
+                  type="submit"
+                  disabled={lightboxEditBusy || !lightboxEditText.trim() || !selectedModel?.capabilities.edit}
+                  aria-label="Run edit"
+                >
+                  {lightboxEditBusy ? (
+                    <span className="lightbox-edit-spinner" aria-hidden="true" />
+                  ) : (
+                    <Icon source="arrow-up" tone="inherit" size={16} />
+                  )}
+                </button>
+              </form>
+            ) : null}
+            {lightboxEditBusy ? <p className="lightbox-edit-status">Running the edit…</p> : null}
+            <div className="lightbox-actions">
               <button type="button" onClick={() => void downloadAssetFile(lightboxAsset)}>
                 <Icon source="arrow-down-tray" tone="inherit" size={16} />
                 Save
