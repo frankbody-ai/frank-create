@@ -2100,8 +2100,8 @@
   max-height: 34vh; overflow-y: auto;
 }
 .session-folder { display: flex; align-items: center; gap: 2px; border-radius: 8px; }
-.session-folder:hover { background: rgba(0, 0, 0, 0.05); }
-.session-folder.is-active { background: rgba(0, 0, 0, 0.08); }
+.session-folder:hover { background: var(--color-nav-item-hover); }
+.session-folder.is-active { background: var(--color-nav-item-selected); }
 .session-folder__open {
   flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px;
   border: 0; background: transparent; cursor: pointer; padding: 6px 6px; font: inherit;
