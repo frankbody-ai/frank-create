@@ -487,7 +487,11 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
                     <React.Fragment key={i}>
                       <pre className="code-block code-block--prompt">{value}</pre>
                       <div className="agent-msg__actions">
-                        <Button variant="primary" icon="bolt" onClick={() => onUsePrompt?.(value)}>
+                        <Button
+                          variant="primary"
+                          icon="bolt"
+                          onClick={() => onUsePrompt?.(value, conversationImages())}
+                        >
                           Send to Studio
                         </Button>
                         <Button icon="document-duplicate" onClick={() => void copyPrompt(value)}>
