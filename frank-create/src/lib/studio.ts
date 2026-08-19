@@ -772,3 +772,50 @@ export function thumbnailUrl(
   }
 }
 
+
+/**
+ * Approximate provider price per image in USD, keyed by model id then output
+ * size. `default` covers sizes the provider bills at one flat rate.
+ */
+const IMAGE_PRICES: Record<string, Record<string, number>> = {
+  "google-nb-pro": { "1K": 0.134, "2K": 0.134, "4K": 0.24 },
+  "google-nb-2": { "1K": 0.04, "2K": 0.06, "4K": 0.12 },
+  "openai-gpt-image-2": { "1K": 0.04, "2K": 0.08 },
+  "seedream-5-pro": { "2K": 0.03, "4K": 0.06 },
+  "seedream-4-5": { "2K": 0.03, "4K": 0.06 },
+  "flux-2-pro": { "1K": 0.04, "2K": 0.04, "4K": 0.06 },
+  "flux-2-max": { "1K": 0.08, "2K": 0.08, "4K": 0.12 },
+  "riverflow-2-5-pro": { "1K": 0.12, "2K": 0.12, "4K": 0.18 },
+  "qwen-image-3-pro": { default: 0.05 },
+  "krea-2-large": { default: 0.06 },
+  "mai-image-2-5-pro": { default: 0.06 },
+  "grok-imagine-image": { default: 0.02 },
+};
+
+/** Approximate USD price for one image at the given output size. */
+export function imageUnitPrice(
+  model: StudioModel | undefined | null,
+  size?: string
+): number | null {
+  if (!model || isVideoModel(model) || isUpscaleModel(model)) return null;
+  const table = IMAGE_PRICES[model.id];
+  if (!table) return null;
+  const key = size ?? "";
+  const exact = table[key] ?? table[key.toUpperCase()] ?? table.default;
+  if (typeof exact === "number") return exact;
+  const values = Object.values(table);
+  return values.length ? Math.min(...values) : null;
+}
+
+/** Live estimate for the current size / count selection, e.g. "~$0.24 · 4 × 2K". */
+export function estimateImageCost(
+  model: StudioModel | undefined | null,
+  settings: StudioSettings
+): string | null {
+  const unit = imageUnitPrice(model, settings.image_size);
+  if (unit == null) return null;
+  const count = Math.max(1, Number(settings.count) || 1);
+  const size = settings.image_size ? ` @ ${settings.image_size}` : "";
+  const total = unit * count;
+  return `~${usd(total)} · ${count} image${count > 1 ? "s" : ""}${size} · ${usd(unit)}/image`;
+}
