@@ -3693,7 +3693,6 @@ export default function App() {
     }
   }, []);
 
-  const [sessionMenuOpen, setSessionMenuOpen] = useState(false);
 
   /** Nav clicks: the five in-shell screens are a mode change, the rest are routes. */
   function goToScreen(screen: Screen) {
