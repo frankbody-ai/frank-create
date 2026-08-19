@@ -166,7 +166,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--card-gap);
-  align-items: flex-start;
+  align-items: stretch;
 }
 .upscaler-drop-col {
   flex: 1 1 520px;
@@ -178,6 +178,18 @@
 .upscaler-top .upscaler-rail {
   flex: 0 1 272px;
   min-width: 221px;
+  display: flex;
+  flex-direction: column;
+}
+.upscaler-top .upscaler-rail > .as-card {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+.upscaler-top .upscaler-rail > .as-card > .rail-fields {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
 }
 
 @container (max-width: 768px) {
