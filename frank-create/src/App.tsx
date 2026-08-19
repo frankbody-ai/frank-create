@@ -3213,7 +3213,7 @@ export default function App() {
         ...(typeof overrideCount === "number" ? { count: Math.max(1, Math.min(maxCountForModel(config.models.find((m) => m.id === turn.model) ?? selectedModel), overrideCount)) } : {}),
       }));
       setStatusText(typeof overrideCount === "number" ? `Retrying ${overrideCount} missing…` : "Retrying with previous settings…");
-      window.setTimeout(() => { void handleGenerate(); }, 60);
+      setRetryRunToken((token) => token + 1);
     } catch (err) {
       setStatusText(err instanceof Error ? err.message : "Could not retry this round.");
     }
