@@ -1581,7 +1581,7 @@ async function handleInference(body: any, userId: string) {
     requested_count: count,
     partial_errors: partialErrors.length ? partialErrors : undefined,
     provider_request: providerRequest,
-
+    fallback: usedFallback ?? undefined,
   };
   await sb.from("messages").update({
     settings_snapshot_json: completedSnapshot,
@@ -1597,7 +1597,9 @@ async function handleInference(body: any, userId: string) {
     }),
     status: "complete" as const,
     assets,
-    providerPayload: OPENROUTER_IMAGE_MAP[modelId]
+    providerPayload: usedFallback
+      ? { provider: "replicate", model: REPLICATE_IMAGE_FALLBACK[modelId], fallback_from: "openrouter" }
+      : OPENROUTER_IMAGE_MAP[modelId]
       ? { provider: "openrouter", model: OPENROUTER_IMAGE_MAP[modelId] }
       : { provider: "lovable", model: gatewayModel },
 
