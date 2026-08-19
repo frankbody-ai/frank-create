@@ -415,11 +415,39 @@ export default function Enhancer({
                     </Button>
                   </div>
 
-                  {!source ? (
+                  {source ? (
+                    <div className="upscaler-source-chip">
+                      <div className="upscaler-source-chip__thumb">
+                        {sourceIsVideo ? (
+                          <video src={sourcePreview} muted playsInline preload="metadata" />
+                        ) : (
+                          <img
+                            src={thumbnailUrl(sourcePreview, 96, 60, "webp") || sourcePreview}
+                            alt={source.title || "Source"}
+                            decoding="async"
+                          />
+                        )}
+                      </div>
+                      <div className="upscaler-source-chip__meta">
+                        <Text fontWeight="medium">{source.title || "Source"}</Text>
+                        <Text variant="bodySm" tone="secondary">
+                          {source.width && source.height ? `${source.width} × ${source.height}` : "Ready to upscale"}
+                        </Text>
+                      </div>
+                      <button
+                        type="button"
+                        className="upscaler-source-chip__clear"
+                        onClick={() => onSourceChange(null)}
+                        aria-label="Remove source"
+                      >
+                        <Icon source="x-mark" size={16} />
+                      </button>
+                    </div>
+                  ) : (
                     <Text variant="bodySm" tone="secondary" as="p">
                       Add a source {media} to enable the run.
                     </Text>
-                  ) : null}
+                  )}
                   {media === "video" ? (
                     <Text variant="bodySm" tone="secondary" as="p">
                       Video upscales can take several minutes.
