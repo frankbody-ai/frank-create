@@ -765,21 +765,30 @@ async function handleEnhance(body: any, userId: string) {
   const media = UPSCALE_MEDIA[slug];
   const reqSettings: any = body.settings || {};
   const sourceAssetId: string | undefined = body.source_asset_id || undefined;
-  let sourceUrl: string = typeof body.source_url === "string" ? body.source_url.trim() : "";
+  // The client sends a usable URL alongside the id. Library picks (previous runs)
+  // can have no stored object — provider-URL-only outputs, or rows the client
+  // holds locally — so the URL is a first-class fallback, not an error.
+  const requestedSourceUrl: string = typeof body.source_url === "string" ? body.source_url.trim() : "";
+  let sourceUrl = "";
   let sourceTitle = "";
   if (sourceAssetId) {
     const { data: row } = await sb.from("assets").select("id,storage_path,metadata_json")
       .eq("user_id", userId).eq("id", sourceAssetId).maybeSingle();
-    if (!row) {
+    if (!row && !requestedSourceUrl) {
       return {
         turn: null, status: "failed" as const,
         error: { code: "not_found", message: "The selected source asset is missing." },
       };
     }
-    sourceUrl = await signed((row as any).storage_path);
-    sourceTitle = ((row as any).metadata_json?.title as string) || "";
+    if (row) {
+      const meta = ((row as any).metadata_json || {}) as Record<string, unknown>;
+      sourceUrl = await signed((row as any).storage_path);
+      if (!sourceUrl && typeof meta.remote_url === "string") sourceUrl = String(meta.remote_url).trim();
+      sourceTitle = (meta.title as string) || "";
+    }
   }
-  if (!sourceUrl) {
+  if (!sourceUrl) sourceUrl = requestedSourceUrl;
+  if (!sourceUrl || !/^https?:\/\//i.test(sourceUrl)) {
     return {
       turn: null, status: "failed" as const,
       error: { code: "missing_source", message: `Pick a source ${media} to enhance.` },
