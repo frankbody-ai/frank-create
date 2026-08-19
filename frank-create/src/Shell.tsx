@@ -51,6 +51,7 @@ export function Shell({
   onSearchChange,
   searchPlaceholder = "Search sessions and picks",
   actions,
+  navExtra,
   maxWidth,
   children,
 }: ShellProps) {
