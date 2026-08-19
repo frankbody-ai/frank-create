@@ -2613,13 +2613,13 @@ export default function App() {
         setBusy(false);
       }
 
-      return;
+      return producedAssets;
     }
 
     const missingKeyMessage = modelMissingKeyAction(selectedModel);
     if (missingKeyMessage) {
       setStatusText(missingKeyMessage);
-      return;
+      return null;
     }
 
     try {
