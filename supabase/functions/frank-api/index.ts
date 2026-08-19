@@ -321,6 +321,16 @@ function rowToSession(row: any): any {
   };
 }
 
+class LovableChatError extends Error {
+  status: number;
+  body: string;
+  constructor(status: number, body: string) {
+    super(`Lovable chat ${status}: ${body}`);
+    this.status = status;
+    this.body = body;
+  }
+}
+
 async function lovableChat(messages: any[], model = "google/gemini-3-flash-preview") {
   const body: Record<string, unknown> = { model, messages };
   if (model.startsWith("openai/gpt-5.6")) body.reasoning_effort = "none";
@@ -332,10 +342,11 @@ async function lovableChat(messages: any[], model = "google/gemini-3-flash-previ
     },
     body: JSON.stringify(body),
   });
-  if (!r.ok) throw new Error(`Lovable chat ${r.status}: ${await r.text()}`);
+  if (!r.ok) throw new LovableChatError(r.status, (await r.text()).slice(0, 600));
   const j: any = await r.json();
   return j.choices?.[0]?.message?.content || "";
 }
+
 
 
 const MODEL_MAP: Record<string, string> = {
