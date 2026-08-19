@@ -61,6 +61,24 @@ function parseWizardQuestions(reply: string): WizardQuestion[] | null {
   }
 }
 
+/**
+ * A short imperative edit ("make the background darker", "warmer light") is a
+ * revision of the prompt just delivered, not a new brief — those must reach the
+ * agent as conversation instead of restarting discovery. Anything longer, or
+ * anything that reads like a subject description, counts as a fresh brief.
+ */
+function looksLikeTweak(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  const words = trimmed.split(/\s+/);
+  if (words.length > 14) return false;
+  return /^(make|add|remove|change|swap|use|try|drop|keep|less|more|fewer|brighter|darker|warmer|cooler|tighter|wider|zoom|crop|shorter|longer|again|redo|instead|no|without|put|move|fix|adjust|tone|soften|sharpen)\b/i.test(
+    trimmed
+  );
+}
+
+
+
 
 function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
