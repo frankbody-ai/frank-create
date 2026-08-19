@@ -1945,9 +1945,18 @@
   cursor: pointer;
   z-index: 3;
 }
-.lightbox-nav.prev { left: -22px; }
-.lightbox-nav.next { right: -22px; }
+/* Kept inside the panel: the viewer clips overflow, so negative offsets made
+   the arrows invisible and unclickable. */
+.lightbox-nav.prev { left: var(--space-300); }
+.lightbox-nav.next { right: var(--space-300); }
 .lightbox-nav:hover { filter: brightness(0.96); }
+.lightbox-inner.is-viewer .lightbox-nav {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: var(--color-text-inverse);
+  backdrop-filter: blur(6px);
+}
+.lightbox-inner.is-viewer .lightbox-nav:hover { background: rgba(255, 255, 255, 0.28); }
 
 /* Fallback shown by AppErrorBoundary when a render or backend fault would
    otherwise blank the page. */
