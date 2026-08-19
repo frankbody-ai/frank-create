@@ -166,7 +166,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--card-gap);
-  align-items: flex-start;
+  align-items: stretch;
 }
 .upscaler-drop-col {
   flex: 1 1 520px;
@@ -178,6 +178,18 @@
 .upscaler-top .upscaler-rail {
   flex: 0 1 272px;
   min-width: 221px;
+  display: flex;
+  flex-direction: column;
+}
+.upscaler-top .upscaler-rail > .as-card {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+.upscaler-top .upscaler-rail > .as-card > .rail-fields {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
 }
 
 @container (max-width: 768px) {
@@ -1265,6 +1277,8 @@
 /* Upscaler — the drop tile that replaces the studio prompt box. */
 .upscaler-drop {
   width: 100%;
+  flex: 1 1 auto;
+  min-height: 180px;
   border-radius: var(--radius-300);
   background: var(--color-bg-surface);
   border: var(--border-width-025) dashed var(--color-border);
@@ -1279,6 +1293,7 @@
   justify-content: center;
   gap: var(--space-200);
   min-height: 180px;
+  height: 100%;
   padding: var(--space-600);
   cursor: pointer;
   transition: border-color var(--motion-hover), background var(--motion-hover);
@@ -1294,6 +1309,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-400);
+  height: 100%;
   padding: var(--space-400);
   border-style: solid;
   text-align: start;
