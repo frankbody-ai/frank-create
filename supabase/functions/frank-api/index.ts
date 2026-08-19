@@ -3,8 +3,8 @@
 // Mirrors the dev-time Vite plugin at frank-create/server/frankApi.ts.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { buildManifest, manifestToCsv, validateManifest } from "./handoff.ts";
 import { loadPromptAgentConfig, buildPromptAgentSystem, DEFAULT_CONFIG } from "./promptAgent.ts";
+
 
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
