@@ -2366,34 +2366,6 @@ export default function App() {
     }
   }
 
-  async function handlePromptRemix() {
-    const seedPrompt = prompt.trim() || activePreset?.prompt || "";
-    if (!seedPrompt) {
-      setStatusText("Give the Art Dept. a brief first.");
-      return;
-    }
-
-    setRemixBusy(true);
-    try {
-      const result = await remixPrompt({
-        prompt: seedPrompt,
-        preset_key: selectedPresetKey ?? "",
-        frank_body_mode: frankBodyMode
-      });
-      setPromptRemixes(result.variants);
-      setStatusText("Brief remixed. Pick a direction.");
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Brief remix needs another look.");
-    } finally {
-      setRemixBusy(false);
-    }
-  }
-
-  function applyPromptRemix(variant: PromptRemixVariant) {
-    setPrompt(variant.prompt);
-    setPromptRemixes([]);
-    setStatusText(`${variant.label} direction loaded.`);
-  }
 
 
 
