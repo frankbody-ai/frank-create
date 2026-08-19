@@ -392,6 +392,9 @@ export default function App() {
   const [settings, setSettings] = useState<StudioSettings>(defaultStudioSettings(fallbackConfig.models[0]));
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [lightboxAsset, setLightboxAsset] = useState<Asset | null>(null);
+  // Inline "edit this image" composer inside the lightbox (ChatGPT-style).
+  const [lightboxEditText, setLightboxEditText] = useState("");
+  const [lightboxEditBusy, setLightboxEditBusy] = useState(false);
   const [referencePreviewAsset, setReferencePreviewAsset] = useState<Asset | null>(null);
   const [referenceDropActive, setReferenceDropActive] = useState(false);
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
