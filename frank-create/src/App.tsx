@@ -2623,8 +2623,10 @@ export default function App() {
       return null;
     }
 
+    let onlineAssets: Asset[] | null = null;
     try {
       let result = await createInferenceTurn(request);
+
       setTurns((current) => [...current, result.turn]);
 
       // The backend hands back "running" for providers that can outlive one
