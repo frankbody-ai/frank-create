@@ -25,7 +25,6 @@ import { modeFromUrl, navigate } from "./nav";
 import type { InAppScreen, Screen } from "./nav";
 
 import {
-  assetWorkflowReceiptUrl,
   createInferenceTurn,
   fetchTurnStatus,
   createReference,
@@ -82,13 +81,10 @@ import { PromptGenerator } from "./components/PromptGenerator";
 import Enhancer from "./components/Enhancer";
 
 import type {
-  ActivationChecklist,
   Asset,
-  Brief,
   BriefFormState,
   FrankConfig,
   FrankTask,
-  Project,
   StudioModel,
   StudioSession,
   StudioSettings,
@@ -944,21 +940,8 @@ export default function App() {
 
   async function handleNewSession() {
     const nextMode = mediaKind === "video" ? "video" : "image";
-    const sessionSubject =
-      activeBrief?.product_name?.trim() || briefDraft.productName.trim() || activeProject?.name.trim();
-    const sessionSubjectLabel = sessionSubject || activeBrief?.title || "this campaign";
-    const sessionName = sessionSubject
-      ? `${sessionSubject} ${nextMode === "video" ? "Motion" : "Studio"}`
-      : nextMode === "video"
-        ? "New video session"
-        : "New image session";
-    const carriedPrompt = activeBrief?.prompt || briefDraft.prompt;
-    const sessionPayload = {
-      name: sessionName,
-      mode: nextMode,
-      project_id: activeProject?.id,
-      summary: activeBrief?.title
-    };
+    const sessionName = nextMode === "video" ? "New video session" : "New image session";
+    const sessionPayload = { name: sessionName, mode: nextMode };
 
     if (connection === "online") {
       const created = await createSession(sessionPayload);
@@ -968,14 +951,10 @@ export default function App() {
       setTurns([]);
       setAssets([]);
       setSelectedAsset(null);
-      setPrompt(carriedPrompt || "");
+      setPrompt("");
       clearEditSource();
       clearCompare();
-      setStatusText(
-        activeProject || activeBrief
-          ? `New session in ${sessionSubjectLabel}. Job jacket carried over.`
-          : "New session. Fresh canvas."
-      );
+      setStatusText("New session. Fresh canvas.");
       return;
     }
 
@@ -986,16 +965,11 @@ export default function App() {
     setTurns([]);
     setAssets([]);
     setSelectedAsset(null);
-    setPrompt(carriedPrompt || "");
+    setPrompt("");
     clearEditSource();
     clearCompare();
-    setStatusText(
-      activeProject || activeBrief
-        ? `Local preview in ${sessionSubjectLabel}. Job jacket carried over.`
-        : "Local preview session ready."
-    );
+    setStatusText("Local preview session ready.");
   }
-
 
   async function selectSession(session: StudioSession) {
     setActiveSession(session);
@@ -4818,18 +4792,6 @@ function chooseLaunchSession(sessions: StudioSession[]) {
   return sessions.find(isMainDemoSession) ?? sessions[0];
 }
 
-function makeBriefDraft(overrides: Partial<BriefFormState> = {}): BriefFormState {
-  return {
-    title: "",
-    productName: "",
-    taskType: "product-shot-lab",
-    channel: "PDP / paid social",
-    tone: "Cheeky but premium",
-    prompt: "",
-    negativePrompt: "",
-    ...overrides
-  };
-}
 
 
 
@@ -4915,19 +4877,6 @@ function modelName(config: FrankConfig, modelId: string) {
 
 
 
-function workflowNodeTypes(workflow: Record<string, unknown>, workflowJson: Record<string, unknown>) {
-  const localNodeTypes = localWorkflowNodeTypes(typeof workflow.workflow_key === "string" ? workflow.workflow_key : "");
-  if (localNodeTypes.length) {
-    return localNodeTypes;
-  }
-  if (Array.isArray(workflow.node_types)) {
-    return workflow.node_types.filter((item): item is string => typeof item === "string" && item.length > 0);
-  }
-  return Object.entries(workflowJson)
-    .sort(([left], [right]) => workflowNodeSortKey(left).localeCompare(workflowNodeSortKey(right)))
-    .map(([, node]) => parseJsonRecord(node).class_type)
-    .filter((item): item is string => typeof item === "string" && item.length > 0);
-}
 
 function localWorkflowNodeTypes(workflowKey: string) {
   const byWorkflow: Record<string, string[]> = {
@@ -4953,42 +4902,9 @@ function safeFileStem(value: string) {
 }
 
 
-function isSensitiveWorkflowKey(key: string) {
-  return /api[_-]?key|token|secret|authorization|bearer|password|credential/i.test(key);
-}
 
-function settingsSummary(settings: Record<string, unknown>) {
-  const aspect = typeof settings.aspect_ratio === "string" ? settings.aspect_ratio : "";
-  const size = typeof settings.image_size === "string" || typeof settings.image_size === "number" ? String(settings.image_size) : "";
-  const countValue = Number(settings.count ?? 0);
-  const count = Number.isFinite(countValue) && countValue > 0 ? Math.trunc(countValue) : 0;
-  const pieces = [aspect, size].filter(Boolean);
-  if (count) {
-    pieces.push(`${count} ${count === 1 ? "variant" : "variants"}`);
-  }
-  return pieces.join(" / ");
-}
 
-function workflowSummary(workflow: Record<string, unknown>) {
-  const workflowKey = typeof workflow.workflow_key === "string" ? workflow.workflow_key : "";
-  const engine = typeof workflow.engine === "string" ? workflow.engine : "";
-  const checkpoint = typeof workflow.checkpoint_name === "string" ? workflow.checkpoint_name : "";
-  if (!workflowKey && !engine) {
-    return "";
-  }
-  const label = [workflowKey, engine].filter(Boolean).join(" / ");
-  return checkpoint ? `${label} / ${checkpoint}` : label;
-}
 
-function providerDisplayName(provider?: string) {
-  const names: Record<string, string> = {
-    google: "Google",
-    local: "Local",
-    openai: "OpenAI",
-    replicate: "Replicate"
-  };
-  return provider ? names[provider] ?? titleize(provider) : "Provider";
-}
 
 function turnEmptyLabel(turn: StudioTurn) {
   if (turn.status === "blocked") {
@@ -5154,15 +5070,6 @@ function providerUnlockPlan(models: StudioModel[]) {
     });
 }
 
-function orderProviderEnvVars(envVars: string[], rows: ReturnType<typeof providerUnlockPlan>) {
-  const desiredOrder = rows.flatMap((row) => row.envVars);
-  const priority = new Map(desiredOrder.map((envVar, index) => [envVar, index]));
-  return Array.from(new Set(envVars)).sort((left, right) => {
-    const leftPriority = priority.get(left) ?? Number.MAX_SAFE_INTEGER;
-    const rightPriority = priority.get(right) ?? Number.MAX_SAFE_INTEGER;
-    return leftPriority - rightPriority || left.localeCompare(right);
-  });
-}
 
 function providerModelEnvVars(model: StudioModel) {
   const envVars = model.env_vars?.length
