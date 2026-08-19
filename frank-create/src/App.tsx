@@ -2673,7 +2673,8 @@ export default function App() {
         if (result.status === "complete" && result.assets?.length) {
           setAssets((current) => [...result.assets!, ...current]);
           setSelectedAsset(result.assets[0]);
-          if (promptMode !== "generate") {
+          onlineAssets = result.assets;
+          if (activePromptMode !== "generate" && !override) {
             setEditSourceAsset(null);
             setMaskAsset(null);
           }
@@ -2698,6 +2699,7 @@ export default function App() {
       // (e.g. 4 images). Re-read the session so every produced image lands.
       void reconcileSessionAssets();
     }
+    return onlineAssets;
   }
 
   // Poll a "running" turn until the backend reports complete/failed. Turn cards
