@@ -1,13 +1,13 @@
 import type {
   Asset,
   EnhanceSettings,
-  ExportRecord,
   FrankConfig,
   StudioSession,
   StudioTurn,
   TurnRequest,
   VideoRequest
 } from "./types";
+
 
 // The SPA talks to the `frank-api` Lovable Cloud function for everything.
 const frankBase = "https://amwfmlqvaranonhyvqbj.supabase.co/functions/v1/frank-api";
@@ -82,133 +82,11 @@ export async function updateSession(sessionId: string, payload: Partial<StudioSe
   });
 }
 
-
-export type HandoffStage = "fetch" | "build_manifest" | "generate_json" | "generate_csv" | "validate";
-
-export type HandoffStreamStep = {
-  step: HandoffStage | "done" | "error";
-  progress: number;
-  message: string;
-  payload?: {
-    handoff?: ExportRecord;
-    download_url?: string | null;
-    metadata?: Record<string, unknown>;
-    issues?: string[];
-    resumable_from?: HandoffStage;
-    snapshot?: Record<string, unknown>;
-    stage?: HandoffStage;
-  };
-};
-
-export class HandoffError extends Error {
-  stage?: HandoffStage;
-  issues?: string[];
-  resumableFrom?: HandoffStage;
-  snapshot?: Record<string, unknown>;
-  constructor(message: string, opts: { stage?: HandoffStage; issues?: string[]; resumableFrom?: HandoffStage; snapshot?: Record<string, unknown> } = {}) {
-    super(message);
-    this.name = "HandoffError";
-    this.stage = opts.stage;
-    this.issues = opts.issues;
-    this.resumableFrom = opts.resumableFrom;
-    this.snapshot = opts.snapshot;
-  }
-}
-
-async function consumeHandoffStream(
-  res: Response,
-  opts: { signal?: AbortSignal; onStep?: (s: HandoffStreamStep) => void },
-) {
-  if (!res.ok || !res.body) {
-    const text = await res.text().catch(() => "");
-    throw new Error(apiErrorMessage(text, res.status));
-  }
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let finalPayload: HandoffStreamStep["payload"] | undefined;
-  let errorEvent: HandoffStreamStep | null = null;
-  const onAbort = () => { try { reader.cancel(); } catch { /* noop */ } };
-  opts.signal?.addEventListener("abort", onAbort);
-  try {
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const parts = buffer.split("\n\n");
-      buffer = parts.pop() || "";
-      for (const chunk of parts) {
-        const line = chunk.split("\n").find((l) => l.startsWith("data:"));
-        if (!line) continue;
-        const evt = JSON.parse(line.slice(5).trim()) as HandoffStreamStep;
-        opts.onStep?.(evt);
-        if (evt.step === "done" && evt.payload) finalPayload = evt.payload;
-        if (evt.step === "error") errorEvent = evt;
-      }
-    }
-  } finally {
-    opts.signal?.removeEventListener("abort", onAbort);
-  }
-  if (errorEvent) {
-    const p = errorEvent.payload || {};
-    throw new HandoffError(errorEvent.message || "Handoff failed", {
-      stage: p.stage,
-      issues: p.issues,
-      resumableFrom: p.resumable_from,
-      snapshot: p.snapshot,
-    });
-  }
-  if (!finalPayload) throw new Error("Handoff stream ended without final payload");
-  return finalPayload;
-}
-
-export async function createSessionHandoffStream(
-  sessionId: string,
-  opts: { signal?: AbortSignal; onStep?: (s: HandoffStreamStep) => void } = {}
-) {
-  const res = await fetch(`${frankBase}/sessions/${encodeURIComponent(sessionId)}/handoff`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "text/event-stream",
-      ...(await authHeader()),
-    },
-    body: JSON.stringify({ summary: "Approved Frank Create handoff for review." }),
-    signal: opts.signal,
-  });
-  return consumeHandoffStream(res, opts);
-}
-
-export async function resumeSessionHandoffStream(
-  sessionId: string,
-  fromStage: HandoffStage,
-  snapshot: Record<string, unknown>,
-  opts: { signal?: AbortSignal; onStep?: (s: HandoffStreamStep) => void } = {}
-) {
-  const res = await fetch(`${frankBase}/sessions/${encodeURIComponent(sessionId)}/handoff/resume`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "text/event-stream",
-      ...(await authHeader()),
-    },
-    body: JSON.stringify({ from_stage: fromStage, snapshot, summary: "Approved Frank Create handoff for review." }),
-    signal: opts.signal,
-  });
-  return consumeHandoffStream(res, opts);
-}
-
-
-export async function fetchSessionApprovalHistory(sessionId: string) {
-  return fetchJson<{ events: Array<{ id: string; asset_id: string; prev_status: string | null; new_status: string; created_at: string; note?: string | null }> }>(
-    `/sessions/${encodeURIComponent(sessionId)}/approval-history`
-  );
-}
-
 export async function listTurns(sessionId?: string) {
   const query = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : "";
   return fetchJson<{ turns: StudioTurn[] }>(`/turns${query}`);
 }
+
 
 
 
@@ -291,7 +169,7 @@ export async function createReference(payload: Record<string, unknown>) {
   });
 }
 
-export async function listAssets(filters: { sessionId?: string; turnId?: string; approvalStatus?: string } = {}) {
+export async function listAssets(filters: { sessionId?: string; turnId?: string } = {}) {
   const params = new URLSearchParams();
   if (filters.sessionId) {
     params.set("session_id", filters.sessionId);
@@ -299,18 +177,8 @@ export async function listAssets(filters: { sessionId?: string; turnId?: string;
   if (filters.turnId) {
     params.set("turn_id", filters.turnId);
   }
-  if (filters.approvalStatus) {
-    params.set("approval_status", filters.approvalStatus);
-  }
   const query = params.size ? `?${params.toString()}` : "";
   return fetchJson<{ assets: Asset[] }>(`/assets${query}`);
-}
-
-export async function updateAsset(assetId: string, payload: Partial<Asset>) {
-  return fetchJson<{ asset: Asset }>(`/assets/${assetId}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload)
-  });
 }
 
 export async function deleteAsset(assetId: string) {
@@ -325,18 +193,6 @@ export async function deleteTurn(turnId: string) {
   });
 }
 
-
-
-
-
-
-export function sessionReviewBoardUrl(sessionId: string) {
-  return `${frankBase}/sessions/${encodeURIComponent(sessionId)}/review-board`;
-}
-
-export function sessionSyncManifestUrl(sessionId: string) {
-  return `${frankBase}/sessions/${encodeURIComponent(sessionId)}/sync-manifest`;
-}
 
 export function assetDownloadUrl(assetId: string) {
   return `${frankBase}/assets/${encodeURIComponent(assetId)}/download`;

@@ -32,7 +32,6 @@ import {
 
 import { fallbackBrandKit, fallbackConfig } from "../lib/presets";
 import { supabase, hardSignOut } from "../lib/supabaseClient";
-import { createBriefPayload } from "../lib/frankWorkflow";
 import {
   buildTurnRequest,
   makeLocalId,
@@ -206,7 +205,6 @@ export function mergeConfig(config: FrankConfig): FrankConfig {
     models: mergeModels(config.models, fallbackConfig.models),
     backlogModels: config.backlogModels ?? fallbackConfig.backlogModels,
     promptPresets: config.promptPresets?.length ? config.promptPresets : fallbackConfig.promptPresets,
-    exportPresets: config.exportPresets?.length ? config.exportPresets : fallbackConfig.exportPresets,
     tasks: config.tasks?.length ? config.tasks : fallbackConfig.tasks,
     providers: config.providers?.length ? config.providers : fallbackConfig.providers,
     voice: { ...fallbackConfig.voice, ...config.voice }

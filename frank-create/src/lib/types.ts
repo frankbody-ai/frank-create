@@ -1,4 +1,3 @@
-export type ApprovalStatus = "review" | "approved" | "rejected";
 
 export interface FrankTask {
   key: string;
@@ -14,13 +13,6 @@ export interface FrankProvider {
   status: "ready" | "curated" | "later";
 }
 
-export interface ExportPreset {
-  key: string;
-  label: string;
-  size: string;
-  format: string;
-  media_types?: Array<"image" | "video">;
-}
 
 export interface StudioCapabilities {
   generation: boolean;
@@ -145,7 +137,6 @@ export interface BrandKit {
 export interface FrankConfig {
   tasks: FrankTask[];
   providers: FrankProvider[];
-  exportPresets: ExportPreset[];
   models: StudioModel[];
   backlogModels: StudioModel[];
   promptPresets: PromptPreset[];
@@ -269,34 +260,13 @@ export interface Asset {
   bytes?: number;
 
   favorite: boolean;
-  approval_status: ApprovalStatus;
   notes?: string;
   sync_status?: string;
   created_at?: string;
   updated_at?: string;
 }
 
-export interface ExportRecord {
-  id: string;
-  asset_id: string;
-  preset: string;
-  file_path: string;
-  download_url?: string;
-  metadata_json: string;
-  sync_status?: string;
-  remote_id?: string;
-  created_at: string;
-}
 
-export interface BriefFormState {
-  title: string;
-  productName: string;
-  taskType: string;
-  channel: string;
-  tone: string;
-  prompt: string;
-  negativePrompt: string;
-}
 
 
 export interface StudioSettings {

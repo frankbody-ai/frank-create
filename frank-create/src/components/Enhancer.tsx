@@ -136,7 +136,6 @@ export default function Enhancer({
         kind: "reference",
         media_type: file.type.startsWith("video") ? "video" : "image",
         favorite: created.asset.favorite ?? false,
-        approval_status: created.asset.approval_status || "review",
         sync_status: "cloud"
       };
       onAssetsCreated([asset]);

@@ -1,18 +1,17 @@
 /**
- * The nine screens, in one place.
+ * The screens, in one place.
  *
- * Five of them (studio, prompt, upscaler, presets, approved) are states inside
- * `App` — they share its session and asset state, so routing between them is a
- * mode change, not a page change. The other four are their own routes. Both
- * kinds sit in the same side nav, which is the point: the operator should not
- * be able to tell which is which.
+ * Three of them (studio, prompt, upscaler) are states inside `App` — they share
+ * its session and asset state, so routing between them is a mode change, not a
+ * page change. The rest are their own routes. Both kinds sit in the same side
+ * nav, which is the point: the operator should not be able to tell which is
+ * which.
  */
 
 export type Screen =
   | "studio"
   | "prompt"
   | "upscaler"
-  | "review"
   | "admin"
   | "health"
   | "settings";
@@ -46,43 +45,36 @@ export const NAV_FOOTER: NavEntry[] = [
 ];
 
 
-/** Where a screen lives. `sessionId` only matters for the review board. */
-export function hashFor(screen: Screen, sessionId?: string | null): string {
+/** Where a screen lives. */
+export function hashFor(screen: Screen): string {
   if (isInApp(screen)) {
     return screen === "studio" ? "#/" : `#/?mode=${screen}`;
-  }
-  if (screen === "review") {
-    return sessionId ? `#/review/${encodeURIComponent(sessionId)}` : "#/review";
   }
   return `#/${screen}`;
 }
 
-export function navigate(screen: Screen, sessionId?: string | null): void {
-  window.location.hash = hashFor(screen, sessionId);
+export function navigate(screen: Screen): void {
+  window.location.hash = hashFor(screen);
 }
 
 /**
  * The screen a URL resolves to. Reads the hash first and the pathname second,
  * because the app is served through an SPA rewrite and both forms reach it.
  */
-export function resolveScreen(): { screen: Screen | "cliff" | "oauth"; sessionId: string | null } {
+export function resolveScreen(): { screen: Screen | "oauth" } {
   const pathname = window.location.pathname.replace(/\/$/, "");
   const rawHash = window.location.hash.replace(/^#/, "");
   const hashPath = (rawHash.split("?")[0] || "").replace(/\/$/, "");
   const at = (route: string) => hashPath === route || pathname === route;
 
-  if (at("/.lovable/oauth/consent")) return { screen: "oauth", sessionId: null };
-  if (at("/cliff-access")) return { screen: "cliff", sessionId: null };
-  if (at("/health")) return { screen: "health", sessionId: null };
-  if (at("/settings")) return { screen: "settings", sessionId: null };
-  if (at("/admin") || at("/admin/feedback")) return { screen: "admin", sessionId: null };
+  if (at("/.lovable/oauth/consent")) return { screen: "oauth" };
+  if (at("/health")) return { screen: "health" };
+  if (at("/settings")) return { screen: "settings" };
+  if (at("/admin") || at("/admin/feedback")) return { screen: "admin" };
 
-  const review = hashPath.match(/^\/review\/([^/]+)$/) ?? pathname.match(/^\/review\/([^/]+)$/);
-  if (review) return { screen: "review", sessionId: decodeURIComponent(review[1]) };
-  if (at("/review")) return { screen: "review", sessionId: null };
-
-  return { screen: modeFromUrl(), sessionId: null };
+  return { screen: modeFromUrl() };
 }
+
 
 /** Which of the five in-App screens the URL asks for. */
 export function modeFromUrl(): InAppScreen {
