@@ -143,6 +143,7 @@ import type {
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { AspectPreview } from "./components/AspectPreview";
+import { SessionFolders } from "./components/SessionFolders";
 import { clampWords } from "./lib/clampWords";
 
 
