@@ -1079,6 +1079,10 @@ export default function App() {
     if (!lightboxAsset) return;
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") setLightboxAsset(null);
+      // Arrow keys stay with the inline edit field while it has focus.
+      const target = event.target as HTMLElement | null;
+      const typing = !!target && /^(input|textarea)$/i.test(target.tagName);
+      if (typing) return;
       if (event.key === "ArrowRight") stepLightbox(1);
       if (event.key === "ArrowLeft") stepLightbox(-1);
     }
