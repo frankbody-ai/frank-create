@@ -566,9 +566,25 @@ export default function App() {
 
   const [mediaKind, setMediaKind] = useState<"image" | "video" | "compare">("image");
 
+  // Video generation is off for everyone until an admin grants it.
+  const [videoAllowed, setVideoAllowed] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void getMyVideoAccess()
+      .then((allowed) => { if (live) setVideoAllowed(allowed); })
+      .catch(() => { /* denied by default */ });
+    return () => { live = false; };
+  }, []);
+  useEffect(() => {
+    if (videoAllowed) return;
+    setMediaKind((current) => (current === "video" ? "image" : current));
+    setCompareMedia((current) => (current === "video" ? "image" : current));
+  }, [videoAllowed]);
+
   const [compareMedia, setCompareMedia] = useState<"image" | "video">("image");
   const [compareModelBId, setCompareModelBId] = useState<string>("");
   const [compareApproved, setCompareApproved] = useState(false);
+
 
   useEffect(() => {
     if (videoStartedAt == null) return;
