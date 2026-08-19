@@ -11,7 +11,7 @@ import {
 
 
 interface Props {
-  onUsePrompt?: (prompt: string) => void;
+  onUsePrompt?: (prompt: string, images?: string[]) => void;
   onStatus?: (msg: string) => void;
 }
 
@@ -262,7 +262,24 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     }
   }
 
+  /**
+   * Every reference image used anywhere in this conversation, deduped and in
+   * the order they were attached. These travel with the prompt to Studio.
+   */
+  function conversationImages(): string[] {
+    const seen = new Set<string>();
+    for (const message of messages) {
+      if (message.role !== "user") continue;
+      for (const src of message.images ?? []) {
+        if (src && !seen.has(src)) seen.add(src);
+      }
+    }
+    for (const src of attachments) if (src && !seen.has(src)) seen.add(src);
+    return Array.from(seen);
+  }
+
   // Auto-detect whether a message starts a new run (wizard) or continues the
+
   // previous conversation (straight to the agent). First message always wizards.
   function shouldRunWizard(text: string): boolean {
     const visible = messages.filter((m) => !m.hidden && m.role === "assistant");
@@ -487,7 +504,11 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
                     <React.Fragment key={i}>
                       <pre className="code-block code-block--prompt">{value}</pre>
                       <div className="agent-msg__actions">
-                        <Button variant="primary" icon="bolt" onClick={() => onUsePrompt?.(value)}>
+                        <Button
+                          variant="primary"
+                          icon="bolt"
+                          onClick={() => onUsePrompt?.(value, conversationImages())}
+                        >
                           Send to Studio
                         </Button>
                         <Button icon="document-duplicate" onClick={() => void copyPrompt(value)}>
