@@ -4929,7 +4929,11 @@ export default function App() {
                   disabled={!referencePickerSelection.length || referencePickerBusy}
                   onClick={() => void confirmReferencePickerSelection()}
                 >
-                  {referencePickerBusy ? "Working…" : `Add references${referencePickerSelection.length ? ` (${referencePickerSelection.length})` : ""}`}
+                  {referencePickerBusy
+                    ? "Working…"
+                    : referencePickerTarget === "upscaler"
+                      ? "Use this source"
+                      : `Add references${referencePickerSelection.length ? ` (${referencePickerSelection.length})` : ""}`}
                 </button>
               </div>
             </footer>
