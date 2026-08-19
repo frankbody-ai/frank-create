@@ -375,6 +375,38 @@ const REPLICATE_MAP: Record<string, string> = {
   // stays wired for any future Replicate-only image model.
 };
 
+// Safety net: when OpenRouter itself is the problem (5xx, rate limit, credits,
+// network) we re-run the same brief on Replicate for the models that exist on
+// both providers, so the round still returns images instead of failing.
+const REPLICATE_IMAGE_FALLBACK: Record<string, string> = {
+  "google-nb-pro": "google/nano-banana-pro",
+  "nano-banana-pro": "google/nano-banana-pro",
+  "google-nb-2": "google/nano-banana-2",
+  "nano-banana-2": "google/nano-banana-2",
+  "openai-gpt-image-2": "openai/gpt-image-2",
+  "seedream-5-pro": "bytedance/seedream-5-pro",
+  "riverflow-2-5-pro": "sourceful/riverflow-2.0-pro",
+};
+
+// Provider-side faults are worth retrying elsewhere. Bad params or blocked
+// content would fail on Replicate too, so those stay hard failures.
+const FALLBACK_ERROR_CODES = new Set([
+  "provider_unavailable",
+  "provider_error",
+  "rate_limited",
+  "quota_exhausted",
+  "network_error",
+  "timeout",
+  "auth_failed",
+  "empty_output",
+  "model_error",
+]);
+
+function shouldFallbackToReplicate(err: unknown): boolean {
+  const mapped = mapReplicateError(err);
+  return FALLBACK_ERROR_CODES.has(mapped.code);
+}
+
 
 
 // Video models on OpenRouter, with the capability envelope each one actually
@@ -1347,6 +1379,8 @@ async function handleInference(body: any, userId: string) {
   const partialErrors: Array<{ code: string; message: string; retryable: boolean; status?: number; request_id?: string }> = [];
   // The sanitised body we sent upstream, stored on the turn for troubleshooting.
   let providerRequest: unknown = null;
+  // Set when the round had to be re-run on Replicate after OpenRouter failed.
+  let usedFallback: { from: string; to: string; reason: string } | null = null;
 
   try {
     const refIds: string[] = [
@@ -1400,7 +1434,37 @@ async function handleInference(body: any, userId: string) {
       }
       if (!generatedImages.length) {
         const first = results.find((r) => r.status === "rejected") as PromiseRejectedResult | undefined;
-        throw first?.reason ?? new ProviderRunError("OpenRouter returned no images.", "provider_error", true);
+        const reason = first?.reason ?? new ProviderRunError("OpenRouter returned no images.", "provider_error", true);
+        const fallbackSlug = REPLICATE_IMAGE_FALLBACK[modelId];
+        const replicateKey = getReplicateGatewayKey();
+        if (!fallbackSlug || !replicateKey || !shouldFallbackToReplicate(reason)) throw reason;
+
+        const mappedReason = mapReplicateError(reason);
+        console.warn("[frank-api] openrouter failed, falling back to replicate", {
+          model: modelId, slug: fallbackSlug, code: mappedReason.code,
+        });
+        const fallbackInput = {
+          aspect_ratio: reqSettings.aspect_ratio,
+          size: reqSettings.image_size || reqSettings.size,
+          reference_images: refUrls,
+        };
+        const fallbackBody = { version_or_model: fallbackSlug, input: buildReplicateInput(fallbackSlug, providerPrompt, fallbackInput) };
+        providerRequest = providerRequestRecord(
+          `POST https://api.replicate.com/v1/models/${fallbackSlug}/predictions`,
+          fallbackBody,
+        );
+        const fallbackRuns = await Promise.allSettled(
+          Array.from({ length: count }, () => runReplicate(fallbackSlug, providerPrompt, fallbackInput, replicateKey)),
+        );
+        for (const run of fallbackRuns) {
+          if (run.status === "fulfilled" && run.value) generatedImages.push({ url: run.value, mime: "image/png" });
+          else if (run.status === "rejected") {
+            const m = mapReplicateError(run.reason);
+            partialErrors.push({ code: m.code, message: m.message, retryable: m.retryable, status: m.status, request_id: m.requestId });
+          }
+        }
+        if (!generatedImages.length) throw reason;
+        usedFallback = { from: "openrouter", to: "replicate", reason: mappedReason.message };
       }
     } else if (replicateSlug) {
 
@@ -1517,7 +1581,7 @@ async function handleInference(body: any, userId: string) {
     requested_count: count,
     partial_errors: partialErrors.length ? partialErrors : undefined,
     provider_request: providerRequest,
-
+    fallback: usedFallback ?? undefined,
   };
   await sb.from("messages").update({
     settings_snapshot_json: completedSnapshot,
@@ -1533,7 +1597,9 @@ async function handleInference(body: any, userId: string) {
     }),
     status: "complete" as const,
     assets,
-    providerPayload: OPENROUTER_IMAGE_MAP[modelId]
+    providerPayload: usedFallback
+      ? { provider: "replicate", model: REPLICATE_IMAGE_FALLBACK[modelId], fallback_from: "openrouter" }
+      : OPENROUTER_IMAGE_MAP[modelId]
       ? { provider: "openrouter", model: OPENROUTER_IMAGE_MAP[modelId] }
       : { provider: "lovable", model: gatewayModel },
 
