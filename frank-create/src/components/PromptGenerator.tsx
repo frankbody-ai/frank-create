@@ -231,6 +231,8 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     setMessages([]);
     setAttachments([]);
     setWizard(null);
+    setWizardOverride(null);
+    setWizardNotice(null);
     setError(null);
     savedSignature.current = "";
     inputRef.current?.focus();
