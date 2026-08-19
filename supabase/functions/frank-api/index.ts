@@ -1387,6 +1387,7 @@ async function handleInference(body: any, userId: string) {
   let providerRequest: unknown = null;
   // Set when the round had to be re-run on Replicate after OpenRouter failed.
   let usedFallback: { from: string; to: string; reason: string } | null = null;
+  const openrouterModel = OPENROUTER_IMAGE_MAP[modelId] as string | undefined;
 
   try {
     const refIds: string[] = [
@@ -1404,7 +1405,6 @@ async function handleInference(body: any, userId: string) {
     const providerPrompt = clientProviderPrompt
       ? clientProviderPrompt
       : (refUrls.length ? withReferenceIdentityLock(prompt, refUrls.length) : prompt);
-    const openrouterModel = OPENROUTER_IMAGE_MAP[modelId];
     if (!openrouterModel) {
       throw new ProviderRunError(`Model ${modelId} is not supported on OpenRouter.`, "unsupported_model", false);
     }
@@ -1504,7 +1504,7 @@ async function handleInference(body: any, userId: string) {
 
   const providerPayload = usedFallback
     ? { provider: "replicate", model: REPLICATE_IMAGE_FALLBACK[modelId], fallback_from: "openrouter" as const }
-    : { provider: "openrouter", model: openrouterModel };
+    : { provider: "openrouter", model: openrouterModel! };
 
   const insertedAssets: any[] = await persistImageAssets({
     userId, sessionId, turnId, prompt, modelId,
@@ -1713,6 +1713,8 @@ async function handleTurnStatus(body: any, userId: string) {
     modelId: snapshot.model || snapshot.model_key || "",
     aspectRatio: snapshot.aspect_ratio ?? snapshot.settings?.aspect_ratio,
     requestedSize: snapshot.image_size ?? snapshot.settings?.image_size ?? null,
+    provider: "replicate",
+    providerModel: snapshot.provider_model || REPLICATE_IMAGE_FALLBACK[snapshot.model || snapshot.model_key] || snapshot.model || snapshot.model_key || "",
     images,
   });
 
