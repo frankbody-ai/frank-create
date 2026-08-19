@@ -557,6 +557,8 @@ export default function App() {
   // Set by "Switch model and retry": once the picker has re-rendered on the new
   // model, the effect below fires the generation with the fresh selection.
   const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
+  const [retryRunToken, setRetryRunToken] = useState(0);
+
   const [settingsRailOpen, setSettingsRailOpen] = useState(true);
 
   const [mediaKind, setMediaKind] = useState<"image" | "video" | "compare">("image");
