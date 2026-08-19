@@ -29,7 +29,6 @@ import {
   assetWorkflowReceiptUrl,
   createInferenceTurn,
   fetchTurnStatus,
-  createProviderReadinessReceipt,
   createReference,
   createSession,
   createVideoStoryboard,
@@ -45,7 +44,6 @@ import {
   listProjects,
   listSessions,
   listTurns,
-  updateAsset,
   updateSession
 } from "./lib/api";
 
@@ -92,11 +90,9 @@ import Enhancer from "./components/Enhancer";
 import type {
   ActivationChecklist,
   Asset,
-  BrandKit,
   Brief,
   BriefFormState,
   DemoDoctorStatus,
-  DemoCallDecision,
   DemoReadinessPackResult,
   ExportRecord,
   ExportPreset,
@@ -104,8 +100,6 @@ import type {
   FrankTask,
   ProviderAdapterAudit,
   ProviderEnvStatus,
-  ProviderPreflight,
-  ProviderReadiness,
   PromptPreset,
   Project,
   StudioModel,
@@ -283,15 +277,6 @@ const WALKTHROUGH_STEPS: WalkthroughStep[] = [
 /** Tiles painted per page in the Add references overlay, upload tile included. */
 const REFERENCE_PICKER_PAGE_SIZE = 9;
 
-const TENANT_THEMES = [
-
-  { id: "frank", label: "frank body", hex: "#F9ABAA" },
-  { id: "snouts", label: "senior snouts", hex: "#FF4D00" },
-  { id: "coreiq", label: "coreiQ", hex: "#ED1B53" },
-  { id: "strength", label: "strength lab", hex: "#C90000" },
-  { id: "ledgify", label: "ledgify", hex: "#372F89" },
-  { id: "enxgy", label: "enxgy", hex: "#00C6E4" }
-] as const;
 
 
 export default function App() {
@@ -382,13 +367,6 @@ export default function App() {
   // saved for run provenance but are never hydrated into a new run.
   const [activeReferenceIds, setActiveReferenceIds] = useState<string[]>([]);
 
-  const [assetNotesDraft, setAssetNotesDraft] = useState("");
-  const [activationChecklist, setActivationChecklist] = useState<ActivationChecklist | null>(null);
-  const [providerEnvStatus, setProviderEnvStatus] = useState<ProviderEnvStatus | null>(null);
-  const [providerKeyDraft, setProviderKeyDraft] = useState<Record<string, string>>({});
-  const [providerAudit, setProviderAudit] = useState<ProviderAdapterAudit | null>(null);
-  const [readinessPackSha, setReadinessPackSha] = useState("");
-  const [readinessPackManifest, setReadinessPackManifest] = useState<DemoReadinessPackResult["manifest"] | null>(null);
   const [maskPainterBusy, setMaskPainterBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   // `compareGroup` ties the two sides of a side-by-side run together so the
@@ -539,7 +517,6 @@ export default function App() {
         const [
           turnResult,
           assetResult,
-          exportResult,
           providerEnvResult,
           activationChecklistResult,
           brandKitResult,
@@ -776,16 +753,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedModelId, config.models]);
 
-  const providerSetupState = useMemo(
-    () => (connection === "online" ? providerSetup(config.models) : { waitingModels: [], envVars: [] }),
-    [config.models, connection]
-  );
-  const providerUnlockRows = useMemo(() => (connection === "online" ? providerUnlockPlan(config.models) : []), [config.models, connection]);
   const promptPresets = useMemo(() => config.promptPresets, [config.promptPresets]);
-  const activePreset = useMemo(
-    () => promptPresets.find((preset) => preset.key === selectedPresetKey) ?? promptPresets[0],
-    [promptPresets, selectedPresetKey]
-  );
   const productTaskShortcuts = useMemo(
     () => config.tasks.filter((task) => !["product-shot-lab", "prompt-remix"].includes(task.key)),
     [config.tasks]
@@ -986,10 +954,6 @@ export default function App() {
 
 
 
-  const approvedCount = outputAssets.filter((asset) => asset.approval_status === "approved").length;
-  const approvedMotionCount = outputAssets.filter(
-    (asset) => asset.approval_status === "approved" && asset.media_type === "video"
-  ).length;
   const promptMode = editSourceAsset ? (maskAsset ? "masked_edit" : "edit") : "generate";
   const primaryActionLabel =
     mediaKind === "compare"
@@ -1002,7 +966,6 @@ export default function App() {
             ? "Edit"
             : "Generate";
 
-  const mainDemoSession = useMemo(() => sessions.find(isMainDemoSession) ?? null, [sessions]);
 
   function showImageStudio() {
     setStudioMode("studio");
@@ -1094,12 +1057,6 @@ export default function App() {
     }
 
     const projectForSession = projects.find((project) => project.id === session.project_id) ?? activeProject;
-    const [turnResult, assetResult, exportResult, briefResult] = await Promise.all([
-      listTurns(session.id),
-      listAssets({ sessionId: session.id }),
-      listExports().catch(() => ({ exports: [] })),
-      projectForSession ? listBriefs(projectForSession.id).catch(() => ({ briefs: [] })) : Promise.resolve({ briefs: [] })
-    ]);
     setTurns(turnResult.turns);
     setAssets(assetResult.assets);
     setActiveProject(projectForSession ?? null);
@@ -1202,10 +1159,6 @@ export default function App() {
     setCompareTargetAsset(null);
   }
 
-  function syncCompareAsset(asset: Asset) {
-    setCompareBaseAsset((current) => (current?.id === asset.id ? asset : current));
-    setCompareTargetAsset((current) => (current?.id === asset.id ? asset : current));
-  }
 
   function hydratePromptFromBrief(brief?: Brief | null) {
     if (!brief?.prompt) {
@@ -4943,35 +4896,16 @@ function briefToDraft(brief: Brief): BriefFormState {
   });
 }
 
-function exportPresetsForAsset(presets: ExportPreset[], asset: Asset) {
-  const mediaType = asset.media_type ?? "image";
-  return presets.filter((preset) => (preset.media_types ?? ["image"]).includes(mediaType));
-}
 
 function firstReviewableAsset(assets: Asset[]) {
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
   return outputAssets.find((asset) => (asset.media_type ?? "image") !== "video") ?? outputAssets[0] ?? null;
 }
 
-function filterExportsForAssets(records: ExportRecord[], assets: Asset[]) {
-  const assetIds = new Set(assets.map((asset) => asset.id));
-  return records.filter((record) => assetIds.has(record.asset_id));
-}
 
 
 
 
-function parseExportMetadata(metadataJson?: string) {
-  if (!metadataJson) {
-    return {} as Record<string, unknown>;
-  }
-  try {
-    const parsed = JSON.parse(metadataJson);
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
-  } catch {
-    return {} as Record<string, unknown>;
-  }
-}
 
 function titleize(value: string) {
   return value
@@ -4981,13 +4915,6 @@ function titleize(value: string) {
     .join(" ");
 }
 
-function shouldAutoOpenProviderAudit() {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  return new URLSearchParams(window.location.search).get("provider_audit") === "1";
-}
 
 const LAST_MODEL_KEY = "frank.lastUsedModelId";
 const LAST_MODEL_BY_MEDIA_KEY = "frank.lastUsedModelIdByMedia";
@@ -5074,70 +5001,7 @@ function selectedAssetReviewMetadata(asset: Asset, assets: Asset[], config: Fran
   };
 }
 
-function selectedAssetRunBrief(asset: Asset, assets: Asset[], config: FrankConfig, turns: StudioTurn[]) {
-  const turn = turns.find((item) => item.id === asset.turn_id);
-  const metadata = selectedAssetReviewMetadata(asset, assets, config, turns);
-  const workflowBridge = assetWorkflowBridge(asset, turns);
-  const referenceIds = parseJsonList(asset.reference_asset_ids_json ?? turn?.reference_asset_ids_json);
-  const referenceNames = referenceIds
-    .map((id) => assets.find((item) => item.id === id)?.title ?? id)
-    .filter(Boolean);
-  const approval = asset.approval_status === "approved" ? "Approved" : titleize(asset.approval_status ?? "review");
-  const status = `${approval}${asset.favorite ? " / favorite" : ""}`;
-  const lines = [
-    "Frank Create Run Brief",
-    `Asset: ${asset.title}`,
-    `Status: ${status}`,
-    `Media: ${asset.media_type ?? "image"}`,
-    metadata.modelLabel ? `Model: ${metadata.modelLabel}` : "",
-    metadata.settingsLabel ? `Settings: ${metadata.settingsLabel}` : "",
-    metadata.dimensionsLabel ? `Size: ${metadata.dimensionsLabel}` : "",
-    metadata.workflowLabel ? `Workflow: ${metadata.workflowLabel}` : "",
-    workflowBridge.workflow_receipt_url ? `Workflow receipt: ${workflowBridge.workflow_receipt_url}` : "",
-    metadata.sourceLabel ? `Source: ${metadata.sourceLabel}` : "",
-    `References: ${referenceNames.length ? referenceNames.join(", ") : metadata.referenceLabel}`,
-    metadata.prompt ? `Prompt: ${metadata.prompt}` : "",
-    asset.notes ? `Review notes: ${asset.notes}` : "",
-    `Sync: ${asset.sync_status ?? "local"}`,
-    asset.file_path ? `File: ${asset.file_path}` : "",
-    turn?.id ? `Turn: ${turn.id}` : "",
-    "Provider keys: server-side only; no secrets included."
-  ];
-  return lines.filter(Boolean).join("\n");
-}
 
-function selectedAssetWorkflowJson(asset: Asset, assets: Asset[], config: FrankConfig, turns: StudioTurn[]) {
-  const turn = turns.find((item) => item.id === asset.turn_id);
-  const settings = sanitizeWorkflowPayload(parseJsonRecord(asset.settings_json ?? turn?.settings_json)) as Record<string, unknown>;
-  const workflowProvenance = parseJsonRecord(settings.workflow_provenance);
-  const referenceIds = parseJsonList(asset.reference_asset_ids_json ?? turn?.reference_asset_ids_json);
-  const sourceId = asset.source_asset_id ?? turn?.source_asset_id;
-  const model = config.models.find((item) => item.id === (asset.model ?? turn?.model));
-  const workflowBridge = assetWorkflowBridge(asset, turns, workflowProvenance);
-
-  return {
-    product: "Frank Create",
-    asset_id: asset.id,
-    asset_title: asset.title,
-    media_type: asset.media_type ?? "image",
-    provider: asset.provider ?? turn?.provider ?? model?.provider ?? null,
-    model: asset.model ?? turn?.model ?? model?.id ?? null,
-    prompt: asset.prompt ?? turn?.prompt ?? "",
-    settings,
-    workflow_provenance: workflowProvenance,
-    workflow_bridge: workflowBridge,
-    source: sourceId ? assetReferenceSummary(sourceId, assets) : null,
-    references: referenceIds.map((id) => assetReferenceSummary(id, assets)),
-    approval_status: asset.approval_status ?? "review",
-    favorite: Boolean(asset.favorite),
-    sync_status: asset.sync_status ?? "local",
-    file_path: asset.file_path ?? "",
-    created_at: asset.created_at ?? null,
-    updated_at: asset.updated_at ?? null,
-    turn_id: turn?.id ?? asset.turn_id ?? null,
-    provider_keys: "server-side only; no secrets included"
-  };
-}
 
 function assetWorkflowBridge(asset: Asset, turns: StudioTurn[], workflowProvenance?: Record<string, unknown>) {
   const turn = turns.find((item) => item.id === asset.turn_id);
@@ -5301,90 +5165,8 @@ function activationModelTotal(checklist: ActivationChecklist) {
 
 
 
-function buildLaunchReadinessItems(
-  config: FrankConfig,
-  waitingModelCount: number,
-  doctor: DemoDoctorStatus | null,
-  checklist: ActivationChecklist | null,
-  readinessPackSha: string
-) {
-  const liveWaiting = checklist?.summary.waiting_provider_models ?? doctor?.summary.waitingProviderModels ?? waitingModelCount;
-  const packReady = Boolean(readinessPackSha || doctor?.summary.readinessPackReady);
-  const demoIsCurated = doctor ? doctor.summary.demoCurated !== false : true;
-  return [
-    {
-      key: "local-demo",
-      status: doctor?.readyForDemo === false || !demoIsCurated ? "warning" : "ready",
-      badge: doctor?.readyForDemo === false || !demoIsCurated ? "Do" : "OK",
-      label: !demoIsCurated ? "Reset demo before Cliff" : "Local demo ready",
-      detail: !demoIsCurated
-        ? `${doctor?.summary.imageOutputAssetCount ?? doctor?.summary.outputAssetCount ?? 0} visible image outputs; use Reset demo for the clean seed.`
-        : doctor?.summary.workflowSmokeOk
-          ? "Smoke-tested generate, edit, approve, export, and handoff."
-          : "Generate, edit, approve, export, and handoff are wired to the cloud backend."
-    },
-    {
-      key: "live-keys",
-      status: liveWaiting ? "warning" : "ready",
-      badge: liveWaiting ? "Do" : "OK",
-      label: liveWaiting ? `${liveWaiting} live key models waiting` : "Live APIs unlocked",
-      detail: liveWaiting
-        ? "Use Provider Setup for rotated server-side keys; no browser secrets."
-        : "Provider proxy can run the visible live model roster."
-    },
-    {
-      key: "proof-pack",
-      status: packReady ? "ready" : "recommended",
-      badge: packReady ? "OK" : "Tip",
-      label: packReady ? "Proof pack ready" : "Build proof pack",
-      detail: readinessPackSha ? `Verified SHA-256 ${readinessPackSha.slice(0, 12)}...` : "Run Demo Doctor, then build the call pack before sending."
-    }
-  ];
-}
 
-function buildCliffGuideSteps(outputAssets: Asset[], referenceAssets: Asset[], approvedCount: number, approvedMotionCount: number) {
-  const reviewableImages = outputAssets.filter((asset) => (asset.media_type ?? "image") !== "video");
-  return [
-    {
-      label: "Image Studio",
-      detail: "Open with sessions, prompt thread, references, model picker, and Frank Body Mode.",
-      status: outputAssets.length ? `${outputAssets.length} outputs` : "seed demo"
-    },
-    {
-      label: "Product Shot Lab",
-      detail: "Use the product presets, run a local round, then approve the best shot.",
-      status: referenceAssets.length ? `${referenceAssets.length} refs` : "add refs"
-    },
-    {
-      label: "Paint edit mask",
-      detail: "Select an image, paint a retouch mask, save it into Masked Edit, then make another round.",
-      status: reviewableImages.length ? "image ready" : "need image"
-    },
-    {
-      label: "Video Lab",
-      detail: "Turn an approved image into a motion storyboard and export the storyboard ZIP.",
-      status: approvedMotionCount ? `${approvedMotionCount} motion` : "storyboard path"
-    }
-  ];
-}
 
-function buildCliffGuideProofs(doctor: DemoDoctorStatus | null, manifest: DemoReadinessPackResult["manifest"] | null) {
-  const screenshots = manifest?.screenshot_count ?? 0;
-  const browserQaChecks = new Set(
-    (manifest?.browser_qa?.checks ?? [])
-      .filter((check) => check.status === "ready" || check.browser_status === "ready")
-      .map((check) => check.key)
-  );
-  return [
-    doctor?.summary.workflowSmokeOk ? "Workflow smoke passed" : "Run workflow smoke",
-    doctor?.summary.activationChecklistReady ? "Production checklist ready" : "Build call pack for checklist",
-    screenshots > 0 ? `${screenshots} QA screenshots ready` : "Build call pack for screenshots",
-    manifest?.cliff_pack?.status === "included" ? "Cliff Pack included" : "Export Cliff Pack before sending",
-    browserQaChecks.has("studio_model_preflight") ? "Model preflight proved" : "Run selected model preflight",
-    browserQaChecks.has("studio_local_generate") ? "Local Generate proved" : "Run local Generate proof",
-    browserQaChecks.has("studio_masked_edit_generate") ? "Masked edit proved" : "Run masked edit proof"
-  ];
-}
 
 function turnErrorCopy(turn: StudioTurn) {
   if (!turn.error_json) {
@@ -5421,23 +5203,6 @@ function parseJsonRecord(value?: unknown) {
   }
 }
 
-function nextRoundPrompt(asset: Asset, direction: "similar" | "cleanup" | "campaign", preset?: PromptPreset) {
-  const note = asset.notes?.trim();
-  const base =
-    direction === "cleanup"
-      ? "Make another round from this selected image. Clean up product edges, label clarity, lighting, and small retouching issues while keeping the product structure accurate."
-      : direction === "campaign"
-        ? "Make another campaign round from this selected image. Keep the product recognizable, push the set styling, and create director-ready variants with Frank Body attitude."
-        : "Make another round like this selected image. Preserve the strongest composition, product scale, label plausibility, and Frank Body palette while exploring better variants.";
-  const parts = [base];
-  if (preset?.prompt) {
-    parts.push(`Preset direction: ${preset.prompt}`);
-  }
-  if (note) {
-    parts.push(`Review note to honor: ${note}`);
-  }
-  return parts.join("\n\n");
-}
 
 
 
@@ -5555,85 +5320,7 @@ function providerModelEnvVars(model: StudioModel) {
   return Array.from(new Set(envVars));
 }
 
-function providerKeyPlanText({
-  rows,
-  envVars,
-  readyModels,
-  modelCount,
-  keyFilePath
-}: {
-  rows: ReturnType<typeof providerUnlockPlan>;
-  envVars: string[];
-  readyModels?: number;
-  modelCount: number;
-  keyFilePath: string;
-}) {
-  const lines = [
-    "Frank Create Provider Key Plan",
-    "",
-    `Server key file: ${keyFilePath}`,
-    `Provider readiness: ${readyModels ?? 0} / ${modelCount} live provider models ready`,
-    "Provider secret values are not included. Paste rotated keys only into Provider Setup or the local server key file.",
-    ""
-  ];
 
-  if (rows.length) {
-    lines.push("Cliff key order:");
-    rows.forEach((row, index) => {
-      lines.push(`${index + 1}. ${row.label}`);
-      lines.push(`   Keys: ${row.keyCopy}`);
-      lines.push(`   Unlocks: ${row.capabilityCopy}`);
-    });
-  } else {
-    lines.push("Cliff key order: all visible provider rows are unlocked.");
-  }
-
-  if (envVars.length) {
-    lines.push("", `Missing env vars: ${envVars.join(", ")}`);
-  }
-
-  lines.push("", "Rotate any exposed token before live provider use.");
-  return lines.join("\n");
-}
-
-function productionUnlockPlanText(checklist: ActivationChecklist) {
-  const summary = checklist.summary;
-  const lines = [
-    "Frank Create Production Unlock Plan",
-    "",
-    `Status: ${checklist.status}`,
-    `Live model paths unlocked: ${summary.ready_provider_models} / ${activationModelTotal(checklist)}`,
-    `Server key file: ${summary.server_key_file || "user\\frank_create\\provider_keys.env"}`,
-    `Local checkpoints detected: ${summary.checkpoint_count}`,
-    "Allowed provider env vars: GOOGLE_API_KEY, REPLICATE_API_TOKEN, OPENAI_API_KEY",
-    "No provider secret values are included.",
-    ""
-  ];
-
-  lines.push("Actions:");
-  checklist.steps.forEach((step, index) => {
-    lines.push(`${index + 1}. ${step.label} (${step.status})`);
-    lines.push(`   ${step.detail}`);
-    lines.push(`   Action: ${step.action}`);
-    if (step.env_vars?.length) {
-      lines.push(`   Env vars: ${step.env_vars.join(", ")}`);
-    }
-    if (step.path) {
-      const checkpointNote = step.minimum_checkpoint_mb ? `; minimum ${step.minimum_checkpoint_mb} MB` : "";
-      lines.push(`   Path: ${activationPathLabel(step.path)}${checkpointNote}`);
-    }
-  });
-
-  if (summary.missing_env_vars?.length) {
-    lines.push("", `Missing env vars: ${summary.missing_env_vars.join(", ")}`);
-  }
-  if (checklist.notes.length) {
-    lines.push("", "Notes:");
-    checklist.notes.forEach((note) => lines.push(`- ${note}`));
-  }
-  lines.push("", "Paste rotated keys only into Provider Setup or the local server key file.");
-  return lines.join("\n");
-}
 
 function parseReadyStatusLink(text: string) {
   const match = text.match(/^(.+?) link ready: (.+)$/);
