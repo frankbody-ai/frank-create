@@ -1459,7 +1459,32 @@
   border-radius: var(--radius-200);
 }
 .lightbox-close,
-.reference-picker-close,
+.reference-picker-close {
+  position: absolute;
+  inset-block-start: var(--space-300);
+  inset-inline-end: var(--space-300);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-end;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--color-text-inverse);
+  cursor: pointer;
+}
+.lightbox-close:hover,
+.reference-picker-close:hover { background: rgba(255, 255, 255, 0.28); }
+.reference-picker-close { background: var(--color-bg-fill-secondary); color: var(--color-text); }
+.compare-modal-inner .lightbox-close,
+.mask-painter .lightbox-close,
+.session-cancel-card .lightbox-close,
+.payload-modal .lightbox-close { background: var(--color-bg-fill-secondary); color: var(--color-text); }
+
 .lightbox-meta {
   display: flex;
   flex-wrap: wrap;
@@ -1468,6 +1493,7 @@
   color: var(--color-text-inverse-secondary);
   font-variant-numeric: tabular-nums;
 }
+
 .lightbox-actions { display: flex; flex-wrap: wrap; gap: var(--space-200); }
 /* The viewer sits on the inverse surface, so every action needs an explicit
    high-contrast pair — inherited light-surface colours read as invisible grey. */
