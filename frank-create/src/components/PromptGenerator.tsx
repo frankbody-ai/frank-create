@@ -197,7 +197,6 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
       setChatId(id);
       setMessages(loaded);
       setWizard(null);
-      setWizardOverride(null);
       setWizardNotice(null);
       setAttachments([]);
       setError(null);
@@ -214,7 +213,6 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     setMessages([]);
     setAttachments([]);
     setWizard(null);
-    setWizardOverride(null);
     setWizardNotice(null);
     setError(null);
     savedSignature.current = "";
