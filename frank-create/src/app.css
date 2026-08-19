@@ -1178,6 +1178,13 @@
 .agent-composer { display: flex; flex-direction: column; gap: var(--space-300); }
 .agent-composer__actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-200); }
 .agent-composer__spacer { flex: 1 1 auto; }
+.agent-composer__notice {
+  margin-bottom: var(--space-200, 8px);
+  padding: var(--space-200, 8px) var(--space-300, 12px);
+  border: 1px solid var(--color-caution-border, rgba(0, 0, 0, 0.12));
+  border-radius: var(--border-radius-200, 8px);
+  background: var(--color-caution-surface, rgba(255, 214, 102, 0.14));
+}
 .agent-attachments { display: flex; flex-wrap: wrap; gap: var(--space-200); }
 .agent-attachment { position: relative; }
 .agent-attachment img { width: 56px; height: 56px; border-radius: var(--radius-200); object-fit: cover; }

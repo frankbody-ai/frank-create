@@ -61,6 +61,24 @@ function parseWizardQuestions(reply: string): WizardQuestion[] | null {
   }
 }
 
+/**
+ * A short imperative edit ("make the background darker", "warmer light") is a
+ * revision of the prompt just delivered, not a new brief — those must reach the
+ * agent as conversation instead of restarting discovery. Anything longer, or
+ * anything that reads like a subject description, counts as a fresh brief.
+ */
+function looksLikeTweak(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  const words = trimmed.split(/\s+/);
+  if (words.length > 14) return false;
+  return /^(make|add|remove|change|swap|use|try|drop|keep|less|more|fewer|brighter|darker|warmer|cooler|tighter|wider|zoom|crop|shorter|longer|again|redo|instead|no|without|put|move|fix|adjust|tone|soften|sharpen)\b/i.test(
+    trimmed
+  );
+}
+
+
+
 
 function fileToDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -151,6 +169,9 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<string[]>([]);
   const [wizard, setWizard] = useState<WizardState | null>(null);
+  /** null = follow the inferred default; true/false = the user forced it. */
+  const [wizardOverride, setWizardOverride] = useState<boolean | null>(null);
+  const [wizardNotice, setWizardNotice] = useState<string | null>(null);
   const [chatId, setChatId] = useState<string | null>(null);
   const [chats, setChats] = useState<PromptChatSummary[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -193,6 +214,8 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
       setChatId(id);
       setMessages(loaded);
       setWizard(null);
+      setWizardOverride(null);
+      setWizardNotice(null);
       setAttachments([]);
       setError(null);
       savedSignature.current = `${id}:${loaded.length}:${loaded[loaded.length - 1]?.content.slice(0, 80) ?? ""}`;
@@ -208,6 +231,8 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     setMessages([]);
     setAttachments([]);
     setWizard(null);
+    setWizardOverride(null);
+    setWizardNotice(null);
     setError(null);
     savedSignature.current = "";
     inputRef.current?.focus();
@@ -268,6 +293,8 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     setAttachments([]);
     setBusy(true);
     setError(null);
+    setWizardNotice(null);
+    setWizardOverride(null);
     try {
       // The wizard kickoff asks for a machine-readable question set. That request
       // and its json answer stay hidden from the thread — the wizard IS their UI.
@@ -283,6 +310,11 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
           onStatus?.(`Discovery wizard ready — ${questions.length} questions.`);
           return;
         }
+        // Discovery was requested but the agent did not return a usable question
+        // set. Say so, otherwise a skipped wizard looks like a bug.
+        setWizardNotice(
+          "The agent could not build a discovery round for this brief, so it answered directly. Send the brief again to retry the questions."
+        );
       }
       setMessages([...next, { role: "assistant", content: result.reply }]);
       onStatus?.("Prompt Generator replied.");
@@ -324,6 +356,17 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   // The wizard kickoff request and its json reply are plumbing, not conversation.
   const visibleMessages = messages.filter((message) => !message.hidden);
   const activeQuestion = wizard ? wizard.questions[wizard.index] : null;
+
+  // Discovery runs on every NEW brief, not just the first one in a conversation:
+  // an empty thread, or a thread whose last reply already delivered a prompt.
+  // Short imperative edits stay conversational so revisions are not interrupted.
+  const lastVisibleAssistant = [...visibleMessages].reverse().find((m) => m.role === "assistant");
+  const threadAwaitsNewBrief =
+    !visibleMessages.length || (!!lastVisibleAssistant && parseAgentReply(lastVisibleAssistant.content).phase === "final");
+  const wizardDefault = threadAwaitsNewBrief && !looksLikeTweak(input);
+  const runWizardNext = wizardOverride ?? wizardDefault;
+
+
 
 
   return (
@@ -589,12 +632,19 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
       ) : null}
 
       <Card>
+        {wizardNotice ? (
+          <div className="agent-composer__notice" role="status">
+            <Text variant="bodySm" tone="caution">
+              {wizardNotice}
+            </Text>
+          </div>
+        ) : null}
         <form
           className="agent-composer"
           data-paste-scope="prompt-agent"
           onSubmit={(event) => {
             event.preventDefault();
-            void send(input, { wizardKickoff: !messages.length });
+            void send(input, { wizardKickoff: runWizardNext });
           }}
         >
 
@@ -642,7 +692,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               if (event.key !== "Enter") return;
               if (event.shiftKey) return;
               event.preventDefault();
-              void send(input, { wizardKickoff: !messages.length });
+              void send(input, { wizardKickoff: runWizardNext });
             }}
 
           />
@@ -664,6 +714,13 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               disabled={busy || attachments.length >= MAX_ATTACHMENTS}
             >
               Attach reference
+            </Button>
+            <Button
+              icon={runWizardNext ? "sparkles" : "chat-bubble-left-right"}
+              onClick={() => setWizardOverride(!runWizardNext)}
+              disabled={busy}
+            >
+              {runWizardNext ? "Discovery: on" : "Discovery: off"}
             </Button>
             <span className="agent-composer__spacer" />
             <Text variant="bodySm" tone="secondary">
