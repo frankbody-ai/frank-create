@@ -375,6 +375,38 @@ const REPLICATE_MAP: Record<string, string> = {
   // stays wired for any future Replicate-only image model.
 };
 
+// Safety net: when OpenRouter itself is the problem (5xx, rate limit, credits,
+// network) we re-run the same brief on Replicate for the models that exist on
+// both providers, so the round still returns images instead of failing.
+const REPLICATE_IMAGE_FALLBACK: Record<string, string> = {
+  "google-nb-pro": "google/nano-banana-pro",
+  "nano-banana-pro": "google/nano-banana-pro",
+  "google-nb-2": "google/nano-banana-2",
+  "nano-banana-2": "google/nano-banana-2",
+  "openai-gpt-image-2": "openai/gpt-image-2",
+  "seedream-5-pro": "bytedance/seedream-5-pro",
+  "riverflow-2-5-pro": "sourceful/riverflow-2.0-pro",
+};
+
+// Provider-side faults are worth retrying elsewhere. Bad params or blocked
+// content would fail on Replicate too, so those stay hard failures.
+const FALLBACK_ERROR_CODES = new Set([
+  "provider_unavailable",
+  "provider_error",
+  "rate_limited",
+  "quota_exhausted",
+  "network_error",
+  "timeout",
+  "auth_failed",
+  "empty_output",
+  "model_error",
+]);
+
+function shouldFallbackToReplicate(err: unknown): boolean {
+  const mapped = mapReplicateError(err);
+  return FALLBACK_ERROR_CODES.has(mapped.code);
+}
+
 
 
 // Video models on OpenRouter, with the capability envelope each one actually
