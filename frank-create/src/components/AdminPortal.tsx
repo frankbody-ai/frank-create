@@ -147,9 +147,11 @@ export function AdminPortal() {
 const USER_COLUMNS: DataTableColumn[] = [
   { key: "email", title: "Email" },
   { key: "role", title: "Role", width: "180px" },
+  { key: "video", title: "Video generator", width: "170px" },
   { key: "joined", title: "Joined" },
   { key: "seen", title: "Last sign-in" },
 ];
+
 
 function UsersTab({
   meId,
