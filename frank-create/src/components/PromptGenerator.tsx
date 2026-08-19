@@ -262,7 +262,24 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     }
   }
 
+  /**
+   * Every reference image used anywhere in this conversation, deduped and in
+   * the order they were attached. These travel with the prompt to Studio.
+   */
+  function conversationImages(): string[] {
+    const seen = new Set<string>();
+    for (const message of messages) {
+      if (message.role !== "user") continue;
+      for (const src of message.images ?? []) {
+        if (src && !seen.has(src)) seen.add(src);
+      }
+    }
+    for (const src of attachments) if (src && !seen.has(src)) seen.add(src);
+    return Array.from(seen);
+  }
+
   // Auto-detect whether a message starts a new run (wizard) or continues the
+
   // previous conversation (straight to the agent). First message always wizards.
   function shouldRunWizard(text: string): boolean {
     const visible = messages.filter((m) => !m.hidden && m.role === "assistant");
