@@ -31,7 +31,7 @@ export function ReleaseNotesModal({
   }, []);
 
   const open = autoOpen || forceOpen;
-  const shown = notes.length && autoOpen ? notes : RELEASES.slice(0, 3);
+  const shown = notes.length && autoOpen ? notes : RELEASES.slice(0, 5);
 
   const close = () => {
     setAutoOpen(false);
