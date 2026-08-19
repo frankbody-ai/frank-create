@@ -161,9 +161,29 @@
 .preset-list-col { flex: 1 1 360px; }
 .preset-editor-col { flex: 1 1 460px; }
 
+/* Upscaler top row: drop tile on the left, selector rail on the right, results below. */
+.upscaler-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--card-gap);
+  align-items: flex-start;
+}
+.upscaler-drop-col {
+  flex: 1 1 520px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+}
+.upscaler-top .upscaler-rail {
+  flex: 0 1 272px;
+  min-width: 221px;
+}
+
 @container (max-width: 768px) {
   .studio-rail,
-  .upscaler-rail { flex: 1 1 100%; }
+  .upscaler-rail,
+  .upscaler-top .upscaler-rail { flex: 1 1 100%; }
 }
 
 /* ============================================================
