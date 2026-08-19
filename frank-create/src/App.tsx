@@ -94,164 +94,6 @@ import { SessionFolders } from "./components/SessionFolders";
 import { clampWords } from "./lib/clampWords";
 
 
-type WalkthroughTarget =
-  | "app-header"
-  | "feedback-button"
-  | "reference-dock"
-  | "composer"
-  | "output-thread"
-  | "review-panel"
-  | "review-actions"
-  | "review-metadata"
-  | "variant-controls"
-  | "edit-controls"
-  | "export-controls"
-  | "admin-entry";
-
-interface WalkthroughStep {
-  title: string;
-  detail: string;
-  points?: string[];
-  target: WalkthroughTarget;
-  openSettings?: boolean;
-  selectOutput?: boolean;
-}
-
-interface WalkthroughAnchor {
-  highlightStyle: CSSProperties;
-  popoverStyle: CSSProperties;
-  placement: "above" | "below";
-}
-
-const WALKTHROUGH_STEPS: WalkthroughStep[] = [
-  {
-    title: "Sessions and sidebar",
-    detail: "The left sidebar is your control strip. Each session is a separate creative thread — switch, rename in place, or start a new one from here.",
-    points: [
-      "Sessions auto-name from your first prompt; click the title to rename.",
-      "Image Studio is the active lab. Product Shot Lab and Video Lab are on the roadmap.",
-      "Your profile and sign-out live at the bottom of the sidebar."
-    ],
-    target: "app-header"
-  },
-  {
-    title: "Feedback, any time",
-    detail: "Hit the Feedback button at the top-right of the studio to report a bug or drop an idea. You can attach a screenshot and it goes straight to the admin triage board.",
-    points: [
-      "Works from any page while signed in.",
-      "Optional screenshot upload for context.",
-      "Admins triage it as tasks in the Admin portal."
-    ],
-    target: "feedback-button"
-  },
-  {
-    title: "Reference dock",
-    detail: "Upload as many reference images as the selected model accepts. All loaded references are used for the next generation. Click the X on a thumbnail to remove it from the dock.",
-    points: [
-      "Multimodal models read selected refs as visual guidance.",
-      "Refs are consumed once and the dock clears as soon as you generate.",
-      "Any generated pick can be reused as a reference from the review desk."
-    ],
-    target: "reference-dock"
-  },
-  {
-    title: "The composer",
-    detail: "Write the brief in plain English, then dial in Model, Aspect, Size, Count, Quality, and Thinking Mode right inside this card. Sizes are automatically filtered to match the chosen aspect and model.",
-    points: [
-      "Model roster: Nano Banana Pro/2, gpt-image-2, Reve 2.1, Seedream 5.0 Pro (all via OpenRouter).",
-      "Aspect preview shows the exact canvas shape before you generate.",
-      "Thinking Mode (Off / Low / High) is available on models that support it."
-    ],
-    target: "composer"
-  },
-  {
-    title: "Frank Body Mode + presets",
-    detail: "Toggle Frank Body Mode to inject brand voice and guardrails. The preset library at the bottom of the right panel gives you 5 curated Frank Body starting points — plus a “+ New preset” tile to save your own.",
-    points: [
-      "Off = neutral, prompt only. On = Frank Body brand brain.",
-      "Custom presets are saved locally and reusable across sessions.",
-      "The active mode is recorded with each round for auditability."
-    ],
-    target: "composer"
-  },
-  {
-    title: "Generate, stop, run in parallel",
-    detail: "Press Generate and a pending card appears immediately in the thread. You can queue additional rounds in parallel, or hit Stop to cancel the current run.",
-    points: [
-      "Parallel generations are capped so providers don't rate-limit you.",
-      "Stop cancels the in-flight request cleanly.",
-      "The three-step progress indicator shows queue → provider → download."
-    ],
-    target: "composer"
-  },
-  {
-    title: "Rounds thread",
-    detail: "Every run lands here, newest on top. A “New” badge pulses on the freshest round. Each card keeps the prompt, model, references, timestamp, and status attached.",
-    points: [
-      "Copy the round ID, delete a round, or expand any image to a lightbox.",
-      "Retry, Retry missing, and Retry safely rebuild the exact settings for another attempt.",
-      "Errors expand inline with a mapped explanation so you know what to change."
-    ],
-    target: "output-thread"
-  },
-  {
-    title: "Review desk",
-    detail: "Click any image to open the review desk on the right. Approvals, rejects, and favorites sync between the thread and this panel — and every decision is written to the audit trail.",
-    points: [
-      "Click the image itself to expand it full-screen.",
-      "Approve / Reject / Favorite are one click and instantly reflected everywhere.",
-      "Audit trail logs who decided what and when."
-    ],
-    target: "review-panel",
-    selectOutput: true
-  },
-  {
-    title: "Approve, reject, favorite",
-    detail: "These three actions are the creative-director controls. Approved picks feed the export flow; favorites are your softer shortlist; rejects stay on record without cluttering the shortlist.",
-    target: "review-actions",
-    selectOutput: true
-  },
-  {
-    title: "Run metadata",
-    detail: "Everything needed to reproduce or explain a pick lives here: model, aspect/size, references used, Frank Body Mode, prompt, and provider IDs.",
-    points: [
-      "Copy the prompt or the round/asset ID.",
-      "Useful for client notes and repeat runs.",
-      "Feeds the audit trail on approve/reject."
-    ],
-    target: "review-metadata",
-    selectOutput: true
-  },
-  {
-    title: "Iterate from a pick",
-    detail: "Turn a selected result into the next brief: more like this, clean it up, or campaign remix. The prompt and settings update automatically.",
-    target: "variant-controls",
-    selectOutput: true
-  },
-
-  {
-    title: "Edit and reuse",
-    detail: "Edit with the selected model, paint a mask where supported, or reuse a good pick as a reference for the next round.",
-    target: "edit-controls",
-    selectOutput: true
-  },
-  {
-    title: "Export",
-    detail: "Once a pick is selected you can export it directly, retry a failed download, or grab the original untouched provider file.",
-    target: "export-controls",
-    selectOutput: true
-  },
-  {
-    title: "Admin portal",
-    detail: "Admins get a portal for managing user roles and triaging feedback as tasks on a Kanban board. First-time sign-ins default to the standard user role.",
-    points: [
-      "Users tab: promote or demote anyone (including admin).",
-      "Feedback Tasks tab: move items across Open / In progress / Done / Dismissed.",
-      "Only visible if your account has the admin role."
-    ],
-    target: "admin-entry"
-  }
-];
 
 // Official AutoSolutions OS tenant ambient ramps. Each theme re-tints the shell
 // gradient, the blurred blob and the accent from one brand colour.
@@ -289,9 +131,7 @@ export default function App() {
       delete document.body.dataset.feedbackView;
     };
   }, [studioMode]);
-  const [walkthroughOpen, setWalkthroughOpen] = useState(false);
   const [walkthroughStep, setWalkthroughStep] = useState(0);
-  const [walkthroughAnchor, setWalkthroughAnchor] = useState<WalkthroughAnchor | null>(null);
   const [settings, setSettings] = useState<StudioSettings>(defaultStudioSettings(fallbackConfig.models[0]));
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [lightboxAsset, setLightboxAsset] = useState<Asset | null>(null);
@@ -2522,101 +2362,6 @@ export default function App() {
 
 
 
-  const activeWalkthroughStep = WALKTHROUGH_STEPS[walkthroughStep] ?? WALKTHROUGH_STEPS[0];
-  const activeWalkthroughTarget = walkthroughOpen ? activeWalkthroughStep.target : null;
-  const tourActive = (target: WalkthroughTarget) => (activeWalkthroughTarget === target ? "true" : undefined);
-
-  useEffect(() => {
-    if (!walkthroughOpen) {
-      return;
-    }
-    if (activeWalkthroughStep.selectOutput && !selectedAsset && firstOutputAsset) {
-      setSelectedAsset(firstOutputAsset);
-      setLightboxAsset(null);
-    }
-    if (activeWalkthroughStep.target === "review-panel" || activeWalkthroughStep.target === "export-controls") {
-    }
-  }, [
-    activeWalkthroughStep.openSettings,
-    activeWalkthroughStep.selectOutput,
-    activeWalkthroughStep.target,
-    firstOutputAsset,
-    selectedAsset?.id,
-    walkthroughOpen
-  ]);
-
-  useEffect(() => {
-    if (!walkthroughOpen) {
-      setWalkthroughAnchor(null);
-      return;
-    }
-
-    const updateAnchor = () => {
-      setWalkthroughAnchor(measureWalkthroughAnchor(activeWalkthroughStep.target));
-    };
-    const targetElement = document.querySelector<HTMLElement>(`[data-tour-id="${activeWalkthroughStep.target}"]`);
-    if (targetElement) {
-      const rect = targetElement.getBoundingClientRect();
-      const absoluteTop = rect.top + window.scrollY;
-      const centeredTop = Math.max(0, absoluteTop - window.innerHeight / 2 + rect.height / 2);
-      if (!navigator.userAgent.toLowerCase().includes("jsdom")) {
-        window.scrollTo({ top: centeredTop, behavior: "auto" });
-      }
-      targetElement.scrollIntoView?.({ block: "center", inline: "nearest" });
-    }
-
-    const updateTimer = window.setTimeout(updateAnchor, 140);
-    window.addEventListener("resize", updateAnchor);
-    window.addEventListener("scroll", updateAnchor, true);
-    return () => {
-      window.clearTimeout(updateTimer);
-      window.removeEventListener("resize", updateAnchor);
-      window.removeEventListener("scroll", updateAnchor, true);
-    };
-  }, [
-    activeSession?.id,
-    activeWalkthroughStep.target,
-    assets.length,
-    selectedAsset?.id,
-    turns.length,
-    walkthroughOpen
-  ]);
-
-  useEffect(() => {
-    if (!walkthroughOpen) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setWalkthroughOpen(false);
-      }
-      if (event.key === "ArrowRight") {
-        setWalkthroughStep((current) => Math.min(current + 1, WALKTHROUGH_STEPS.length - 1));
-      }
-      if (event.key === "ArrowLeft") {
-        setWalkthroughStep((current) => Math.max(current - 1, 0));
-      }
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [walkthroughOpen]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("walkthrough") === "1") {
-      setWalkthroughStep(0);
-      setWalkthroughOpen(true);
-    }
-  }, []);
-
-
   /** Nav clicks: the five in-shell screens are a mode change, the rest are routes. */
   function goToScreen(screen: Screen) {
     
@@ -2742,8 +2487,6 @@ export default function App() {
             <form
                 className="composer"
                 onSubmit={handleGenerate}
-                data-tour-id="composer"
-                data-tour-active={tourActive("composer")}
               >
                 <div className="brief-card-head" aria-hidden="true">
                   <span className="brief-card-eyebrow">Brief</span>
@@ -2868,8 +2611,6 @@ export default function App() {
 
                 <div
                   className={`composer-actions${referenceDropActive ? " reference-drop-active" : ""}${referenceAssets.length ? " composer-actions--icons" : ""}`}
-                  data-tour-id="reference-dock"
-                  data-tour-active={tourActive("reference-dock")}
                   onDragOver={(event) => {
                     handlePromptDragOver(event);
                     setReferenceDropActive(true);
@@ -3096,8 +2837,6 @@ export default function App() {
               <section
                 className="thread-surface"
                 aria-label="Prompt and output thread"
-                data-tour-id="output-thread"
-                data-tour-active={tourActive("output-thread")}
               >
                 <div className="rounds-well-head" aria-hidden="true">
                   <span className="rounds-well-title">Rounds — newest first</span>
@@ -3666,24 +3405,6 @@ export default function App() {
 
 
 
-      {walkthroughOpen ? (
-        <WalkthroughOverlay
-          anchor={walkthroughAnchor}
-          step={activeWalkthroughStep}
-          stepIndex={walkthroughStep}
-          stepCount={WALKTHROUGH_STEPS.length}
-          onClose={() => setWalkthroughOpen(false)}
-          onNext={() => {
-            if (walkthroughStep === WALKTHROUGH_STEPS.length - 1) {
-              setWalkthroughOpen(false);
-            } else {
-              setWalkthroughStep((current) => Math.min(current + 1, WALKTHROUGH_STEPS.length - 1));
-            }
-          }}
-          onPrevious={() => setWalkthroughStep((current) => Math.max(current - 1, 0))}
-        />
-      ) : null}
-
       {sessionCancelTarget ? (
         <SessionCancelDialog
           session={sessionCancelTarget}
@@ -4045,70 +3766,6 @@ function ReferencePickerCard({
 
 
 
-function WalkthroughOverlay({
-  anchor,
-  step,
-  stepIndex,
-  stepCount,
-  onClose,
-  onNext,
-  onPrevious
-}: {
-  anchor: WalkthroughAnchor | null;
-  step: WalkthroughStep;
-  stepIndex: number;
-  stepCount: number;
-  onClose: () => void;
-  onNext: () => void;
-  onPrevious: () => void;
-}) {
-  const isLastStep = stepIndex === stepCount - 1;
-
-  return (
-    <>
-      <div className="walkthrough-scrim" aria-label="Walkthrough backdrop" />
-      {anchor ? <div className="walkthrough-target-highlight" style={anchor.highlightStyle} aria-hidden="true" /> : null}
-      <section
-        className={`walkthrough-popover ${anchor?.placement === "above" ? "above" : "below"}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Demo Walkthrough guide"
-        style={anchor?.popoverStyle}
-      >
-        <button className="walkthrough-close" type="button" onClick={onClose} aria-label="Close walkthrough">
-          <Icon source="x-mark" tone="inherit" size={18} />
-        </button>
-        <p className="eyebrow">Demo Walkthrough</p>
-        <span className="walkthrough-step-count">
-          Step {stepIndex + 1} of {stepCount}
-        </span>
-        <h2>{step.title}</h2>
-        <p>{step.detail}</p>
-        {step.points?.length ? (
-          <ul className="walkthrough-points">
-            {step.points.map((point) => (
-              <li key={point}>{point}</li>
-            ))}
-          </ul>
-        ) : null}
-        <div className="walkthrough-progress" aria-label="Walkthrough steps">
-          {WALKTHROUGH_STEPS.map((item, index) => (
-            <span className={index === stepIndex ? "active" : ""} key={item.title} aria-label={`Step ${index + 1}: ${item.title}`} />
-          ))}
-        </div>
-        <div className="walkthrough-actions">
-          <button className="secondary-button" type="button" onClick={onPrevious} disabled={stepIndex === 0}>
-            Back
-          </button>
-          <button className="primary-button" type="button" onClick={onNext}>
-            {isLastStep ? "Finish" : "Next"}
-          </button>
-        </div>
-      </section>
-    </>
-  );
-}
-
 function SessionCancelDialog({
   session,
   onCancel,
@@ -4142,50 +3799,6 @@ function SessionCancelDialog({
       </section>
     </div>
   );
-}
-
-function measureWalkthroughAnchor(target: WalkthroughTarget): WalkthroughAnchor | null {
-  if (typeof document === "undefined" || typeof window === "undefined") {
-    return null;
-  }
-
-  const targetElement = document.querySelector<HTMLElement>(`[data-tour-id="${target}"]`);
-  if (!targetElement) {
-    return null;
-  }
-
-  const rect = targetElement.getBoundingClientRect();
-  const viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-  const viewportHeight = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
-  const highlightPadding = 8;
-  const popoverWidth = Math.min(460, Math.max(300, viewportWidth - 32));
-  const popoverHeightEstimate = 360;
-  const targetTop = clamp(rect.top - highlightPadding, 10, Math.max(10, viewportHeight - 40));
-  const targetLeft = clamp(rect.left - highlightPadding, 10, Math.max(10, viewportWidth - 40));
-  const targetWidth = Math.max(48, Math.min(rect.width + highlightPadding * 2, viewportWidth - 20));
-  const targetHeight = Math.max(42, Math.min(rect.height + highlightPadding * 2, viewportHeight - 20));
-  const targetCenter = targetLeft + targetWidth / 2;
-  const preferredBelowTop = targetTop + targetHeight + 18;
-  const hasRoomBelow = preferredBelowTop + popoverHeightEstimate < viewportHeight - 16;
-  const popoverTop = hasRoomBelow ? preferredBelowTop : clamp(targetTop - popoverHeightEstimate - 18, 16, viewportHeight - popoverHeightEstimate - 16);
-  const popoverLeft = clamp(targetCenter - popoverWidth / 2, 16, Math.max(16, viewportWidth - popoverWidth - 16));
-  const arrowLeft = clamp(targetCenter - popoverLeft, 26, popoverWidth - 26);
-
-  return {
-    highlightStyle: {
-      top: targetTop,
-      left: targetLeft,
-      width: targetWidth,
-      height: targetHeight
-    },
-    popoverStyle: {
-      top: popoverTop,
-      left: popoverLeft,
-      width: popoverWidth,
-      "--walkthrough-arrow-left": `${arrowLeft}px`
-    } as CSSProperties,
-    placement: hasRoomBelow ? "below" : "above"
-  };
 }
 
 function clamp(value: number, min: number, max: number) {
