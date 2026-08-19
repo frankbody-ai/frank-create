@@ -11,6 +11,8 @@ import { CliffAccessPage } from "./components/CliffAccessPage";
 import { AdminPortal } from "./components/AdminPortal";
 import { SettingsPage } from "./components/SettingsPage";
 import { SmallScreenNotice } from "./components/SmallScreenNotice";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
+
 import { OAuthConsentPage } from "./components/OAuthConsentPage";
 import { installErrorReporter } from "./lib/errorReporter";
 import { applyTheme, storedTheme } from "./ds";
@@ -78,6 +80,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <SmallScreenNotice />
     <StatusBanner />
     <ErrorToast />
-    <Router />
+    <AppErrorBoundary>
+      <Router />
+    </AppErrorBoundary>
   </React.StrictMode>
 );
+
