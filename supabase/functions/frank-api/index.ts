@@ -1379,6 +1379,8 @@ async function handleInference(body: any, userId: string) {
   const partialErrors: Array<{ code: string; message: string; retryable: boolean; status?: number; request_id?: string }> = [];
   // The sanitised body we sent upstream, stored on the turn for troubleshooting.
   let providerRequest: unknown = null;
+  // Set when the round had to be re-run on Replicate after OpenRouter failed.
+  let usedFallback: { from: string; to: string; reason: string } | null = null;
 
   try {
     const refIds: string[] = [
