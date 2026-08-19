@@ -57,7 +57,6 @@ export default defineTool({
           id: asset.id,
           asset_type: asset.asset_type,
           model_key: asset.model_key,
-          approval_status: (meta.approval_status as string | undefined) ?? "none",
           width: meta.width ?? null,
           height: meta.height ?? null,
           aspect_ratio: meta.aspect_ratio ?? null,

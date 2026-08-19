@@ -108,7 +108,6 @@ var get_session_default = defineTool({
           id: asset.id,
           asset_type: asset.asset_type,
           model_key: asset.model_key,
-          approval_status: meta.approval_status ?? "none",
           width: meta.width ?? null,
           height: meta.height ?? null,
           aspect_ratio: meta.aspect_ratio ?? null,
@@ -128,25 +127,21 @@ import { z as z2 } from "npm:zod@^4.4.3";
 var list_assets_default = defineTool2({
   name: "list_assets",
   title: "List generated assets",
-  description: "List the signed-in user's generated images and videos, newest first, optionally filtered by session, media type or approval status.",
+  description: "List the signed-in user's generated images and videos, newest first, optionally filtered by session or media type.",
   inputSchema: {
     session_id: z2.string().describe("Only assets from this session id.").optional(),
     asset_type: z2.enum(["image", "video"]).describe("Filter by media type.").optional(),
-    approval_status: z2.enum(["approved", "rejected", "review", "any"]).describe("Filter by approval status. Defaults to any.").optional(),
     limit: z2.number().int().describe("How many assets to return (1-50).").optional(),
     include_urls: z2.boolean().describe("Include temporary signed download URLs.").optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ session_id, asset_type, approval_status, limit, include_urls }, ctx) => {
+  handler: async ({ session_id, asset_type, limit, include_urls }, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthenticated;
     const take = Math.min(Math.max(limit ?? 20, 1), 50);
     const supabase = supabaseForUser(ctx);
     let query = supabase.from("assets").select("id, session_id, asset_type, model_key, storage_path, prompt_snapshot, metadata_json, created_at").order("created_at", { ascending: false }).limit(take);
     if (session_id) query = query.eq("session_id", session_id);
     if (asset_type) query = query.eq("asset_type", asset_type);
-    if (approval_status && approval_status !== "any") {
-      query = query.eq("metadata_json->>approval_status", approval_status);
-    }
     const { data, error } = await query;
     if (error) return errorResult(error.message);
     const assets = await Promise.all(
@@ -157,7 +152,6 @@ var list_assets_default = defineTool2({
           session_id: asset.session_id,
           asset_type: asset.asset_type,
           model_key: asset.model_key,
-          approval_status: meta.approval_status ?? "none",
           width: meta.width ?? null,
           height: meta.height ?? null,
           aspect_ratio: meta.aspect_ratio ?? null,
@@ -261,7 +255,7 @@ var mcp = defineMcp({
   name: "frank-create",
   title: "frank Create",
   version: "0.1.0",
-  instructions: "Tools for the art-ificial studio (frank Create). Read the signed-in user's generation sessions and assets, approve or reject assets, inspect the available image/video models and prompt presets, and file feedback. Generation itself happens in the app UI.",
+  instructions: "Tools for the art-ificial studio (frank Create). Read the signed-in user's generation sessions and assets, inspect the available image/video models and prompt presets, and file feedback. Generation itself happens in the app UI.",
   auth: auth.oauth.issuer({
     issuer: `${DIRECT_SUPABASE_URL}/auth/v1`,
     acceptedAudiences: "authenticated",

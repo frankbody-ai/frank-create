@@ -12,7 +12,7 @@ const mcp: ReturnType<typeof defineMcp> = defineMcp({
   title: "frank Create",
   version: "0.1.0",
   instructions:
-    "Tools for the art-ificial studio (frank Create). Read the signed-in user's generation sessions and assets, approve or reject assets, inspect the available image/video models and prompt presets, and file feedback. Generation itself happens in the app UI.",
+    "Tools for the art-ificial studio (frank Create). Read the signed-in user's generation sessions and assets, inspect the available image/video models and prompt presets, and file feedback. Generation itself happens in the app UI.",
   auth: auth.oauth.issuer({
     issuer: `${DIRECT_SUPABASE_URL}/auth/v1`,
     acceptedAudiences: "authenticated",
