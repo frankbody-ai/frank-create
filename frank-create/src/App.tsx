@@ -575,15 +575,17 @@ export default function App() {
       .catch(() => { /* denied by default */ });
     return () => { live = false; };
   }, []);
+
+  const [compareMedia, setCompareMedia] = useState<"image" | "video">("image");
+  const [compareModelBId, setCompareModelBId] = useState<string>("");
+  const [compareApproved, setCompareApproved] = useState(false);
+
   useEffect(() => {
     if (videoAllowed) return;
     setMediaKind((current) => (current === "video" ? "image" : current));
     setCompareMedia((current) => (current === "video" ? "image" : current));
   }, [videoAllowed]);
 
-  const [compareMedia, setCompareMedia] = useState<"image" | "video">("image");
-  const [compareModelBId, setCompareModelBId] = useState<string>("");
-  const [compareApproved, setCompareApproved] = useState(false);
 
 
   useEffect(() => {
