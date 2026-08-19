@@ -1480,6 +1480,11 @@
 .lightbox-close:hover,
 .reference-picker-close:hover { background: rgba(255, 255, 255, 0.28); }
 .reference-picker-close { background: var(--color-bg-fill-secondary); color: var(--color-text); }
+.compare-modal-inner .lightbox-close,
+.mask-painter .lightbox-close,
+.session-cancel-card .lightbox-close,
+.payload-modal .lightbox-close { background: var(--color-bg-fill-secondary); color: var(--color-text); }
+
 .lightbox-meta {
   display: flex;
   flex-wrap: wrap;
