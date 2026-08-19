@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS, hardSignOut } from "./lib/supabaseClient";
 import { lovable } from "./lib/lovableAuth";
+import { getMyAccessState } from "./lib/admin";
 import { AuthLayout, SignIn, GoogleButton, Button, Spinner, Text } from "./ds";
 
-type Status = "loading" | "signed-out" | "denied" | "ready";
+type Status = "loading" | "signed-out" | "denied" | "pending" | "ready";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
@@ -25,6 +26,17 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         setError(`Access is for ${ALLOWED_EMAIL_DOMAINS.map((d) => "@" + d).join(" and ")} accounts only. (${email ?? "no email"})`);
         return setStatus("denied");
       }
+      // A second gate: admins can require explicit approval per person.
+      try {
+        const access = await getMyAccessState();
+        if (!mounted) return;
+        if (access.require_approval && !access.approved && !access.is_admin) {
+          setError(null);
+          return setStatus("pending");
+        }
+      } catch {
+        /* if the check itself fails, don't lock people out of a working session */
+      }
       setStatus("ready");
     };
 
@@ -35,6 +47,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       sub.subscription.unsubscribe();
     };
   }, []);
+
 
   const signIn = async () => {
     setError(null);
