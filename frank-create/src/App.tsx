@@ -730,6 +730,14 @@ export default function App() {
     void handleGenerate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRetryModelId, selectedModelId]);
+  // Round-level retry: retryTurn refills prompt/model/settings/references, then
+  // bumps this token so the run fires on the committed state, not a stale closure.
+  useEffect(() => {
+    if (!retryRunToken) return;
+    void handleGenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retryRunToken]);
+
   const providerAuditMode = shouldAutoOpenProviderAudit();
   const modelOptions = useMemo(() => selectModelOptions(config.models, selectedModelId), [config.models, selectedModelId]);
   const allowedSizesForAspect = useMemo(
