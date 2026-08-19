@@ -11,7 +11,7 @@ import {
 
 
 interface Props {
-  onUsePrompt?: (prompt: string) => void;
+  onUsePrompt?: (prompt: string, images?: string[]) => void;
   onStatus?: (msg: string) => void;
 }
 
