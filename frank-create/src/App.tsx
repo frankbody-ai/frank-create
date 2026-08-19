@@ -783,10 +783,6 @@ export default function App() {
     }
   }, [selectedModel]);
 
-  useEffect(() => {
-    setAssetNotesDraft(selectedAsset?.notes ?? "");
-  }, [selectedAsset?.id]);
-
   // Dock order (activeReferenceIds) drives @refN tags and video frame order.
   const referenceAssets = activeReferenceIds
     .map((id) => assets.find((asset) => asset.id === id && asset.kind === "reference"))
@@ -1030,12 +1026,12 @@ export default function App() {
       return;
     }
 
-    const projectForSession = projects.find((project) => project.id === session.project_id) ?? activeProject;
+    const [turnResult, assetResult] = await Promise.all([
+      listTurns(session.id),
+      listAssets({ sessionId: session.id })
+    ]);
     setTurns(turnResult.turns);
     setAssets(assetResult.assets);
-    setActiveProject(projectForSession ?? null);
-    setActiveBrief(briefResult.briefs[0] ?? null);
-    setBriefDraft(briefResult.briefs[0] ? briefToDraft(briefResult.briefs[0]) : makeBriefDraft());
     setSelectedAsset(firstReviewableAsset(assetResult.assets));
   }
 
