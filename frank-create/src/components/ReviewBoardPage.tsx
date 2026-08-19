@@ -12,7 +12,6 @@ import {
   Spinner,
   Text,
   TextField,
-  Thumbnail,
 } from "../ds";
 import type { DataTableColumn } from "../ds";
 import { Shell } from "../Shell";
@@ -425,10 +424,6 @@ function ReviewBoard({ sessionId }: { sessionId: string }) {
   function clearFilters() {
     setFltTransitions(new Set()); setFltAsset(""); setFltActor("");
     setFltFrom(""); setFltTo(""); setFltQuery("");
-  }
-  function toggleSort(col: typeof sortBy) {
-    if (sortBy === col) setSortDir((d) => d === "asc" ? "desc" : "asc");
-    else { setSortBy(col); setSortDir(col === "time" ? "desc" : "asc"); }
   }
 
   const all = board?.assets ?? [];

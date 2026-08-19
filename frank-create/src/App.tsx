@@ -11,18 +11,14 @@ import {
 import { createPortal } from "react-dom";
 
 import {
-  ActionList,
   Badge,
   Banner,
   Button,
-  Card,
   Icon,
   PageHeader,
   Pagination,
-  Popover,
 
   Spinner,
-  Text
 } from "./ds";
 import { Shell } from "./Shell";
 import { modeFromUrl, navigate } from "./nav";
@@ -31,48 +27,25 @@ import type { InAppScreen, Screen } from "./nav";
 import {
   fetchActivationChecklist,
   assetWorkflowReceiptUrl,
-  createAsset,
-  createAssetChannelSet,
-  createBrief,
-  createBrandContextReceipt,
-  createDemoCallBrief,
-  createDemoEvidence,
-  createDemoReadinessPack,
-  createProviderEnvTemplate,
-  createExport,
   createInferenceTurn,
   fetchTurnStatus,
-  createProject,
   createProviderReadinessReceipt,
   createReference,
   createSession,
-  createSessionHandoff,
   createVideoStoryboard,
   deleteAsset,
   deleteTurn,
-  exportDownloadUrl,
   fetchBrandKit,
   fetchConfig,
-  fetchDemoDoctor,
   fetchHealth,
-  fetchProviderAudit,
   fetchProviderEnvStatus,
-  fetchProviderStatus,
   listBriefs,
   listExports,
   listAssets,
   listProjects,
   listSessions,
   listTurns,
-  preflightProvider,
-  reloadProviderEnv,
-  resetDemo,
-  saveProviderEnvKeys,
-  sessionReviewBoardUrl,
-  sessionSyncManifestUrl,
   updateAsset,
-  updateBrief,
-  updateBrandKit,
   updateSession
 } from "./lib/api";
 
@@ -91,7 +64,6 @@ import {
   selectModelOptions,
   validateStudioSettings,
   hasStudioFieldErrors,
-  preflightModel,
   maxCountForModel,
   modelsForMedia,
   normalizeVideoSettings,
@@ -321,23 +293,19 @@ const TENANT_THEMES = [
   { id: "enxgy", label: "enxgy", hex: "#00C6E4" }
 ] as const;
 
-type TenantThemeId = (typeof TENANT_THEMES)[number]["id"];
 
 export default function App() {
 
   const [config, setConfig] = useState<FrankConfig>(fallbackConfig);
   const [connection, setConnection] = useState<"checking" | "online" | "offline">("checking");
   const [projects, setProjects] = useState<Project[]>([]);
-  const [briefs, setBriefs] = useState<Brief[]>([]);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [activeBrief, setActiveBrief] = useState<Brief | null>(null);
-  const [projectName, setProjectName] = useState("Frank Body Campaign");
   const [briefDraft, setBriefDraft] = useState<BriefFormState>(() => makeBriefDraft());
   const [sessions, setSessions] = useState<StudioSession[]>([]);
   const [activeSession, setActiveSession] = useState<StudioSession | null>(null);
   const [turns, setTurns] = useState<StudioTurn[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [exports, setExports] = useState<ExportRecord[]>([]);
   const [prompt, setPrompt] = useState("");
   const [selectedModelId, setSelectedModelId] = useState(
     () => preferredStudioModel(fallbackConfig.models, readLastUsedModelId()).id
@@ -345,24 +313,11 @@ export default function App() {
   const [expandedPromptTurnIds, setExpandedPromptTurnIds] = useState<string[]>([]);
   const [selectedPresetKey, setSelectedPresetKey] = useState<string | null>(null);
   const [attachedPresetSnapshot, setAttachedPresetSnapshot] = useState<string | null>(null);
-  const [customPresets, setCustomPresets] = useState<PromptPreset[]>(() => {
-    try {
-      const raw = typeof window !== "undefined" ? window.localStorage.getItem("frank.customPromptPresets") : null;
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed.filter((p) => p && typeof p.key === "string" && typeof p.label === "string" && typeof p.prompt === "string") : [];
-    } catch { return []; }
-  });
-  const customPresetKeys = useMemo(() => new Set(customPresets.map((p) => p.key)), [customPresets]);
-  const [newPresetOpen, setNewPresetOpen] = useState(false);
-  const [newPresetLabel, setNewPresetLabel] = useState("");
-  const [newPresetPrompt, setNewPresetPrompt] = useState("");
   useEffect(() => {
     try { window.localStorage.setItem("frank.customPromptPresets", JSON.stringify(customPresets)); } catch { /* ignore */ }
   }, [customPresets]);
   const [frankBodyMode, setFrankBodyMode] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setUserEmail(s?.user?.email ?? null));
@@ -375,10 +330,6 @@ export default function App() {
     });
     return () => { cancelled = true; };
   }, [userEmail]);
-  const handleSignOut = async () => {
-    await hardSignOut();
-    window.location.replace("/");
-  };
   const [studioMode, setStudioMode] = useState<InAppScreen>(() => modeFromUrl());
   useEffect(() => {
     document.body.dataset.feedbackView = studioMode;
@@ -389,7 +340,6 @@ export default function App() {
   const [walkthroughOpen, setWalkthroughOpen] = useState(false);
   const [walkthroughStep, setWalkthroughStep] = useState(0);
   const [walkthroughAnchor, setWalkthroughAnchor] = useState<WalkthroughAnchor | null>(null);
-  const [reviewFilter, setReviewFilter] = useState<"all" | "approved">("all");
   const [settings, setSettings] = useState<StudioSettings>(defaultStudioSettings(fallbackConfig.models[0]));
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [lightboxAsset, setLightboxAsset] = useState<Asset | null>(null);
@@ -443,48 +393,13 @@ export default function App() {
   const [activeReferenceIds, setActiveReferenceIds] = useState<string[]>([]);
 
   const [assetNotesDraft, setAssetNotesDraft] = useState("");
-  const [providerReadiness, setProviderReadiness] = useState<ProviderReadiness | null>(null);
   const [activationChecklist, setActivationChecklist] = useState<ActivationChecklist | null>(null);
   const [providerEnvStatus, setProviderEnvStatus] = useState<ProviderEnvStatus | null>(null);
   const [providerKeyDraft, setProviderKeyDraft] = useState<Record<string, string>>({});
-  const [providerPreflight, setProviderPreflight] = useState<ProviderPreflight | null>(null);
   const [providerAudit, setProviderAudit] = useState<ProviderAdapterAudit | null>(null);
-  const [brandKit, setBrandKit] = useState<BrandKit>(fallbackBrandKit);
-  const [brandKitDraft, setBrandKitDraft] = useState<BrandKit>(fallbackBrandKit);
-  const [demoDoctor, setDemoDoctor] = useState<DemoDoctorStatus | null>(null);
-  const [checkingProviders, setCheckingProviders] = useState(false);
-  const [checkingProviderPreflight, setCheckingProviderPreflight] = useState(false);
-  const [checkingProviderAudit, setCheckingProviderAudit] = useState(false);
-  const [savingProviderReceipt, setSavingProviderReceipt] = useState(false);
-  const [checkingDemoDoctor, setCheckingDemoDoctor] = useState(false);
-  const [resettingDemo, setResettingDemo] = useState(false);
-  const [savingDemoEvidence, setSavingDemoEvidence] = useState(false);
-  const [savingCallBrief, setSavingCallBrief] = useState(false);
-  const [buildingReadinessPack, setBuildingReadinessPack] = useState(false);
-  const [demoEvidencePath, setDemoEvidencePath] = useState("");
-  const [demoEvidenceUrl, setDemoEvidenceUrl] = useState("");
-  const [callBriefPath, setCallBriefPath] = useState("");
-  const [callBriefUrl, setCallBriefUrl] = useState("");
-  const [callDecision, setCallDecision] = useState<DemoCallDecision | null>(null);
-  const [providerReceiptPath, setProviderReceiptPath] = useState("");
-  const [providerReceiptUrl, setProviderReceiptUrl] = useState("");
-  const [brandContextPath, setBrandContextPath] = useState("");
-  const [brandContextUrl, setBrandContextUrl] = useState("");
-  const [activationChecklistPath, setActivationChecklistPath] = useState("");
-  const [activationChecklistUrl, setActivationChecklistUrl] = useState("");
-  const [readinessPackPath, setReadinessPackPath] = useState("");
-  const [readinessPackUrl, setReadinessPackUrl] = useState("");
   const [readinessPackSha, setReadinessPackSha] = useState("");
-  const [implementationManifestPath, setImplementationManifestPath] = useState("");
-  const [implementationManifestUrl, setImplementationManifestUrl] = useState("");
   const [readinessPackManifest, setReadinessPackManifest] = useState<DemoReadinessPackResult["manifest"] | null>(null);
-  const [providerEnvBusy, setProviderEnvBusy] = useState(false);
   const [maskPainterBusy, setMaskPainterBusy] = useState(false);
-  const [brandKitBusy, setBrandKitBusy] = useState(false);
-  const [brandContextBusy, setBrandContextBusy] = useState(false);
-  const [briefBusy, setBriefBusy] = useState(false);
-  const [handoffBusy, setHandoffBusy] = useState(false);
-  const [handoffProofText, setHandoffProofText] = useState("");
   const [busy, setBusy] = useState(false);
   // `compareGroup` ties the two sides of a side-by-side run together so the
   // timeline shows one loading round with two slots, not two separate rounds.
@@ -764,13 +679,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryRunToken]);
 
-  const providerAuditMode = shouldAutoOpenProviderAudit();
   const modelOptions = useMemo(() => selectModelOptions(config.models, selectedModelId), [config.models, selectedModelId]);
-  const allowedSizesForAspect = useMemo(
-    () => filterSizesForAspect(modelOptions.allowedImageSizes, settings.aspect_ratio),
-    [modelOptions.allowedImageSizes, settings.aspect_ratio]
-  );
-  const modelHasSizes = (modelOptions.allowedImageSizes?.length ?? 0) > 0;
   // In side-by-side mode the model pool follows the compare sub-media toggle.
   const effectiveMedia: "image" | "video" = mediaKind === "compare" ? compareMedia : mediaKind;
   const mediaModels = useMemo(() => modelsForMedia(config.models, effectiveMedia), [config.models, effectiveMedia]);
@@ -894,23 +803,6 @@ export default function App() {
     [config.models, connection]
   );
   const providerUnlockRows = useMemo(() => (connection === "online" ? providerUnlockPlan(config.models) : []), [config.models, connection]);
-  const providerKeyEnvVars = useMemo(() => {
-    if (connection !== "online") {
-      return [];
-    }
-    const missingFromStatus = providerEnvStatus?.missingEnvVars ?? [];
-    if (missingFromStatus.length) {
-      return orderProviderEnvVars(missingFromStatus, providerUnlockRows);
-    }
-    if (providerSetupState.envVars.length) {
-      return providerSetupState.envVars;
-    }
-    return orderProviderEnvVars(providerEnvStatus?.envVars ?? [], providerUnlockRows);
-  }, [connection, providerEnvStatus?.envVars, providerEnvStatus?.missingEnvVars, providerSetupState.envVars, providerUnlockRows]);
-  const providerKeyDraftHasValues = useMemo(
-    () => Object.values(providerKeyDraft).some((value) => value.trim().length > 0),
-    [providerKeyDraft]
-  );
   const promptPresets = useMemo(
     () => [...config.promptPresets, ...customPresets],
     [config.promptPresets, customPresets]
@@ -962,11 +854,6 @@ export default function App() {
 
 
 
-  function startMaskPainter(asset: Asset) {
-    setEditSourceAsset(asset);
-    setMaskAsset(null);
-    setMaskPainterAsset(asset);
-  }
 
   useEffect(() => {
     if (!selectedModel) {
@@ -984,7 +871,6 @@ export default function App() {
     setAssetNotesDraft(selectedAsset?.notes ?? "");
   }, [selectedAsset?.id]);
 
-  const activeReferenceIdSet = useMemo(() => new Set(activeReferenceIds), [activeReferenceIds]);
   // Dock order (activeReferenceIds) drives @refN tags and video frame order.
   const referenceAssets = activeReferenceIds
     .map((id) => assets.find((asset) => asset.id === id && asset.kind === "reference"))
@@ -1130,7 +1016,6 @@ export default function App() {
   const approvedMotionCount = outputAssets.filter(
     (asset) => asset.approval_status === "approved" && asset.media_type === "video"
   ).length;
-  const favoriteCount = outputAssets.filter((asset) => asset.favorite).length;
   const promptMode = editSourceAsset ? (maskAsset ? "masked_edit" : "edit") : "generate";
   const primaryActionLabel =
     mediaKind === "compare"
@@ -1143,32 +1028,7 @@ export default function App() {
             ? "Edit"
             : "Generate";
 
-  const selectedExportPresets = useMemo(
-    () => (selectedAsset ? exportPresetsForAsset(config.exportPresets, selectedAsset) : []),
-    [config.exportPresets, selectedAsset]
-  );
-  const imageExportPresetCount = useMemo(
-    () => config.exportPresets.filter((preset) => (preset.media_types ?? ["image"]).includes("image")).length,
-    [config.exportPresets]
-  );
-  const selectedAssetMetadata = useMemo(
-    () => (selectedAsset ? selectedAssetReviewMetadata(selectedAsset, assets, config, turns) : null),
-    [assets, config, selectedAsset, turns]
-  );
-  const cliffGuideSteps = useMemo(
-    () => buildCliffGuideSteps(outputAssets, referenceAssets, approvedCount, approvedMotionCount),
-    [approvedCount, approvedMotionCount, outputAssets, referenceAssets]
-  );
-  const cliffGuideProofs = useMemo(
-    () => buildCliffGuideProofs(demoDoctor, readinessPackManifest),
-    [demoDoctor, readinessPackManifest]
-  );
-  const launchReadinessItems = useMemo(
-    () => buildLaunchReadinessItems(config, providerSetupState.waitingModels.length, demoDoctor, activationChecklist, readinessPackSha),
-    [activationChecklist, config, demoDoctor, providerSetupState.waitingModels.length, readinessPackSha]
-  );
   const mainDemoSession = useMemo(() => sessions.find(isMainDemoSession) ?? null, [sessions]);
-  const showMainDemoAction = Boolean(mainDemoSession && activeSession?.id !== mainDemoSession.id);
 
   function showImageStudio() {
     setStudioMode("studio");
@@ -1251,15 +1111,6 @@ export default function App() {
     );
   }
 
-  async function returnToMainDemo() {
-    if (!mainDemoSession) {
-      setStatusText("Main demo session is not loaded yet.");
-      return;
-    }
-
-    await selectSession(mainDemoSession);
-    setStatusText("Back to the Frank Body demo.");
-  }
 
   async function selectSession(session: StudioSession) {
     setActiveSession(session);
@@ -1336,88 +1187,7 @@ export default function App() {
     await archiveSession(target);
   }
 
-  function hydrateLatestDemoArtifacts(report: DemoDoctorStatus) {
-    if (report.summary.demoEvidenceReady) {
-      setDemoEvidencePath("frank-create-demo-evidence-latest.md");
-      setDemoEvidenceUrl("/api/frank/demo/evidence/frank-create-demo-evidence-latest.md");
-    } else {
-      setDemoEvidencePath("");
-      setDemoEvidenceUrl("");
-    }
 
-    if (report.summary.callBriefReady) {
-      setCallBriefPath("frank-create-call-brief-latest.md");
-      setCallBriefUrl("/api/frank/demo/call-brief/frank-create-call-brief-latest.md");
-    } else {
-      setCallBriefPath("");
-      setCallBriefUrl("");
-    }
-    setCallDecision(null);
-
-    if (report.summary.providerReadinessReceiptReady) {
-      setProviderReceiptPath("frank-create-provider-readiness-latest.md");
-      setProviderReceiptUrl("/api/frank/demo/provider-readiness/frank-create-provider-readiness-latest.md");
-    } else {
-      setProviderReceiptPath("");
-      setProviderReceiptUrl("");
-    }
-
-    if (report.summary.brandContextReceiptReady) {
-      setBrandContextPath("frank-create-brand-context-latest.md");
-      setBrandContextUrl("/api/frank/demo/brand-context/frank-create-brand-context-latest.md");
-    } else {
-      setBrandContextPath("");
-      setBrandContextUrl("");
-    }
-
-    if (report.summary.activationChecklistReady) {
-      setActivationChecklistPath("frank-create-activation-checklist-latest.md");
-      setActivationChecklistUrl("/api/frank/demo/activation-checklist/frank-create-activation-checklist-latest.md");
-    } else {
-      setActivationChecklistPath("");
-      setActivationChecklistUrl("");
-    }
-
-    if (report.summary.readinessPackReady) {
-      setReadinessPackPath("frank-create-cliff-readiness-latest.zip");
-      setReadinessPackUrl("/api/frank/demo/readiness-pack/frank-create-cliff-readiness-latest.zip");
-      setReadinessPackSha(report.summary.readinessPackSha256 ?? "");
-      setImplementationManifestPath("frank-create-implementation-manifest-latest.md");
-      setImplementationManifestUrl("/api/frank/demo/readiness-pack/frank-create-implementation-manifest-latest.md");
-      setReadinessPackManifest(null);
-    } else {
-      setReadinessPackPath("");
-      setReadinessPackUrl("");
-      setReadinessPackSha("");
-      setImplementationManifestPath("");
-      setImplementationManifestUrl("");
-      setReadinessPackManifest(null);
-    }
-  }
-
-  async function saveProviderReadinessReceipt() {
-    if (connection !== "online") {
-      setStatusText("Connect to the studio backend to save the provider receipt.");
-      return;
-    }
-
-    setSavingProviderReceipt(true);
-    try {
-      const result = await createProviderReadinessReceipt();
-      setProviderReceiptPath(result.latest_markdown_file ?? result.latest_markdown_path ?? result.markdown_file ?? result.markdown_path);
-      setProviderReceiptUrl(result.latest_markdown_url ?? result.markdown_url);
-      setProviderAudit(result.receipt.adapter_audit);
-      openStudioLink(
-        result.latest_markdown_url ?? result.markdown_url,
-        "Provider receipt",
-        `Provider receipt saved: ${result.latest_markdown_file ?? result.markdown_file}`
-      );
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not save provider readiness receipt.");
-    } finally {
-      setSavingProviderReceipt(false);
-    }
-  }
 
   function openStudioLink(url: string | undefined, label: string, openingText?: string) {
     if (!url) {
@@ -1441,47 +1211,8 @@ export default function App() {
     }
   }
 
-  async function copyProviderKeyPlan() {
-    const plan = providerKeyPlanText({
-      rows: providerUnlockRows,
-      envVars: providerSetupState.envVars,
-      readyModels: providerReadiness?.summary.readyModels,
-      modelCount: providerReadiness?.summary.modelCount ?? config.models.filter((model) => model.provider !== "local").length,
-      keyFilePath: providerEnvStatus?.filePath ?? "user\\frank_create\\provider_keys.env"
-    });
 
-    try {
-      if (!navigator.clipboard?.writeText) {
-        throw new Error("Clipboard API unavailable");
-      }
-      await navigator.clipboard.writeText(plan);
-      setStatusText("Provider key plan copied for Cliff. No secret values included.");
-    } catch {
-      setStatusText("Could not copy the provider key plan. Use the visible Cliff key order instead.");
-    }
-  }
 
-  async function copyProductionUnlockPlan() {
-    if (!activationChecklist) {
-      setStatusText("Run the activation checklist before copying the production unlock plan.");
-      return;
-    }
-
-    const plan = productionUnlockPlanText(activationChecklist);
-    try {
-      if (!navigator.clipboard?.writeText) {
-        throw new Error("Clipboard API unavailable");
-      }
-      await navigator.clipboard.writeText(plan);
-      setStatusText("Production unlock plan copied for Cliff. No secret values included.");
-    } catch {
-      setStatusText("Could not copy the production unlock plan. Use the visible activation checklist instead.");
-    }
-  }
-
-  function updateProviderKeyDraft(envVar: string, value: string) {
-    setProviderKeyDraft((current) => ({ ...current, [envVar]: value }));
-  }
 
   function inspectAsset(asset: Asset) {
 
@@ -1501,12 +1232,6 @@ export default function App() {
     setLightboxAsset(asset);
   }
 
-  function startCompare(asset: Asset) {
-    setCompareBaseAsset(asset);
-    setCompareTargetAsset(null);
-    setLightboxAsset(null);
-    setStatusText("Choose another output to compare.");
-  }
 
   function clearCompare() {
     setCompareBaseAsset(null);
@@ -1715,11 +1440,6 @@ export default function App() {
     }
   }
 
-  async function handleReferenceUpload(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []);
-    await addReferenceFiles(files);
-    event.target.value = "";
-  }
 
   /** Files dropped straight onto the picker's upload tile from Finder. */
   async function handlePickerFiles(files: File[]) {
@@ -2786,50 +2506,7 @@ export default function App() {
 
 
 
-  async function toggleFavorite(asset: Asset) {
-    const optimistic = { ...asset, favorite: !asset.favorite };
-    setAssets((current) => current.map((item) => (item.id === asset.id ? optimistic : item)));
-    setSelectedAsset(optimistic);
-    syncCompareAsset(optimistic);
 
-    try {
-      if (connection === "online") {
-        const updated = await updateAsset(asset.id, { favorite: !asset.favorite });
-        setAssets((current) => current.map((item) => (item.id === updated.asset.id ? updated.asset : item)));
-        setSelectedAsset(updated.asset);
-        syncCompareAsset(updated.asset);
-      }
-    } catch (error) {
-      setAssets((current) => current.map((item) => (item.id === asset.id ? asset : item)));
-      setSelectedAsset(asset);
-      syncCompareAsset(asset);
-      setStatusText(error instanceof Error ? error.message : "Could not update favorite.");
-    }
-  }
-
-  async function saveAssetNotes(asset: Asset) {
-    const optimistic = { ...asset, notes: assetNotesDraft };
-    setAssets((current) => current.map((item) => (item.id === asset.id ? optimistic : item)));
-    setSelectedAsset(optimistic);
-    syncCompareAsset(optimistic);
-
-    try {
-      if (connection === "online") {
-        const updated = await updateAsset(asset.id, { notes: assetNotesDraft });
-        setAssets((current) => current.map((item) => (item.id === updated.asset.id ? updated.asset : item)));
-        setSelectedAsset(updated.asset);
-        syncCompareAsset(updated.asset);
-      }
-
-      setStatusText("Note saved for the next round.");
-    } catch (error) {
-      setAssets((current) => current.map((item) => (item.id === asset.id ? asset : item)));
-      setSelectedAsset(asset);
-      syncCompareAsset(asset);
-      setAssetNotesDraft(asset.notes ?? "");
-      setStatusText(error instanceof Error ? error.message : "Could not save review note.");
-    }
-  }
 
   async function useAssetAsReference(asset: Asset) {
     if (!activeSession) {
@@ -2936,67 +2613,8 @@ export default function App() {
 
 
 
-  async function removeAssetFromSession(asset: Asset) {
-    try {
-      if (connection === "online") {
-        await deleteAsset(asset.id);
-      }
-      setAssets((current) => current.filter((item) => item.id !== asset.id));
-      setExports((current) => current.filter((record) => record.asset_id !== asset.id));
-      setSelectedAsset((current) => {
-        if (current?.id !== asset.id) {
-          return current;
-        }
-        return assets.find((item) => item.id !== asset.id && !["reference", "mask"].includes(item.kind)) ?? null;
-      });
-      if (lightboxAsset?.id === asset.id) {
-        setLightboxAsset(null);
-      }
-      if (compareBaseAsset?.id === asset.id || compareTargetAsset?.id === asset.id) {
-        clearCompare();
-      }
-      if (editSourceAsset?.id === asset.id) {
-        clearEditSource();
-      }
-      if (maskAsset?.id === asset.id) {
-        setMaskAsset(null);
-      }
-      setStatusText(asset.kind === "reference" ? "Reference removed from this session." : "Asset removed from this session.");
-    } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "Could not remove this asset.");
-    }
-  }
 
-  async function copyRunBrief(asset: Asset) {
-    const brief = selectedAssetRunBrief(asset, assets, config, turns);
-    try {
-      if (!navigator.clipboard?.writeText) {
-        throw new Error("Clipboard API unavailable");
-      }
-      await navigator.clipboard.writeText(brief);
-      setStatusText("Run brief copied for the handoff.");
-    } catch {
-      setStatusText("Could not copy the run brief. Use the export metadata instead.");
-    }
-  }
 
-  function downloadWorkflowJson(asset: Asset) {
-    try {
-      const workflowJson = selectedAssetWorkflowJson(asset, assets, config, turns);
-      const blob = new Blob([JSON.stringify(workflowJson, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `${safeFileStem(asset.title || asset.id)}-workflow.json`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
-      setStatusText("Workflow JSON downloaded for this pick.");
-    } catch {
-      setStatusText("Could not download workflow JSON for this pick.");
-    }
-  }
 
   // Save the file itself. The backend has no /assets/:id/download route, and
   // opening the signed storage URL in a tab just previews it, so fetch the
@@ -3055,9 +2673,6 @@ export default function App() {
   }
 
 
-  function selectPreset(preset: PromptPreset) {
-    attachPreset(preset.key);
-  }
 
 
   function selectTaskShortcut(task: FrankTask) {
@@ -3070,32 +2685,7 @@ export default function App() {
     setStatusText(`${task.label} is loaded.`);
   }
 
-  function makeAnotherRound(asset: Asset, direction: "similar" | "cleanup" | "campaign") {
-    const presetKey =
-      direction === "cleanup" ? "clean-ecom" : direction === "campaign" ? "campaign-variants" : selectedPresetKey;
-    const preset = promptPresets.find((item) => item.key === presetKey) ?? activePreset;
-    const editModel =
-      selectedModel?.capabilities.edit
-        ? selectedModel
-        : config.models.find((model) => model.capabilities.edit && model.configured !== false) ??
-          config.models.find((model) => model.capabilities.edit);
-    if (editModel) {
-      setSelectedModelId(editModel.id);
-    }
-    setSelectedPresetKey(preset?.key ?? selectedPresetKey);
-    setAttachedPresetSnapshot(null);
-    startEditFromAsset(asset);
-    setPrompt(nextRoundPrompt(asset, direction, preset));
-    setSettings((current) => ({ ...current, count: Math.min(4, maxCountForModel(selectedModel)) }));
-    setLightboxAsset(null);
-    clearCompare();
-    setStatusText("Next round is briefed from this pick.");
-  }
 
-  function startWalkthrough() {
-    setWalkthroughStep(0);
-    setWalkthroughOpen(true);
-  }
 
   const activeWalkthroughStep = WALKTHROUGH_STEPS[walkthroughStep] ?? WALKTHROUGH_STEPS[0];
   const activeWalkthroughTarget = walkthroughOpen ? activeWalkthroughStep.target : null;
@@ -4909,9 +4499,6 @@ function taskShortcutIcon(taskKey: string) {
   return <Icon source="arrow-path" tone="inherit" size={15} />;
 }
 
-function formatCount(count: number, singular: string, plural = `${singular}s`) {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
 
 function AssetPreviewMedia({
   asset,
@@ -5408,44 +4995,8 @@ function filterExportsForAssets(records: ExportRecord[], assets: Asset[]) {
   return records.filter((record) => assetIds.has(record.asset_id));
 }
 
-function normalizeExportRecord(record: ExportRecord, fallback: Partial<ExportRecord>) {
-  return {
-    ...fallback,
-    ...record,
-    asset_id: record.asset_id ?? fallback.asset_id ?? "",
-    preset: record.preset ?? fallback.preset ?? "export-pack",
-    metadata_json: record.metadata_json ?? fallback.metadata_json ?? "{}",
-    sync_status: record.sync_status ?? fallback.sync_status ?? "local",
-    remote_id: record.remote_id ?? fallback.remote_id,
-    created_at: record.created_at ?? new Date().toISOString()
-  } as ExportRecord;
-}
 
-function exportRecordLabel(record: ExportRecord, presets: ExportPreset[]) {
-  if (record.preset === "session-handoff") {
-    return "Cliff Pack";
-  }
-  return presets.find((preset) => preset.key === record.preset)?.label ?? titleize(record.preset ?? "export-pack");
-}
 
-function exportRecordMeta(record: ExportRecord, assets: Asset[]) {
-  const created = record.created_at ? new Date(record.created_at) : null;
-  const createdLabel = created && !Number.isNaN(created.getTime()) ? created.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "saved";
-  if (record.preset === "session-handoff") {
-    const metadata = parseExportMetadata(record.metadata_json);
-    const assetCount = Number(metadata.asset_count ?? metadata.approved_assets ?? 0);
-    const referenceCount = Number(metadata.reference_count ?? metadata.references ?? 0);
-    const videoCount = Number(metadata.video_count ?? metadata.approved_videos ?? 0);
-    const parts = [
-      `${assetCount} approved`,
-      videoCount > 0 ? `${videoCount} motion` : null,
-      `${referenceCount} refs`
-    ].filter(Boolean);
-    return `${parts.join(" / ")} / ${createdLabel}`;
-  }
-  const asset = assets.find((item) => item.id === record.asset_id);
-  return `${asset?.title ?? "Export pack"} / ${createdLabel}`;
-}
 
 function parseExportMetadata(metadataJson?: string) {
   if (!metadataJson) {
@@ -5771,25 +5322,7 @@ function referenceCountLabel(count: number) {
   return `${count} reference${count === 1 ? "" : "s"}`;
 }
 
-function doctorStatusIcon(status: "ready" | "warning" | "fail") {
-  if (status === "ready") {
-    return "OK";
-  }
-  if (status === "warning") {
-    return "!";
-  }
-  return "Fix";
-}
 
-function activationStatusIcon(status: ActivationChecklist["steps"][number]["status"]) {
-  if (status === "ready") {
-    return "OK";
-  }
-  if (status === "recommended") {
-    return "Tip";
-  }
-  return "Do";
-}
 
 function activationPathLabel(path: string) {
   return /models[\\/]+checkpoints$/i.test(path) ? "models\\checkpoints" : path;
@@ -5803,15 +5336,7 @@ function activationModelTotal(checklist: ActivationChecklist) {
   return Number(checklist.summary.ready_provider_models || 0) + Number(checklist.summary.waiting_provider_models || 0);
 }
 
-function activationChecklistInlineStatus(checklist: ActivationChecklist) {
-  const count = checklist.steps.length;
-  return `Activation checklist tracked: ${count} unlock ${count === 1 ? "step" : "steps"}`;
-}
 
-function demoDoctorSummary(doctor: DemoDoctorStatus) {
-  const smokeCopy = doctor.summary.workflowSmokeOk ? "workflow smoke passed" : "run workflow smoke";
-  return `${doctor.summary.outputAssetCount} outputs, ${doctor.summary.referenceAssetCount} refs, ${smokeCopy}, ${doctor.summary.waitingProviderModels} live models waiting.`;
-}
 
 function buildLaunchReadinessItems(
   config: FrankConfig,
@@ -5951,22 +5476,7 @@ function nextRoundPrompt(asset: Asset, direction: "similar" | "cleanup" | "campa
   return parts.join("\n\n");
 }
 
-function missingKeyCopy(model: StudioModel) {
-  if (model.configured !== false) {
-    return "";
-  }
 
-  const envVars = model.missing_env_vars ?? [];
-  if (!envVars.length) {
-    return " / needs key";
-  }
-
-  return ` / needs ${envVars[0]}${envVars.length > 1 ? ` (+${envVars.length - 1})` : ""}`;
-}
-
-function missingKeyTitle(model: StudioModel) {
-  return model.configured === false ? (model.missing_env_vars ?? []).join(" or ") : undefined;
-}
 
 function modelMissingKeyAction(model?: StudioModel) {
   if (!model || model.provider === "local" || model.configured !== false) {
@@ -5993,15 +5503,6 @@ function modelReferenceLimitAction(model: StudioModel | undefined, referenceCoun
   } before making this round.`;
 }
 
-function providerPreflightStatusLabel(status: ProviderPreflight["status"]) {
-  if (status === "ready") {
-    return "Preflight ready";
-  }
-  if (status === "blocked") {
-    return "Preflight blocked";
-  }
-  return "Preflight unsupported";
-}
 
 function providerSetup(models: StudioModel[]) {
   const waitingModels = models.filter((model) => model.configured === false);
@@ -6220,11 +5721,6 @@ function capabilitySummary(models: StudioModel[]) {
   return [labels.join(" + "), badges.join(" / ")].filter(Boolean).join(" / ");
 }
 
-function providerAuditOperationSummary(operationKinds: string[] = [], requestPreviews?: Record<string, unknown>) {
-  const previewCount = Object.keys(requestPreviews ?? {}).length || operationKinds.length;
-  const labels = operationKinds.map((kind) => kind.replace(/_/g, " "));
-  return `${previewCount} ops: ${labels.join(", ") || "none"}`;
-}
 
 function joinWithOr(values: string[]) {
   if (values.length <= 1) {
