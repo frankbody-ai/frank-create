@@ -1524,7 +1524,6 @@ export default function App() {
     setBusy(true);
     setGenPhase("queued");
     setGenError(null);
-    setGenErrorOpen(false);
     setStatusText(activePromptMode === "generate" ? "Preparing the next round..." : "Preparing the edit brief...");
     const inflightId = makeLocalId("gen");
     const inflightEntry: InflightGen = {
@@ -2100,7 +2099,7 @@ export default function App() {
     setBusy(true);
     setGenPhase("running");
     setGenError(null);
-    setGenErrorOpen(false);
+    
     setStatusText(`Running ${modelName(config, modelA.id)} vs ${modelName(config, modelB.id)}...`);
     const compareFirstFrame = videoFirstFrame;
     const compareLastFrame = videoLastFrame;
