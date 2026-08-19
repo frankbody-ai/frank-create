@@ -40,76 +40,17 @@ export async function fetchModels() {
 }
 
 
-export async function fetchProviderStatus() {
-  return fetchJson<ProviderReadiness>("/provider-status");
-}
-
-export async function fetchProviderAudit() {
-  return fetchJson<ProviderAdapterAudit>("/provider-audit");
-}
-
-export async function fetchActivationChecklist() {
-  return fetchJson<ActivationChecklist>("/activation-checklist");
-}
-
-export async function preflightProvider(payload: Record<string, unknown>) {
-  return fetchJson<ProviderPreflight>("/provider-preflight", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
-
-export async function fetchDemoDoctor() {
-  return fetchJson<DemoDoctorStatus>("/demo-doctor");
-}
-
-export async function resetDemo(payload: { create_assets: boolean }) {
-  return fetchJson<{
-    project: Project;
-    brief: Brief;
-    session: StudioSession;
-    turn: StudioTurn;
-    reference: Asset | null;
-    assets: Asset[];
-    doctor: DemoDoctorStatus;
-  }>("/demo/reset", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
-
-export async function createDemoEvidence(payload: { base_url?: string } = {}) {
-  return fetchJson<DemoEvidenceResult>("/demo/evidence", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
-
-export async function createDemoCallBrief(payload: { base_url?: string } = {}) {
-  return fetchJson<DemoCallBriefResult>("/demo/call-brief", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
-
-export async function createDemoReadinessPack(payload: { base_url?: string } = {}) {
-  return fetchJson<DemoReadinessPackResult>("/demo/readiness-pack", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
-
-export async function createProviderReadinessReceipt() {
-  return fetchJson<ProviderReadinessReceiptResult>("/demo/provider-readiness", { method: "POST" });
-}
 
 
-export async function improvePresetPrompt(payload: { prompt: string; label?: string; description?: string }) {
-  return fetchJson<{ prompt: string }>("/improve-preset", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
+
+
+
+
+
+
+
+
+
 
 export async function promptAgentChat(payload: {
   messages: { role: "user" | "assistant"; content: string; images?: string[] }[];
@@ -122,98 +63,21 @@ export async function promptAgentChat(payload: {
 }
 
 
-export async function fetchBrandKit() {
-  return fetchJson<{ brandKit: BrandKit; filePath: string }>("/brand-kit");
-}
 
-export async function updateBrandKit(payload: BrandKit) {
-  return fetchJson<{ brandKit: BrandKit; filePath: string }>("/brand-kit", {
-    method: "PATCH",
-    body: JSON.stringify(payload)
-  });
-}
 
-export async function createBrandContextReceipt(payload: { session_id?: string } = {}) {
-  return fetchJson<BrandContextReceiptResult>("/demo/brand-context", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
 
-export async function fetchProviderEnvStatus() {
-  return fetchJson<ProviderEnvStatus>("/provider-env");
-}
 
-export async function createProviderEnvTemplate() {
-  return fetchJson<ProviderEnvStatus>("/provider-env/template", { method: "POST" });
-}
 
-export async function reloadProviderEnv() {
-  return fetchJson<ProviderEnvStatus>("/provider-env/reload", { method: "POST" });
-}
 
-export async function saveProviderEnvKeys(keys: Record<string, string>) {
-  return fetchJson<ProviderEnvStatus>("/provider-env/save", {
-    method: "POST",
-    body: JSON.stringify({ keys })
-  });
-}
 
-export async function listProjects() {
-  return fetchJson<{ projects: Project[] }>("/projects");
-}
 
-export async function createProject(payload: Partial<Project> & { name: string }) {
-  return fetchJson<{ project: Project }>("/projects", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
 
-export async function updateProject(projectId: string, payload: Partial<Project>) {
-  return fetchJson<{ project: Project }>(`/projects/${projectId}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload)
-  });
-}
 
-export async function listBriefs(projectId?: string) {
-  const query = projectId ? `?project_id=${encodeURIComponent(projectId)}` : "";
-  return fetchJson<{ briefs: Brief[] }>(`/briefs${query}`);
-}
 
-export async function createBrief(payload: Record<string, unknown>) {
-  return fetchJson<{ brief: Brief }>("/briefs", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
 
-export async function updateBrief(briefId: string, payload: Record<string, unknown>) {
-  return fetchJson<{ brief: Brief }>(`/briefs/${briefId}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload)
-  });
-}
 
-export async function createRun(payload: Record<string, unknown>) {
-  return fetchJson<{ run: Run }>("/runs", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
 
-export async function updateRun(runId: string, payload: Partial<Run>) {
-  return fetchJson<{ run: Run }>(`/runs/${runId}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload)
-  });
-}
 
-export async function listRuns(briefId?: string) {
-  const query = briefId ? `?brief_id=${encodeURIComponent(briefId)}` : "";
-  return fetchJson<{ runs: Run[] }>(`/runs${query}`);
-}
 
 export async function listSessions() {
   return fetchJson<{ sessions: StudioSession[] }>("/sessions");
@@ -233,16 +97,6 @@ export async function updateSession(sessionId: string, payload: Partial<StudioSe
   });
 }
 
-export async function createSessionHandoff(sessionId: string, opts: { signal?: AbortSignal } = {}) {
-  return fetchJson<{ handoff: ExportRecord; download_url: string; metadata: Record<string, unknown> }>(
-    `/sessions/${encodeURIComponent(sessionId)}/handoff`,
-    {
-      method: "POST",
-      body: JSON.stringify({ summary: "Approved Frank Create handoff for review." }),
-      signal: opts.signal,
-    }
-  );
-}
 
 export type HandoffStage = "fetch" | "build_manifest" | "generate_json" | "generate_csv" | "validate";
 
@@ -371,19 +225,7 @@ export async function listTurns(sessionId?: string) {
   return fetchJson<{ turns: StudioTurn[] }>(`/turns${query}`);
 }
 
-export async function createTurn(payload: Partial<StudioTurn> & { session_id: string; model: string; prompt: string }) {
-  return fetchJson<{ turn: StudioTurn }>("/turns", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
 
-export async function updateTurn(turnId: string, payload: Partial<StudioTurn>) {
-  return fetchJson<{ turn: StudioTurn }>(`/turns/${turnId}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload)
-  });
-}
 
 export async function createInferenceTurn(payload: TurnRequest) {
   return fetchJson<{
@@ -456,12 +298,6 @@ export async function createEnhancement(
 
 
 
-export async function createAsset(payload: Record<string, unknown>) {
-  return fetchJson<{ asset: Asset }>("/assets", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
 
 export async function createReference(payload: Record<string, unknown>) {
   return fetchJson<{ asset: Asset }>("/references", {
@@ -505,34 +341,9 @@ export async function deleteTurn(turnId: string) {
 }
 
 
-export async function createExport(payload: Record<string, unknown>) {
-  return fetchJson<{ export: ExportRecord; download_url?: string; metadata?: Record<string, unknown> }>("/exports", {
-    method: "POST",
-    body: JSON.stringify(payload)
-  });
-}
 
-export async function createAssetChannelSet(
-  assetId: string,
-  payload: { presets: string[]; metadata?: Record<string, unknown> }
-) {
-  return fetchJson<{ export: ExportRecord; download_url: string; metadata: Record<string, unknown> }>(
-    `/assets/${encodeURIComponent(assetId)}/export-set`,
-    {
-      method: "POST",
-      body: JSON.stringify(payload)
-    }
-  );
-}
 
-export async function listExports(assetId?: string) {
-  const query = assetId ? `?asset_id=${encodeURIComponent(assetId)}` : "";
-  return fetchJson<{ exports: ExportRecord[] }>(`/exports${query}`);
-}
 
-export function exportDownloadUrl(exportId: string) {
-  return `${frankBase}/exports/${encodeURIComponent(exportId)}/download`;
-}
 
 export function sessionReviewBoardUrl(sessionId: string) {
   return `${frankBase}/sessions/${encodeURIComponent(sessionId)}/review-board`;
@@ -546,9 +357,6 @@ export function assetDownloadUrl(assetId: string) {
   return `${frankBase}/assets/${encodeURIComponent(assetId)}/download`;
 }
 
-export function assetWorkflowReceiptUrl(assetId: string) {
-  return `${frankBase}/assets/${encodeURIComponent(assetId)}/workflow`;
-}
 
 
 
