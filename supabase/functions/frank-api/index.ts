@@ -321,6 +321,16 @@ function rowToSession(row: any): any {
   };
 }
 
+class LovableChatError extends Error {
+  status: number;
+  body: string;
+  constructor(status: number, body: string) {
+    super(`Lovable chat ${status}: ${body}`);
+    this.status = status;
+    this.body = body;
+  }
+}
+
 async function lovableChat(messages: any[], model = "google/gemini-3-flash-preview") {
   const body: Record<string, unknown> = { model, messages };
   if (model.startsWith("openai/gpt-5.6")) body.reasoning_effort = "none";
@@ -332,10 +342,11 @@ async function lovableChat(messages: any[], model = "google/gemini-3-flash-previ
     },
     body: JSON.stringify(body),
   });
-  if (!r.ok) throw new Error(`Lovable chat ${r.status}: ${await r.text()}`);
+  if (!r.ok) throw new LovableChatError(r.status, (await r.text()).slice(0, 600));
   const j: any = await r.json();
   return j.choices?.[0]?.message?.content || "";
 }
+
 
 
 const MODEL_MAP: Record<string, string> = {
@@ -2694,9 +2705,31 @@ Deno.serve(async (req) => {
     }
 
     if (path === "/prompt-agent" && method === "POST") {
-
-      const body = await readJson(req) as { messages?: { role?: string; content?: string; images?: string[] }[]; skill?: string };
+      const diagStart = Date.now();
+      const rawBody = await req.text();
+      const bodyBytes = rawBody.length;
+      let body: { messages?: { role?: string; content?: string; images?: string[] }[]; skill?: string } = {};
+      try { body = JSON.parse(rawBody || "{}"); } catch {
+        console.log(JSON.stringify({ tag: "prompt-agent", phase: "parse_failed", user_id: userId, body_bytes: bodyBytes }));
+        return json({ error: { code: "invalid", message: "Malformed request body" } }, 400);
+      }
       const incoming = Array.isArray(body?.messages) ? body.messages : [];
+      const imageSizes: number[] = [];
+      for (const m of incoming) {
+        for (const u of Array.isArray(m?.images) ? m.images : []) {
+          if (typeof u === "string") imageSizes.push(u.length);
+        }
+      }
+      console.log(JSON.stringify({
+        tag: "prompt-agent", phase: "received", user_id: userId,
+        skill: String(body?.skill || "brief-to-prompt"),
+        message_count: incoming.length,
+        body_bytes: bodyBytes,
+        image_count: imageSizes.length,
+        image_bytes: imageSizes,
+        image_bytes_total: imageSizes.reduce((a, b) => a + b, 0),
+      }));
+
       const history = incoming
         .filter((m) => m && (typeof m.content === "string" && m.content.trim() || Array.isArray(m.images) && m.images.length))
         .slice(-20)
@@ -2725,18 +2758,64 @@ Deno.serve(async (req) => {
       const system = buildPromptAgentSystem(cfg, skill);
 
 
-      try {
-        const reply = await lovableChat(
-          [{ role: "system", content: system }, ...history],
-          "openai/gpt-5.6-sol",
-        );
-        const cleaned = String(reply || "").trim();
-        if (!cleaned) return json({ error: { code: "empty", message: "AI returned no content" } }, 502);
-        return json({ reply: cleaned, model: "openai/gpt-5.6-sol", skill });
-      } catch (err) {
-        return json({ error: { code: "ai_error", message: errMessage(err) } }, 502);
+      // The prompt agent runs on a primary model with a second, different model
+      // as a fallback. A model that errors or returns nothing must not surface as
+      // a bare 502 — the client retries those five times and shows a
+      // "reconnecting to backend" banner instead of the real reason.
+      const PROMPT_AGENT_MODELS = ["openai/gpt-5.6-sol", "google/gemini-3-flash-preview"];
+      const attempts: { model: string; outcome: string; ms: number; status?: number; message?: string }[] = [];
+      // Diagnostics-only switch so the failure branch can be exercised on demand.
+      const simulate = req.headers.get("x-frank-debug-agent-fail") || "";
+
+      for (const model of PROMPT_AGENT_MODELS) {
+        const callStart = Date.now();
+        try {
+          if (simulate === "primary-500" && model === PROMPT_AGENT_MODELS[0]) throw new LovableChatError(500, "simulated primary outage");
+          if (simulate === "empty") throw new LovableChatError(0, "simulated empty");
+          if (simulate === "429") throw new LovableChatError(429, "simulated rate limit");
+          if (simulate === "500") throw new LovableChatError(500, "simulated provider outage");
+          const reply = await lovableChat([{ role: "system", content: system }, ...history], model);
+
+          const cleaned = String(reply || "").trim();
+          if (cleaned) {
+            attempts.push({ model, outcome: "ok", ms: Date.now() - callStart });
+            console.log(JSON.stringify({
+              tag: "prompt-agent", phase: "ok", user_id: userId, model,
+              body_bytes: bodyBytes, image_count: imageSizes.length,
+              total_ms: Date.now() - diagStart, reply_chars: cleaned.length, attempts,
+            }));
+            return json({ reply: cleaned, model, skill });
+          }
+          attempts.push({ model, outcome: "empty", ms: Date.now() - callStart });
+        } catch (err) {
+          const status = err instanceof LovableChatError ? err.status : 0;
+          attempts.push({ model, outcome: "error", ms: Date.now() - callStart, status, message: errMessage(err).slice(0, 400) });
+        }
       }
+
+      const last = attempts[attempts.length - 1];
+      console.log(JSON.stringify({
+        tag: "prompt-agent", phase: "failed", user_id: userId,
+        body_bytes: bodyBytes, image_count: imageSizes.length,
+        image_bytes: imageSizes, image_bytes_total: imageSizes.reduce((a, b) => a + b, 0),
+        total_ms: Date.now() - diagStart, attempts,
+      }));
+
+      const rateLimited = attempts.some((a) => a.status === 429);
+      const payloadTooBig = attempts.some((a) => a.status === 413);
+      const code = rateLimited ? "rate_limited" : payloadTooBig ? "payload_too_large" : last?.outcome === "empty" ? "empty" : "ai_error";
+      const message = rateLimited
+        ? "The AI provider is rate limiting requests right now. Wait a moment and send again."
+        : payloadTooBig
+          ? "Those reference images are too large for the agent. Attach smaller images and try again."
+          : last?.outcome === "empty"
+            ? "The agent could not produce an answer for this brief and reference images. Try rewording the brief or removing one reference."
+            : `The agent request failed: ${last?.message || "unknown provider error"}`;
+      // 422 keeps the client from replaying the same doomed request five times.
+      return json({ error: { code, message, attempts } }, rateLimited ? 429 : 422);
     }
+
+
 
 
 
