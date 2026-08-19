@@ -15,6 +15,16 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-08-19-access-approval",
+    date: "19 August 2026",
+    title: "Approval-based access",
+    items: [
+      "Admins can hold or approve each person from Admin portal \u2192 Users.",
+      "Approval is currently off, so allowed work domains still sign in straight away.",
+    ],
+  },
+  {
+
     id: "2026-08-19-video-access-switch",
     date: "19 August 2026",
     title: "Video generation is now permission-based",
