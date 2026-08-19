@@ -4883,7 +4883,7 @@ export default function App() {
                   {lightboxEditBusy ? (
                     <span className="lightbox-edit-spinner" aria-hidden="true" />
                   ) : (
-                    <Icon source="arrow-up" tone="inherit" size={16} />
+                    <Icon source="paper-airplane" tone="inherit" size={16} />
                   )}
                 </button>
               </form>
