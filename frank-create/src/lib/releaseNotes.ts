@@ -15,6 +15,14 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-08-19-leaner-app",
+    date: "19 August 2026",
+    title: "Leaner, snappier studio",
+    items: [
+      "Trimmed unused code front and back, so pages render and respond faster.",
+    ],
+  },
+  {
     id: "2026-08-19-speed-cleanup",
     date: "19 August 2026",
     title: "Faster start-up",
@@ -22,6 +30,7 @@ export const RELEASES: ReleaseNote[] = [
       "Cut old demo-era code and extra start-up calls, so the studio loads quicker.",
     ],
   },
+
   {
 
     id: "2026-08-19-access-approval",
