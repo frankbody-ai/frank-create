@@ -1235,45 +1235,90 @@
 .preset-editor__actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-200); }
 .preset-editor__spacer { flex: 1 1 auto; }
 
-.source-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-200); }
-.source-tile {
+/* Upscaler — the drop tile that replaces the studio prompt box. */
+.upscaler-drop {
+  width: 100%;
+  border-radius: var(--radius-300);
+  background: var(--color-bg-surface);
+  border: var(--border-width-025) dashed var(--color-border);
+  color: inherit;
+  font: inherit;
+  text-align: center;
+}
+.upscaler-drop--empty {
   display: flex;
   flex-direction: column;
-  padding: 0;
-  overflow: hidden;
-  border: var(--border-width-025) solid var(--color-border);
-  border-radius: var(--radius-200);
-  background: var(--color-bg-surface);
-  font: inherit;
-  text-align: start;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-200);
+  min-height: 180px;
+  padding: var(--space-600);
   cursor: pointer;
-  transition: box-shadow var(--motion-hover);
+  transition: border-color var(--motion-hover), background var(--motion-hover);
 }
-.source-tile.is-selected { border-color: var(--color-border-brand); box-shadow: 0 0 0 1px var(--color-border-brand); }
-.source-tile__media { display: block; height: 86px; background: var(--color-bg-fill-secondary); }
-.source-tile__media img,
-.source-tile__media video { width: 100%; height: 100%; object-fit: cover; }
-.source-tile__label {
-  padding: var(--space-150) var(--space-200);
-  font-size: var(--type-body-sm-size);
-  color: var(--color-text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.upscaler-results { display: flex; flex-direction: column; gap: var(--card-gap); }
-.upscaler-result { display: flex; flex-direction: column; gap: var(--space-200); }
-.upscaler-result img,
-.upscaler-result video {
-  width: 100%;
-  max-height: 60vh;
-  object-fit: contain;
-  border-radius: var(--radius-200);
+.upscaler-drop--empty:hover,
+.upscaler-drop--empty.is-dragging {
+  border-color: var(--color-border-brand);
   background: var(--color-bg-fill-secondary);
 }
-.upscaler-result figcaption { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-200); }
-.upscaler-result__spacer { flex: 1 1 auto; }
+.upscaler-drop--empty strong { font-size: var(--font-size-400); }
+.upscaler-drop--empty span { color: var(--color-text-secondary); font-size: var(--type-body-sm-size); }
+.upscaler-drop--filled {
+  display: flex;
+  align-items: center;
+  gap: var(--space-400);
+  padding: var(--space-400);
+  border-style: solid;
+  text-align: start;
+}
+.upscaler-drop__thumb {
+  position: relative;
+  flex: 0 0 auto;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-200);
+  overflow: hidden;
+  background: #000;
+}
+.upscaler-drop__thumb img,
+.upscaler-drop__thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.upscaler-drop__tick {
+  position: absolute;
+  inset-block-start: var(--space-150);
+  inset-inline-end: var(--space-150);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-fill-brand, #111);
+  color: #fff;
+}
+.upscaler-drop__meta { display: flex; flex-direction: column; gap: var(--space-100); min-width: 0; }
+.upscaler-drop__actions { display: flex; gap: var(--space-200); margin-block-start: var(--space-200); }
+
+/* Results sit on black so light and dark upscales both read correctly. */
+.upscaler-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  border-radius: var(--radius-200);
+  overflow: hidden;
+  max-height: 70vh;
+}
+.upscaler-stage img,
+.upscaler-stage video,
+.upscaler-stage .compare-slider {
+  width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  background: #000;
+}
+.upscaler-stage img { cursor: zoom-in; }
+.upscaler-stage__skeleton { width: 100%; aspect-ratio: 1; }
+.upscaler-result__actions { display: flex; flex-wrap: wrap; gap: var(--space-200); margin-block-start: var(--space-200); }
+.upscaler-run-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-200); }
 
 .compare-slider { position: relative; border-radius: var(--radius-200); overflow: hidden; background: var(--color-bg-fill-secondary); }
 .compare-slider-before,

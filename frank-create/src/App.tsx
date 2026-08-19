@@ -398,6 +398,9 @@ export default function App() {
   const [referencePreviewAsset, setReferencePreviewAsset] = useState<Asset | null>(null);
   const [referenceDropActive, setReferenceDropActive] = useState(false);
   const [referencePickerOpen, setReferencePickerOpen] = useState(false);
+  // The picker fills either the prompt reference dock or the upscaler's source slot.
+  const [referencePickerTarget, setReferencePickerTarget] = useState<"dock" | "upscaler">("dock");
+  const [upscalerSource, setUpscalerSource] = useState<Asset | null>(null);
   // Turn whose provider request body is being inspected via the JSON chip.
   const [payloadTurnId, setPayloadTurnId] = useState<string | null>(null);
 
@@ -1974,7 +1977,8 @@ export default function App() {
   }
 
 
-  const referencePickerLimit = Math.min(10, modelOptions.referenceLimit || 10);
+  const referencePickerLimit =
+    referencePickerTarget === "upscaler" ? 1 : Math.min(10, modelOptions.referenceLimit || 10);
   const referencePickerRangeStart = referenceLibrary.length
     ? referencePickerPage * REFERENCE_PICKER_PAGE_SIZE + 1
     : 0;
@@ -1988,7 +1992,8 @@ export default function App() {
   );
 
 
-  async function openReferencePicker() {
+  async function openReferencePicker(target: "dock" | "upscaler" = "dock") {
+    setReferencePickerTarget(target);
     setReferencePickerOpen(true);
     setReferencePickerSelection([]);
     setReferencePickerPage(0);
@@ -2012,6 +2017,11 @@ export default function App() {
 
   function togglePickerSelection(asset: Asset) {
     setReferencePickerNote(null);
+    // Single-pick mode for the upscaler: tapping a tile swaps the selection.
+    if (referencePickerTarget === "upscaler") {
+      setReferencePickerSelection((current) => (current[0] === asset.id ? [] : [asset.id]));
+      return;
+    }
     setReferencePickerSelection((current) => {
       if (current.includes(asset.id)) return current.filter((id) => id !== asset.id);
       if (current.length >= referencePickerLimit) {
@@ -2028,6 +2038,13 @@ export default function App() {
       .filter((asset): asset is Asset => Boolean(asset));
     if (!picks.length) {
       setReferencePickerOpen(false);
+      return;
+    }
+    if (referencePickerTarget === "upscaler") {
+      setUpscalerSource(picks[0]);
+      setReferencePickerSelection([]);
+      setReferencePickerOpen(false);
+      setStatusText(`${picks[0].title || "Source"} is ready to upscale.`);
       return;
     }
     setReferencePickerBusy(true);
@@ -2202,6 +2219,8 @@ export default function App() {
   useEffect(() => {
     function onGlobalPaste(event: ClipboardEvent) {
       if (event.defaultPrevented) return;
+      // The upscaler owns paste on its own screen (pasted file becomes the source).
+      if (studioMode === "upscaler") return;
       const target = event.target as HTMLElement | null;
       // Let dedicated composers (which preventDefault themselves) handle their own paste.
       if (target?.closest?.("[data-paste-scope]")) return;
@@ -2212,7 +2231,7 @@ export default function App() {
     }
     window.addEventListener("paste", onGlobalPaste);
     return () => window.removeEventListener("paste", onGlobalPaste);
-  }, [activeSession?.id, modelOptions.referenceLimit, connection]);
+  }, [activeSession?.id, modelOptions.referenceLimit, connection, studioMode]);
 
 
   function handlePromptDragOver(event: React.DragEvent<HTMLElement>) {
@@ -3672,9 +3691,11 @@ export default function App() {
       {studioMode === "upscaler" ? (
         <Enhancer
           models={config.models}
-          assets={assets}
           sessionId={activeSession?.id ?? null}
           connection={connection}
+          source={upscalerSource}
+          onPickSource={() => void openReferencePicker("upscaler")}
+          onSourceChange={setUpscalerSource}
           onAssetsCreated={(created) =>
             setAssets((current) => [
               ...created.filter((asset) => !current.some((existing) => existing.id === asset.id)),
@@ -3684,8 +3705,8 @@ export default function App() {
           onStatus={setStatusText}
           onExpandAsset={(asset) => setLightboxAsset(asset)}
           onDownloadAsset={(asset) => void downloadAssetFile(asset)}
-
         />
+
       ) : studioMode === "prompt" ? (
         <PromptGenerator
           onStatus={setStatusText}
@@ -4821,8 +4842,12 @@ export default function App() {
               <Icon source="x-mark" tone="inherit" size={18} />
             </button>
             <header className="reference-picker-header">
-              <h3>Add references</h3>
-              <p>Pick up to {referencePickerLimit} images — newest first. Uploads land here preselected.</p>
+              <h3>{referencePickerTarget === "upscaler" ? "Pick a source" : "Add references"}</h3>
+              <p>
+                {referencePickerTarget === "upscaler"
+                  ? "Pick one image to upscale — newest first. Uploads land here selected."
+                  : `Pick up to ${referencePickerLimit} images — newest first. Uploads land here preselected.`}
+              </p>
             </header>
             <input
               ref={referencePickerInputRef}
@@ -4906,7 +4931,11 @@ export default function App() {
                   disabled={!referencePickerSelection.length || referencePickerBusy}
                   onClick={() => void confirmReferencePickerSelection()}
                 >
-                  {referencePickerBusy ? "Working…" : `Add references${referencePickerSelection.length ? ` (${referencePickerSelection.length})` : ""}`}
+                  {referencePickerBusy
+                    ? "Working…"
+                    : referencePickerTarget === "upscaler"
+                      ? "Use this source"
+                      : `Add references${referencePickerSelection.length ? ` (${referencePickerSelection.length})` : ""}`}
                 </button>
               </div>
             </footer>

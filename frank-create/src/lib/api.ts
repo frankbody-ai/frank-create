@@ -633,6 +633,8 @@ async function fetchJson<T>(path: string, init: RequestInit = {}) {
         }
       });
     } catch (err: any) {
+      // A user-cancelled run must never be retried.
+      if (err?.name === "AbortError" || (init.signal as AbortSignal | undefined)?.aborted) throw err;
       lastError = new Error(err?.message || "Network request failed");
       if (attempt < maxAttempts) {
         await new Promise((r) => setTimeout(r, backoff(attempt)));

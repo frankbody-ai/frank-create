@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Banner, Button, ButtonGroup, Card, Checkbox, PageHeader, Select, Text } from "../ds";
+import { Banner, Button, ButtonGroup, Card, Checkbox, Icon, PageHeader, Select, Text } from "../ds";
 import { createEnhancement, createReference, uploadReferenceToStorage } from "../lib/api";
-import { upscaleModelsForMedia } from "../lib/studio";
+import { thumbnailUrl, upscaleModelsForMedia } from "../lib/studio";
 import BeforeAfterSlider from "./BeforeAfterSlider";
 import type { Asset, EnhanceSettings, StudioModel } from "../lib/types";
 
@@ -9,9 +9,13 @@ type MediaKind = "image" | "video";
 
 interface EnhancerProps {
   models: StudioModel[];
-  assets: Asset[];
   sessionId: string | null;
   connection: "online" | "offline" | "checking";
+  /** The picked source, owned by App so the shared reference picker can fill it. */
+  source: Asset | null;
+  /** Opens the same reference picker the studio uses, in single-pick mode. */
+  onPickSource: () => void;
+  onSourceChange: (asset: Asset | null) => void;
   onAssetsCreated: (assets: Asset[]) => void;
   onStatus: (text: string) => void;
   onExpandAsset?: (asset: Asset) => void;
@@ -31,15 +35,13 @@ const DEFAULTS: Record<MediaKind, EnhanceSettings> = {
   video: { target_resolution: "1080p", target_fps: 60, scale_factor: 2 }
 };
 
-function isVideoAsset(asset: Asset) {
-  return asset.media_type === "video";
-}
-
 export default function Enhancer({
   models,
-  assets,
   sessionId,
   connection,
+  source,
+  onPickSource,
+  onSourceChange,
   onAssetsCreated,
   onStatus,
   onExpandAsset,
@@ -48,42 +50,57 @@ export default function Enhancer({
   const [media, setMedia] = useState<MediaKind>("image");
   const [modelId, setModelId] = useState<string>("");
   const [settings, setSettings] = useState<EnhanceSettings>(DEFAULTS.image);
-  const [sourceId, setSourceId] = useState<string>("");
   const [running, setRunning] = useState(false);
+  const [startedAt, setStartedAt] = useState(0);
+  const [tick, setTick] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>("");
   const [results, setResults] = useState<Asset[]>([]);
   // Enhanced asset id -> the source image it came from, for the compare slider.
   const [sourceByResult, setSourceByResult] = useState<Record<string, string>>({});
   const [compareOff, setCompareOff] = useState<Record<string, boolean>>({});
   const abortRef = useRef<AbortController | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const roster = useMemo(() => upscaleModelsForMedia(models, media), [models, media]);
   const model = useMemo(() => roster.find((entry) => entry.id === modelId) ?? roster[0] ?? null, [roster, modelId]);
 
-  const sources = useMemo(
-    () =>
-      assets.filter((asset) =>
-        media === "video" ? isVideoAsset(asset) : !isVideoAsset(asset) && Boolean(asset.preview_url || asset.remote_url)
-      ),
-    [assets, media]
-  );
-  const source = useMemo(() => sources.find((asset) => asset.id === sourceId) ?? null, [sources, sourceId]);
-
   useEffect(() => {
     setModelId(roster[0]?.id ?? "");
     setSettings({ ...DEFAULTS[media] });
-    setSourceId("");
     setError("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [media]);
 
+  // Elapsed counter for the running card.
   useEffect(() => {
-    if (sourceId && !sources.some((asset) => asset.id === sourceId)) {
-      setSourceId("");
+    if (!running) return;
+    const id = window.setInterval(() => setTick(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [running]);
+
+  // Paste an image straight into the upscaler.
+  useEffect(() => {
+    function onPaste(event: ClipboardEvent) {
+      if (event.defaultPrevented) return;
+      const files = Array.from(event.clipboardData?.items ?? [])
+        .filter((item) => item.kind === "file" && item.type.startsWith(media === "video" ? "video/" : "image/"))
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => Boolean(file));
+      if (!files.length) return;
+      event.preventDefault();
+      void handleUpload(files);
     }
-  }, [sources, sourceId]);
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [media, sessionId, connection]);
 
   const controls = model?.upscale_controls ?? [];
   const canRun = Boolean(model && source && sessionId && connection === "online" && !running);
+  const sourcePreview = source ? source.preview_url || source.remote_url || "" : "";
+  const sourceIsVideo = source?.media_type === "video";
 
   function patch(next: Partial<EnhanceSettings>) {
     setSettings((current) => ({ ...current, ...next }));
@@ -97,7 +114,8 @@ export default function Enhancer({
       setError("Uploading a source needs a live connection.");
       return;
     }
-    onStatus("Uploading source for the enhancer...");
+    setUploading(true);
+    onStatus("Uploading source for the upscaler...");
     try {
       const file = files[0];
       const { url, path } = await uploadReferenceToStorage(file, sessionId);
@@ -122,11 +140,14 @@ export default function Enhancer({
         sync_status: "cloud"
       };
       onAssetsCreated([asset]);
-      setSourceId(asset.id);
-      onStatus(`${file.name} is ready to enhance.`);
+      onSourceChange(asset);
+      setError("");
+      onStatus(`${file.name} is ready to upscale.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
       onStatus("Source upload failed.");
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -135,8 +156,10 @@ export default function Enhancer({
       return;
     }
     setRunning(true);
+    setStartedAt(Date.now());
+    setTick(Date.now());
     setError("");
-    onStatus(`Enhancing with ${model.short_label ?? model.label}...`);
+    onStatus(`Upscaling with ${model.short_label ?? model.label}...`);
     const controller = new AbortController();
     abortRef.current = controller;
     try {
@@ -150,26 +173,26 @@ export default function Enhancer({
         { signal: controller.signal }
       );
       if (response.status === "complete" && response.assets?.length) {
-        const sourcePreview = source.preview_url || source.remote_url || "";
-        if (sourcePreview) {
+        const preview = source.preview_url || source.remote_url || "";
+        if (preview) {
           setSourceByResult((current) => {
             const next = { ...current };
-            for (const asset of response.assets!) next[asset.id] = sourcePreview;
+            for (const asset of response.assets!) next[asset.id] = preview;
             return next;
           });
         }
         setResults((current) => [...response.assets!, ...current]);
         onAssetsCreated(response.assets);
-        onStatus(`Enhanced ${media} is ready.`);
+        onStatus(`Upscaled ${media} is ready.`);
       } else {
-        const message = response.error?.message || "The enhancer returned no output.";
+        const message = response.error?.message || "The upscaler returned no output.";
         setError(message);
-        onStatus("Enhance failed.");
+        onStatus("Upscale failed.");
       }
     } catch (err) {
       if (!controller.signal.aborted) {
-        setError(err instanceof Error ? err.message : "Enhance failed.");
-        onStatus("Enhance failed.");
+        setError(err instanceof Error ? err.message : "Upscale failed.");
+        onStatus("Upscale failed.");
       }
     } finally {
       abortRef.current = null;
@@ -181,162 +204,234 @@ export default function Enhancer({
     abortRef.current?.abort();
     abortRef.current = null;
     setRunning(false);
-    onStatus("Enhance stopped.");
+    onStatus("Upscale stopped.");
   }
 
   const enumOptions = (values: (string | number)[] | undefined, format?: (v: string) => string) =>
     (values ?? []).map((v) => ({ value: String(v), label: format ? format(String(v)) : String(v) }));
 
+  const elapsed = Math.max(0, Math.floor((tick - startedAt) / 1000));
+  const elapsedLabel = elapsed >= 60
+    ? `${Math.floor(elapsed / 60)}m ${String(elapsed % 60).padStart(2, "0")}s`
+    : `${elapsed}s`;
+
   return (
     <>
       <PageHeader
         title="Upscaler"
-        subtitle="Upscale and clean up any still or clip in this session, or upload a fresh file."
-        actions={
-          <ButtonGroup variant="segmented">
-            {(["image", "video"] as MediaKind[]).map((kind) => (
-              <Button key={kind} pressed={media === kind} onClick={() => setMedia(kind)}>
-                {kind === "image" ? "Image upscaler" : "Video upscaler"}
-              </Button>
-            ))}
-          </ButtonGroup>
-        }
+        subtitle="Drop a still or clip in, pick an upscaler on the right, and run it."
       />
 
       <div className="upscaler-columns">
         <div className="upscaler-main">
-          <Card
-            title="Source"
-            subtitle={`Pick one ${media === "video" ? "clip" : "still"} from this session, or upload a file.`}
-            actions={
-              <label className="file-button">
-                <input
-                  type="file"
-                  accept={media === "video" ? "video/*" : "image/*"}
-                  onChange={(event) => {
-                    const files = Array.from(event.target.files ?? []);
-                    event.target.value = "";
-                    void handleUpload(files);
-                  }}
-                />
-                <span className="as-btn as-btn--secondary as-btn--micro">
-                  <span className="as-btn__label">Upload a file</span>
-                </span>
-              </label>
-            }
-          >
-            {sources.length ? (
-              <div className="source-grid">
-                {sources.map((asset) => {
-                  const preview = asset.preview_url || asset.remote_url || "";
-                  return (
-                    <button
-                      key={asset.id}
-                      type="button"
-                      className={`source-tile ${sourceId === asset.id ? "is-selected" : ""}`}
-                      aria-pressed={sourceId === asset.id}
-                      onClick={() => setSourceId(asset.id)}
-                    >
-                      <span className="source-tile__media">
-                        {media === "video" ? (
-                          <video src={preview} muted playsInline preload="metadata" />
-                        ) : (
-                          <img src={preview} alt="" loading="lazy" />
-                        )}
-                      </span>
-                      <span className="source-tile__label">{asset.title || asset.kind}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="empty-state empty-state--inset">
-                <Text as="p" tone="secondary">
-                  No {media === "video" ? "clips" : "stills"} in this session yet. Generate one in the
-                  studio, or upload a file above.
-                </Text>
-              </div>
-            )}
-          </Card>
+          <input
+            ref={fileInputRef}
+            type="file"
+            hidden
+            accept={media === "video" ? "video/*" : "image/*"}
+            onChange={(event) => {
+              const files = Array.from(event.target.files ?? []);
+              event.target.value = "";
+              void handleUpload(files);
+            }}
+          />
 
-          <Card
-            title="Output"
-            subtitle={results.length ? "Drag the handle to compare before and after." : undefined}
-          >
-            {results.length ? (
-              <div className="upscaler-results">
-                {results.map((asset) => {
-                  const preview = asset.preview_url || asset.remote_url || "";
-                  const beforeSrc = sourceByResult[asset.id] || "";
-                  const isImage = asset.media_type !== "video";
-                  const canCompare = isImage && Boolean(beforeSrc && preview) && !compareOff[asset.id];
-                  return (
-                    <figure key={asset.id} className="upscaler-result">
-                      {asset.media_type === "video" ? (
-                        <video src={preview} controls playsInline preload="metadata" />
-                      ) : canCompare ? (
-                        <BeforeAfterSlider
-                          beforeSrc={beforeSrc}
-                          afterSrc={preview}
-                          alt={asset.title || "Enhanced asset"}
-                          onExpand={() => onExpandAsset?.(asset)}
-                        />
-                      ) : (
-                        <img
-                          src={preview}
-                          alt={asset.title || "Enhanced asset"}
-                          onClick={() => onExpandAsset?.(asset)}
-                        />
-                      )}
-                      <figcaption>
-                        <Text fontWeight="medium">{asset.title || "Enhanced"}</Text>
-                        {asset.width && asset.height ? (
-                          <Text variant="bodySm" tone="secondary" numeric>
-                            {asset.width} × {asset.height}
-                          </Text>
-                        ) : null}
-                        <span className="upscaler-result__spacer" />
-                        {isImage && beforeSrc ? (
-                          <Button
-                            size="micro"
-                            icon="eye"
-                            onClick={() =>
-                              setCompareOff((current) => ({ ...current, [asset.id]: !current[asset.id] }))
-                            }
-                          >
-                            {compareOff[asset.id] ? "Compare" : "Show enhanced only"}
-                          </Button>
-                        ) : null}
-                        {preview ? (
-                          <Button size="micro" icon="arrow-down-tray" onClick={() => onDownloadAsset?.(asset)}>
-                            Download file
-                          </Button>
-                        ) : null}
-                      </figcaption>
-                    </figure>
-                  );
-                })}
+          {source ? (
+            <div className="upscaler-drop upscaler-drop--filled">
+              <div className="upscaler-drop__thumb">
+                {sourceIsVideo ? (
+                  <video src={sourcePreview} muted playsInline preload="metadata" />
+                ) : (
+                  <img
+                    src={thumbnailUrl(sourcePreview, 480, 60, "webp") || sourcePreview}
+                    alt={source.title || "Source"}
+                    decoding="async"
+                  />
+                )}
+                <span className="upscaler-drop__tick" aria-hidden="true">
+                  <Icon source="check" tone="inherit" size={16} />
+                </span>
               </div>
-            ) : (
+              <div className="upscaler-drop__meta">
+                <Text fontWeight="medium">{source.title || "Source"}</Text>
+                <Text variant="bodySm" tone="secondary">
+                  {source.width && source.height ? `${source.width} × ${source.height} · ` : ""}
+                  ready to upscale
+                </Text>
+                <div className="upscaler-drop__actions">
+                  <Button size="micro" onClick={onPickSource}>
+                    Change
+                  </Button>
+                  <Button size="micro" onClick={() => onSourceChange(null)}>
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className={`upscaler-drop upscaler-drop--empty ${dragging ? "is-dragging" : ""}`}
+              onClick={onPickSource}
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "copy";
+                setDragging(true);
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDragging(false);
+                void handleUpload(Array.from(event.dataTransfer.files || []));
+              }}
+              disabled={uploading}
+            >
+              <Icon source="arrow-up-tray" tone="inherit" size={24} />
+              <strong>
+                {uploading
+                  ? "Uploading…"
+                  : `Drop ${media === "video" ? "a clip" : "an image"} here, or click to browse`}
+              </strong>
+              <span>
+                Pick from this session's generations and uploads, or drop / paste a file straight in.
+              </span>
+            </button>
+          )}
+
+          <section className="thread-surface" aria-label="Upscaled output">
+            <div className="rounds-well-head" aria-hidden="true">
+              <span className="rounds-well-title">Upscales — newest first</span>
+              <span className="rounds-well-count">
+                {results.length
+                  ? `${results.length} result${results.length === 1 ? "" : "s"}`
+                  : "No upscales yet"}
+              </span>
+            </div>
+
+            {running ? (
+              <article className="turn-card turn-card-pending" aria-live="polite" aria-busy="true">
+                <div className="turn-card-body">
+                  <div className="turn-side">
+                    <div className="turn-copy">
+                      <span className="status-dot pending" />
+                      <div>
+                        <p className="eyebrow">Upscaling</p>
+                        <h3>{model?.short_label ?? model?.label ?? "Upscaler"}</h3>
+                        <div className="turn-meta">
+                          <span>Running</span>
+                          <span>{elapsedLabel} elapsed</span>
+                        </div>
+                        <Button size="micro" onClick={stop}>
+                          Stop
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="turn-visual">
+                    <div className="upscaler-stage">
+                      <div className="output-skeleton upscaler-stage__skeleton">
+                        <span className="output-skeleton-shimmer" aria-hidden="true" />
+                        <span className="output-skeleton-spinner" aria-hidden="true" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ) : null}
+
+            {results.length ? (
+              results.map((asset) => {
+                const preview = asset.preview_url || asset.remote_url || "";
+                const beforeSrc = sourceByResult[asset.id] || "";
+                const isImage = asset.media_type !== "video";
+                const canCompare = isImage && Boolean(beforeSrc && preview) && !compareOff[asset.id];
+                return (
+                  <article key={asset.id} className="turn-card">
+                    <div className="turn-card-body">
+                      <div className="turn-side">
+                        <div className="turn-copy">
+                          <div>
+                            <p className="eyebrow">Upscaled</p>
+                            <h3>{asset.title || "Enhanced"}</h3>
+                            <div className="turn-meta">
+                              {asset.width && asset.height ? (
+                                <span>{asset.width} × {asset.height}</span>
+                              ) : null}
+                              <span>{isImage ? "Image" : "Video"}</span>
+                            </div>
+                            <div className="upscaler-result__actions">
+                              {isImage && beforeSrc ? (
+                                <Button
+                                  size="micro"
+                                  icon="eye"
+                                  onClick={() =>
+                                    setCompareOff((current) => ({ ...current, [asset.id]: !current[asset.id] }))
+                                  }
+                                >
+                                  {compareOff[asset.id] ? "Compare" : "Enhanced only"}
+                                </Button>
+                              ) : null}
+                              {preview ? (
+                                <Button size="micro" icon="arrow-down-tray" onClick={() => onDownloadAsset?.(asset)}>
+                                  Download
+                                </Button>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="turn-visual">
+                        <div className="upscaler-stage">
+                          {!isImage ? (
+                            <video src={preview} controls playsInline preload="metadata" />
+                          ) : canCompare ? (
+                            <BeforeAfterSlider
+                              beforeSrc={beforeSrc}
+                              afterSrc={preview}
+                              alt={asset.title || "Enhanced asset"}
+                              onExpand={() => onExpandAsset?.(asset)}
+                            />
+                          ) : (
+                            <img
+                              src={preview}
+                              alt={asset.title || "Enhanced asset"}
+                              onClick={() => onExpandAsset?.(asset)}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            ) : !running ? (
               <div className="empty-state empty-state--inset">
                 <Text as="p" tone="secondary">
-                  Nothing enhanced in this session yet. Pick a source and run the enhancer.
+                  Nothing upscaled yet. Add a source above and run the upscaler.
                 </Text>
               </div>
-            )}
-          </Card>
+            ) : null}
+          </section>
         </div>
 
-        <aside className="upscaler-rail" aria-label="Enhancer settings">
-          <Card title="Enhancer" subtitle={model?.description}>
+        <aside className="upscaler-rail" aria-label="Upscaler settings">
+          <Card title="Upscaler" subtitle={model?.description}>
             <div className="rail-fields">
+              <ButtonGroup variant="segmented">
+                {(["image", "video"] as MediaKind[]).map((kind) => (
+                  <Button key={kind} pressed={media === kind} onClick={() => setMedia(kind)}>
+                    {kind === "image" ? "Image" : "Video"}
+                  </Button>
+                ))}
+              </ButtonGroup>
+
               <Select
                 label="Model"
                 value={model?.id ?? ""}
                 onChange={(event) => setModelId(event.target.value)}
                 options={roster.map((entry) => ({
                   value: entry.id,
-                  label: entry.badge ? `${entry.label} · ${entry.badge}` : entry.label,
+                  label: entry.badge ? `${entry.label} · ${entry.badge}` : entry.label
                 }))}
               />
 
@@ -394,6 +489,15 @@ export default function Enhancer({
                 />
               ) : null}
 
+              {controls.includes("scale_factor") ? (
+                <Select
+                  label="Scale factor"
+                  value={String(settings.scale_factor ?? 2)}
+                  onChange={(event) => patch({ scale_factor: Number(event.target.value) })}
+                  options={enumOptions([2, 3, 4], (v) => `${v}×`)}
+                />
+              ) : null}
+
               {controls.includes("face_enhancement") ? (
                 <>
                   <Checkbox
@@ -416,9 +520,7 @@ export default function Enhancer({
                           max={1}
                           step={0.05}
                           value={settings.face_enhancement_strength ?? 0.8}
-                          onChange={(event) =>
-                            patch({ face_enhancement_strength: Number(event.target.value) })
-                          }
+                          onChange={(event) => patch({ face_enhancement_strength: Number(event.target.value) })}
                         />
                       </label>
                       <label className="rail-slider">
@@ -434,9 +536,7 @@ export default function Enhancer({
                           max={1}
                           step={0.05}
                           value={settings.face_enhancement_creativity ?? 0}
-                          onChange={(event) =>
-                            patch({ face_enhancement_creativity: Number(event.target.value) })
-                          }
+                          onChange={(event) => patch({ face_enhancement_creativity: Number(event.target.value) })}
                         />
                       </label>
                     </div>
@@ -444,48 +544,24 @@ export default function Enhancer({
                 </>
               ) : null}
 
-              {controls.includes("scale_factor") ? (
-                <label className="rail-slider">
-                  <span className="rail-slider__head">
-                    <span>Scale factor</span>
-                    <span className="as-tabular">{Number(settings.scale_factor ?? 2).toFixed(1)}x</span>
-                  </span>
-                  <input
-                    type="range"
-                    min={model?.scale_factor_min ?? 1}
-                    max={model?.scale_factor_max ?? 8}
-                    step={0.5}
-                    value={settings.scale_factor ?? 2}
-                    onChange={(event) => patch({ scale_factor: Number(event.target.value) })}
-                  />
-                </label>
-              ) : null}
-
-              {!controls.length ? (
-                <Text variant="bodySm" tone="secondary" as="p">
-                  This enhancer runs with no extra settings.
-                </Text>
-              ) : null}
-
-              {running ? (
-                <Button fullWidth tone="critical" icon="no-symbol" onClick={stop}>
-                  Stop the run
+              <div className="upscaler-run-actions">
+                {running ? (
+                  <Button variant="secondary" icon="x-mark" onClick={stop}>
+                    Stop
+                  </Button>
+                ) : (
+                  <Button variant="primary" icon="sparkles" disabled={!canRun} onClick={() => void run()}>
+                    Upscale {media}
+                  </Button>
+                )}
+                <Button size="micro" onClick={() => fileInputRef.current?.click()}>
+                  Upload a file
                 </Button>
-              ) : (
-                <Button
-                  variant="primary"
-                  icon="bolt"
-                  fullWidth
-                  disabled={!canRun}
-                  onClick={() => void run()}
-                >
-                  Enhance {media}
-                </Button>
-              )}
+              </div>
 
               {!source ? (
                 <Text variant="bodySm" tone="secondary" as="p">
-                  Pick a source {media} to enable the run.
+                  Add a source {media} to enable the run.
                 </Text>
               ) : null}
               {media === "video" ? (
