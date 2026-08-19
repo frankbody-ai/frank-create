@@ -260,13 +260,12 @@ export default function Enhancer({
               >
                 <Icon source="arrow-up-tray" tone="inherit" size={24} />
                 <strong>
-                  {uploading
-                    ? "Uploading…"
-                    : `Drop ${media === "video" ? "a clip" : "an image"} here, or click to browse`}
+                  {uploading ? "Uploading…" : "Drop here or upload file"}
                 </strong>
                 <span>
-                  Pick from this session's generations and uploads, or drop / paste a file straight in.
+                  Pick from this session's generations and uploads, or paste a file straight in.
                 </span>
+
               </button>
             </div>
 
