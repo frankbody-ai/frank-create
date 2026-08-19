@@ -228,58 +228,16 @@ var list_sessions_default = defineTool5({
   }
 });
 
-// src/lib/mcp/tools/set-asset-approval.ts
+// src/lib/mcp/tools/submit-feedback.ts
 import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z4 } from "npm:zod@^4.4.3";
-var set_asset_approval_default = defineTool6({
-  name: "set_asset_approval",
-  title: "Approve or reject an asset",
-  description: "Set the approval status of one of the signed-in user's assets and record the change in the audit trail.",
-  inputSchema: {
-    asset_id: z4.string().describe("The asset id (uuid)."),
-    status: z4.enum(["approved", "rejected", "review"]).describe("New approval status."),
-    note: z4.string().describe("Optional note stored with the audit event.").optional()
-  },
-  annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-  handler: async ({ asset_id, status, note }, ctx) => {
-    if (!ctx.isAuthenticated()) return notAuthenticated;
-    const supabase = supabaseForUser(ctx);
-    const { data: asset, error: readError } = await supabase.from("assets").select("id, session_id, metadata_json").eq("id", asset_id).maybeSingle();
-    if (readError) return errorResult(readError.message);
-    if (!asset) return errorResult(`No asset ${asset_id} for this user.`);
-    const meta = { ...asset.metadata_json ?? {} };
-    const previous = meta.approval_status ?? null;
-    meta.approval_status = status;
-    const { error: updateError } = await supabase.from("assets").update({ metadata_json: meta }).eq("id", asset_id);
-    if (updateError) return errorResult(updateError.message);
-    const { error: eventError } = await supabase.from("asset_approval_events").insert({
-      asset_id,
-      session_id: asset.session_id,
-      user_id: ctx.getUserId(),
-      prev_status: previous,
-      new_status: status,
-      note: note ?? null
-    });
-    return textResult({
-      asset_id,
-      previous_status: previous ?? "none",
-      approval_status: status,
-      audit_recorded: !eventError,
-      audit_error: eventError?.message ?? null
-    });
-  }
-});
-
-// src/lib/mcp/tools/submit-feedback.ts
-import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z5 } from "npm:zod@^4.4.3";
-var submit_feedback_default = defineTool7({
+var submit_feedback_default = defineTool6({
   name: "submit_feedback",
   title: "Submit feedback",
   description: "File a feedback item in the studio on behalf of the signed-in user.",
   inputSchema: {
-    message: z5.string().describe("The feedback text."),
-    page_path: z5.string().describe("Optional page or area the feedback is about.").optional()
+    message: z4.string().describe("The feedback text."),
+    page_path: z4.string().describe("Optional page or area the feedback is about.").optional()
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ message, page_path }, ctx) => {
@@ -313,7 +271,6 @@ var mcp = defineMcp({
     list_sessions_default,
     get_session_default,
     list_assets_default,
-    set_asset_approval_default,
     list_models_default,
     list_presets_default,
     submit_feedback_default

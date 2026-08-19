@@ -5,7 +5,6 @@ import listAssetsTool from "./tools/list-assets";
 import listModelsTool from "./tools/list-models";
 import listPresetsTool from "./tools/list-presets";
 import listSessionsTool from "./tools/list-sessions";
-import setAssetApprovalTool from "./tools/set-asset-approval";
 import submitFeedbackTool from "./tools/submit-feedback";
 
 const mcp: ReturnType<typeof defineMcp> = defineMcp({
@@ -23,7 +22,6 @@ const mcp: ReturnType<typeof defineMcp> = defineMcp({
     listSessionsTool,
     getSessionTool,
     listAssetsTool,
-    setAssetApprovalTool,
     listModelsTool,
     listPresetsTool,
     submitFeedbackTool,
