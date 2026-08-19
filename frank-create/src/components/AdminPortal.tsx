@@ -21,10 +21,12 @@ import { adminTabFromUrl, navigate } from "../nav";
 import {
   listUsersWithRoles,
   setUserRole,
+  setUserVideoAccess,
   isCurrentUserAdmin,
   type AdminUserRow,
   type AppRole,
 } from "../lib/admin";
+
 import {
   listFeedback,
   updateFeedbackStatus,
