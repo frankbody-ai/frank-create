@@ -15,6 +15,19 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-08-19-inline-edit-upscaler",
+    date: "19 August 2026",
+    title: "Edit straight from the preview, plus a simpler upscaler",
+    items: [
+      "Click any image and it now opens full screen with a composer underneath — describe the change you want, hit send, and the new version opens in place so you can keep iterating without leaving the preview.",
+      "The prompt box clears itself after every Generate, so a new idea starts from a clean slate instead of the last one.",
+      "Prompt Generator now hands your reference images over to Studio along with the prompt — no more re-uploading after the wizard.",
+      "Upscaler is back to one clean card: drop a file or click to browse, and the source you picked shows as a compact chip in the settings rail.",
+      "Brief Mix has been retired.",
+    ],
+  },
+  {
+
     id: "2026-08-18-seedream-5",
     date: "18 August 2026",
     title: "Seedream 5.0 Pro + a tidier studio",
