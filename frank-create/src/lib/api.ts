@@ -169,7 +169,7 @@ export async function createReference(payload: Record<string, unknown>) {
   });
 }
 
-export async function listAssets(filters: { sessionId?: string; turnId?: string; approvalStatus?: string } = {}) {
+export async function listAssets(filters: { sessionId?: string; turnId?: string } = {}) {
   const params = new URLSearchParams();
   if (filters.sessionId) {
     params.set("session_id", filters.sessionId);
@@ -177,18 +177,8 @@ export async function listAssets(filters: { sessionId?: string; turnId?: string;
   if (filters.turnId) {
     params.set("turn_id", filters.turnId);
   }
-  if (filters.approvalStatus) {
-    params.set("approval_status", filters.approvalStatus);
-  }
   const query = params.size ? `?${params.toString()}` : "";
   return fetchJson<{ assets: Asset[] }>(`/assets${query}`);
-}
-
-export async function updateAsset(assetId: string, payload: Partial<Asset>) {
-  return fetchJson<{ asset: Asset }>(`/assets/${assetId}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload)
-  });
 }
 
 export async function deleteAsset(assetId: string) {
@@ -203,18 +193,6 @@ export async function deleteTurn(turnId: string) {
   });
 }
 
-
-
-
-
-
-export function sessionReviewBoardUrl(sessionId: string) {
-  return `${frankBase}/sessions/${encodeURIComponent(sessionId)}/review-board`;
-}
-
-export function sessionSyncManifestUrl(sessionId: string) {
-  return `${frankBase}/sessions/${encodeURIComponent(sessionId)}/sync-manifest`;
-}
 
 export function assetDownloadUrl(assetId: string) {
   return `${frankBase}/assets/${encodeURIComponent(assetId)}/download`;
