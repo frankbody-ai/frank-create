@@ -1034,7 +1034,9 @@ function mapOpenrouterHttpError(status: number, text: string): ProviderRunError 
 async function openrouterPost(path: string, payload: Record<string, unknown>): Promise<any> {
   const key = openrouterKey();
   let lastErr: unknown;
-  const maxAttempts = 5;
+  // One delayed retry is enough inside an interactive request. Five attempts
+  // can consume the entire worker budget before fallback/error persistence runs.
+  const maxAttempts = 2;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     let res: Response;
     try {
@@ -1669,6 +1671,20 @@ async function handleTurnStatus(body: any, userId: string) {
 
   const predictionIds: string[] = Array.isArray(snapshot.prediction_ids) ? snapshot.prediction_ids : [];
   if (snapshot.status !== "running" || !predictionIds.length) {
+    if (snapshot.status === "running" && !predictionIds.length) {
+      const ageMs = Date.now() - new Date(row.created_at).getTime();
+      if (Number.isFinite(ageMs) && ageMs > 8 * 60_000) {
+        const failed = {
+          ...snapshot,
+          status: "failed",
+          error: "The generation worker was interrupted before the provider returned. Retry this run.",
+          error_code: "worker_interrupted",
+          error_retryable: true,
+        };
+        await sb.from("messages").update({ settings_snapshot_json: failed }).eq("id", turnId);
+        return await finishWithRows(failed, "failed");
+      }
+    }
     const status = snapshot.status === "failed" ? "failed" : snapshot.status === "running" ? "running" : "complete";
     return await finishWithRows(snapshot, status as any);
   }
@@ -2524,7 +2540,7 @@ Deno.serve(async (req) => {
       // as a fallback. A model that errors or returns nothing must not surface as
       // a bare 502 — the client retries those five times and shows a
       // "reconnecting to backend" banner instead of the real reason.
-      const PROMPT_AGENT_MODELS = ["openai/gpt-5.6-sol", "google/gemini-3-flash-preview"];
+      const PROMPT_AGENT_MODELS = ["google/gemini-3.7-flash", "google/gemini-3-flash-preview"];
       const attempts: { model: string; outcome: string; ms: number; status?: number; message?: string }[] = [];
       // Diagnostics-only switch so the failure branch can be exercised on demand.
       const simulate = req.headers.get("x-frank-debug-agent-fail") || "";

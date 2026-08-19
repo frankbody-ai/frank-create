@@ -18,6 +18,9 @@ interface Props {
 type ChatMessage = { role: "user" | "assistant"; content: string; images?: string[]; hidden?: boolean };
 
 const MAX_ATTACHMENTS = 6;
+const MAX_ATTACHMENT_EDGE = 1600;
+const MAX_ATTACHMENT_BYTES = 2_500_000;
+const MAX_REQUEST_IMAGE_BYTES = 8_000_000;
 
 /** The wizard always runs between these bounds — never fewer, never more. */
 const MIN_QUESTIONS = 5;
@@ -65,13 +68,37 @@ function parseWizardQuestions(reply: string): WizardQuestion[] | null {
 
 
 
-function fileToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("Could not read that image."));
-    reader.readAsDataURL(file);
-  });
+async function fileToDataUrl(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  try {
+    const scale = Math.min(1, MAX_ATTACHMENT_EDGE / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Could not prepare that image.");
+    context.drawImage(bitmap, 0, 0, width, height);
+
+    let quality = 0.84;
+    let blob: Blob | null = null;
+    do {
+      blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+      quality -= 0.12;
+    } while (blob && blob.size > MAX_ATTACHMENT_BYTES && quality >= 0.48);
+    if (!blob || blob.size > MAX_ATTACHMENT_BYTES) {
+      throw new Error("That image is too large. Use an image under 2.5 MB.");
+    }
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("Could not read that image."));
+      reader.readAsDataURL(blob);
+    });
+  } finally {
+    bitmap.close();
+  }
 }
 
 const FALLBACK_SKILLS = [
@@ -314,9 +341,24 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     try {
       // The wizard kickoff asks for a machine-readable question set. That request
       // and its json answer stay hidden from the thread — the wizard IS their UI.
+      // Images are needed when the brief first reaches the agent, but resending
+      // old base64 payloads on every wizard answer makes later requests huge.
+      // Keep images only on the message being submitted right now.
+      const compactHistory = next.map((message, index) =>
+        index === next.length - 1 || !message.images?.length
+          ? message
+          : { ...message, images: undefined }
+      );
+      const currentImageBytes = compactHistory[compactHistory.length - 1]?.images?.reduce(
+        (total, image) => total + image.length,
+        0
+      ) ?? 0;
+      if (currentImageBytes > MAX_REQUEST_IMAGE_BYTES) {
+        throw new Error("Those references are too large together. Remove one image and try again.");
+      }
       const payload: ChatMessage[] = options?.wizardKickoff
-        ? [...next, { role: "user", content: WIZARD_INSTRUCTION, hidden: true }]
-        : next;
+        ? [...compactHistory, { role: "user", content: WIZARD_INSTRUCTION, hidden: true }]
+        : compactHistory;
       const result = await promptAgentChat({ messages: payload, skill });
       if (options?.wizardKickoff) {
         const questions = parseWizardQuestions(result.reply);
