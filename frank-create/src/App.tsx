@@ -100,7 +100,9 @@ import {
   MaskPainterDialog,
   OutputStrip,
   ReferencePickerCard,
-  SessionCancelDialog,
+  SessionCancelDialog
+} from "./studio/StudioPieces";
+import {
   chooseLaunchSession,
   composeVideoReferencePrompt,
   fileToDataUrl,
@@ -128,7 +130,7 @@ import {
   turnExpectedCount,
   turnKindLabel,
   writeLastUsedModelId
-} from "./studio/studioParts";
+} from "./studio/studioFormat";
 
 const REFERENCE_PICKER_PAGE_SIZE = 9;
 
