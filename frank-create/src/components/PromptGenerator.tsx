@@ -262,7 +262,26 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     }
   }
 
+  // Auto-detect whether a message starts a new run (wizard) or continues the
+  // previous conversation (straight to the agent). First message always wizards.
+  function shouldRunWizard(text: string): boolean {
+    const visible = messages.filter((m) => !m.hidden && m.role === "assistant");
+    if (!visible.length) return true;
+    const trimmed = text.trim();
+    const words = trimmed.split(/\s+/).filter(Boolean).length;
+    const continuation =
+      /^(make|change|swap|replace|remove|add|keep|use|try|adjust|tweak|shorter|longer|more|less|less |again|redo|instead|but|also|now|and|can you|could you|please make|no,|yes,)\b/i.test(
+        trimmed
+      ) ||
+      /\b(it|that|this|the same|previous|last one|above)\b/i.test(trimmed);
+    // Short, edit-flavoured follow-ups continue; anything that reads like a
+    // fresh brief re-opens discovery.
+    if (words <= 25 && continuation) return false;
+    return true;
+  }
+
   async function send(text: string, options?: { wizardKickoff?: boolean }) {
+
     const trimmed = text.trim();
     if ((!trimmed && !attachments.length) || busy) return;
     const next: ChatMessage[] = [
@@ -616,7 +635,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
           data-paste-scope="prompt-agent"
           onSubmit={(event) => {
             event.preventDefault();
-            void send(input, { wizardKickoff: true });
+            void send(input, { wizardKickoff: shouldRunWizard(input) });
           }}
         >
 
@@ -664,7 +683,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               if (event.key !== "Enter") return;
               if (event.shiftKey) return;
               event.preventDefault();
-              void send(input, { wizardKickoff: true });
+              void send(input, { wizardKickoff: shouldRunWizard(input) });
             }}
 
           />
