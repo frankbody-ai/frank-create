@@ -15,6 +15,14 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-08-19-preview-arrows",
+    date: "19 August 2026",
+    title: "Preview arrows work again",
+    items: [
+      "You can step left/right through all picks from the same run in the full-screen preview.",
+    ],
+  },
+  {
     id: "2026-08-19-image-cost",
     date: "19 August 2026",
     title: "Image cost estimates",
