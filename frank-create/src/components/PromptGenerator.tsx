@@ -293,6 +293,8 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     setAttachments([]);
     setBusy(true);
     setError(null);
+    setWizardNotice(null);
+    setWizardOverride(null);
     try {
       // The wizard kickoff asks for a machine-readable question set. That request
       // and its json answer stay hidden from the thread — the wizard IS their UI.
@@ -308,6 +310,11 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
           onStatus?.(`Discovery wizard ready — ${questions.length} questions.`);
           return;
         }
+        // Discovery was requested but the agent did not return a usable question
+        // set. Say so, otherwise a skipped wizard looks like a bug.
+        setWizardNotice(
+          "The agent could not build a discovery round for this brief, so it answered directly. Send the brief again to retry the questions."
+        );
       }
       setMessages([...next, { role: "assistant", content: result.reply }]);
       onStatus?.("Prompt Generator replied.");
