@@ -258,7 +258,11 @@ async function fetchJson<T>(path: string, init: RequestInit = {}) {
   // The edge runtime occasionally answers 503 SUPABASE_EDGE_RUNTIME_SERVICE_DEGRADED
   // while a container is cycling — that cycle can last several seconds, so retry
   // with exponential backoff + jitter instead of giving up after ~1s.
-  const maxAttempts = 5;
+  const method = String(init.method || "GET").toUpperCase();
+  // Never replay expensive AI mutations after a gateway timeout: the original
+  // job may still be running and a replay creates duplicate billed work.
+  const replaySafe = method === "GET" || path === "/inference/status";
+  const maxAttempts = replaySafe ? 3 : 1;
   const backoff = (attempt: number) =>
     Math.min(500 * 2 ** (attempt - 1), 4000) + Math.floor(Math.random() * 250);
   let lastError: Error | null = null;

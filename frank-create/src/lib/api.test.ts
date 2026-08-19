@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createInferenceTurn } from "./api";
+import { createInferenceTurn, promptAgentChat } from "./api";
 import { fallbackConfig } from "./presets";
 
 describe("api", () => {
@@ -54,5 +54,16 @@ describe("api", () => {
     expect([...used].filter((provider) => !declared.has(provider))).toEqual([]);
     expect([...declared]).toEqual(["openrouter", "google", "replicate", "openai"]);
     expect([...planned]).toEqual([]);
+  });
+
+  it("does not replay an AI mutation after a gateway timeout", async () => {
+    const request = vi.fn(async () => new Response("Gateway timeout", { status: 504 }));
+    vi.stubGlobal("fetch", request);
+
+    await expect(promptAgentChat({
+      messages: [{ role: "user", content: "Write a product prompt" }],
+    })).rejects.toThrow("Gateway timeout");
+
+    expect(request).toHaveBeenCalledTimes(1);
   });
 });

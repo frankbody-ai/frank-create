@@ -15,6 +15,14 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-08-19-generation-reliability",
+    date: "19 August 2026",
+    title: "More reliable generations",
+    items: [
+      "Studio and Prompt Generator now recover cleanly from provider interruptions without duplicate runs.",
+    ],
+  },
+  {
     id: "2026-08-19-preview-arrows",
     date: "19 August 2026",
     title: "Preview arrows work again",
