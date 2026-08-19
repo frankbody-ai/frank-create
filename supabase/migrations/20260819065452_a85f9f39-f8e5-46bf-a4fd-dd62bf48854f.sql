@@ -1,0 +1,3 @@
+DELETE FROM public.assets WHERE session_id IN (SELECT id FROM public.sessions WHERE user_id = 'faa74bd3-9a93-455e-bb91-d088632b126c' AND title = 'Default Image Studio');
+DELETE FROM public.messages WHERE session_id IN (SELECT id FROM public.sessions WHERE user_id = 'faa74bd3-9a93-455e-bb91-d088632b126c' AND title = 'Default Image Studio');
+DELETE FROM public.sessions WHERE user_id = 'faa74bd3-9a93-455e-bb91-d088632b126c' AND title = 'Default Image Studio';
