@@ -15,6 +15,15 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-08-19-preview-fix",
+    date: "19 August 2026",
+    title: "Image preview fixed",
+    items: [
+      "Clicking an image opens the full-screen preview again.",
+    ],
+  },
+
+  {
     id: "2026-08-19-leaner-app",
     date: "19 August 2026",
     title: "Leaner, snappier studio",
