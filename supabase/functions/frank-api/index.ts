@@ -314,7 +314,7 @@ function rowToSession(row: any): any {
     project_id: null,
     name: row.title,
     mode: "studio",
-    status: "active",
+    status: row.status ?? "active",
     summary: null,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -2409,7 +2409,8 @@ Deno.serve(async (req) => {
     if (path === "/sessions" && method === "GET") {
       const { data } = await supabase().from("sessions").select("*")
         .eq("user_id", userId).order("created_at", { ascending: true });
-      const rows = data && data.length ? data : [await getOrCreateDefaultSession(userId)];
+      const active = (data || []).filter((r: any) => (r.status ?? "active") !== "archived");
+      const rows = active.length ? active : [await getOrCreateDefaultSession(userId)];
       return json({ sessions: rows.map(rowToSession) });
     }
     if (path === "/sessions" && method === "POST") {
@@ -2421,6 +2422,26 @@ Deno.serve(async (req) => {
       if (ins.error) throw ins.error;
       return json({ session: rowToSession(ins.data) });
     }
+    const sessionPatchMatch = path.match(/^\/sessions\/([^/]+)$/);
+    if (sessionPatchMatch && (method === "PATCH" || method === "PUT")) {
+      const body = await readJson(req);
+      const patch: Record<string, unknown> = {};
+      if (typeof body.name === "string" && body.name.trim()) patch.title = body.name.trim().slice(0, 120);
+      if (typeof body.status === "string") patch.status = body.status === "archived" ? "archived" : "active";
+      if (!Object.keys(patch).length) return json({ error: { code: "bad_request", message: "Nothing to update" } }, 400);
+      const upd = await supabase().from("sessions").update(patch)
+        .eq("id", sessionPatchMatch[1]).eq("user_id", userId).select().maybeSingle();
+      if (upd.error) throw upd.error;
+      if (!upd.data) return json({ error: { code: "not_found", message: "Session not found" } }, 404);
+      return json({ session: rowToSession(upd.data) });
+    }
+    if (sessionPatchMatch && method === "DELETE") {
+      const upd = await supabase().from("sessions").update({ status: "archived" })
+        .eq("id", sessionPatchMatch[1]).eq("user_id", userId);
+      if (upd.error) throw upd.error;
+      return json({ ok: true });
+    }
+
 
     if (path.startsWith("/turns") && method === "GET") {
       const sid = url.searchParams.get("session_id");
