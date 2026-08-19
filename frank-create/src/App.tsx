@@ -3816,22 +3816,7 @@ export default function App() {
 
         <div className="studio-columns">
           <div className="studio-main">
-            <div className="studio-top-actions">
-              <Button icon="plus" fullWidth onClick={() => void handleNewSession()}>
-                New session
-              </Button>
-              <Button
-                variant="primary"
-                icon="bolt"
-                fullWidth
-                disabled={!prompt.trim() || hasStudioFieldErrors(fieldErrors)}
-                onClick={() => void handleGenerate()}
-              >
-                {primaryActionLabel}
-              </Button>
-            </div>
-
-              <form
+            <form
                 className="composer"
                 onSubmit={handleGenerate}
                 data-tour-id="composer"
