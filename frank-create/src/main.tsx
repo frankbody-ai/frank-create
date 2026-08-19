@@ -78,6 +78,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <SmallScreenNotice />
     <StatusBanner />
     <ErrorToast />
-    <Router />
+    <AppErrorBoundary>
+      <Router />
+    </AppErrorBoundary>
   </React.StrictMode>
 );
+
