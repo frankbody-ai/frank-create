@@ -2560,6 +2560,7 @@ export default function App() {
         setTurns((current) => [...current, turn]);
         setAssets((current) => [...newAssets, ...current]);
         setSelectedAsset(newAssets[0]);
+        producedAssets = newAssets;
         setStatusText(`Generated ${newAssets.length} pick${newAssets.length === 1 ? "" : "s"} via Lovable AI.`);
         setRetrySafePayload(null);
         setGenPhase("completed");
