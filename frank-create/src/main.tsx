@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import ReactDOM from "react-dom/client";
 
 import App from "./App";
 import { AuthGate } from "./AuthGate";
@@ -16,10 +15,6 @@ import { installErrorReporter } from "./lib/errorReporter";
 import { applyTheme, storedTheme } from "./ds";
 import { resolveScreen } from "./nav";
 import "./app.css";
-
-// The remembered theme has to land before first paint, or the page flashes ink.
-applyTheme(storedTheme());
-installErrorReporter();
 
 function Router() {
   const [route, setRoute] = useState(resolveScreen);
@@ -59,14 +54,21 @@ function Router() {
   }
 }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <SmallScreenNotice />
-    <StatusBanner />
-    <ErrorToast />
-    <AppErrorBoundary>
-      <Router />
-    </AppErrorBoundary>
-  </React.StrictMode>
-);
+export function StudioRoot() {
+  useEffect(() => {
+    applyTheme(storedTheme());
+    installErrorReporter();
+  }, []);
+
+  return (
+    <React.StrictMode>
+      <SmallScreenNotice />
+      <StatusBanner />
+      <ErrorToast />
+      <AppErrorBoundary>
+        <Router />
+      </AppErrorBoundary>
+    </React.StrictMode>
+  );
+}
 

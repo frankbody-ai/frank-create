@@ -1,14 +1,11 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
-import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 
 export default defineConfig({
   envDir: "..",
-  plugins: [react(), mcpPlugin()],
-  build: {
-    outDir: "../dist",
-    emptyOutDir: true
-  },
+  plugins: [mcpPlugin(), tanstackStart(), react()],
   server: {
     host: "127.0.0.1",
     port: 5174,

@@ -15,6 +15,12 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-08-20-claude-connector",
+    date: "20 August 2026",
+    title: "Claude connector fixed",
+    items: ["Claude now connects through the studio’s supported MCP and sign-in routes."],
+  },
+  {
     id: "2026-08-19-generation-reliability",
     date: "19 August 2026",
     title: "More reliable generations",
