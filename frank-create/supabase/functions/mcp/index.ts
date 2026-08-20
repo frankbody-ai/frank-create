@@ -9,50 +9,6 @@ import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { createClient } from "npm:@supabase/supabase-js@^2.108.2";
 var PROJECT_REF = "amwfmlqvaranonhyvqbj";
 var DIRECT_SUPABASE_URL = `https://${PROJECT_REF}.supabase.co`;
-function runtimeEnv(name) {
-  const runtime = globalThis;
-  return runtime.Deno?.env?.get?.(name) ?? runtime.process?.env?.[name];
-}
-function configuredEnv(names) {
-  for (const name of names) {
-    const value = runtimeEnv(name)?.trim();
-    if (value) return value;
-  }
-  return void 0;
-}
-function supabaseProjectUrl() {
-  return configuredEnv(["SUPABASE_URL", "VITE_SUPABASE_URL"]) ?? DIRECT_SUPABASE_URL;
-}
-function supabasePublishableKey() {
-  const direct = configuredEnv([
-    "SUPABASE_PUBLISHABLE_KEY",
-    "VITE_SUPABASE_PUBLISHABLE_KEY"
-  ]);
-  if (direct) return direct;
-  const keyset = runtimeEnv("SUPABASE_PUBLISHABLE_KEYS");
-  if (keyset) {
-    try {
-      const parsed = JSON.parse(keyset);
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        const keys = parsed;
-        const key = [keys.default, ...Object.values(keys)].find((v) => typeof v === "string" && v.trim().startsWith("sb_publishable_"))?.trim();
-        if (key) return key;
-      }
-    } catch {
-    }
-  }
-  const legacy = configuredEnv(["SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
-  if (legacy) return legacy;
-  throw new Error("Supabase publishable key is not configured");
-}
-function supabaseForUser(ctx) {
-  const token = ctx.getToken();
-  if (!token) throw new Error("supabaseForUser requires a verified OAuth token");
-  return createClient(supabaseProjectUrl(), supabasePublishableKey(), {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth: { persistSession: false, autoRefreshToken: false }
-  });
-}
 var notAuthenticated = {
   content: [{ type: "text", text: "Not authenticated." }],
   isError: true
@@ -65,65 +21,10 @@ function textResult(payload) {
 function errorResult(message) {
   return { content: [{ type: "text", text: message }], isError: true };
 }
-var STUDIO_BUCKET = "studio-images";
-async function signedAssetUrl(supabase, storagePath) {
-  if (!storagePath) return null;
-  try {
-    const { data } = await supabase.storage.from(STUDIO_BUCKET).createSignedUrl(storagePath, 60 * 60);
-    return data?.signedUrl ?? null;
-  } catch {
-    return null;
-  }
-}
 
-// src/lib/mcp/tools/get-session.ts
+// src/lib/mcp/tools/check-run.ts
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z } from "npm:zod@^4.4.3";
-var get_session_default = defineTool({
-  name: "get_session",
-  title: "Get session detail",
-  description: "Read one of the signed-in user's sessions: its prompts (messages) and the assets generated in it.",
-  inputSchema: {
-    session_id: z.string().describe("The session id (uuid)."),
-    include_urls: z.boolean().describe("Include a temporary signed download URL for each asset.").optional()
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ session_id, include_urls }, ctx) => {
-    if (!ctx.isAuthenticated()) return notAuthenticated;
-    const supabase = supabaseForUser(ctx);
-    const { data: session, error: sessionError } = await supabase.from("sessions").select("id, title, active_model_key, active_preset_id, settings_json, created_at, updated_at").eq("id", session_id).maybeSingle();
-    if (sessionError) return errorResult(sessionError.message);
-    if (!session) return errorResult(`No session ${session_id} for this user.`);
-    const [{ data: messages, error: messagesError }, { data: assets, error: assetsError }] = await Promise.all([
-      supabase.from("messages").select("id, seq, role, message_type, prompt_text, created_at").eq("session_id", session_id).order("seq", { ascending: true }),
-      supabase.from("assets").select("id, asset_type, model_key, storage_path, prompt_snapshot, metadata_json, created_at").eq("session_id", session_id).order("created_at", { ascending: false })
-    ]);
-    if (messagesError) return errorResult(messagesError.message);
-    if (assetsError) return errorResult(assetsError.message);
-    const rows = assets ?? [];
-    const enriched = await Promise.all(
-      rows.map(async (asset) => {
-        const meta = asset.metadata_json ?? {};
-        return {
-          id: asset.id,
-          asset_type: asset.asset_type,
-          model_key: asset.model_key,
-          width: meta.width ?? null,
-          height: meta.height ?? null,
-          aspect_ratio: meta.aspect_ratio ?? null,
-          prompt: asset.prompt_snapshot,
-          created_at: asset.created_at,
-          url: include_urls ? await signedAssetUrl(supabase, asset.storage_path) : void 0
-        };
-      })
-    );
-    return textResult({ session, messages: messages ?? [], assets: enriched });
-  }
-});
-
-// src/lib/mcp/tools/list-assets.ts
-import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z2 } from "npm:zod@^4.4.3";
 
 // src/lib/mcp/frankApi.ts
 var FRANK_BASE = `${DIRECT_SUPABASE_URL}/functions/v1/frank-api`;
@@ -162,16 +63,131 @@ async function frankFetch(ctx, path, init = {}) {
   }
   return JSON.parse(text || "{}");
 }
+async function pollRun(ctx, first, maxMs = 11e4) {
+  let latest = first;
+  const turnId = latest.turn?.id;
+  if (!turnId || latest.status !== "running") return latest;
+  const started = Date.now();
+  let delay = 4e3;
+  while (Date.now() - started < maxMs) {
+    await new Promise((r) => setTimeout(r, delay));
+    delay = Math.min(delay + 2e3, 1e4);
+    try {
+      latest = await frankFetch(ctx, "/inference/status", {
+        method: "POST",
+        body: { turn_id: turnId }
+      });
+    } catch {
+      continue;
+    }
+    if (latest.status !== "running") return latest;
+  }
+  return { ...latest, timed_out: true };
+}
+
+// src/lib/mcp/tools/check-run.ts
+var check_run_default = defineTool({
+  name: "check_run",
+  title: "Check a run",
+  description: "Check a generation or upscale run by its turn_id and collect the finished files. Use this when generate_image or upscale_media returned status 'running'.",
+  inputSchema: {
+    turn_id: z.string().describe("The turn id returned by generate_image or upscale_media.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ turn_id }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticated;
+    try {
+      const result = await frankFetch(ctx, "/inference/status", {
+        method: "POST",
+        body: { turn_id }
+      });
+      if (result.status === "failed") {
+        return errorResult(result.error?.message || "The run failed.");
+      }
+      return textResult({
+        status: result.status ?? "running",
+        turn_id,
+        outputs: (result.assets ?? []).map(assetSummary)
+      });
+    } catch (err) {
+      return errorResult(err instanceof Error ? err.message : String(err));
+    }
+  }
+});
+
+// src/lib/mcp/tools/generate-image.ts
+import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z2 } from "npm:zod@^4.4.3";
+var generate_image_default = defineTool2({
+  name: "generate_image",
+  title: "Generate images",
+  description: "Run an image generation in the studio exactly as the app does: a prompt, a model, aspect ratio, size, how many variations, and optional reference image URLs. Returns download URLs for the finished images. Use list_studio_options first for valid model ids, aspect ratios and sizes.",
+  inputSchema: {
+    prompt: z2.string().describe("The full image prompt / brief to render."),
+    model: z2.string().describe("Model id from list_studio_options, e.g. 'nano-banana-pro'. Defaults to nano-banana-pro.").optional(),
+    aspect_ratio: z2.string().describe("Aspect ratio such as '1:1', '3:4', '16:9'.").optional(),
+    size: z2.string().describe("Size or quality tier the model allows, e.g. '1K', '2K', '1536x1024'.").optional(),
+    count: z2.number().int().describe("How many variations to render (1-6).").optional(),
+    reference_image_urls: z2.array(z2.string()).describe("Public https URLs of reference images to condition on.").optional(),
+    session_id: z2.string().describe("Session to record the run in. Omit to use the caller's default session.").optional()
+  },
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+  handler: async (input, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticated;
+    const prompt = input.prompt.trim();
+    if (!prompt) return errorResult("A prompt is required.");
+    const refs = (input.reference_image_urls ?? []).filter((u) => /^https?:\/\//i.test(u));
+    try {
+      const first = await frankFetch(ctx, "/inference/turn", {
+        method: "POST",
+        body: {
+          session_id: input.session_id,
+          kind: refs.length ? "edit" : "generate",
+          model: input.model || "nano-banana-pro",
+          prompt,
+          frank_body_mode: false,
+          settings: {
+            aspect_ratio: input.aspect_ratio || "1:1",
+            image_size: input.size || "",
+            count: Math.min(Math.max(input.count ?? 1, 1), 6)
+          },
+          reference_asset_ids: [],
+          reference_image_urls: refs
+        }
+      });
+      const result = await pollRun(ctx, first);
+      if (result.status === "failed" || result.status === "blocked") {
+        return errorResult(result.error?.message || "The generation failed.");
+      }
+      if (result.timed_out) {
+        return textResult({
+          status: "running",
+          turn_id: result.turn?.id ?? null,
+          note: "Still rendering. Call check_run with this turn_id in a minute to collect the images."
+        });
+      }
+      return textResult({
+        status: result.status ?? "complete",
+        turn_id: result.turn?.id ?? null,
+        images: (result.assets ?? []).map(assetSummary)
+      });
+    } catch (err) {
+      return errorResult(err instanceof Error ? err.message : String(err));
+    }
+  }
+});
 
 // src/lib/mcp/tools/list-assets.ts
-var list_assets_default = defineTool2({
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.1";
+import { z as z3 } from "npm:zod@^4.4.3";
+var list_assets_default = defineTool3({
   name: "list_assets",
   title: "List recent assets",
   description: "List the caller's recent studio images and videos with download URLs and asset ids \u2014 useful for picking an upscale source or re-sending a reference.",
   inputSchema: {
-    session_id: z2.string().describe("Only assets from this session.").optional(),
-    media: z2.enum(["image", "video"]).describe("Filter by media kind.").optional(),
-    limit: z2.number().int().describe("How many assets to return (1-50). Defaults to 20.").optional()
+    session_id: z3.string().describe("Only assets from this session.").optional(),
+    media: z3.enum(["image", "video"]).describe("Filter by media kind.").optional(),
+    limit: z3.number().int().describe("How many assets to return (1-50). Defaults to 20.").optional()
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ session_id, media, limit }, ctx) => {
@@ -189,8 +205,8 @@ var list_assets_default = defineTool2({
 });
 
 // src/lib/mcp/tools/list-models.ts
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.1";
-var list_models_default = defineTool3({
+import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.1";
+var list_models_default = defineTool4({
   name: "list_studio_options",
   title: "List studio options",
   description: "Discovery call: the image, video and upscaler models available in the studio with their allowed aspect ratios and sizes, plus the prompt presets. Call this before generate_image or upscale_media to pick valid values.",
@@ -227,69 +243,105 @@ var list_models_default = defineTool3({
   }
 });
 
-// src/lib/mcp/tools/list-presets.ts
-import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.26.1";
-var list_presets_default = defineTool4({
-  name: "list_presets",
-  title: "List prompt presets",
-  description: "List the active prompt presets in the studio library, including their category and system prompt.",
-  inputSchema: {},
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async (_input, ctx) => {
-    if (!ctx.isAuthenticated()) return notAuthenticated;
-    const supabase = supabaseForUser(ctx);
-    const { data, error } = await supabase.from("presets").select("id, name, category, system_prompt, positive_rules, negative_rules, is_active").eq("is_active", true).order("name", { ascending: true });
-    if (error) return errorResult(error.message);
-    return textResult({ presets: data ?? [] });
-  }
-});
-
-// src/lib/mcp/tools/list-sessions.ts
+// src/lib/mcp/tools/upscale-media.ts
 import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z3 } from "npm:zod@^4.4.3";
-var list_sessions_default = defineTool5({
-  name: "list_sessions",
-  title: "List studio sessions",
-  description: "List the signed-in user's generation sessions (newest first) with their title, active model and preset.",
+import { z as z4 } from "npm:zod@^4.4.3";
+var upscale_media_default = defineTool5({
+  name: "upscale_media",
+  title: "Upscale an image or video",
+  description: "Send an image or video to the studio's upscaler and get the enhanced file back. Source can be a public URL or an asset id from list_assets. Videos and 4x/6x image jobs can outlast the call \u2014 you then get a turn_id to poll with check_run.",
   inputSchema: {
-    limit: z3.number().int().describe("How many sessions to return (1-50).").optional()
+    source_url: z4.string().describe("Public https URL of the image or video to upscale.").optional(),
+    source_asset_id: z4.string().describe("Asset id from list_assets to upscale instead of a URL.").optional(),
+    media: z4.enum(["image", "video"]).describe("Media kind. Defaults to image.").optional(),
+    model: z4.string().describe("Upscale model id from list_studio_options. Defaults to topaz-image-upscale / topaz-video-upscale.").optional(),
+    upscale_factor: z4.enum(["None", "2x", "4x", "6x"]).describe("Image upscale factor.").optional(),
+    target_resolution: z4.enum(["720p", "1080p", "4k"]).describe("Video target resolution.").optional(),
+    session_id: z4.string().describe("Session to record the run in.").optional()
   },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ limit }, ctx) => {
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+  handler: async (input, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthenticated;
-    const take = Math.min(Math.max(limit ?? 20, 1), 50);
-    const supabase = supabaseForUser(ctx);
-    const { data, error } = await supabase.from("sessions").select("id, title, active_model_key, active_preset_id, created_at, updated_at").order("updated_at", { ascending: false }).limit(take);
-    if (error) return errorResult(error.message);
-    return textResult({ sessions: data ?? [] });
+    if (!input.source_url && !input.source_asset_id) {
+      return errorResult("Provide source_url or source_asset_id.");
+    }
+    const media = input.media ?? "image";
+    const model = input.model || (media === "video" ? "topaz-video-upscale" : "topaz-image-upscale");
+    try {
+      const first = await frankFetch(ctx, "/enhance", {
+        method: "POST",
+        body: {
+          session_id: input.session_id,
+          model,
+          source_asset_id: input.source_asset_id,
+          source_url: input.source_url,
+          settings: {
+            media,
+            ...media === "image" ? { upscale_factor: input.upscale_factor ?? "2x", output_format: "png" } : { target_resolution: input.target_resolution ?? "1080p" }
+          }
+        }
+      });
+      const result = await pollRun(ctx, first);
+      if (result.status === "failed" || result.status === "blocked") {
+        return errorResult(result.error?.message || "The upscale failed.");
+      }
+      if (result.timed_out) {
+        return textResult({
+          status: "running",
+          turn_id: result.turn?.id ?? null,
+          note: "Still upscaling. Call check_run with this turn_id to collect the result."
+        });
+      }
+      return textResult({
+        status: result.status ?? "complete",
+        turn_id: result.turn?.id ?? null,
+        outputs: (result.assets ?? []).map(assetSummary)
+      });
+    } catch (err) {
+      return errorResult(err instanceof Error ? err.message : String(err));
+    }
   }
 });
 
-// src/lib/mcp/tools/submit-feedback.ts
+// src/lib/mcp/tools/write-prompt.ts
 import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.26.1";
-import { z as z4 } from "npm:zod@^4.4.3";
-var submit_feedback_default = defineTool6({
-  name: "submit_feedback",
-  title: "Submit feedback",
-  description: "File a feedback item in the studio on behalf of the signed-in user.",
+import { z as z5 } from "npm:zod@^4.4.3";
+var write_prompt_default = defineTool6({
+  name: "write_prompt",
+  title: "Write a prompt (Prompt Generator)",
+  description: "Run the studio's Prompt Generator on a brief and get the crafted image prompt back. Pass the whole conversation so far in `messages` to iterate. The result can be fed straight into generate_image.",
   inputSchema: {
-    message: z4.string().describe("The feedback text."),
-    page_path: z4.string().describe("Optional page or area the feedback is about.").optional()
+    brief: z5.string().describe("The brief or instruction. Shortcut for a single user message.").optional(),
+    messages: z5.array(
+      z5.object({
+        role: z5.enum(["user", "assistant"]),
+        content: z5.string(),
+        images: z5.array(z5.string()).optional()
+      })
+    ).describe("Full conversation so far (newest last). Use instead of `brief` for follow-ups.").optional(),
+    reference_image_urls: z5.array(z5.string()).describe("Public https URLs of reference images to describe alongside the brief.").optional(),
+    skill: z5.string().describe("Prompt Generator skill key, e.g. 'brief-to-prompt'. Defaults to brief-to-prompt.").optional()
   },
-  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async ({ message, page_path }, ctx) => {
+  annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+  handler: async (input, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthenticated;
-    const text = message.trim();
-    if (!text) return errorResult("Feedback message cannot be empty.");
-    const supabase = supabaseForUser(ctx);
-    const { data, error } = await supabase.from("feedback_items").insert({
-      user_id: ctx.getUserId(),
-      message: text,
-      page_path: page_path ?? "mcp",
-      route_name: "mcp"
-    }).select("id, created_at").maybeSingle();
-    if (error) return errorResult(error.message);
-    return textResult({ submitted: true, id: data?.id ?? null, created_at: data?.created_at ?? null });
+    const refs = (input.reference_image_urls ?? []).filter((u) => /^https?:\/\//i.test(u));
+    const messages = input.messages?.length ? input.messages : input.brief?.trim() ? [{ role: "user", content: input.brief.trim() }] : [];
+    if (!messages.length) return errorResult("Provide `brief` or `messages`.");
+    if (refs.length) {
+      const last = messages[messages.length - 1];
+      messages[messages.length - 1] = { ...last, images: [...last.images ?? [], ...refs] };
+    }
+    try {
+      const data = await frankFetch(
+        ctx,
+        "/prompt-agent",
+        { method: "POST", body: { messages, skill: input.skill || "brief-to-prompt" } }
+      );
+      return textResult({ prompt: data.reply, model: data.model, skill: data.skill });
+    } catch (err) {
+      return errorResult(err instanceof Error ? err.message : String(err));
+    }
   }
 });
 
@@ -297,20 +349,20 @@ var submit_feedback_default = defineTool6({
 var mcp = defineMcp({
   name: "frank-create",
   title: "frank Create",
-  version: "0.1.0",
-  instructions: "Tools for the art-ificial studio (frank Create). Read the signed-in user's generation sessions and assets, inspect the available image/video models and prompt presets, and file feedback. Generation itself happens in the app UI.",
+  version: "0.2.0",
+  instructions: "Tools for the art-ificial studio (frank Create). Turn a brief into a crafted prompt with write_prompt, render it with generate_image (check list_studio_options for model ids, aspect ratios and sizes), upscale images or videos with upscale_media, browse past outputs with list_assets, and poll long runs with check_run.",
   auth: auth.oauth.issuer({
     issuer: `${DIRECT_SUPABASE_URL}/auth/v1`,
     acceptedAudiences: "authenticated",
     jwksUri: `${DIRECT_SUPABASE_URL}/auth/v1/.well-known/jwks.json`
   }),
   tools: [
-    list_sessions_default,
-    get_session_default,
-    list_assets_default,
     list_models_default,
-    list_presets_default,
-    submit_feedback_default
+    write_prompt_default,
+    generate_image_default,
+    upscale_media_default,
+    check_run_default,
+    list_assets_default
   ]
 });
 var mcp_default = mcp;
