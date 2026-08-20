@@ -5,54 +5,14 @@ import {
   useRef,
   useState
 } from "react";
-import { createPortal } from "react-dom";
 
-import {
-  Icon,
-
-  Spinner,
-} from "../ds";
-import { Shell } from "../Shell";
-import { modeFromUrl, navigate } from "../nav";
-import type { InAppScreen, Screen } from "../nav";
-
-import {
-  createInferenceTurn,
-  fetchTurnStatus,
-  createReference,
-  createSession,
-  createVideoStoryboard,
-  deleteAsset,
-  deleteTurn,
-  fetchConfig,
-  fetchHealth,
-  listAssets,
-  listSessions,
-  listTurns,
-  updateSession
-} from "../lib/api";
-
-import { fallbackBrandKit, fallbackConfig } from "../lib/presets";
-import { supabase, hardSignOut } from "../lib/supabaseClient";
-import {
-  aspectRatioParts,
-  thumbnailUrl
-} from "../lib/studio";
-import type { StudioFieldErrors } from "../lib/studio";
-
-import { StudioRail } from "../components/StudioRail";
-
-
-import { PromptGenerator } from "../components/PromptGenerator";
-import Enhancer from "../components/Enhancer";
+import { Icon, Spinner } from "../ds";
+import { aspectRatioParts, thumbnailUrl } from "../lib/studio";
 
 import type {
   Asset,
   StudioSession,
 } from "../lib/types";
-import { loadLocalAssets, saveLocalAssets } from "../lib/localAssets";
-import { SessionFolders } from "../components/SessionFolders";
-import { clampWords } from "../lib/clampWords";
 
 
 
@@ -216,7 +176,6 @@ function ComparePaneBase({
           <span>{dimensions}</span>
           {settings.aspect_ratio ? <span>{String(settings.aspect_ratio)}</span> : null}
         </div>
-        {asset.notes ? <p>{asset.notes}</p> : <p>No notes yet.</p>}
         <div className="compare-actions">
           <button type="button" onClick={() => onEdit(asset)}>
             <Icon source="sparkles" tone="inherit" size={15} />

@@ -16,6 +16,8 @@ export const supabase = createClient(url, key, {
   },
 });
 
+// Keep in step with ALLOWED_EMAIL_DOMAINS in supabase/functions/frank-api/index.ts.
+// When these drift, a user signs in happily and then 403s on every route.
 export const ALLOWED_EMAIL_DOMAINS = ["frankbody.com", "autosolutions.ai", "alivebody.com.au"];
 
 export function isAllowedEmail(email: string | null | undefined) {

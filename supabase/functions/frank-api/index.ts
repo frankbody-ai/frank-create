@@ -12,7 +12,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const LOVABLE_BASE = "https://ai.gateway.lovable.dev/v1";
 const BUCKET = "studio-images";
-const ALLOWED_EMAIL_DOMAINS = ["frankbody.com", "autosolutions.ai"];
+// Keep in step with ALLOWED_EMAIL_DOMAINS in frank-create/src/lib/supabaseClient.ts.
+// When these drift, a user signs in happily and then 403s on every route.
+const ALLOWED_EMAIL_DOMAINS = ["frankbody.com", "autosolutions.ai", "alivebody.com.au"];
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -2321,6 +2323,13 @@ Deno.serve(async (req) => {
       if (!sessionId || !storagePath) {
         return json({ error: { code: "invalid_reference", message: "Reference needs a session and uploaded image path." } }, 400);
       }
+      // Oversized generations are never uploaded to the bucket (see
+      // storeOrFallback), so their storage path signs to a 404. Carry the
+      // provider's temporary URL across or the reference is born broken.
+      const remoteUrl = typeof body.remote_url === "string" && body.remote_url.startsWith("http")
+        ? body.remote_url
+        : "";
+      const storageMissing = body.storage_missing === true && !!remoteUrl;
       const metadata = {
         title: String(body.title || "Reference image"),
         media_type: "image",
@@ -2328,6 +2337,7 @@ Deno.serve(async (req) => {
         source_asset_id: typeof body.source_asset_id === "string" ? body.source_asset_id : null,
         width: typeof body.width === "number" ? body.width : null,
         height: typeof body.height === "number" ? body.height : null,
+        ...(storageMissing ? { storage_missing: true, remote_url: remoteUrl, remote_url_expires: true } : {}),
       };
 
       const { data, error } = await supabase().from("assets").insert({

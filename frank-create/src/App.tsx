@@ -1,7 +1,9 @@
 import {
   ChangeEvent,
   FormEvent,
-  PointerEvent as ReactPointerEvent,
+  Suspense,
+  lazy,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -39,8 +41,8 @@ import {
   updateSession
 } from "./lib/api";
 
-import { fallbackBrandKit, fallbackConfig } from "./lib/presets";
-import { supabase, hardSignOut } from "./lib/supabaseClient";
+import { fallbackConfig } from "./lib/presets";
+import { supabase } from "./lib/supabaseClient";
 import {
   buildTurnRequest,
   aspectRatioParts,
@@ -59,11 +61,11 @@ import {
   isVideoModel,
   resolveForModel,
   groupCompareRows,
-  parseCompareMeta,
   estimateImageCost,
   estimateVideoCost,
   composeReferencePrompt,
   referenceTagFor,
+  thumbnailUrl,
   taggedReferences,
   insertTagAtCaret,
   unknownReferenceTags,
@@ -73,8 +75,10 @@ import type { StudioFieldErrors } from "./lib/studio";
 import { StudioRail } from "./components/StudioRail";
 
 
-import { PromptGenerator } from "./components/PromptGenerator";
-import Enhancer from "./components/Enhancer";
+const PromptGenerator = lazy(() =>
+  import("./components/PromptGenerator").then((m) => ({ default: m.PromptGenerator }))
+);
+const Enhancer = lazy(() => import("./components/Enhancer"));
 
 import type {
   Asset,
@@ -87,18 +91,18 @@ import type {
 } from "./lib/types";
 import { loadLocalAssets, saveLocalAssets } from "./lib/localAssets";
 import { SessionFolders } from "./components/SessionFolders";
-import { clampWords } from "./lib/clampWords";
+import { useEventCallback } from "./lib/useEventCallback";
 
 
 
 // Official AutoSolutions OS tenant ambient ramps. Each theme re-tints the shell
 // gradient, the blurred blob and the accent from one brand colour.
 /** Tiles painted per page in the Add references overlay, upload tile included. */
+import { TurnCard } from "./studio/TurnCard";
 import {
   AssetPreviewMedia,
   CompareDialog,
   MaskPainterDialog,
-  OutputStrip,
   ReferencePickerCard,
   SessionCancelDialog
 } from "./studio/StudioPieces";
@@ -110,29 +114,25 @@ import {
   formatAspectChip,
   formatProviderPayload,
   makeLocalSession,
-  makeLocalTurn,
   mergeConfig,
   modelMissingKeyAction,
   modelName,
   modelReferenceLimitAction,
-  parseReadyStatusLink,
   preferredStudioModel,
   promptForTask,
   readLastUsedModelId,
-  referenceCountLabel,
   referenceUrlForGeneration,
   safeFileStem,
   settingsForTask,
   taskShortcutIcon,
-  turnAspect,
-  turnEmptyLabel,
   turnErrorCopy,
-  turnExpectedCount,
-  turnKindLabel,
   writeLastUsedModelId
 } from "./studio/studioFormat";
 
 const REFERENCE_PICKER_PAGE_SIZE = 9;
+
+/** Shared empty array so a turn with no outputs keeps a stable prop identity. */
+const NO_ASSETS: Asset[] = [];
 
 
 
@@ -150,7 +150,6 @@ export default function App() {
   );
   const [expandedPromptTurnIds, setExpandedPromptTurnIds] = useState<string[]>([]);
   const [selectedPresetKey, setSelectedPresetKey] = useState<string | null>(null);
-  const [attachedPresetSnapshot, setAttachedPresetSnapshot] = useState<string | null>(null);
   const [frankBodyMode, setFrankBodyMode] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   useEffect(() => {
@@ -226,10 +225,26 @@ export default function App() {
   const [inflightGens, setInflightGens] = useState<InflightGen[]>([]);
 
   const [roundSearch, setRoundSearch] = useState("");
-  const [statusText, setStatusText] = useState("Waiting for the brief...");
-  const [retrySafePayload, setRetrySafePayload] = useState<Record<string, unknown> | null>(null);
-  type GenPhase = "idle" | "queued" | "running" | "completed" | "failed";
-  const [genPhase, setGenPhase] = useState<GenPhase>("idle");
+  const [statusText, setStatusTextRaw] = useState("Waiting for the brief...");
+  // Every setStatusText call in this file is surfaced by the toast in the render
+  // tree. The nonce is what makes a repeated message re-appear: writing the same
+  // string twice is a no-op for React, but the second failure still deserves a say.
+  const [statusNonce, setStatusNonce] = useState(0);
+  const setStatusText = useCallback((next: string) => {
+    setStatusTextRaw(next);
+    setStatusNonce((current) => current + 1);
+  }, []);
+  const [statusToast, setStatusToast] = useState<string | null>(null);
+  const [offlineReason, setOfflineReason] = useState<string | null>(null);
+  // Surface each status message for a few seconds. Before this existed the ~100
+  // setStatusText calls below wrote into a void, which is how the studio ended up
+  // failing silently on everything from "give me a prompt" to "server key needed".
+  useEffect(() => {
+    if (!statusNonce || !statusText) return;
+    setStatusToast(statusText);
+    const timer = window.setTimeout(() => setStatusToast(null), 6000);
+    return () => window.clearTimeout(timer);
+  }, [statusNonce, statusText]);
   const [genError, setGenError] = useState<{ message: string; code?: string; retryable?: boolean; httpStatus?: number; raw?: string; requestId?: string } | null>(null);
   
   const [desktopNotice, setDesktopNotice] = useState<string | null>(null);
@@ -280,7 +295,6 @@ export default function App() {
           const remaining = current.filter((g) => !staleIds.has(g.id));
           if (!remaining.length) {
             setBusy(false);
-            setGenPhase("idle");
             setStatusText("Run timed out. Ready when you are.");
           }
           return remaining;
@@ -290,9 +304,6 @@ export default function App() {
     return () => { disposed = true; window.clearInterval(timer); };
   }, [inflightGens.length]);
 
-  // Set by "Switch model and retry": once the picker has re-rendered on the new
-  // model, the effect below fires the generation with the fresh selection.
-  const [autoRetryModelId, setAutoRetryModelId] = useState<string | null>(null);
   const [retryRunToken, setRetryRunToken] = useState(0);
 
   const [settingsRailOpen, setSettingsRailOpen] = useState(true);
@@ -348,22 +359,27 @@ export default function App() {
     let cancelled = false;
 
     async function bootstrap(attempt = 1) {
+      // Naming the stage is the point: one shared try meant any failure read as
+      // "backend offline", which is how a bad /config looked like a dead server.
+      let stage = "settings";
       try {
-        // The health probe is diagnostics only — a transient 503 from a cycling
-        // edge container must not knock the whole studio into offline mode.
-        await fetchHealth().catch(() => null);
+        // Diagnostics only, and nothing downstream reads the result — so fire it
+        // and move on rather than making first paint wait a round-trip for it.
+        void fetchHealth().catch(() => null);
 
-        const freshConfig = mergeConfig(await fetchConfig());
-        const sessionResult = await listSessions();
+        const [rawConfig, sessionResult] = await Promise.all([fetchConfig(), listSessions()]);
+        const freshConfig = mergeConfig(rawConfig);
         let nextSession = chooseLaunchSession(sessionResult.sessions);
         let nextSessions = sessionResult.sessions;
 
         if (!nextSession) {
+          stage = "first session";
           const created = await createSession({ name: "Launch Image Studio", mode: "image" });
           nextSession = created.session;
           nextSessions = [created.session];
         }
 
+        stage = "session history";
         const [turnResult, assetResult] = await Promise.all([
           listTurns(nextSession.id),
           listAssets({ sessionId: nextSession.id })
@@ -383,9 +399,10 @@ export default function App() {
         setSelectedAsset(firstReviewableAsset(assetResult.assets));
 
         setConnection("online");
+        setOfflineReason(null);
         setStatusText("Studio is connected.");
         setStudioBooted(true);
-      } catch {
+      } catch (error) {
         if (cancelled) {
           return;
         }
@@ -405,6 +422,10 @@ export default function App() {
         setAssets(persisted);
         setSelectedAsset(firstReviewableAsset(persisted));
       }
+        const detail = error instanceof Error ? error.message : String(error);
+        setOfflineReason(
+          `Couldn't load your ${stage} from the studio backend (${detail}). Everything already on screen is safe, but new runs are paused until it reconnects.`
+        );
         setStatusText("Preview backend offline — reconnecting in the background.");
         setStudioBooted(true);
         // Keep trying: a degraded edge container usually recovers within a
@@ -435,21 +456,6 @@ export default function App() {
     () => config.models.find((model) => model.id === selectedModelId) ?? config.models[0],
     [config.models, selectedModelId]
   );
-  // First healthy alternative, used for the one-click "switch model and retry"
-  // action when the selected model is down on the provider side.
-  const fallbackModel = useMemo(
-    () =>
-      config.models.find(
-        (model) => model.id !== selectedModelId && model.status === "ready" && !model.degraded
-      ) ?? null,
-    [config.models, selectedModelId]
-  );
-  useEffect(() => {
-    if (!autoRetryModelId || selectedModelId !== autoRetryModelId) return;
-    setAutoRetryModelId(null);
-    void handleGenerate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRetryModelId, selectedModelId]);
   // Round-level retry: retryTurn refills prompt/model/settings/references, then
   // bumps this token so the run fires on the committed state, not a stale closure.
   useEffect(() => {
@@ -577,7 +583,6 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedModelId, config.models]);
 
-  const promptPresets = useMemo(() => config.promptPresets, [config.promptPresets]);
   const productTaskShortcuts = useMemo(
     () => config.tasks.filter((task) => !["product-shot-lab", "prompt-remix"].includes(task.key)),
     [config.tasks]
@@ -736,6 +741,19 @@ export default function App() {
 
   const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
   const displayOutputAssets = outputAssets;
+  // Indexed once per asset change. The timeline used to filter the whole library
+  // inside every card, on every render — O(rounds x assets) for each keystroke.
+  const assetsByTurn = useMemo(() => {
+    const byTurn = new Map<string, Asset[]>();
+    for (const asset of displayOutputAssets) {
+      if (!asset.turn_id) continue;
+      const bucket = byTurn.get(asset.turn_id);
+      if (bucket) bucket.push(asset);
+      else byTurn.set(asset.turn_id, [asset]);
+    }
+    return byTurn;
+  }, [displayOutputAssets]);
+  const assetsById = useMemo(() => new Map(assets.map((asset) => [asset.id, asset])), [assets]);
   // Picks from the same run, so the preview can step left/right through a round.
   const lightboxSiblings = lightboxAsset
     ? (() => {
@@ -918,17 +936,6 @@ export default function App() {
     return opened;
   }
 
-  async function copyStudioLink(url: string, label: string) {
-    try {
-      if (!navigator.clipboard?.writeText) {
-        throw new Error("Clipboard API unavailable");
-      }
-      await navigator.clipboard.writeText(url);
-      setStatusText(`${label} link copied.`);
-    } catch {
-      setStatusText(`Could not copy ${label.toLowerCase()} link.`);
-    }
-  }
 
 
 
@@ -1523,8 +1530,22 @@ export default function App() {
       return null;
     }
 
+    // This used to fall through to the `frank-generate` function. That function's
+    // model map no longer covers the roster, so every model it didn't recognise
+    // silently produced a Gemini image instead of the one that was picked —
+    // billed, with nothing on screen to say so. Refusing is the honest answer.
+    if (connection !== "online") {
+      setGenError({
+        message:
+          "The studio backend is offline, so runs are paused. Your prompt, picks and references are safe — try again once it reconnects.",
+        code: "offline",
+        retryable: true,
+      });
+      setStatusText("Backend offline — generation paused.");
+      return null;
+    }
+
     setBusy(true);
-    setGenPhase("queued");
     setGenError(null);
     setStatusText(activePromptMode === "generate" ? "Preparing the next round..." : "Preparing the edit brief...");
     const inflightId = makeLocalId("gen");
@@ -1562,143 +1583,6 @@ export default function App() {
     clearReferenceDock();
     if (!override) setPrompt("");
 
-    if (connection !== "online") {
-      // Auto-name the session from the first prompt if it still has the default name.
-      if (activeSession && (!activeSession.name || /^(new session|launch image studio|untitled)/i.test(activeSession.name)) && turns.length === 0) {
-        const autoName = promptText.trim().replace(/\s+/g, " ").slice(0, 40) || activeSession.name;
-        if (autoName && autoName !== activeSession.name) {
-          const renamed = { ...activeSession, name: autoName };
-          setActiveSession(renamed);
-          setSessions((current) => current.map((s) => (s.id === renamed.id ? renamed : s)));
-        }
-      }
-      const invokeBody = {
-        prompt: providerPrompt,
-        count: settings.count,
-        modelId: selectedModel.id,
-        aspect_ratio: settings.aspect_ratio,
-        size: settings.image_size,
-        thinking_budget: settings.thinking_budget ?? 0,
-        reference_images: generationReferenceUrls,
-      };
-      let producedAssets: Asset[] | null = null;
-      try {
-        setGenPhase("running");
-        setStatusText("Model is running...");
-        const ctrl = new AbortController();
-        generateAbortRef.current = ctrl;
-        const { data, error } = await supabase.functions.invoke("frank-generate", {
-          body: invokeBody,
-          // supabase-js v2 forwards this AbortSignal to the underlying fetch.
-          // Aborting closes the connection so the edge function's req.signal
-          // fires and cancels the in-flight Replicate prediction.
-          // signal option is supported at runtime by supabase-js v2.
-          signal: ctrl.signal,
-        } as Parameters<typeof supabase.functions.invoke>[1]);
-        if (error) throw error;
-        const images: string[] = (data as { images?: string[] })?.images ?? [];
-        if (!images.length) throw new Error("No image returned");
-
-
-        const nowIso = new Date().toISOString();
-        const turnId = makeLocalId("turn");
-        const requestedAspect = aspectRatioParts(settings.aspect_ratio);
-        const newAssets: Asset[] = images.map((dataUrl, idx) => ({
-          id: makeLocalId("asset"),
-          session_id: activeSession.id,
-          turn_id: turnId,
-          kind: "generated",
-          title: `Lovable AI pick ${idx + 1}`,
-          media_type: "image",
-          provider: "lovable-ai",
-          model: selectedModel.id,
-          prompt: request.prompt,
-          settings_json: JSON.stringify(settings),
-          preview_url: dataUrl,
-          width: requestedAspect?.width,
-          height: requestedAspect?.height,
-          favorite: false,
-          sync_status: "local",
-          created_at: nowIso,
-          updated_at: nowIso,
-        }));
-
-        const turn: StudioTurn = {
-          id: turnId,
-          session_id: activeSession.id,
-          kind: request.kind,
-          provider: "lovable-ai",
-          model: request.model,
-          prompt: request.prompt,
-          settings_json: JSON.stringify(request.settings),
-          reference_asset_ids_json: JSON.stringify(request.reference_asset_ids),
-          output_asset_ids_json: JSON.stringify(newAssets.map((a) => a.id)),
-          frank_body_mode: request.frank_body_mode,
-          preset_key: request.preset_key,
-          status: "complete",
-          sync_status: "local",
-          created_at: nowIso,
-          updated_at: nowIso,
-        };
-
-        setTurns((current) => [...current, turn]);
-        setAssets((current) => [...newAssets, ...current]);
-        setSelectedAsset(newAssets[0]);
-        producedAssets = newAssets;
-        setStatusText(`Generated ${newAssets.length} pick${newAssets.length === 1 ? "" : "s"} via Lovable AI.`);
-        setRetrySafePayload(null);
-        setGenPhase("completed");
-        setGenError(null);
-
-      } catch (err) {
-        // Aborted by the user: don't render a red "failed" error card; show a canceled state.
-        const isAbort =
-          (err as { name?: string })?.name === "AbortError" ||
-          generateAbortRef.current?.signal.aborted;
-        if (isAbort) {
-          setStatusText("Canceled.");
-          setGenPhase("failed");
-          setGenError({ message: "Canceled by user.", code: "canceled", retryable: true });
-          setRetrySafePayload(invokeBody);
-          const localTurn = makeLocalTurn(activeSession.id, request);
-          setTurns((current) => [...current, localTurn]);
-        } else {
-          // Surface structured error info from frank-generate when available.
-          let message = err instanceof Error ? err.message : "Lovable AI generation failed.";
-          let code: string | undefined;
-          let retryable: boolean | undefined;
-          let httpStatus: number | undefined;
-          let raw: string | undefined;
-          let requestId: string | undefined;
-          try {
-            const ctx = (err as { context?: Response }).context;
-            if (ctx && typeof ctx.json === "function") {
-              httpStatus = ctx.status;
-              const parsed = await ctx.clone().json();
-              raw = JSON.stringify(parsed, null, 2);
-              if (parsed?.error) message = String(parsed.error);
-              if (parsed?.code) code = String(parsed.code);
-              if (typeof parsed?.retryable === "boolean") retryable = parsed.retryable;
-              if (parsed?.request_id) requestId = String(parsed.request_id);
-            }
-          } catch { /* body already consumed or non-JSON */ }
-          const idSuffix = requestId ? ` · req ${requestId.slice(0, 8)}` : "";
-          const suffix = code ? ` [${code}${retryable === false ? " — not retryable" : retryable ? " — safe to retry" : ""}${idSuffix}]` : idSuffix;
-          setStatusText(`Lovable AI: ${message}${suffix}`);
-          setRetrySafePayload(retryable === true ? invokeBody : null);
-          setGenPhase("failed");
-          setGenError({ message, code, retryable, httpStatus, raw, requestId });
-          const localTurn = makeLocalTurn(activeSession.id, request);
-          setTurns((current) => [...current, localTurn]);
-        }
-      } finally {
-        generateAbortRef.current = null;
-        finishInflight();
-        setBusy(false);
-      }
-
-      return producedAssets;
-    }
 
     const missingKeyMessage = modelMissingKeyAction(selectedModel);
     if (missingKeyMessage) {
@@ -1707,8 +1591,12 @@ export default function App() {
     }
 
     let onlineAssets: Asset[] | null = null;
+    // Stop needs something to pull on: without a controller the request runs to
+    // completion and the button could only ever hide the card.
+    const onlineCtrl = new AbortController();
+    generateAbortRef.current = onlineCtrl;
     try {
-      let result = await createInferenceTurn(request);
+      let result = await createInferenceTurn(request, { signal: onlineCtrl.signal });
 
       setTurns((current) => [...current, result.turn]);
 
@@ -1716,7 +1604,7 @@ export default function App() {
       // request (Riverflow 4K, Seedream). Keep polling until it closes out.
       if (result.status === "running") {
         setStatusText("Model is running — long jobs keep going, this can take a few minutes...");
-        const final = await pollTurnUntilDone(result.turn.id);
+        const final = await pollTurnUntilDone(result.turn.id, onlineCtrl.signal);
         if (final) result = { ...result, ...final } as typeof result;
       }
 
@@ -1725,7 +1613,6 @@ export default function App() {
       } else if (result.status === "failed") {
         const turnError = turnErrorCopy(result.turn);
         const message = result.error?.message || turnError || "Generation failed.";
-        setGenPhase("failed");
         setGenError({
           message,
           code: result.error?.code,
@@ -1734,15 +1621,6 @@ export default function App() {
           raw: result.error?.raw,
           requestId: result.error?.request_id,
         });
-        setRetrySafePayload(result.error?.retryable === true ? {
-          prompt: request.prompt,
-          count: settings.count,
-          modelId: selectedModel.id,
-          aspect_ratio: settings.aspect_ratio,
-          size: settings.image_size,
-          thinking_budget: settings.thinking_budget ?? 0,
-          reference_images: generationReferenceUrls,
-        } : null);
         setStatusText(
           message ||
             inferenceStatusCopy({
@@ -1774,8 +1652,16 @@ export default function App() {
       }
 
     } catch (error) {
-      setStatusText(error instanceof Error ? error.message : "This round needs another look.");
+      // stopImageRun already said its piece; don't overwrite it with a red error.
+      const aborted =
+        (error as { name?: string })?.name === "AbortError" || onlineCtrl.signal.aborted;
+      if (!aborted) {
+        const message = error instanceof Error ? error.message : "This round needs another look.";
+        setGenError({ message, retryable: true });
+        setStatusText(message);
+      }
     } finally {
+      generateAbortRef.current = null;
       finishInflight();
       setBusy(false);
       // The request can time out while the server keeps finishing the round
@@ -1787,9 +1673,11 @@ export default function App() {
 
   // Poll a "running" turn until the backend reports complete/failed. Turn cards
   // stay on screen the whole time, so a refresh mid-run loses nothing.
-  async function pollTurnUntilDone(turnId: string) {
+  async function pollTurnUntilDone(turnId: string, signal?: AbortSignal) {
     for (let attempt = 0; attempt < 240; attempt += 1) {
+      if (signal?.aborted) return null;
       await new Promise((resolve) => setTimeout(resolve, attempt < 4 ? 2500 : 5000));
+      if (signal?.aborted) return null;
       let snapshot: Awaited<ReturnType<typeof fetchTurnStatus>>;
       try {
         snapshot = await fetchTurnStatus(turnId);
@@ -1877,7 +1765,6 @@ export default function App() {
       const remaining = current.filter((gen) => !settled.has(gen.id));
       if (!remaining.length) {
         setBusy(false);
-        setGenPhase("completed");
         setStatusText(
           newestAsset
             ? "Round landed while you were waiting — picks are ready."
@@ -2099,7 +1986,6 @@ export default function App() {
 
     setInflightGens((current) => [...current, ...inflight]);
     setBusy(true);
-    setGenPhase("running");
     setGenError(null);
     
     setStatusText(`Running ${modelName(config, modelA.id)} vs ${modelName(config, modelB.id)}...`);
@@ -2107,6 +1993,9 @@ export default function App() {
     const compareLastFrame = videoLastFrame;
     clearReferenceDock();
     setPrompt("");
+
+    const compareCtrl = new AbortController();
+    generateAbortRef.current = compareCtrl;
 
     const runSide = async ({ side, model }: { side: "A" | "B"; model: StudioModel }) => {
       const resolved = resolveForModel(model, settings, { referenceCount });
@@ -2150,9 +2039,9 @@ export default function App() {
         referenceImageUrls: sideReferenceUrls,
         providerPrompt: sideProviderPrompt
       });
-      const started = await createInferenceTurn(request);
+      const started = await createInferenceTurn(request, { signal: compareCtrl.signal });
       if (started.status === "running") {
-        const final = await pollTurnUntilDone(started.turn.id);
+        const final = await pollTurnUntilDone(started.turn.id, compareCtrl.signal);
         if (final) return { ...started, ...final } as typeof started;
       }
       return started;
@@ -2186,17 +2075,19 @@ export default function App() {
       }
 
       if (failures.length) {
-        setGenPhase("failed");
         setGenError({ message: failures.join(" · "), retryable: true });
         setStatusText(failures.join(" · "));
       } else {
-        setGenPhase("completed");
         setStatusText(`Side-by-side ready — ${modelName(config, modelA.id)} vs ${modelName(config, modelB.id)}.`);
       }
     } catch (error) {
-      setGenPhase("failed");
-      setStatusText(error instanceof Error ? error.message : "Side-by-side run failed.");
+      if (!compareCtrl.signal.aborted) {
+        const message = error instanceof Error ? error.message : "Side-by-side run failed.";
+        setGenError({ message, retryable: true });
+        setStatusText(message);
+      }
     } finally {
+      generateAbortRef.current = null;
       const ids = new Set(inflight.map((entry) => entry.id));
       setInflightGens((current) => current.filter((entry) => !ids.has(entry.id)));
       setBusy(false);
@@ -2235,6 +2126,10 @@ export default function App() {
       title: `${asset.title} reference`,
       file_path: asset.file_path,
       preview_url: asset.preview_url,
+      // An oversized generation was never uploaded, so its storage path signs to
+      // a 404. Hand the provider URL over or the reference arrives broken.
+      remote_url: asset.storage_missing ? asset.remote_url : undefined,
+      storage_missing: asset.storage_missing === true,
       media_type: "image",
       provider: asset.provider,
       model: asset.model,
@@ -2290,7 +2185,6 @@ export default function App() {
       const parsed = JSON.parse(turn.settings_json || "{}") as Partial<StudioSettings>;
       setPrompt(turn.prompt || "");
       
-      setAttachedPresetSnapshot(null);
       if (turn.model) setSelectedModelId(turn.model);
       if (turn.preset_key) setSelectedPresetKey(turn.preset_key); else setSelectedPresetKey(null);
       setFrankBodyMode(!!turn.frank_body_mode);
@@ -2352,27 +2246,6 @@ export default function App() {
 
 
 
-  function attachPreset(nextKey: string | null) {
-    const preset = nextKey ? promptPresets.find((p) => p.key === nextKey) ?? null : null;
-    setPrompt((current) => {
-      let base = current;
-      if (attachedPresetSnapshot && base.endsWith(attachedPresetSnapshot)) {
-        base = base.slice(0, -attachedPresetSnapshot.length);
-      }
-      base = base.replace(/\s+$/, "");
-      if (!preset) return base;
-      return base ? `${base}\n\n${preset.prompt}` : preset.prompt;
-    });
-    if (!preset) {
-      setSelectedPresetKey(null);
-      setAttachedPresetSnapshot(null);
-    } else {
-      setSelectedPresetKey(preset.key);
-      // Snapshot stores exactly what suffix we appended so we can strip it later.
-      // We check both the "with leading \n\n" form and the "bare" form when stripping.
-      setAttachedPresetSnapshot(preset.prompt);
-    }
-  }
 
 
 
@@ -2380,7 +2253,6 @@ export default function App() {
   function selectTaskShortcut(task: FrankTask) {
     const taskPrompt = promptForTask(task);
     setSelectedPresetKey(task.key);
-    setAttachedPresetSnapshot(null);
     setStudioMode("studio");
     setPrompt((current) => (current.trim() ? `${current.trim()}\n\n${taskPrompt}` : taskPrompt));
     setSettings((current) => settingsForTask(task.key, current, selectedModel));
@@ -2388,6 +2260,46 @@ export default function App() {
   }
 
 
+
+  // Stop an in-flight image round. The provider call is aborted wherever the
+  // transport allows it; either way we stop waiting, and any picks the server
+  // already finished still land via reconcileSessionAssets.
+  function stopImageRun() {
+    try { generateAbortRef.current?.abort(); } catch { /* already settled */ }
+    generateAbortRef.current = null;
+    setInflightGens([]);
+    setBusy(false);
+    setGenError(null);
+    setStatusText("Stopped. Any picks that already finished will still appear.");
+    void reconcileSessionAssets();
+  }
+
+  // TurnCard is memo()-wrapped, so these have to keep the same identity between
+  // renders or the memo buys nothing at all.
+  const handleTogglePrompt = useEventCallback((turnId: string) =>
+    setExpandedPromptTurnIds((current) =>
+      current.includes(turnId) ? current.filter((id) => id !== turnId) : [...current, turnId]
+    )
+  );
+  const handleRetryTurn = useEventCallback((turn: StudioTurn, missing?: number) => retryTurn(turn, missing));
+  const handleDeleteTurn = useEventCallback((turn: StudioTurn) => {
+    if (window.confirm("Delete this round and its generated images?")) {
+      void removeTurnFromSession(turn);
+    }
+  });
+  const handleCopyPrompt = useEventCallback((turn: StudioTurn) => {
+    void navigator.clipboard
+      ?.writeText(turn.prompt || "")
+      .then(() => setStatusText("Prompt copied to clipboard."))
+      .catch(() => setStatusText("Could not copy prompt."));
+  });
+  const handleCopyTurnId = useEventCallback((turn: StudioTurn) => {
+    void navigator.clipboard
+      ?.writeText(turn.id)
+      .then(() => setStatusText("Generation ID copied."))
+      .catch(() => setStatusText("Could not copy the ID."));
+  });
+  const handleInspectAsset = useEventCallback((asset: Asset) => inspectAsset(asset));
 
   /** Nav clicks: the in-shell screens are a mode change, the rest are routes. */
   function goToScreen(screen: Screen) {
@@ -2425,7 +2337,6 @@ export default function App() {
     if (ok) void archiveSession(session);
   }
 
-  const statusReadyLink = parseReadyStatusLink(statusText);
 
   return (
     <Shell
@@ -2455,6 +2366,34 @@ export default function App() {
         </Banner>
       ) : null}
 
+      {genError ? (
+        <Banner
+          tone="critical"
+          title={genError.code === "canceled" ? "Run canceled" : "That round didn't land"}
+          onDismiss={() => setGenError(null)}
+        >
+          <span>
+            {genError.message}
+            {genError.code && genError.code !== "canceled"
+              ? ` (${genError.code}${genError.retryable === true ? " — safe to retry" : genError.retryable === false ? " — not retryable" : ""})`
+              : ""}
+            {genError.requestId ? ` · req ${genError.requestId.slice(0, 8)}` : ""}
+          </span>
+        </Banner>
+      ) : null}
+
+      {offlineReason ? (
+        <Banner tone="warning" title="Studio backend is offline">
+          <span>{offlineReason}</span>
+        </Banner>
+      ) : null}
+
+      {statusToast ? (
+        <div className="run-toast" role="status" aria-live="polite">
+          <span className="run-toast__label">{statusToast}</span>
+        </div>
+      ) : null}
+
       {videoStartedAt != null ? (
         <div className="run-toast" role="status">
           <Spinner size="small" />
@@ -2469,6 +2408,7 @@ export default function App() {
       ) : null}
 
       {studioMode === "upscaler" ? (
+        <Suspense fallback={<div className="screen-loading"><Spinner size="small" /></div>}>
         <Enhancer
           models={config.models}
           sessionId={activeSession?.id ?? null}
@@ -2486,8 +2426,10 @@ export default function App() {
           onExpandAsset={(asset) => setLightboxAsset(asset)}
           onDownloadAsset={(asset) => void downloadAssetFile(asset)}
         />
+        </Suspense>
 
       ) : studioMode === "prompt" ? (
+        <Suspense fallback={<div className="screen-loading"><Spinner size="small" /></div>}>
         <PromptGenerator
           onStatus={setStatusText}
           onUsePrompt={(value, images) => {
@@ -2496,6 +2438,7 @@ export default function App() {
             void adoptPromptGeneratorReferences(images ?? []);
           }}
         />
+        </Suspense>
       ) : (
 
       <>
@@ -2601,7 +2544,7 @@ export default function App() {
                           onClick={() => applyMention(option.tag)}
                         >
                           {option.preview ? (
-                            <img src={option.preview} alt="" />
+                            <img src={thumbnailUrl(option.preview, 96, 30, "webp")} alt="" loading="lazy" />
                           ) : (
                             <span className="prompt-mention-thumb-fallback">
                               <Icon source="photo" tone="inherit" size={12} />
@@ -2682,7 +2625,7 @@ export default function App() {
                           }
                         }}
                       >
-                        {asset.preview_url ? <img src={asset.preview_url} alt={asset.title} /> : <Icon source="photo" tone="inherit" size={15} />}
+                        {asset.preview_url ? <img src={thumbnailUrl(asset.preview_url, 160, 35, "webp")} alt={asset.title} loading="lazy" /> : <Icon source="photo" tone="inherit" size={15} />}
                         <button
                           type="button"
                           className="reference-tag"
@@ -2738,7 +2681,7 @@ export default function App() {
                     ) : null}
                     {maskAsset ? (
                       <button className="mask-chip" type="button" onClick={() => setMaskAsset(null)} title="Clear edit mask">
-                        {maskAsset.preview_url ? <img src={maskAsset.preview_url} alt="" aria-hidden="true" /> : <Icon source="squares-2x2" tone="inherit" size={14} />}
+                        {maskAsset.preview_url ? <img src={thumbnailUrl(maskAsset.preview_url, 96, 30, "webp")} alt="" aria-hidden="true" loading="lazy" /> : <Icon source="squares-2x2" tone="inherit" size={14} />}
                         <span>Mask {maskAsset.title}</span>
                         <Icon source="x-mark" tone="inherit" size={14} />
                       </button>
@@ -2765,7 +2708,7 @@ export default function App() {
                     <button
                       className="primary-button"
                       type="submit"
-                      disabled={!prompt.trim() || hasStudioFieldErrors(fieldErrors)}
+                      disabled={busy || !prompt.trim() || hasStudioFieldErrors(fieldErrors)}
                       aria-label={primaryActionLabel}
                       title={
                         !prompt.trim()
@@ -2928,14 +2871,23 @@ export default function App() {
                             <span>{gen.count} pick{gen.count === 1 ? "" : "s"}</span>
                             {waitedSeconds >= 5 ? <span>{waitedLabel} elapsed</span> : null}
                           </div>
-                          {waitedMs > 90000 ? (
-                            <div className="turn-pending-recheck">
-                              <span>Taking longer than usual — the picks may already be saved.</span>
-                              <button type="button" onClick={() => void settleFinishedRunsFromServer()}>
-                                Check for results
-                              </button>
-                            </div>
-                          ) : null}
+                          <div className="turn-pending-actions">
+                            {waitedMs > 90000 ? (
+                              <>
+                                <span>Taking longer than usual — the picks may already be saved.</span>
+                                <button
+                                  type="button"
+                                  className="turn-pending-recheck"
+                                  onClick={() => void settleFinishedRunsFromServer()}
+                                >
+                                  Check for results
+                                </button>
+                              </>
+                            ) : null}
+                            <button type="button" className="turn-pending-recheck" onClick={stopImageRun}>
+                              Stop
+                            </button>
+                          </div>
                         </div>
                       </div>
                       </div>
@@ -2974,272 +2926,26 @@ export default function App() {
                       </p>
                     ) : null}
                     <div className={row.length > 1 ? "compare-run-grid" : "turn-row-single"}>
-                    {row.map((turn) => {
-                    const idx = rowIdx;
-                    const compareSide = parseCompareMeta(turn.settings_json).side;
-                    const createdMs = turn.created_at ? new Date(turn.created_at).getTime() : 0;
-                    const isFresh = idx === 0 && createdMs && Date.now() - createdMs < 30_000;
-                    const shortId = turn.id.slice(0, 8);
-
-                    const timeLabel = turn.created_at ? new Date(turn.created_at).toLocaleString() : "";
-                    return (
-                    <article
-                      className={`turn-card${isFresh ? " turn-card-fresh" : ""}`}
-                      key={turn.id}
-                      style={{ position: "relative" }}
-                    >
-                      <div style={{ position: "absolute", top: 8, right: 8, display: "flex", gap: 6, alignItems: "center" }}>
-                        {isFresh ? (
-                          <span
-                            style={{
-                              fontSize: 10, fontWeight: 600, letterSpacing: 0.4, textTransform: "uppercase",
-                              padding: "2px 6px", borderRadius: 999,
-                              background: "rgba(34,197,94,0.15)", color: "rgb(21,128,61)",
-                              border: "1px solid rgba(34,197,94,0.35)",
-                            }}
-                          >
-                            New
-                          </span>
-                        ) : null}
-                        <button
-                          type="button"
-                          aria-label="Copy generation ID"
-                          title={`Copy ID (${turn.id})`}
-                          onClick={() => {
-                            void navigator.clipboard?.writeText(turn.id).catch(() => {});
-                          }}
-                          style={{
-                            width: 22, height: 22, padding: 0,
-                            display: "inline-flex", alignItems: "center", justifyContent: "center",
-                            borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
-                            background: "rgba(255,255,255,0.85)", cursor: "pointer",
-                            color: "rgba(0,0,0,0.55)",
-                          }}
-                        >
-                          <Icon source="document-duplicate" tone="inherit" size={12} />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Retry this generation"
-                          title="Retry with the same settings"
-                          onClick={() => retryTurn(turn)}
-                          style={{
-                            width: 22, height: 22, padding: 0,
-                            display: "inline-flex", alignItems: "center", justifyContent: "center",
-                            borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
-                            background: "rgba(255,255,255,0.85)", cursor: "pointer",
-                            color: "rgba(0,0,0,0.55)",
-                          }}
-
-                        >
-                          <Icon source="arrow-path" tone="inherit" size={12} />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="Delete this round"
-                          title="Delete this round"
-                          onClick={() => {
-                            if (window.confirm("Delete this round and its generated images?")) {
-                              removeTurnFromSession(turn);
-                            }
-                          }}
-                          style={{
-                            width: 22, height: 22, padding: 0,
-                            display: "inline-flex", alignItems: "center", justifyContent: "center",
-                            borderRadius: 999, border: "1px solid rgba(0,0,0,0.12)",
-                            background: "rgba(255,255,255,0.85)", cursor: "pointer",
-                            color: "rgba(0,0,0,0.55)",
-                          }}
-                        >
-                          <Icon source="x-mark" tone="inherit" size={12} />
-                        </button>
-
-                      </div>
-                      <div className="turn-card-body">
-                      <div className="turn-side">
-                      <div className="turn-copy">
-
-                        <span className={`status-dot ${turn.status}`} />
-                        <div>
-                          <p className="eyebrow">
-                            {compareSide ? <span className="compare-side-badge">Side {compareSide}</span> : null}
-                            {turnKindLabel(turn)}
-                          </p>
-
-                          <h3>{modelName(config, turn.model)}</h3>
-                          {(() => {
-                            const expanded = expandedPromptTurnIds.includes(turn.id);
-                            const clamped = clampWords(turn.prompt || "", 25);
-                            if (!clamped.truncated) return <p>{turn.prompt}</p>;
-                            return (
-                              <p
-                                className="turn-prompt-text"
-                                role="button"
-                                title={expanded ? "Collapse prompt" : "Show full prompt"}
-                                onClick={() =>
-                                  setExpandedPromptTurnIds((current) =>
-                                    current.includes(turn.id)
-                                      ? current.filter((id) => id !== turn.id)
-                                      : [...current, turn.id]
-                                  )
-                                }
-                              >
-                                {expanded ? turn.prompt : clamped.text}
-                                <span className="turn-prompt-more">{expanded ? "less" : "more"}</span>
-                              </p>
-                            );
-                          })()}
-                          <div className="turn-meta">
-                            <span title={turn.id} style={{ fontFamily: "ui-monospace, monospace" }}>#{shortId}</span>
-                            {timeLabel ? <span title={timeLabel}>{timeLabel}</span> : null}
-                            <span>{turn.status}</span>
-                            {turn.frank_body_mode ? <span>Frank Body Mode</span> : <span>User prompt</span>}
-                            {turnAspect(turn) ? <span className="turn-chip-aspect">{formatAspectChip(turnAspect(turn))}</span> : null}
-                            {(() => {
-                              // Real returned pixel size, read from the delivered file.
-                              const sizes = Array.from(new Set(
-                                displayOutputAssets
-                                  .filter((a) => a.turn_id === turn.id && a.width && a.height)
-                                  .map((a) => `${a.width} × ${a.height}`),
-                              ));
-                              if (!sizes.length) return null;
-                              return (
-                                <span className="turn-chip-resolution" title="Resolution returned by the provider">
-                                  {sizes.join(" · ")}
-                                </span>
-                              );
-                            })()}
-                            {displayOutputAssets.some((a) => a.turn_id === turn.id && a.storage_missing) ? (
-                              <span
-                                className="turn-chip-resolution"
-                                title="This file was over the 20 MB storage limit, so it streams from the provider's temporary link. Save it now to keep it."
-                              >
-                                Temporary link
-                              </span>
-                            ) : null}
-                            <button
-                              type="button"
-                              className="turn-chip-json"
-                              onClick={() => setPayloadTurnId(turn.id)}
-                              title="Show the JSON body sent to the provider"
-                            >
-                              JSON
-                            </button>
-
-
-                            <button
-                              type="button"
-                              className="turn-copy-prompt"
-                              onClick={() => {
-                                void navigator.clipboard?.writeText(turn.prompt || "").then(() => {
-                                  setStatusText("Prompt copied to clipboard.");
-                                }).catch(() => {
-                                  setStatusText("Could not copy prompt.");
-                                });
-                              }}
-                              title="Copy prompt"
-                            >
-                              <Icon source="document-duplicate" tone="inherit" size={12} />
-                              Copy prompt
-                            </button>
-                            {(() => {
-                              const refIds = parseJsonList(turn.reference_asset_ids_json);
-                              if (!refIds.length) return null;
-                              return (
-                                <span className="turn-ref-strip" title={referenceCountLabel(refIds.length)}>
-                                  {refIds.map((refId, refIndex) => {
-                                    const refAsset = assets.find((a) => a.id === refId);
-                                    const tag = referenceTagFor(refIndex);
-                                    return (
-                                      <span
-                                        key={`${turn.id}-${refId}`}
-                                        className="turn-ref-thumb"
-                                        title={`${tag} · ${refAsset?.title ?? "reference"}`}
-                                        onClick={() => { if (refAsset) setReferencePreviewAsset(refAsset); }}
-                                        role={refAsset ? "button" : undefined}
-                                      >
-                                        {refAsset?.preview_url ? (
-                                          <img src={refAsset.preview_url} alt={refAsset.title} loading="lazy" />
-                                        ) : (
-                                          <Icon source="photo" tone="inherit" size={12} />
-                                        )}
-                                      </span>
-                                    );
-                                  })}
-                                </span>
-                              );
-                            })()}
-
-                            {turnErrorCopy(turn) ? <span className="turn-error">{turnErrorCopy(turn)}</span> : null}
-
-                            {(() => {
-                              const anyTurn = turn as any;
-                              const requested = typeof anyTurn.requested_count === "number" ? anyTurn.requested_count : 0;
-                              const produced = displayOutputAssets.filter((a) => a.turn_id === turn.id).length;
-                              let partial: Array<{ code?: string; message?: string; request_id?: string }> = [];
-                              try { partial = JSON.parse(anyTurn.partial_errors_json || "[]"); } catch { partial = []; }
-                              if (!partial.length && (!requested || produced >= requested)) return null;
-                              const missing = Math.max(0, requested - produced);
-                              const anyRetryable = partial.some((p: any) => p?.retryable !== false);
-                              return (
-                                <>
-                                  <span
-                                    className="turn-partial"
-                                    title={partial.map((p, i) => `${i + 1}. [${p.code || "error"}] ${p.message || ""}${p.request_id ? ` (id: ${p.request_id})` : ""}`).join("\n")}
-                                    style={{
-                                      display: "inline-flex", alignItems: "center", gap: 4,
-                                      fontSize: 11, padding: "2px 8px", borderRadius: 999,
-                                      background: "rgba(245,158,11,0.15)", color: "rgb(146,64,14)",
-                                      border: "1px solid rgba(245,158,11,0.4)", cursor: "help",
-                                    }}
-                                  >
-                                    {produced} of {requested || (produced + partial.length)} succeeded
-                                    {missing > 0 ? ` · ${missing} failed` : ""}
-                                  </span>
-                                  {missing > 0 && anyRetryable ? (
-                                    <button
-                                      type="button"
-                                      className="turn-retry-missing"
-                                      onClick={() => retryTurn(turn, missing)}
-                                      title={`Re-run the ${missing} missing image${missing === 1 ? "" : "s"} with the same settings`}
-                                      style={{
-                                        fontSize: 11, padding: "2px 8px", borderRadius: 999,
-                                        background: "rgba(59,130,246,0.12)", color: "rgb(30,64,175)",
-                                        border: "1px solid rgba(59,130,246,0.4)", cursor: "pointer",
-                                      }}
-                                    >
-                                      Retry missing ({missing})
-                                    </button>
-                                  ) : null}
-                                </>
-                              );
-                            })()}
-                          </div>
-                      </div>
-                      </div>
-                      </div>
-                      <div className="turn-visual">
-
-                      <OutputStrip
-                        assets={displayOutputAssets.filter((asset) => asset.turn_id === turn.id)}
-                        onSelect={inspectAsset}
-                        emptyLabel={turnEmptyLabel(turn)}
-                        pending={turn.status === "queued" || turn.status === "running"}
-                        pendingCount={turnExpectedCount(turn)}
-                        pendingAspect={turnAspect(turn)}
-
-
+                    {row.map((turn) => (
+                      <TurnCard
+                        key={turn.id}
+                        turn={turn}
+                        config={config}
+                        turnAssets={assetsByTurn.get(turn.id) ?? NO_ASSETS}
+                        assetsById={assetsById}
+                        isNewest={rowIdx === 0}
+                        promptExpanded={expandedPromptTurnIds.includes(turn.id)}
                         selectedAssetId={selectedAsset?.id}
-
+                        onTogglePrompt={handleTogglePrompt}
+                        onRetry={handleRetryTurn}
+                        onDelete={handleDeleteTurn}
+                        onShowPayload={setPayloadTurnId}
+                        onCopyPrompt={handleCopyPrompt}
+                        onCopyId={handleCopyTurnId}
+                        onPreviewReference={setReferencePreviewAsset}
+                        onSelectAsset={handleInspectAsset}
                       />
-
-                      </div>
-                      </div>
-
-
-                    </article>
-                    );
-                  })}
+                    ))}
                     </div>
                   </div>
                   ))
@@ -3274,11 +2980,7 @@ export default function App() {
                   settings={settings}
                   onSettingsChange={(patch) => setSettings((current) => ({ ...current, ...patch }))}
                   onAspectChange={handleAspectChange}
-                  presets={promptPresets}
-                  selectedPresetKey={selectedPresetKey}
-                  onPresetChange={(key) => attachPreset(key)}
                   fieldErrors={fieldErrors}
-                  referenceCount={selectedReferenceAssets.length}
                   onReset={resetStudioSettings}
                   compareMedia={compareMedia}
                   onCompareMediaChange={switchCompareMedia}
@@ -3476,7 +3178,7 @@ export default function App() {
               )}
               {!referenceLibraryLoading && !referenceLibrary.length ? (
                 <div className="reference-picker-empty">
-                  No reference images yet — upload one or approve a generation to reuse it here.
+                  No reference images yet — upload one, or use a pick from a round to reuse it here.
                 </div>
               ) : null}
             </div>

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Banner, Button, Card, Spinner, Text } from "../ds";
 import { supabase } from "../lib/supabaseClient";
 import { lovable } from "../lib/lovableAuth";
@@ -137,7 +137,7 @@ export function OAuthConsentPage() {
               </Text>
               <Text tone="secondary" as="p">
                 {clientName} is asking to use art-ificial design studio as you. It will be able to
-                read your sessions and generated assets, change asset approvals, and file feedback on
+                read your sessions and generated assets, and file feedback on
                 your behalf.
               </Text>
               <div className="consent__actions">

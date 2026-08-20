@@ -25,18 +25,6 @@ export async function fetchModels() {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 export async function promptAgentChat(payload: {
   messages: { role: "user" | "assistant"; content: string; images?: string[] }[];
   skill?: string;
@@ -46,22 +34,6 @@ export async function promptAgentChat(payload: {
     body: JSON.stringify(payload)
   });
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 export async function listSessions() {
@@ -88,9 +60,7 @@ export async function listTurns(sessionId?: string) {
 }
 
 
-
-
-export async function createInferenceTurn(payload: TurnRequest) {
+export async function createInferenceTurn(payload: TurnRequest, opts: { signal?: AbortSignal } = {}) {
   return fetchJson<{
     turn: StudioTurn;
     status: "queued" | "running" | "blocked" | "failed" | "complete";
@@ -101,7 +71,8 @@ export async function createInferenceTurn(payload: TurnRequest) {
     error?: { code: string; env_vars?: string[]; message?: string; retryable?: boolean; status?: number; raw?: string; request_id?: string };
   }>("/inference/turn", {
     method: "POST",
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+    signal: opts.signal
   });
 }
 
@@ -160,8 +131,6 @@ export async function createEnhancement(
 }
 
 
-
-
 export async function createReference(payload: Record<string, unknown>) {
   return fetchJson<{ asset: Asset }>("/references", {
     method: "POST",
@@ -169,13 +138,10 @@ export async function createReference(payload: Record<string, unknown>) {
   });
 }
 
-export async function listAssets(filters: { sessionId?: string; turnId?: string } = {}) {
+export async function listAssets(filters: { sessionId?: string } = {}) {
   const params = new URLSearchParams();
   if (filters.sessionId) {
     params.set("session_id", filters.sessionId);
-  }
-  if (filters.turnId) {
-    params.set("turn_id", filters.turnId);
   }
   const query = params.size ? `?${params.toString()}` : "";
   return fetchJson<{ assets: Asset[] }>(`/assets${query}`);
@@ -194,14 +160,6 @@ export async function deleteTurn(turnId: string) {
 }
 
 
-export function assetDownloadUrl(assetId: string) {
-  return `${frankBase}/assets/${encodeURIComponent(assetId)}/download`;
-}
-
-
-
-
-
 async function authHeader(): Promise<Record<string, string>> {
   try {
     const { supabase } = await import("./supabaseClient");
@@ -212,8 +170,6 @@ async function authHeader(): Promise<Record<string, string>> {
     return {};
   }
 }
-
-
 
 
 /**
@@ -310,7 +266,6 @@ async function fetchJson<T>(path: string, init: RequestInit = {}) {
 
   throw lastError ?? new Error("Frank Create API failed");
 }
-
 
 
 function apiErrorMessage(text: string, status: number) {

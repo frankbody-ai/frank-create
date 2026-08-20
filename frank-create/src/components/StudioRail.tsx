@@ -1,7 +1,7 @@
 import React from "react";
 
 import { Badge, Button, ButtonGroup, Card, Checkbox, Select, Text } from "../ds";
-import type { PromptPreset, StudioModel, StudioSettings } from "../lib/types";
+import type { StudioModel, StudioSettings } from "../lib/types";
 import { estimateImageCost, estimateVideoCost, filterSizesForAspect, maxCountForModel, modelCostBadge, modelRateLabel } from "../lib/studio";
 import type { StudioAdjustment, StudioFieldErrors } from "../lib/studio";
 import { AspectPreview } from "./AspectPreview";
@@ -24,11 +24,7 @@ export interface StudioRailProps {
   settings: StudioSettings;
   onSettingsChange: (patch: Partial<StudioSettings>) => void;
   onAspectChange: (aspect: string) => void;
-  presets: PromptPreset[];
-  selectedPresetKey: string | null;
-  onPresetChange: (key: string | null) => void;
   fieldErrors: StudioFieldErrors;
-  referenceCount: number;
   onReset: () => void;
   /** Side-by-side: media the comparison runs on. */
   compareMedia?: "image" | "video";
@@ -68,8 +64,7 @@ function tierBadge(model: StudioModel | undefined) {
 export function StudioRail(props: StudioRailProps) {
   const {
     mediaKind, onMediaKindChange, models, selectedModelId, onModelChange,
-    settings, onSettingsChange, onAspectChange, presets, selectedPresetKey,
-    onPresetChange, fieldErrors, referenceCount, onReset,
+    settings, onSettingsChange, onAspectChange, fieldErrors, onReset,
     compareMedia = "image", onCompareMediaChange, compareModelBId, onCompareModelBChange,
     compareAdjustments = [], compareApproved = false, onCompareApprovedChange, compareCostLabel,
     videoAllowed = true

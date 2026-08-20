@@ -1,50 +1,11 @@
-import {
-  PointerEvent as ReactPointerEvent,
-  useEffect,
-  useRef,
-  useState
-} from "react";
-import { createPortal } from "react-dom";
-
-import {
-  Icon,
-
-} from "../ds";
-import { Shell } from "../Shell";
-import { modeFromUrl, navigate } from "../nav";
-import type { InAppScreen, Screen } from "../nav";
-
-import {
-  createInferenceTurn,
-  fetchTurnStatus,
-  createReference,
-  createSession,
-  createVideoStoryboard,
-  deleteAsset,
-  deleteTurn,
-  fetchConfig,
-  fetchHealth,
-  listAssets,
-  listSessions,
-  listTurns,
-  updateSession
-} from "../lib/api";
-
-import { fallbackBrandKit, fallbackConfig } from "../lib/presets";
-import { supabase, hardSignOut } from "../lib/supabaseClient";
+import { Icon } from "../ds";
+import { fallbackConfig } from "../lib/presets";
 import {
   buildTurnRequest,
   makeLocalId,
   buildReferenceManifest,
   expandReferenceTags,
 } from "../lib/studio";
-import type { StudioFieldErrors } from "../lib/studio";
-
-import { StudioRail } from "../components/StudioRail";
-
-
-import { PromptGenerator } from "../components/PromptGenerator";
-import Enhancer from "../components/Enhancer";
 
 import type {
   Asset,
@@ -55,9 +16,6 @@ import type {
   StudioSettings,
   StudioTurn
 } from "../lib/types";
-import { loadLocalAssets, saveLocalAssets } from "../lib/localAssets";
-import { SessionFolders } from "../components/SessionFolders";
-import { clampWords } from "../lib/clampWords";
 
 
 

@@ -21,20 +21,17 @@ date: 2026-08-14T04:18:00Z
 | Design Studio - OS.dc.html → Studio | `App.tsx` L3690–4710, `components/StudioRail.tsx` |
 | → Prompt generator | `components/PromptGenerator.tsx` |
 | → Upscaler | `components/Enhancer.tsx`, `components/BeforeAfterSlider.tsx` |
-| → Presets | `components/PresetCreator.tsx` |
-| → Approved | `lib/types.ts` (`Asset`, `ApprovalStatus`), `lib/frankWorkflow.ts` (`assetStatusCopy`), `lib/api.ts` L486–489 (filters), `App.tsx` (`showApprovedHot`) |
-| → Review board | `components/ReviewBoardPage.tsx` (handoff stages, audit trail, three status sections) |
 | → Admin portal | `components/AdminPortal.tsx`, `components/admin/PromptAgentTab.tsx`, `lib/admin.ts` (`AdminUserRow`, `AppRole`), `lib/feedback.ts` (`FeedbackRow`, `FeedbackStatus`) |
 | → App health | `components/HealthPage.tsx` (`runChecks`) |
 | → Settings | `styles/ds/tenants.css`, `App.tsx` theme swatch block |
 
 ## Notes
 
-- Routes come from `main.tsx`: `#/admin`, `#/admin/feedback`, `#/review/:sessionId`, `#/health`, `#/cliff-access`, `#/.lovable/oauth/consent`.
+- Routes come from `main.tsx`: `#/admin`, `#/admin/feedback`, `#/health`, `#/settings`, `#/.lovable/oauth/consent`. Anything else resolves to `NotFoundPage`.
 - `AdminFeedbackPage.tsx` (`#/admin/feedback`) is a flat-list duplicate of the Admin portal's Feedback tasks board; the redesign keeps only the board.
-- Handoff manifest contract: schema `frank-create.handoff`, version 1; every asset needs `id`, `title`, `media_type`, `approval_status`, `blueprint`. Stages: `fetch`, `build_manifest`, `generate_json`, `generate_csv`, `validate`.
 - The repo carries a local `styles/ds/` token set (Google Sans + Roboto, magenta brand, glass surfaces). The redesign replaces it with the bound AutoSolutions OS tokens (Inter 450/550/600/650, achromatic ink theme).
 
 ## Sync history
 
 - 2026-08-14T03:52:00Z — first import. Recreated the current Studio screen and built all seven surfaces on the AutoSolutions OS design system. Review board, Admin and Approved were written without reading their sources and were rebuilt in the next sync.
+- 2026-08-20T00:00:00Z — removed the Presets, Approved and Review board rows and the handoff manifest contract. Those screens and the export handoff were deleted in the August 19 cleanup; this file still pointed at them.

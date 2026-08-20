@@ -1,21 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 
 import App from "./App";
 import { AuthGate } from "./AuthGate";
 import { StatusBanner } from "./components/StatusBanner";
 import { ErrorToast } from "./components/ErrorToast";
-import { HealthPage } from "./components/HealthPage";
-import { AdminPortal } from "./components/AdminPortal";
-import { SettingsPage } from "./components/SettingsPage";
 import { SmallScreenNotice } from "./components/SmallScreenNotice";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
-
-import { OAuthConsentPage } from "./components/OAuthConsentPage";
 import { installErrorReporter } from "./lib/errorReporter";
 import { applyTheme, storedTheme } from "./ds";
 import { resolveScreen } from "./nav";
 import "./app.css";
+
+// Studio is where everyone lands, so it is the only screen in the first bundle.
+// The rest arrive when someone actually navigates to them.
+const HealthPage = lazy(() => import("./components/HealthPage").then((m) => ({ default: m.HealthPage })));
+const AdminPortal = lazy(() => import("./components/AdminPortal").then((m) => ({ default: m.AdminPortal })));
+const SettingsPage = lazy(() => import("./components/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+const NotFoundPage = lazy(() => import("./components/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
+const OAuthConsentPage = lazy(() =>
+  import("./components/OAuthConsentPage").then((m) => ({ default: m.OAuthConsentPage }))
+);
 
 // The remembered theme has to land before first paint, or the page flashes ink.
 applyTheme(storedTheme());
@@ -38,6 +43,8 @@ function Router() {
       return <OAuthConsentPage />;
     case "health":
       return <HealthPage />;
+    case "notfound":
+      return <NotFoundPage />;
     case "admin":
       return (
         <AuthGate>
@@ -65,7 +72,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <StatusBanner />
     <ErrorToast />
     <AppErrorBoundary>
-      <Router />
+      <Suspense fallback={<div className="screen-loading" />}>
+        <Router />
+      </Suspense>
     </AppErrorBoundary>
   </React.StrictMode>
 );

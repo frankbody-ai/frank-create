@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Badge, Button, Card, DataTable, PageHeader, Text } from "../ds";
 import type { DataTableColumn } from "../ds";

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Banner, Card, PageHeader, Select, Text, ThemePicker } from "../ds";
 import { Shell } from "../Shell";
@@ -12,9 +12,8 @@ import type { StudioModel } from "../lib/types";
  * Workspace settings.
  *
  * Two cards, both of which do something. The design also calls for a Guardrails
- * card — approval-before-export, history retention, a spend cap — and there is
- * no backend for any of it, so it is left out rather than shipped as switches
- * that look live and are not.
+ * card — history retention, a spend cap — and there is no backend for any of it,
+ * so it is left out rather than shipped as switches that look live and are not.
  */
 export function SettingsPage() {
   const [models, setModels] = useState<StudioModel[]>(fallbackConfig.models);
@@ -89,8 +88,8 @@ export function SettingsPage() {
 
       <Banner tone="info" title="Guardrails are not available yet">
         <span>
-          Approval before export, run-history retention and a monthly spend cap are designed but have
-          nothing behind them. They will appear here once the backend supports them.
+          Run-history retention and a monthly spend cap are designed but have nothing behind them.
+          They will appear here once the backend supports them.
         </span>
       </Banner>
     </Shell>
