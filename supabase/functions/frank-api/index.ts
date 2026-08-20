@@ -2378,6 +2378,23 @@ Deno.serve(async (req) => {
     if (path === "/config") return json(STUDIO_CONFIG);
     if (path === "/models") return json({ models: STUDIO_CONFIG.models, backlogModels: [], promptPresets: STUDIO_CONFIG.promptPresets });
 
+    // ---- Internal: one image of a fan-out round, called by this function ----
+    if (path === "/inference/shard" && method === "POST") {
+      const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      if (!secret || req.headers.get("x-frank-internal") !== secret) {
+        return json({ error: { message: "Forbidden" } }, 403);
+      }
+      const body = await readJson(req);
+      const result = await handleInference(
+        body.payload ?? {},
+        String(body.user_id || ""),
+        { turnId: String(body.turn_id || ""), index: Number(body.shard_index) || 0 },
+      );
+      return json({ status: result.status });
+    }
+
+
+
 
 
 
