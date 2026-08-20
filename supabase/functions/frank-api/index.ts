@@ -72,10 +72,11 @@ async function signed(path: string): Promise<string> {
   return data?.signedUrl ?? "";
 }
 
-// The backend caps stored objects at 20 MB. Anything larger (4K video, big
-// upscales) still has a usable provider URL, so we keep the asset row and fall
-// back to that temporary URL instead of failing the whole run.
-const MAX_STORAGE_BYTES = 20 * 1024 * 1024;
+// The storage backend caps objects at 50 MB; stay just under it. Anything larger
+// (long 4K video, big upscales) still has a usable provider URL, so we keep the
+// asset row and fall back to that temporary URL instead of failing the whole run.
+const MAX_STORAGE_BYTES = 45 * 1024 * 1024;
+
 
 function isStorageSizeError(message: string): boolean {
   const m = (message || "").toLowerCase();
