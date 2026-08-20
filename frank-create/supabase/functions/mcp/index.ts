@@ -167,20 +167,67 @@ var list_assets_default = defineTool2({
 
 // src/lib/mcp/tools/list-models.ts
 import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.1";
+
+// src/lib/mcp/frankApi.ts
+var FRANK_BASE = `${DIRECT_SUPABASE_URL}/functions/v1/frank-api`;
+async function frankFetch(ctx, path, init = {}) {
+  const token = ctx?.getToken();
+  const res = await fetch(`${FRANK_BASE}${path}`, {
+    method: init.method ?? "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...token ? { Authorization: `Bearer ${token}` } : {}
+    },
+    ...init.body === void 0 ? {} : { body: JSON.stringify(init.body) }
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    let message = text;
+    try {
+      const parsed = JSON.parse(text);
+      message = parsed.error?.message || text;
+    } catch {
+    }
+    throw new Error(`Studio API ${res.status}: ${String(message).slice(0, 500)}`);
+  }
+  return JSON.parse(text || "{}");
+}
+
+// src/lib/mcp/tools/list-models.ts
 var list_models_default = defineTool3({
-  name: "list_models",
-  title: "List generation models",
-  description: "List the image and video models available in the studio with their supported aspect ratios, resolutions and reference-image limits.",
+  name: "list_studio_options",
+  title: "List studio options",
+  description: "Discovery call: the image, video and upscaler models available in the studio with their allowed aspect ratios and sizes, plus the prompt presets. Call this before generate_image or upscale_media to pick valid values.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async (_input, ctx) => {
-    if (!ctx.isAuthenticated()) return notAuthenticated;
-    const supabase = supabaseForUser(ctx);
-    const { data, error } = await supabase.from("model_capabilities").select(
-      "model_key, provider, label, blurb, supports_editing, supports_multi_reference, max_reference_images, supported_aspect_ratios, supported_resolutions"
-    ).order("model_key", { ascending: true });
-    if (error) return errorResult(error.message);
-    return textResult({ models: data ?? [] });
+  handler: async () => {
+    try {
+      const data = await frankFetch(
+        null,
+        "/models"
+      );
+      const models = (data.models ?? []).filter((m) => !m.legacy);
+      const shape = (m) => ({
+        id: m.id,
+        label: m.label,
+        provider: m.provider,
+        status: m.status,
+        description: m.description ?? null,
+        aspect_ratios: m.allowed_aspect_ratios ?? [],
+        sizes: m.allowed_image_sizes ?? [],
+        max_reference_images: m.max_reference_images ?? null
+      });
+      const isUpscale = (m) => m.capabilities?.upscale === true;
+      const isVideo = (m) => m.capabilities?.video === true;
+      return textResult({
+        image_models: models.filter((m) => !isUpscale(m) && !isVideo(m)).map(shape),
+        video_models: models.filter((m) => !isUpscale(m) && isVideo(m)).map(shape),
+        upscale_models: models.filter(isUpscale).map(shape),
+        prompt_presets: data.promptPresets ?? []
+      });
+    } catch (err) {
+      return errorResult(err instanceof Error ? err.message : String(err));
+    }
   }
 });
 
