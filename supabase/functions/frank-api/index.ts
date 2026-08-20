@@ -12,7 +12,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const LOVABLE_BASE = "https://ai.gateway.lovable.dev/v1";
 const BUCKET = "studio-images";
-const ALLOWED_EMAIL_DOMAINS = ["frankbody.com", "autosolutions.ai"];
+const ALLOWED_EMAIL_DOMAINS = ["frankbody.com", "autosolutions.ai", "alivebody.com.au"];
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
