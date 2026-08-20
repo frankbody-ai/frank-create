@@ -1610,6 +1610,24 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
 
   const assetIds = insertedAssets.map((asset) => asset.id);
 
+  if (shard) {
+    // Assets are the source of truth for a fan-out round; only record provider
+    // detail and let the status poll close the turn when all shards have landed.
+    const current = await sb.from("messages").select("settings_snapshot_json").eq("id", turnId).maybeSingle();
+    const snap = (current.data?.settings_snapshot_json ?? settingsSnapshot) as any;
+    await sb.from("messages").update({
+      settings_snapshot_json: {
+        ...snap,
+        provider_request: providerRequest ?? snap.provider_request ?? null,
+        provider: providerPayload.provider,
+        provider_model: providerPayload.model,
+        fallback: usedFallback ?? snap.fallback ?? undefined,
+        last_shard_at: nowIso(),
+      },
+    }).eq("id", turnId);
+    return { turn: null as any, status: "complete" as const, assets: [] };
+  }
+
   const completedSnapshot = {
     ...settingsSnapshot,
     status: "complete",
@@ -1624,6 +1642,7 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
   await sb.from("messages").update({
     settings_snapshot_json: completedSnapshot,
   }).eq("id", turnId);
+
 
   const assets = await Promise.all(insertedAssets.map(async (asset) => rowToAsset(asset, await signed(asset.storage_path))));
   return {
