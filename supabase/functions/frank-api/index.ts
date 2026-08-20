@@ -1752,6 +1752,44 @@ async function handleTurnStatus(body: any, userId: string) {
   };
 
   const predictionIds: string[] = Array.isArray(snapshot.prediction_ids) ? snapshot.prediction_ids : [];
+
+  // ---- Fan-out rounds: one worker per image, assets are the progress ledger --
+  if (snapshot.status === "running" && snapshot.fanout) {
+    const requested = Math.max(Number(snapshot.requested_count) || 1, 1);
+    const assetRows = await sb.from("assets").select("id").eq("message_id", turnId);
+    const done = (assetRows.data ?? []).length;
+    const shardErrors: any[] = Array.isArray(snapshot.shard_errors) ? snapshot.shard_errors : [];
+    const startedAt = new Date(snapshot.fanout_started_at || row.created_at).getTime();
+    const ageMs = Date.now() - startedAt;
+    const expired = Number.isFinite(ageMs) && ageMs > 8 * 60_000;
+
+    if (done >= requested || done + shardErrors.length >= requested || expired) {
+      if (!done) {
+        const first = shardErrors[0];
+        const failed = {
+          ...snapshot,
+          status: "failed",
+          error: first?.message || "Every image in this round failed. Retry the run.",
+          error_code: first?.code || "worker_interrupted",
+          error_retryable: first?.retryable ?? true,
+        };
+        await sb.from("messages").update({ settings_snapshot_json: failed }).eq("id", turnId);
+        const result = await finishWithRows(failed, "failed");
+        return { ...result, error: { code: failed.error_code, message: failed.error, retryable: failed.error_retryable } };
+      }
+      const ids = (assetRows.data ?? []).map((r: any) => r.id);
+      const complete = {
+        ...snapshot,
+        status: "complete",
+        output_asset_ids: ids,
+        partial_errors: shardErrors.length ? shardErrors : undefined,
+      };
+      await sb.from("messages").update({ settings_snapshot_json: complete }).eq("id", turnId);
+      return await finishWithRows(complete, "complete");
+    }
+    return await finishWithRows({ ...snapshot, pending_count: requested - done }, "running");
+  }
+
   if (snapshot.status !== "running" || !predictionIds.length) {
     if (snapshot.status === "running" && !predictionIds.length) {
       const ageMs = Date.now() - new Date(row.created_at).getTime();
@@ -1770,6 +1808,7 @@ async function handleTurnStatus(body: any, userId: string) {
     const status = snapshot.status === "failed" ? "failed" : snapshot.status === "running" ? "running" : "complete";
     return await finishWithRows(snapshot, status as any);
   }
+
 
   const replicateKey = getReplicateGatewayKey();
   if (!replicateKey) throw new Error("Replicate is not connected.");
