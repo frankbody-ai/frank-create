@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.grant_access_for_verified_domain() FROM anon, authenticated, PUBLIC;
