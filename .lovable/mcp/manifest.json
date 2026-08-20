@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://amwfmlqvaranonhyvqbj.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ],
+    "jwks_uri": "https://amwfmlqvaranonhyvqbj.supabase.co/auth/v1/.well-known/jwks.json"
+  },
+  "mcp": {
+    "server": {
+      "name": "frank-create",
+      "version": "0.1.0",
+      "title": "frank Create"
+    },
+    "tools": [
+      {
+        "name": "list_sessions",
+        "title": "List studio sessions",
+        "description": "List the signed-in user's generation sessions (newest first) with their title, active model and preset.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "description": "How many sessions to return (1-50)."
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_session",
+        "title": "Get session detail",
+        "description": "Read one of the signed-in user's sessions: its prompts (messages) and the assets generated in it.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "session_id": {
+              "type": "string",
+              "description": "The session id (uuid)."
+            },
+            "include_urls": {
+              "type": "boolean",
+              "description": "Include a temporary signed download URL for each asset."
+            }
+          },
+          "required": [
+            "session_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_assets",
+        "title": "List generated assets",
+        "description": "List the signed-in user's generated images and videos, newest first, optionally filtered by session or media type.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "session_id": {
+              "type": "string",
+              "description": "Only assets from this session id."
+            },
+            "asset_type": {
+              "type": "string",
+              "enum": [
+                "image",
+                "video"
+              ],
+              "description": "Filter by media type."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "description": "How many assets to return (1-50)."
+            },
+            "include_urls": {
+              "type": "boolean",
+              "description": "Include temporary signed download URLs."
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_models",
+        "title": "List generation models",
+        "description": "List the image and video models available in the studio with their supported aspect ratios, resolutions and reference-image limits.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_presets",
+        "title": "List prompt presets",
+        "description": "List the active prompt presets in the studio library, including their category and system prompt.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "submit_feedback",
+        "title": "Submit feedback",
+        "description": "File a feedback item in the studio on behalf of the signed-in user.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "description": "The feedback text."
+            },
+            "page_path": {
+              "type": "string",
+              "description": "Optional page or area the feedback is about."
+            }
+          },
+          "required": [
+            "message"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
