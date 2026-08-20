@@ -124,52 +124,22 @@ var get_session_default = defineTool({
 // src/lib/mcp/tools/list-assets.ts
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.26.1";
 import { z as z2 } from "npm:zod@^4.4.3";
-var list_assets_default = defineTool2({
-  name: "list_assets",
-  title: "List generated assets",
-  description: "List the signed-in user's generated images and videos, newest first, optionally filtered by session or media type.",
-  inputSchema: {
-    session_id: z2.string().describe("Only assets from this session id.").optional(),
-    asset_type: z2.enum(["image", "video"]).describe("Filter by media type.").optional(),
-    limit: z2.number().int().describe("How many assets to return (1-50).").optional(),
-    include_urls: z2.boolean().describe("Include temporary signed download URLs.").optional()
-  },
-  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ session_id, asset_type, limit, include_urls }, ctx) => {
-    if (!ctx.isAuthenticated()) return notAuthenticated;
-    const take = Math.min(Math.max(limit ?? 20, 1), 50);
-    const supabase = supabaseForUser(ctx);
-    let query = supabase.from("assets").select("id, session_id, asset_type, model_key, storage_path, prompt_snapshot, metadata_json, created_at").order("created_at", { ascending: false }).limit(take);
-    if (session_id) query = query.eq("session_id", session_id);
-    if (asset_type) query = query.eq("asset_type", asset_type);
-    const { data, error } = await query;
-    if (error) return errorResult(error.message);
-    const assets = await Promise.all(
-      (data ?? []).map(async (asset) => {
-        const meta = asset.metadata_json ?? {};
-        return {
-          id: asset.id,
-          session_id: asset.session_id,
-          asset_type: asset.asset_type,
-          model_key: asset.model_key,
-          width: meta.width ?? null,
-          height: meta.height ?? null,
-          aspect_ratio: meta.aspect_ratio ?? null,
-          prompt: asset.prompt_snapshot,
-          created_at: asset.created_at,
-          url: include_urls ? await signedAssetUrl(supabase, asset.storage_path) : void 0
-        };
-      })
-    );
-    return textResult({ assets });
-  }
-});
-
-// src/lib/mcp/tools/list-models.ts
-import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.1";
 
 // src/lib/mcp/frankApi.ts
 var FRANK_BASE = `${DIRECT_SUPABASE_URL}/functions/v1/frank-api`;
+function assetSummary(asset) {
+  return {
+    id: asset.id,
+    media_type: asset.media_type ?? "image",
+    model: asset.model,
+    width: asset.width ?? null,
+    height: asset.height ?? null,
+    aspect_ratio: asset.aspect_ratio ?? null,
+    prompt: asset.prompt ?? null,
+    session_id: asset.session_id ?? null,
+    url: asset.preview_url || asset.remote_url || null
+  };
+}
 async function frankFetch(ctx, path, init = {}) {
   const token = ctx?.getToken();
   const res = await fetch(`${FRANK_BASE}${path}`, {
@@ -193,7 +163,33 @@ async function frankFetch(ctx, path, init = {}) {
   return JSON.parse(text || "{}");
 }
 
+// src/lib/mcp/tools/list-assets.ts
+var list_assets_default = defineTool2({
+  name: "list_assets",
+  title: "List recent assets",
+  description: "List the caller's recent studio images and videos with download URLs and asset ids \u2014 useful for picking an upscale source or re-sending a reference.",
+  inputSchema: {
+    session_id: z2.string().describe("Only assets from this session.").optional(),
+    media: z2.enum(["image", "video"]).describe("Filter by media kind.").optional(),
+    limit: z2.number().int().describe("How many assets to return (1-50). Defaults to 20.").optional()
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ session_id, media, limit }, ctx) => {
+    if (!ctx.isAuthenticated()) return notAuthenticated;
+    const take = Math.min(Math.max(limit ?? 20, 1), 50);
+    const query = session_id ? `?session_id=${encodeURIComponent(session_id)}` : "";
+    try {
+      const data = await frankFetch(ctx, `/assets${query}`);
+      const rows = (data.assets ?? []).filter((a) => media ? (a.media_type ?? "image") === media : true).slice(0, take);
+      return textResult({ assets: rows.map(assetSummary) });
+    } catch (err) {
+      return errorResult(err instanceof Error ? err.message : String(err));
+    }
+  }
+});
+
 // src/lib/mcp/tools/list-models.ts
+import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.26.1";
 var list_models_default = defineTool3({
   name: "list_studio_options",
   title: "List studio options",
