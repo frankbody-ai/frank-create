@@ -1445,25 +1445,21 @@ async function handleInference(body: any, userId: string) {
     // support n>1 get one call; the rest are fanned out in parallel.
     const nativeN = OPENROUTER_NATIVE_N.has(openrouterModel);
     const calls = nativeN ? 1 : count;
-    const results: PromiseSettledResult<Array<{ b64?: string; url?: string; mime: string }>>[] = [];
-    // Multiple simultaneous 4K calls can trip OpenRouter's Cloudflare worker
-    // resource ceiling (1102) even though each provider job itself succeeds.
-    // Models without native `n` therefore run one request at a time.
-    for (let call = 0; call < calls; call++) {
-      try {
-        const images = await openrouterImage(providerPrompt, refUrls, {
+    // Independent image calls must run concurrently. Serial 4K requests can
+    // exceed the function's request budget and leave the persisted turn stuck
+    // as running even though each individual provider call is healthy.
+    const results = await Promise.allSettled(
+      Array.from({ length: calls }, () =>
+        openrouterImage(providerPrompt, refUrls, {
           model: openrouterModel,
           aspectRatio: reqSettings.aspect_ratio,
           size: reqSettings.image_size || reqSettings.size,
           quality: reqSettings.quality,
           n: nativeN ? count : 1,
           onRequest: (record) => { providerRequest = record; },
-        });
-        results.push({ status: "fulfilled", value: images });
-      } catch (reason) {
-        results.push({ status: "rejected", reason });
-      }
-    }
+        })
+      ),
+    );
 
     for (const result of results) {
       if (result.status === "fulfilled") generatedImages.push(...result.value);
@@ -1675,7 +1671,7 @@ async function handleTurnStatus(body: any, userId: string) {
   if (snapshot.status !== "running" || !predictionIds.length) {
     if (snapshot.status === "running" && !predictionIds.length) {
       const ageMs = Date.now() - new Date(row.created_at).getTime();
-      if (Number.isFinite(ageMs) && ageMs > 8 * 60_000) {
+      if (Number.isFinite(ageMs) && ageMs > 3 * 60_000) {
         const failed = {
           ...snapshot,
           status: "failed",

@@ -1,23 +1,54 @@
 import { defineTool } from "@lovable.dev/mcp-js";
-import { errorResult, notAuthenticated, supabaseForUser, textResult } from "../supabase";
+import { errorResult, textResult } from "../supabase";
+import { frankFetch } from "../frankApi";
+
+type ModelRow = {
+  id: string;
+  label: string;
+  provider?: string;
+  status?: string;
+  legacy?: boolean;
+  description?: string;
+  capabilities?: Record<string, unknown>;
+  allowed_aspect_ratios?: string[];
+  allowed_image_sizes?: string[];
+  max_reference_images?: number;
+};
 
 export default defineTool({
-  name: "list_models",
-  title: "List generation models",
+  name: "list_studio_options",
+  title: "List studio options",
   description:
-    "List the image and video models available in the studio with their supported aspect ratios, resolutions and reference-image limits.",
+    "Discovery call: the image, video and upscaler models available in the studio with their allowed aspect ratios and sizes, plus the prompt presets. Call this before generate_image or upscale_media to pick valid values.",
   inputSchema: {},
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async (_input, ctx) => {
-    if (!ctx.isAuthenticated()) return notAuthenticated;
-    const supabase = supabaseForUser(ctx);
-    const { data, error } = await supabase
-      .from("model_capabilities")
-      .select(
-        "model_key, provider, label, blurb, supports_editing, supports_multi_reference, max_reference_images, supported_aspect_ratios, supported_resolutions",
-      )
-      .order("model_key", { ascending: true });
-    if (error) return errorResult(error.message);
-    return textResult({ models: data ?? [] });
+  handler: async () => {
+    try {
+      const data = await frankFetch<{ models?: ModelRow[]; promptPresets?: unknown[] }>(
+        null,
+        "/models",
+      );
+      const models = (data.models ?? []).filter((m) => !m.legacy);
+      const shape = (m: ModelRow) => ({
+        id: m.id,
+        label: m.label,
+        provider: m.provider,
+        status: m.status,
+        description: m.description ?? null,
+        aspect_ratios: m.allowed_aspect_ratios ?? [],
+        sizes: m.allowed_image_sizes ?? [],
+        max_reference_images: m.max_reference_images ?? null,
+      });
+      const isUpscale = (m: ModelRow) => m.capabilities?.upscale === true;
+      const isVideo = (m: ModelRow) => m.capabilities?.video === true;
+      return textResult({
+        image_models: models.filter((m) => !isUpscale(m) && !isVideo(m)).map(shape),
+        video_models: models.filter((m) => !isUpscale(m) && isVideo(m)).map(shape),
+        upscale_models: models.filter(isUpscale).map(shape),
+        prompt_presets: data.promptPresets ?? [],
+      });
+    } catch (err) {
+      return errorResult(err instanceof Error ? err.message : String(err));
+    }
   },
 });

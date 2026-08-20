@@ -62,7 +62,10 @@ export function navigate(screen: Screen): void {
  * because the app is served through an SPA rewrite and both forms reach it.
  */
 /** Every path the app answers to. Anything else is a dead link, not the Studio. */
-const KNOWN_ROUTES = ["", "/health", "/settings", "/admin", "/admin/feedback", "/.lovable/oauth/consent"];
+const KNOWN_ROUTES = [
+  "", "/health", "/settings", "/admin", "/admin/feedback",
+  "/.lovable/oauth/consent", "/oauth/consent",
+];
 
 export function resolveScreen(): { screen: Screen | "oauth" | "notfound" } {
   const pathname = window.location.pathname.replace(/\/$/, "");
@@ -70,7 +73,8 @@ export function resolveScreen(): { screen: Screen | "oauth" | "notfound" } {
   const hashPath = (rawHash.split("?")[0] || "").replace(/\/$/, "");
   const at = (route: string) => hashPath === route || pathname === route;
 
-  if (at("/.lovable/oauth/consent")) return { screen: "oauth" };
+  if (at("/.lovable/oauth/consent") || at("/oauth/consent"))
+    return { screen: "oauth" };
   if (at("/health")) return { screen: "health" };
   if (at("/settings")) return { screen: "settings" };
   if (at("/admin") || at("/admin/feedback")) return { screen: "admin" };

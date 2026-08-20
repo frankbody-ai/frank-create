@@ -1728,8 +1728,32 @@ export default function App() {
   // the round had finished. Re-read the session and settle any local pending card
   // whose round already landed. Returns the number of cards settled.
   async function settleFinishedRunsFromServer() {
-    const snapshot = await reconcileSessionAssets();
+    let snapshot = await reconcileSessionAssets();
     if (!snapshot) return 0;
+
+    // A request can be terminated by the platform after the backend has already
+    // persisted its running turn. Status-check those orphaned rows as well as
+    // turns returned directly to pollTurnUntilDone, so they self-heal without a
+    // refresh or a twelve-minute false spinner.
+    const runningTurns = snapshot.turns.filter(
+      (turn) => turn.status === "queued" || turn.status === "running",
+    );
+    if (runningTurns.length) {
+      const checked = await Promise.allSettled(
+        runningTurns.map((turn) => fetchTurnStatus(turn.id)),
+      );
+      const replacements = new Map<string, StudioTurn>();
+      for (const result of checked) {
+        if (result.status === "fulfilled") replacements.set(result.value.turn.id, result.value.turn);
+      }
+      if (replacements.size) {
+        snapshot = {
+          ...snapshot,
+          turns: snapshot.turns.map((turn) => replacements.get(turn.id) ?? turn),
+        };
+        setTurns((current) => current.map((turn) => replacements.get(turn.id) ?? turn));
+      }
+    }
 
     const pending = inflightRef.current;
     if (!pending.length) return 0;

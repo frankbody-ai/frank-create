@@ -1,0 +1,271 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://amwfmlqvaranonhyvqbj.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ],
+    "jwks_uri": "https://amwfmlqvaranonhyvqbj.supabase.co/auth/v1/.well-known/jwks.json"
+  },
+  "mcp": {
+    "server": {
+      "name": "frank-create",
+      "version": "0.2.0",
+      "title": "frank Create"
+    },
+    "tools": [
+      {
+        "name": "list_studio_options",
+        "title": "List studio options",
+        "description": "Discovery call: the image, video and upscaler models available in the studio with their allowed aspect ratios and sizes, plus the prompt presets. Call this before generate_image or upscale_media to pick valid values.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "write_prompt",
+        "title": "Write a prompt (Prompt Generator)",
+        "description": "Run the studio's Prompt Generator on a brief and get the crafted image prompt back. Pass the whole conversation so far in `messages` to iterate. The result can be fed straight into generate_image.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "brief": {
+              "type": "string",
+              "description": "The brief or instruction. Shortcut for a single user message."
+            },
+            "messages": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "user",
+                      "assistant"
+                    ]
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "role",
+                  "content"
+                ]
+              },
+              "description": "Full conversation so far (newest last). Use instead of `brief` for follow-ups."
+            },
+            "reference_image_urls": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Public https URLs of reference images to describe alongside the brief."
+            },
+            "skill": {
+              "type": "string",
+              "description": "Prompt Generator skill key, e.g. 'brief-to-prompt'. Defaults to brief-to-prompt."
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "generate_image",
+        "title": "Generate images",
+        "description": "Run an image generation in the studio exactly as the app does: a prompt, a model, aspect ratio, size, how many variations, and optional reference image URLs. Returns download URLs for the finished images. Use list_studio_options first for valid model ids, aspect ratios and sizes.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "prompt": {
+              "type": "string",
+              "description": "The full image prompt / brief to render."
+            },
+            "model": {
+              "type": "string",
+              "description": "Model id from list_studio_options, e.g. 'nano-banana-pro'. Defaults to nano-banana-pro."
+            },
+            "aspect_ratio": {
+              "type": "string",
+              "description": "Aspect ratio such as '1:1', '3:4', '16:9'."
+            },
+            "size": {
+              "type": "string",
+              "description": "Size or quality tier the model allows, e.g. '1K', '2K', '1536x1024'."
+            },
+            "count": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "description": "How many variations to render (1-6)."
+            },
+            "reference_image_urls": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Public https URLs of reference images to condition on."
+            },
+            "session_id": {
+              "type": "string",
+              "description": "Session to record the run in. Omit to use the caller's default session."
+            }
+          },
+          "required": [
+            "prompt"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "upscale_media",
+        "title": "Upscale an image or video",
+        "description": "Send an image or video to the studio's upscaler and get the enhanced file back. Source can be a public URL or an asset id from list_assets. Videos and 4x/6x image jobs can outlast the call — you then get a turn_id to poll with check_run.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "source_url": {
+              "type": "string",
+              "description": "Public https URL of the image or video to upscale."
+            },
+            "source_asset_id": {
+              "type": "string",
+              "description": "Asset id from list_assets to upscale instead of a URL."
+            },
+            "media": {
+              "type": "string",
+              "enum": [
+                "image",
+                "video"
+              ],
+              "description": "Media kind. Defaults to image."
+            },
+            "model": {
+              "type": "string",
+              "description": "Upscale model id from list_studio_options. Defaults to topaz-image-upscale / topaz-video-upscale."
+            },
+            "upscale_factor": {
+              "type": "string",
+              "enum": [
+                "None",
+                "2x",
+                "4x",
+                "6x"
+              ],
+              "description": "Image upscale factor."
+            },
+            "target_resolution": {
+              "type": "string",
+              "enum": [
+                "720p",
+                "1080p",
+                "4k"
+              ],
+              "description": "Video target resolution."
+            },
+            "session_id": {
+              "type": "string",
+              "description": "Session to record the run in."
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "check_run",
+        "title": "Check a run",
+        "description": "Check a generation or upscale run by its turn_id and collect the finished files. Use this when generate_image or upscale_media returned status 'running'.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "turn_id": {
+              "type": "string",
+              "description": "The turn id returned by generate_image or upscale_media."
+            }
+          },
+          "required": [
+            "turn_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_assets",
+        "title": "List recent assets",
+        "description": "List the caller's recent studio images and videos with download URLs and asset ids — useful for picking an upscale source or re-sending a reference.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "session_id": {
+              "type": "string",
+              "description": "Only assets from this session."
+            },
+            "media": {
+              "type": "string",
+              "enum": [
+                "image",
+                "video"
+              ],
+              "description": "Filter by media kind."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991,
+              "description": "How many assets to return (1-50). Defaults to 20."
+            }
+          }
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
