@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "npm --prefix frank-create install --silent && npm --prefix frank-create run dev -- --host 0.0.0.0 --port 8080",
-    "build": "npm --prefix frank-create install --silent && npm --prefix frank-create run build",
+    "build": "npm --prefix frank-create install --silent && npm --prefix frank-create run build && rm -rf dist && cp -r frank-create/dist dist",
     "build:dev": "npm run build"
   },
   "dependencies": {
