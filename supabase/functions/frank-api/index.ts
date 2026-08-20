@@ -643,7 +643,7 @@ async function handleVideo(body: any, userId: string) {
     user_id: userId,
     session_id: sessionId,
     message_id: turnId,
-    storage_path: storagePath,
+    storage_path: stored.stored ? storagePath : "",
     asset_type: "generated",
     prompt_snapshot: prompt,
     model_key: modelId,
@@ -862,7 +862,7 @@ async function handleEnhance(body: any, userId: string) {
     user_id: userId,
     session_id: sessionId,
     message_id: turnId,
-    storage_path: storagePath,
+    storage_path: stored.stored ? storagePath : "",
     asset_type: "edited",
     prompt_snapshot: promptText,
     model_key: modelId,
@@ -1610,7 +1610,7 @@ async function persistImageAssets(args: {
       user_id: args.userId,
       session_id: args.sessionId,
       message_id: args.turnId,
-      storage_path: storagePath,
+      storage_path: stored.stored ? storagePath : "",
       asset_type: "generated",
       prompt_snapshot: args.prompt,
       model_key: args.modelId,
@@ -2316,16 +2316,16 @@ Deno.serve(async (req) => {
       const body = await readJson(req).catch(() => ({}));
       const sessionId = String(body.session_id || "");
       const storagePath = String(body.file_path || "");
-      if (!sessionId || !storagePath) {
-        return json({ error: { code: "invalid_reference", message: "Reference needs a session and uploaded image path." } }, 400);
-      }
       // Oversized generations are never uploaded to the bucket (see
-      // storeOrFallback), so their storage path signs to a 404. Carry the
-      // provider's temporary URL across or the reference is born broken.
+      // storeOrFallback), so they arrive with no storage path at all. Carry the
+      // provider's temporary URL across, or the reference is born broken.
       const remoteUrl = typeof body.remote_url === "string" && body.remote_url.startsWith("http")
         ? body.remote_url
         : "";
       const storageMissing = body.storage_missing === true && !!remoteUrl;
+      if (!sessionId || (!storagePath && !storageMissing)) {
+        return json({ error: { code: "invalid_reference", message: "Reference needs a session and either an uploaded image path or a provider URL." } }, 400);
+      }
       const metadata = {
         title: String(body.title || "Reference image"),
         media_type: "image",
@@ -2340,7 +2340,8 @@ Deno.serve(async (req) => {
         id: crypto.randomUUID(),
         user_id: userId,
         session_id: sessionId,
-        storage_path: storagePath,
+        // Same rule as generated assets: no path for a file that was never stored.
+        storage_path: storageMissing ? "" : storagePath,
         asset_type: "reference",
         prompt_snapshot: typeof body.prompt === "string" ? body.prompt : null,
         model_key: typeof body.model === "string" ? body.model : null,

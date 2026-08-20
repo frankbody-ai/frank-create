@@ -2132,7 +2132,10 @@ export default function App() {
       setStatusText("Start a session before adding references.");
       return;
     }
-    if (!asset.file_path) {
+    // An oversized generation has no stored file, only the provider's temporary
+    // URL — that still makes a usable reference, so don't turn it away.
+    const referenceRemoteUrl = asset.storage_missing ? asset.remote_url || asset.preview_url : undefined;
+    if (!asset.file_path && !referenceRemoteUrl) {
       setStatusText("This pick needs a saved file before it can become a reference.");
       return;
     }
@@ -2150,10 +2153,10 @@ export default function App() {
       title: `${asset.title} reference`,
       file_path: asset.file_path,
       preview_url: asset.preview_url,
-      // An oversized generation was never uploaded, so its storage path signs to
-      // a 404. Hand the provider URL over or the reference arrives broken.
-      remote_url: asset.storage_missing ? asset.remote_url : undefined,
-      storage_missing: asset.storage_missing === true,
+      // An oversized generation was never uploaded, so it has no storage path at
+      // all. Hand the provider URL over or the reference arrives broken.
+      remote_url: referenceRemoteUrl,
+      storage_missing: !!referenceRemoteUrl,
       media_type: "image",
       provider: asset.provider,
       model: asset.model,
