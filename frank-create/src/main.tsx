@@ -1,5 +1,4 @@
 import React, { Suspense, lazy, useEffect, useState } from "react";
-import ReactDOM from "react-dom/client";
 
 import App from "./App";
 import { AuthGate } from "./AuthGate";
@@ -7,6 +6,9 @@ import { StatusBanner } from "./components/StatusBanner";
 import { ErrorToast } from "./components/ErrorToast";
 import { SmallScreenNotice } from "./components/SmallScreenNotice";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
+// Eager: routes/__root.tsx already imports this for its notFoundComponent,
+// so a lazy chunk here would only add a Suspense boundary for nothing.
+import { NotFoundPage } from "./components/NotFoundPage";
 import { installErrorReporter } from "./lib/errorReporter";
 import { applyTheme, storedTheme } from "./ds";
 import { resolveScreen } from "./nav";
@@ -17,14 +19,18 @@ import "./app.css";
 const HealthPage = lazy(() => import("./components/HealthPage").then((m) => ({ default: m.HealthPage })));
 const AdminPortal = lazy(() => import("./components/AdminPortal").then((m) => ({ default: m.AdminPortal })));
 const SettingsPage = lazy(() => import("./components/SettingsPage").then((m) => ({ default: m.SettingsPage })));
-const NotFoundPage = lazy(() => import("./components/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
 const OAuthConsentPage = lazy(() =>
   import("./components/OAuthConsentPage").then((m) => ({ default: m.OAuthConsentPage }))
 );
 
-// The remembered theme has to land before first paint, or the page flashes ink.
-applyTheme(storedTheme());
-installErrorReporter();
+// The remembered theme has to land before first paint or the page flashes ink,
+// so this stays at module scope rather than in an effect. Guarded because
+// TanStack Start pulls this module into the server graph, where there is no
+// localStorage to read the theme from.
+if (typeof window !== "undefined") {
+  applyTheme(storedTheme());
+  installErrorReporter();
+}
 
 function Router() {
   const [route, setRoute] = useState(resolveScreen);
@@ -66,16 +72,18 @@ function Router() {
   }
 }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <SmallScreenNotice />
-    <StatusBanner />
-    <ErrorToast />
-    <AppErrorBoundary>
-      <Suspense fallback={<div className="screen-loading" />}>
-        <Router />
-      </Suspense>
-    </AppErrorBoundary>
-  </React.StrictMode>
-);
-
+/** Mounted by `routes/index.tsx` — TanStack Start owns the actual root render. */
+export function StudioRoot() {
+  return (
+    <React.StrictMode>
+      <SmallScreenNotice />
+      <StatusBanner />
+      <ErrorToast />
+      <AppErrorBoundary>
+        <Suspense fallback={<div className="screen-loading" />}>
+          <Router />
+        </Suspense>
+      </AppErrorBoundary>
+    </React.StrictMode>
+  );
+}
