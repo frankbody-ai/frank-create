@@ -1,15 +1,45 @@
 {
-  "name": "frank-create-root",
+  "name": "frank-create",
+  "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "npm --prefix frank-create install --silent && npm --prefix frank-create run dev -- --host 0.0.0.0 --port 8080",
-    "build": "npm --prefix frank-create install --silent && npm --prefix frank-create run build && rm -rf dist && cp -r frank-create/dist dist && ! grep -q 'from \"h3-v2\"' dist/server/server.js",
-    "build:dev": "npm run build"
+    "dev": "vite dev",
+    "build": "tsc --noEmit && vite build && node scripts/check-server-bundle.mjs",
+    "build:dev": "tsc --noEmit && vite build --mode development && node scripts/check-server-bundle.mjs",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint:unused": "tsc -p tsconfig.unused.json --noEmit"
   },
   "dependencies": {
     "@lovable.dev/cloud-auth-js": "^1.1.2",
     "@lovable.dev/email-js": "^0.1.2",
+    "@lovable.dev/mcp-js": "^0.26.1",
     "@lovable.dev/webhooks-js": "^0.0.2",
-    "@supabase/supabase-js": "^2.110.8"
+    "@supabase/supabase-js": "^2.112.3",
+    "@tailwindcss/vite": "^4.2.1",
+    "@tanstack/react-query": "^5.101.4",
+    "@tanstack/react-router": "1.170.18",
+    "@tanstack/react-start": "1.168.32",
+    "@tanstack/router-plugin": "1.168.23",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwindcss": "^4.2.1",
+    "vite-tsconfig-paths": "^6.0.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@lovable.dev/vite-tanstack-config": "^2.15.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@types/node": "^22.16.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "jsdom": "^29.1.1",
+    "nitro": "3.0.260603-beta",
+    "typescript": "^5.8.3",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.8"
   }
 }

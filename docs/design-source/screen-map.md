@@ -1,6 +1,6 @@
 repo: frankbody-ai/frank-create
 branch: main
-path: frank-create/src
+path: src
 
 ## Last sync
 
