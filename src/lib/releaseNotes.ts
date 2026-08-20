@@ -15,6 +15,17 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-08-20-4k-batches",
+    date: "20 August 2026",
+    title: "4K batches, four at a time",
+    items: [
+      "Multi-image rounds now render each image in its own worker — 4 × 4K finishes in about 45 seconds instead of hanging.",
+      "Large 4K files are saved permanently instead of falling back to a temporary link.",
+      "A round that loses one image still delivers the rest rather than failing outright.",
+    ],
+  },
+  {
+
     id: "2026-08-20-studio-speaks-up",
     date: "20 August 2026",
     title: "The studio tells you what happened",
