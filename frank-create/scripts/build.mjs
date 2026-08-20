@@ -94,6 +94,17 @@ function syncMcpFunction() {
   console.log("Synced MCP edge function to supabase/functions/mcp/index.ts");
 }
 
+// Some static hosts ignore _redirects and serve 404.html for unknown paths.
+// Emitting a copy of index.html keeps client-side routes (including the OAuth
+// consent page) working on every host.
+function emitSpaFallback() {
+  const index = resolve(root, "..", "dist", "index.html");
+  if (!existsSync(index)) return;
+  copyFileSync(index, resolve(root, "..", "dist", "404.html"));
+  copyFileSync(index, resolve(root, "..", "dist", "200.html"));
+  console.log("Emitted SPA fallback pages (404.html, 200.html)");
+}
+
 const tscOk = runTsc();
 if (!tscOk) {
   process.exit(1);
@@ -104,4 +115,5 @@ if (!viteOk) {
   process.exit(1);
 }
 
+emitSpaFallback();
 syncMcpFunction();

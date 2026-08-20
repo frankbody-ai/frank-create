@@ -67,7 +67,8 @@ export function resolveScreen(): { screen: Screen | "oauth" } {
   const hashPath = (rawHash.split("?")[0] || "").replace(/\/$/, "");
   const at = (route: string) => hashPath === route || pathname === route;
 
-  if (at("/.lovable/oauth/consent")) return { screen: "oauth" };
+  if (at("/.lovable/oauth/consent") || at("/oauth/consent"))
+    return { screen: "oauth" };
   if (at("/health")) return { screen: "health" };
   if (at("/settings")) return { screen: "settings" };
   if (at("/admin") || at("/admin/feedback")) return { screen: "admin" };
