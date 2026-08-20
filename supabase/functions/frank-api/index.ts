@@ -72,10 +72,11 @@ async function signed(path: string): Promise<string> {
   return data?.signedUrl ?? "";
 }
 
-// The backend caps stored objects at 20 MB. Anything larger (4K video, big
-// upscales) still has a usable provider URL, so we keep the asset row and fall
-// back to that temporary URL instead of failing the whole run.
-const MAX_STORAGE_BYTES = 20 * 1024 * 1024;
+// The storage backend caps objects at 50 MB; stay just under it. Anything larger
+// (long 4K video, big upscales) still has a usable provider URL, so we keep the
+// asset row and fall back to that temporary URL instead of failing the whole run.
+const MAX_STORAGE_BYTES = 45 * 1024 * 1024;
+
 
 function isStorageSizeError(message: string): boolean {
   const m = (message || "").toLowerCase();
@@ -1363,7 +1364,7 @@ function requestedDimensions(aspectRatio?: string, size?: string): { width: numb
   return { width: Number(ratioMatch[1]), height: Number(ratioMatch[2]) };
 }
 
-async function handleInference(body: any, userId: string) {
+async function handleInference(body: any, userId: string, shard?: { turnId: string; index: number }) {
   const sb = supabase();
   let sessionId: string = body.session_id;
   if (!sessionId) sessionId = (await getOrCreateDefaultSession(userId)).id;
@@ -1371,7 +1372,7 @@ async function handleInference(body: any, userId: string) {
   const prompt: string = body.prompt || "";
   if (!prompt.trim()) throw new Error("Prompt is required");
 
-  const turnId = crypto.randomUUID();
+  const turnId = shard?.turnId ?? crypto.randomUUID();
   const modelId: string = body.model || "google-nb-pro";
   const reqSettings: any = body.settings || {};
   const settingsSnapshot: any = {
@@ -1384,17 +1385,21 @@ async function handleInference(body: any, userId: string) {
     status: "running",
   };
 
-  const msgIns = await sb.from("messages").insert({
-    id: turnId,
-    user_id: userId,
-    session_id: sessionId,
-    role: "user",
-    message_type: settingsSnapshot.kind,
-    prompt_text: prompt,
-    settings_snapshot_json: settingsSnapshot,
-  }).select("seq").single();
-  if (msgIns.error) throw msgIns.error;
-  const nextSeq = (msgIns.data as any)?.seq ?? 0;
+  let nextSeq = 0;
+  if (!shard) {
+    const msgIns = await sb.from("messages").insert({
+      id: turnId,
+      user_id: userId,
+      session_id: sessionId,
+      role: "user",
+      message_type: settingsSnapshot.kind,
+      prompt_text: prompt,
+      settings_snapshot_json: settingsSnapshot,
+    }).select("seq").single();
+    if (msgIns.error) throw msgIns.error;
+    nextSeq = (msgIns.data as any)?.seq ?? 0;
+  }
+
 
   const MAX_COUNT_BY_MODEL: Record<string, number> = {
     "google-nb-pro": 4,
@@ -1412,7 +1417,52 @@ async function handleInference(body: any, userId: string) {
     "grok-imagine-image": 4,
   };
   const modelCap = MAX_COUNT_BY_MODEL[modelId] ?? 4;
-  const count = Math.min(Math.max(Number(reqSettings.count ?? body.count ?? 1) || 1, 1), modelCap);
+  const requestedCount = Math.min(Math.max(Number(reqSettings.count ?? body.count ?? 1) || 1, 1), modelCap);
+  const count = shard ? 1 : requestedCount;
+
+  // Multi-image rounds fan out to one worker per image. A single request cannot
+  // hold four large (4K ≈ 23 MB) provider responses in memory inside its time
+  // budget, so each image gets its own invocation and the turn is closed out by
+  // the status poll once every image has landed.
+  if (!shard && requestedCount > 1) {
+    const fanoutSnapshot = {
+      ...settingsSnapshot,
+      requested_count: requestedCount,
+      fanout: true,
+      fanout_started_at: nowIso(),
+    };
+    await sb.from("messages").update({ settings_snapshot_json: fanoutSnapshot }).eq("id", turnId);
+    const shardBody = { ...body, session_id: sessionId, settings: { ...reqSettings, count: 1 }, count: 1 };
+    const kicks = Array.from({ length: requestedCount }, (_, index) =>
+      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/frank-api/inference/shard`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}`,
+          "x-frank-internal": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        },
+        body: JSON.stringify({ turn_id: turnId, shard_index: index, user_id: userId, payload: shardBody }),
+      }).catch((err) => {
+        console.error("[frank-api] shard kick failed", index, errMessage(err));
+        return null;
+      })
+    );
+    // Keep the instance alive for the sub-invocations, but answer the client now.
+    try {
+      (globalThis as any).EdgeRuntime?.waitUntil?.(Promise.allSettled(kicks));
+    } catch { /* best effort */ }
+    return {
+      turn: rowToTurn({
+        id: turnId, session_id: sessionId, role: "user",
+        message_type: settingsSnapshot.kind, prompt_text: prompt,
+        settings_snapshot_json: fanoutSnapshot,
+        seq: nextSeq, created_at: nowIso(),
+      }),
+      status: "running" as const,
+      assets: [],
+    };
+  }
+
   const generatedImages: Array<{ b64?: string; url?: string; mime: string }> = [];
   const partialErrors: Array<{ code: string; message: string; retryable: boolean; status?: number; request_id?: string }> = [];
   // The sanitised body we sent upstream, stored on the turn for troubleshooting.
@@ -1516,7 +1566,23 @@ async function handleInference(body: any, userId: string) {
       error_request_id: mapped.requestId ?? null,
       provider_request: providerRequest,
     };
+    if (shard) {
+      // One image of a fan-out failed. Record it without failing the whole turn:
+      // the status poll decides the outcome once every shard has reported.
+      const current = await sb.from("messages").select("settings_snapshot_json").eq("id", turnId).maybeSingle();
+      const snap = (current.data?.settings_snapshot_json ?? settingsSnapshot) as any;
+      const shardErrors = Array.isArray(snap.shard_errors) ? snap.shard_errors : [];
+      shardErrors.push({
+        index: shard.index, code: mapped.code, message: msg,
+        retryable: mapped.retryable, status: mapped.status ?? null,
+      });
+      await sb.from("messages").update({
+        settings_snapshot_json: { ...snap, shard_errors: shardErrors, provider_request: providerRequest ?? snap.provider_request ?? null },
+      }).eq("id", turnId);
+      return { turn: null as any, status: "failed" as const, error: { code: mapped.code, message: msg, retryable: mapped.retryable } as any };
+    }
     await sb.from("messages").update({ settings_snapshot_json: failedSnapshot }).eq("id", turnId);
+
     return {
       turn: rowToTurn({
         id: turnId, session_id: sessionId, role: "user",
@@ -1545,6 +1611,24 @@ async function handleInference(body: any, userId: string) {
 
   const assetIds = insertedAssets.map((asset) => asset.id);
 
+  if (shard) {
+    // Assets are the source of truth for a fan-out round; only record provider
+    // detail and let the status poll close the turn when all shards have landed.
+    const current = await sb.from("messages").select("settings_snapshot_json").eq("id", turnId).maybeSingle();
+    const snap = (current.data?.settings_snapshot_json ?? settingsSnapshot) as any;
+    await sb.from("messages").update({
+      settings_snapshot_json: {
+        ...snap,
+        provider_request: providerRequest ?? snap.provider_request ?? null,
+        provider: providerPayload.provider,
+        provider_model: providerPayload.model,
+        fallback: usedFallback ?? snap.fallback ?? undefined,
+        last_shard_at: nowIso(),
+      },
+    }).eq("id", turnId);
+    return { turn: null as any, status: "complete" as const, assets: [] };
+  }
+
   const completedSnapshot = {
     ...settingsSnapshot,
     status: "complete",
@@ -1559,6 +1643,7 @@ async function handleInference(body: any, userId: string) {
   await sb.from("messages").update({
     settings_snapshot_json: completedSnapshot,
   }).eq("id", turnId);
+
 
   const assets = await Promise.all(insertedAssets.map(async (asset) => rowToAsset(asset, await signed(asset.storage_path))));
   return {
@@ -1668,6 +1753,44 @@ async function handleTurnStatus(body: any, userId: string) {
   };
 
   const predictionIds: string[] = Array.isArray(snapshot.prediction_ids) ? snapshot.prediction_ids : [];
+
+  // ---- Fan-out rounds: one worker per image, assets are the progress ledger --
+  if (snapshot.status === "running" && snapshot.fanout) {
+    const requested = Math.max(Number(snapshot.requested_count) || 1, 1);
+    const assetRows = await sb.from("assets").select("id").eq("message_id", turnId);
+    const done = (assetRows.data ?? []).length;
+    const shardErrors: any[] = Array.isArray(snapshot.shard_errors) ? snapshot.shard_errors : [];
+    const startedAt = new Date(snapshot.fanout_started_at || row.created_at).getTime();
+    const ageMs = Date.now() - startedAt;
+    const expired = Number.isFinite(ageMs) && ageMs > 8 * 60_000;
+
+    if (done >= requested || done + shardErrors.length >= requested || expired) {
+      if (!done) {
+        const first = shardErrors[0];
+        const failed = {
+          ...snapshot,
+          status: "failed",
+          error: first?.message || "Every image in this round failed. Retry the run.",
+          error_code: first?.code || "worker_interrupted",
+          error_retryable: first?.retryable ?? true,
+        };
+        await sb.from("messages").update({ settings_snapshot_json: failed }).eq("id", turnId);
+        const result = await finishWithRows(failed, "failed");
+        return { ...result, error: { code: failed.error_code, message: failed.error, retryable: failed.error_retryable } };
+      }
+      const ids = (assetRows.data ?? []).map((r: any) => r.id);
+      const complete = {
+        ...snapshot,
+        status: "complete",
+        output_asset_ids: ids,
+        partial_errors: shardErrors.length ? shardErrors : undefined,
+      };
+      await sb.from("messages").update({ settings_snapshot_json: complete }).eq("id", turnId);
+      return await finishWithRows(complete, "complete");
+    }
+    return await finishWithRows({ ...snapshot, pending_count: requested - done }, "running");
+  }
+
   if (snapshot.status !== "running" || !predictionIds.length) {
     if (snapshot.status === "running" && !predictionIds.length) {
       const ageMs = Date.now() - new Date(row.created_at).getTime();
@@ -1686,6 +1809,7 @@ async function handleTurnStatus(body: any, userId: string) {
     const status = snapshot.status === "failed" ? "failed" : snapshot.status === "running" ? "running" : "complete";
     return await finishWithRows(snapshot, status as any);
   }
+
 
   const replicateKey = getReplicateGatewayKey();
   if (!replicateKey) throw new Error("Replicate is not connected.");
@@ -2253,6 +2377,23 @@ Deno.serve(async (req) => {
     }
     if (path === "/config") return json(STUDIO_CONFIG);
     if (path === "/models") return json({ models: STUDIO_CONFIG.models, backlogModels: [], promptPresets: STUDIO_CONFIG.promptPresets });
+
+    // ---- Internal: one image of a fan-out round, called by this function ----
+    if (path === "/inference/shard" && method === "POST") {
+      const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+      if (!secret || req.headers.get("x-frank-internal") !== secret) {
+        return json({ error: { message: "Forbidden" } }, 403);
+      }
+      const body = await readJson(req);
+      const result = await handleInference(
+        body.payload ?? {},
+        String(body.user_id || ""),
+        { turnId: String(body.turn_id || ""), index: Number(body.shard_index) || 0 },
+      );
+      return json({ status: result.status });
+    }
+
+
 
 
 
