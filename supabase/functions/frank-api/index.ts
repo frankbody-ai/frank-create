@@ -1363,7 +1363,7 @@ function requestedDimensions(aspectRatio?: string, size?: string): { width: numb
   return { width: Number(ratioMatch[1]), height: Number(ratioMatch[2]) };
 }
 
-async function handleInference(body: any, userId: string) {
+async function handleInference(body: any, userId: string, shard?: { turnId: string; index: number }) {
   const sb = supabase();
   let sessionId: string = body.session_id;
   if (!sessionId) sessionId = (await getOrCreateDefaultSession(userId)).id;
@@ -1371,7 +1371,7 @@ async function handleInference(body: any, userId: string) {
   const prompt: string = body.prompt || "";
   if (!prompt.trim()) throw new Error("Prompt is required");
 
-  const turnId = crypto.randomUUID();
+  const turnId = shard?.turnId ?? crypto.randomUUID();
   const modelId: string = body.model || "google-nb-pro";
   const reqSettings: any = body.settings || {};
   const settingsSnapshot: any = {
@@ -1384,17 +1384,21 @@ async function handleInference(body: any, userId: string) {
     status: "running",
   };
 
-  const msgIns = await sb.from("messages").insert({
-    id: turnId,
-    user_id: userId,
-    session_id: sessionId,
-    role: "user",
-    message_type: settingsSnapshot.kind,
-    prompt_text: prompt,
-    settings_snapshot_json: settingsSnapshot,
-  }).select("seq").single();
-  if (msgIns.error) throw msgIns.error;
-  const nextSeq = (msgIns.data as any)?.seq ?? 0;
+  let nextSeq = 0;
+  if (!shard) {
+    const msgIns = await sb.from("messages").insert({
+      id: turnId,
+      user_id: userId,
+      session_id: sessionId,
+      role: "user",
+      message_type: settingsSnapshot.kind,
+      prompt_text: prompt,
+      settings_snapshot_json: settingsSnapshot,
+    }).select("seq").single();
+    if (msgIns.error) throw msgIns.error;
+    nextSeq = (msgIns.data as any)?.seq ?? 0;
+  }
+
 
   const MAX_COUNT_BY_MODEL: Record<string, number> = {
     "google-nb-pro": 4,
