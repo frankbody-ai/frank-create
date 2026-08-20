@@ -1565,7 +1565,23 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
       error_request_id: mapped.requestId ?? null,
       provider_request: providerRequest,
     };
+    if (shard) {
+      // One image of a fan-out failed. Record it without failing the whole turn:
+      // the status poll decides the outcome once every shard has reported.
+      const current = await sb.from("messages").select("settings_snapshot_json").eq("id", turnId).maybeSingle();
+      const snap = (current.data?.settings_snapshot_json ?? settingsSnapshot) as any;
+      const shardErrors = Array.isArray(snap.shard_errors) ? snap.shard_errors : [];
+      shardErrors.push({
+        index: shard.index, code: mapped.code, message: msg,
+        retryable: mapped.retryable, status: mapped.status ?? null,
+      });
+      await sb.from("messages").update({
+        settings_snapshot_json: { ...snap, shard_errors: shardErrors, provider_request: providerRequest ?? snap.provider_request ?? null },
+      }).eq("id", turnId);
+      return { turn: null as any, status: "failed" as const, error: { code: mapped.code, message: msg, retryable: mapped.retryable } as any };
+    }
     await sb.from("messages").update({ settings_snapshot_json: failedSnapshot }).eq("id", turnId);
+
     return {
       turn: rowToTurn({
         id: turnId, session_id: sessionId, role: "user",
