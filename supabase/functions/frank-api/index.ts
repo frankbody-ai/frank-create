@@ -1416,7 +1416,52 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
     "grok-imagine-image": 4,
   };
   const modelCap = MAX_COUNT_BY_MODEL[modelId] ?? 4;
-  const count = Math.min(Math.max(Number(reqSettings.count ?? body.count ?? 1) || 1, 1), modelCap);
+  const requestedCount = Math.min(Math.max(Number(reqSettings.count ?? body.count ?? 1) || 1, 1), modelCap);
+  const count = shard ? 1 : requestedCount;
+
+  // Multi-image rounds fan out to one worker per image. A single request cannot
+  // hold four large (4K ≈ 23 MB) provider responses in memory inside its time
+  // budget, so each image gets its own invocation and the turn is closed out by
+  // the status poll once every image has landed.
+  if (!shard && requestedCount > 1) {
+    const fanoutSnapshot = {
+      ...settingsSnapshot,
+      requested_count: requestedCount,
+      fanout: true,
+      fanout_started_at: nowIso(),
+    };
+    await sb.from("messages").update({ settings_snapshot_json: fanoutSnapshot }).eq("id", turnId);
+    const shardBody = { ...body, session_id: sessionId, settings: { ...reqSettings, count: 1 }, count: 1 };
+    const kicks = Array.from({ length: requestedCount }, (_, index) =>
+      fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/frank-api/inference/shard`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""}`,
+          "x-frank-internal": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        },
+        body: JSON.stringify({ turn_id: turnId, shard_index: index, user_id: userId, payload: shardBody }),
+      }).catch((err) => {
+        console.error("[frank-api] shard kick failed", index, errMessage(err));
+        return null;
+      })
+    );
+    // Keep the instance alive for the sub-invocations, but answer the client now.
+    try {
+      (globalThis as any).EdgeRuntime?.waitUntil?.(Promise.allSettled(kicks));
+    } catch { /* best effort */ }
+    return {
+      turn: rowToTurn({
+        id: turnId, session_id: sessionId, role: "user",
+        message_type: settingsSnapshot.kind, prompt_text: prompt,
+        settings_snapshot_json: fanoutSnapshot,
+        seq: nextSeq, created_at: nowIso(),
+      }),
+      status: "running" as const,
+      assets: [],
+    };
+  }
+
   const generatedImages: Array<{ b64?: string; url?: string; mime: string }> = [];
   const partialErrors: Array<{ code: string; message: string; retryable: boolean; status?: number; request_id?: string }> = [];
   // The sanitised body we sent upstream, stored on the turn for troubleshooting.
