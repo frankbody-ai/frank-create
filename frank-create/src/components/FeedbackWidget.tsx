@@ -10,9 +10,8 @@ function currentPagePath(): string {
 function currentRouteName(): string {
   const hash = window.location.hash.replace(/^#/, "").split("?")[0] || "";
   const path = hash || window.location.pathname.replace(/\/$/, "") || "/";
-  if (path.startsWith("/review/")) return "review";
   if (path === "/health") return "health";
-  if (path === "/cliff-access") return "cliff-access";
+  if (path === "/settings") return "settings";
   if (path === "/admin/feedback") return "admin.feedback";
   if (path === "/admin") return "admin";
   const view =

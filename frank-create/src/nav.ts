@@ -61,7 +61,13 @@ export function navigate(screen: Screen): void {
  * The screen a URL resolves to. Reads the hash first and the pathname second,
  * because the app is served through an SPA rewrite and both forms reach it.
  */
-export function resolveScreen(): { screen: Screen | "oauth" } {
+/** Every path the app answers to. Anything else is a dead link, not the Studio. */
+const KNOWN_ROUTES = [
+  "", "/health", "/settings", "/admin", "/admin/feedback",
+  "/.lovable/oauth/consent", "/oauth/consent",
+];
+
+export function resolveScreen(): { screen: Screen | "oauth" | "notfound" } {
   const pathname = window.location.pathname.replace(/\/$/, "");
   const rawHash = window.location.hash.replace(/^#/, "");
   const hashPath = (rawHash.split("?")[0] || "").replace(/\/$/, "");
@@ -73,11 +79,17 @@ export function resolveScreen(): { screen: Screen | "oauth" } {
   if (at("/settings")) return { screen: "settings" };
   if (at("/admin") || at("/admin/feedback")) return { screen: "admin" };
 
+  // A bookmark to a screen that has since been removed (the review board, the
+  // cliff access checklist) used to land silently on Studio, which reads as a
+  // broken app rather than a dead link.
+  const claimed = rawHash ? hashPath : pathname;
+  if (claimed && !KNOWN_ROUTES.includes(claimed)) return { screen: "notfound" };
+
   return { screen: modeFromUrl() };
 }
 
 
-/** Which of the five in-App screens the URL asks for. */
+/** Which of the three in-App screens the URL asks for. */
 export function modeFromUrl(): InAppScreen {
   if (typeof window === "undefined") return "studio";
   const hashQuery = window.location.hash.split("?")[1] || "";

@@ -1,4 +1,3 @@
-import React from "react";
 
 import { Icon } from "../ds";
 import type { StudioSession } from "../lib/types";

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Banner, Button, Card, Checkbox, Spinner, TextField } from "../../ds";
 import {
   fetchPromptAgentConfig,

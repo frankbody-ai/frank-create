@@ -12,6 +12,8 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const LOVABLE_BASE = "https://ai.gateway.lovable.dev/v1";
 const BUCKET = "studio-images";
+// Keep in step with ALLOWED_EMAIL_DOMAINS in frank-create/src/lib/supabaseClient.ts.
+// When these drift, a user signs in happily and then 403s on every route.
 const ALLOWED_EMAIL_DOMAINS = ["frankbody.com", "autosolutions.ai", "alivebody.com.au"];
 
 const corsHeaders = {
@@ -641,7 +643,7 @@ async function handleVideo(body: any, userId: string) {
     user_id: userId,
     session_id: sessionId,
     message_id: turnId,
-    storage_path: storagePath,
+    storage_path: stored.stored ? storagePath : "",
     asset_type: "generated",
     prompt_snapshot: prompt,
     model_key: modelId,
@@ -860,7 +862,7 @@ async function handleEnhance(body: any, userId: string) {
     user_id: userId,
     session_id: sessionId,
     message_id: turnId,
-    storage_path: storagePath,
+    storage_path: stored.stored ? storagePath : "",
     asset_type: "edited",
     prompt_snapshot: promptText,
     model_key: modelId,
@@ -1608,7 +1610,7 @@ async function persistImageAssets(args: {
       user_id: args.userId,
       session_id: args.sessionId,
       message_id: args.turnId,
-      storage_path: storagePath,
+      storage_path: stored.stored ? storagePath : "",
       asset_type: "generated",
       prompt_snapshot: args.prompt,
       model_key: args.modelId,
@@ -2314,8 +2316,15 @@ Deno.serve(async (req) => {
       const body = await readJson(req).catch(() => ({}));
       const sessionId = String(body.session_id || "");
       const storagePath = String(body.file_path || "");
-      if (!sessionId || !storagePath) {
-        return json({ error: { code: "invalid_reference", message: "Reference needs a session and uploaded image path." } }, 400);
+      // Oversized generations are never uploaded to the bucket (see
+      // storeOrFallback), so they arrive with no storage path at all. Carry the
+      // provider's temporary URL across, or the reference is born broken.
+      const remoteUrl = typeof body.remote_url === "string" && body.remote_url.startsWith("http")
+        ? body.remote_url
+        : "";
+      const storageMissing = body.storage_missing === true && !!remoteUrl;
+      if (!sessionId || (!storagePath && !storageMissing)) {
+        return json({ error: { code: "invalid_reference", message: "Reference needs a session and either an uploaded image path or a provider URL." } }, 400);
       }
       const metadata = {
         title: String(body.title || "Reference image"),
@@ -2324,13 +2333,15 @@ Deno.serve(async (req) => {
         source_asset_id: typeof body.source_asset_id === "string" ? body.source_asset_id : null,
         width: typeof body.width === "number" ? body.width : null,
         height: typeof body.height === "number" ? body.height : null,
+        ...(storageMissing ? { storage_missing: true, remote_url: remoteUrl, remote_url_expires: true } : {}),
       };
 
       const { data, error } = await supabase().from("assets").insert({
         id: crypto.randomUUID(),
         user_id: userId,
         session_id: sessionId,
-        storage_path: storagePath,
+        // Same rule as generated assets: no path for a file that was never stored.
+        storage_path: storageMissing ? "" : storagePath,
         asset_type: "reference",
         prompt_snapshot: typeof body.prompt === "string" ? body.prompt : null,
         model_key: typeof body.model === "string" ? body.model : null,

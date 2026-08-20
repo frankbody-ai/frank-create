@@ -5,6 +5,7 @@ import {
   Scripts,
   createRootRoute,
 } from "@tanstack/react-router";
+import { NotFoundPage } from "../components/NotFoundPage";
 import "../app.css";
 
 export const Route = createRootRoute({
@@ -16,6 +17,10 @@ export const Route = createRootRoute({
     links: [{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
   }),
   component: RootDocument,
+  // Unknown *paths* land here; unknown *hashes* are caught by `resolveScreen`
+  // in nav.ts, since the hash router only ever runs at "/". Same component
+  // either way — a dead link should say so, not quietly show the Studio.
+  notFoundComponent: NotFoundPage,
 });
 
 function RootDocument() {

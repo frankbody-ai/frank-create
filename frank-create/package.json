@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5174",
-    "build": "vite build",
-    "test": "vitest run"
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run",
+    "lint:unused": "tsc -p tsconfig.unused.json --noEmit"
   },
   "dependencies": {
     "@lovable.dev/cloud-auth-js": "^1.1.2",

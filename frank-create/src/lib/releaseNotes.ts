@@ -15,6 +15,17 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-08-20-studio-speaks-up",
+    date: "20 August 2026",
+    title: "The studio tells you what happened",
+    items: [
+      "Errors and status messages are back on screen — no more clicking Generate and getting silence.",
+      "Image runs have a Stop button again, and Generate is disabled while a round is running.",
+      "When the backend is offline the studio says so and pauses runs, instead of quietly generating on a different model.",
+      "Faster: the timeline no longer redraws while you type, and screens you aren't using no longer load up front.",
+    ],
+  },
+  {
     id: "2026-08-20-claude-runtime",
     date: "20 August 2026",
     title: "Claude connection restored",

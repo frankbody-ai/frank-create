@@ -68,8 +68,28 @@ function parseWizardQuestions(reply: string): WizardQuestion[] | null {
 
 
 
-async function fileToDataUrl(file: File): Promise<string> {
-  const bitmap = await createImageBitmap(file);
+/**
+ * Downscale an attachment to a JPEG data URL under the byte cap. Distinct from
+ * `fileToDataUrl` in studio/studioFormat, which just reads a file for preview —
+ * these shared a name and did different things.
+ */
+async function fileToCompressedDataUrl(file: File): Promise<string> {
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    // Some formats (HEIC in most browsers) decode in an <img> but not here.
+    // A plain read still gives the agent something to look at.
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      throw new Error("That image is too large. Use an image under 2.5 MB.");
+    }
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("Could not read that image."));
+      reader.readAsDataURL(file);
+    });
+  }
   try {
     const scale = Math.min(1, MAX_ATTACHMENT_EDGE / Math.max(bitmap.width, bitmap.height));
     const width = Math.max(1, Math.round(bitmap.width * scale));
@@ -281,7 +301,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
       return;
     }
     try {
-      const urls = await Promise.all(images.slice(0, room).map(fileToDataUrl));
+      const urls = await Promise.all(images.slice(0, room).map(fileToCompressedDataUrl));
       setAttachments((prev) => [...prev, ...urls].slice(0, MAX_ATTACHMENTS));
       setError(null);
     } catch (err) {
