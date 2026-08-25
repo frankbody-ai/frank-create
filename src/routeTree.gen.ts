@@ -19,7 +19,7 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as AdminFeedbackRouteImport } from './routes/admin.feedback'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
-import { Route as ApiPublicExportHelperStorageRouteImport } from './routes/api/public/export-helper/storage'
+import { Route as ApiPublicExportHelperCopyStorageRouteImport } from './routes/api/public/export-helper/copy-storage'
 import { Route as ApiPublicExportHelperTablesRouteImport } from './routes/api/public/export-helper/tables'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 
@@ -76,10 +76,10 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicExportHelperStorageRoute =
-  ApiPublicExportHelperStorageRouteImport.update({
-    id: '/api/public/export-helper/storage',
-    path: '/api/public/export-helper/storage',
+const ApiPublicExportHelperCopyStorageRoute =
+  ApiPublicExportHelperCopyStorageRouteImport.update({
+    id: '/api/public/export-helper/copy-storage',
+    path: '/api/public/export-helper/copy-storage',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicExportHelperTablesRoute =
@@ -106,7 +106,7 @@ export interface FileRoutesByFullPath {
   '/admin/feedback': typeof AdminFeedbackRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
-  '/api/public/export-helper/storage': typeof ApiPublicExportHelperStorageRoute
+  '/api/public/export-helper/copy-storage': typeof ApiPublicExportHelperCopyStorageRoute
   '/api/public/export-helper/tables': typeof ApiPublicExportHelperTablesRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
@@ -121,7 +121,7 @@ export interface FileRoutesByTo {
   '/admin/feedback': typeof AdminFeedbackRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
-  '/api/public/export-helper/storage': typeof ApiPublicExportHelperStorageRoute
+  '/api/public/export-helper/copy-storage': typeof ApiPublicExportHelperCopyStorageRoute
   '/api/public/export-helper/tables': typeof ApiPublicExportHelperTablesRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
@@ -137,7 +137,7 @@ export interface FileRoutesById {
   '/admin/feedback': typeof AdminFeedbackRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
-  '/api/public/export-helper/storage': typeof ApiPublicExportHelperStorageRoute
+  '/api/public/export-helper/copy-storage': typeof ApiPublicExportHelperCopyStorageRoute
   '/api/public/export-helper/tables': typeof ApiPublicExportHelperTablesRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
@@ -154,7 +154,7 @@ export interface FileRouteTypes {
     | '/admin/feedback'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
-    | '/api/public/export-helper/storage'
+    | '/api/public/export-helper/copy-storage'
     | '/api/public/export-helper/tables'
     | '/lovable/email/queue/process'
   fileRoutesByTo: FileRoutesByTo
@@ -169,7 +169,7 @@ export interface FileRouteTypes {
     | '/admin/feedback'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
-    | '/api/public/export-helper/storage'
+    | '/api/public/export-helper/copy-storage'
     | '/api/public/export-helper/tables'
     | '/lovable/email/queue/process'
   id:
@@ -184,7 +184,7 @@ export interface FileRouteTypes {
     | '/admin/feedback'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
-    | '/api/public/export-helper/storage'
+    | '/api/public/export-helper/copy-storage'
     | '/api/public/export-helper/tables'
     | '/lovable/email/queue/process'
   fileRoutesById: FileRoutesById
@@ -199,7 +199,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
-  ApiPublicExportHelperStorageRoute: typeof ApiPublicExportHelperStorageRoute
+  ApiPublicExportHelperCopyStorageRoute: typeof ApiPublicExportHelperCopyStorageRoute
   ApiPublicExportHelperTablesRoute: typeof ApiPublicExportHelperTablesRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
@@ -276,11 +276,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/export-helper/storage': {
-      id: '/api/public/export-helper/storage'
-      path: '/api/public/export-helper/storage'
-      fullPath: '/api/public/export-helper/storage'
-      preLoaderRoute: typeof ApiPublicExportHelperStorageRouteImport
+    '/api/public/export-helper/copy-storage': {
+      id: '/api/public/export-helper/copy-storage'
+      path: '/api/public/export-helper/copy-storage'
+      fullPath: '/api/public/export-helper/copy-storage'
+      preLoaderRoute: typeof ApiPublicExportHelperCopyStorageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/export-helper/tables': {
@@ -321,7 +321,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
-  ApiPublicExportHelperStorageRoute: ApiPublicExportHelperStorageRoute,
+  ApiPublicExportHelperCopyStorageRoute: ApiPublicExportHelperCopyStorageRoute,
   ApiPublicExportHelperTablesRoute: ApiPublicExportHelperTablesRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }
