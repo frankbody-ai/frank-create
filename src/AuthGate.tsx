@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
-import { supabase, isAllowedEmail, ALLOWED_EMAIL_DOMAINS, hardSignOut } from "./lib/supabaseClient";
-import { lovable } from "./lib/lovableAuth";
+import { supabase, os, hardSignOut } from "./lib/supabaseClient";
+import { APP_KEY } from "./lib/coreConfig";
 import { getMyAccessState } from "./lib/admin";
 import { brandCompanyId, brandName } from "./lib/tenantBrand";
 import { AuthLayout, SignIn, GoogleButton, Button, Spinner, Text } from "./ds";
@@ -22,9 +22,21 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       setSession(s);
       if (!s) return setStatus("signed-out");
       const email = s.user?.email;
-      if (!isAllowedEmail(email)) {
-        await hardSignOut();
-        setError(`Access is for ${ALLOWED_EMAIL_DOMAINS.map((d) => "@" + d).join(" and ")} accounts only. (${email ?? "no email"})`);
+      // The OS decides who gets in: the company must own Create Studio and
+      // the person must be assigned it (admins bypass). No email-domain
+      // guesswork, and no second login.
+      const { data: entitled, error: entitlementError } = await os.rpc("is_entitled", {
+        app_key: APP_KEY,
+      });
+      if (!mounted) return;
+      if (entitlementError) {
+        setError("Could not check your access with AutoSolutions OS. Try again shortly.");
+        return setStatus("denied");
+      }
+      if (!entitled) {
+        setError(
+          `${email ?? "This account"} is not entitled to Create Studio in the workspace you are signed in to. Ask your workspace admin to grant it from the AutoSolutions hub.`,
+        );
         return setStatus("denied");
       }
       // A second gate: admins can require explicit approval per person.
@@ -53,13 +65,18 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const signIn = async () => {
     setError(null);
     setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-      extraParams: { prompt: "select_account" },
+    // Straight to the core: same Google account as the hub and every other
+    // AutoSolutions app, so arriving from the launcher is a silent hop.
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: { prompt: "select_account" },
+      },
     });
-    if (result?.error) {
+    if (oauthError) {
       setBusy(false);
-      setError(result.error.message || "Sign-in didn't work. Try again.");
+      setError(oauthError.message || "Sign-in didn't work. Try again.");
     }
   };
 
@@ -119,7 +136,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         note={
           pending
             ? "Ask your team lead to approve your access in the admin portal."
-            : `Access is limited to ${ALLOWED_EMAIL_DOMAINS.map((d) => d).join(" and ")}. Accounts are created by an admin — ask your team lead if you need access.`
+            : "Access is granted per company in AutoSolutions OS. Ask your workspace admin to add Create Studio to your account."
         }
       />
 

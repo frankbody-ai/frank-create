@@ -7,14 +7,28 @@ import { loadPromptAgentConfig, buildPromptAgentSystem, DEFAULT_CONFIG } from ".
 
 
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+// Identity, entitlements and studio data all live in the AutoSolutions OS
+// core. Point SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY at the core project
+// and this function serves the core; the AI gateway keys stay wherever this
+// function is deployed.
+// CORE_* wins over the platform-injected SUPABASE_* pair. Hosts that manage
+// their own backend (Lovable Cloud) reserve those names and inject their own
+// project, so pointing this function at the core needs names the host will
+// not overwrite. Falls back to SUPABASE_* when deployed on the core itself.
+const SUPABASE_URL = Deno.env.get("CORE_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY =
+  Deno.env.get("CORE_SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+// Public anon key of the same project — used to ask the OS about the caller.
+const SUPABASE_ANON_KEY =
+  Deno.env.get("CORE_SUPABASE_ANON_KEY") ??
+  Deno.env.get("SUPABASE_ANON_KEY") ??
+  Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
+  "";
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const LOVABLE_BASE = "https://ai.gateway.lovable.dev/v1";
 const BUCKET = "studio-images";
-// Keep in step with ALLOWED_EMAIL_DOMAINS in frank-create/src/lib/supabaseClient.ts.
-// When these drift, a user signs in happily and then 403s on every route.
-const ALLOWED_EMAIL_DOMAINS = ["frankbody.com", "autosolutions.ai", "alivebody.com.au"];
+/** The key this product is registered under in the OS catalogue. */
+const APP_KEY = "frank_create";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,8 +48,19 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+// Studio data lives in the core's `studio` schema now, so every table call
+// below (messages, assets, sessions…) resolves there without being rewritten.
 const supabase = () =>
   createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    db: { schema: "studio" },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+// A client acting AS the caller, used only to ask the OS whether this person
+// may use Create Studio. Service role would bypass exactly the check we want.
+const asCaller = (token: string) =>
+  createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
@@ -60,8 +85,15 @@ async function requireUser(req: Request): Promise<string> {
   const { data, error } = await sb.auth.getUser(token);
   if (error || !data?.user) throw new AuthError(401, "Invalid session");
   const email = (data.user.email || "").toLowerCase();
-  const ok = ALLOWED_EMAIL_DOMAINS.some((d) => email.endsWith(`@${d}`));
-  if (!ok) throw new AuthError(403, `Email ${email} is not in the allow-list`);
+
+  // Who may use this app is an OS decision, not a domain-name guess: the
+  // company must own Create Studio and this person must be assigned it
+  // (admins bypass). Same rule the SPA gate and the launcher use.
+  const { data: entitled, error: entitlementError } = await asCaller(token)
+    .rpc("is_entitled", { app_key: APP_KEY });
+  if (entitlementError) throw new AuthError(503, "Could not verify entitlement with the OS core");
+  if (!entitled) throw new AuthError(403, `${email} is not entitled to Create Studio in this workspace`);
+
   USER_CACHE.set(token, { id: data.user.id, email, exp: now + 60_000 });
   return data.user.id;
 }

@@ -9,8 +9,15 @@ import type {
 } from "./types";
 
 
-// The SPA talks to the `frank-api` Lovable Cloud function for everything.
-const frankBase = "https://amwfmlqvaranonhyvqbj.supabase.co/functions/v1/frank-api";
+// The SPA talks to the `frank-api` edge function for generation and assets.
+//
+// Identity and data now live in the AutoSolutions OS core, but the function
+// itself still runs on Lovable Cloud because that is where the AI gateway
+// keys live. Its home is configuration, not a constant, so moving it to the
+// core later is an environment change rather than a code change.
+const FRANK_API_FALLBACK = "https://amwfmlqvaranonhyvqbj.supabase.co/functions/v1/frank-api";
+const frankBase =
+  (import.meta.env as Record<string, string | undefined>)["VITE_FRANK_API_BASE"] ?? FRANK_API_FALLBACK;
 
 export async function fetchHealth() {
   return fetchJson<{ ok: boolean; product: string; store: string }>("/health");

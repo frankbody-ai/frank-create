@@ -122,6 +122,25 @@ async function fetchBrand(slug: string): Promise<TenantBrand | null> {
 }
 
 /**
+ * The signed-in person's acting company, straight from the core. This is the
+ * authoritative source now that the studio runs on core auth — the ?tenant
+ * hint is only used before a session exists (or if the call fails).
+ */
+async function fetchMyBrand(): Promise<TenantBrand | null> {
+  const { os } = await import("./supabaseClient");
+  const { data, error } = await os.rpc("my_brand");
+  if (error) return null;
+  const row = Array.isArray(data) ? (data[0] as Record<string, unknown> | undefined) : undefined;
+  if (!row) return null;
+  return {
+    slug: String(row["slug"] ?? ""),
+    name: String(row["name"] ?? ""),
+    logoUrl: (row["logo_url"] as string | null) ?? null,
+    logoPlainUrl: (row["logo_plain_url"] as string | null) ?? null,
+  };
+}
+
+/**
  * Paint the remembered brand immediately (no flash of the wrong logo), then
  * refresh it from the core in the background. Safe to call at module scope:
  * it no-ops on the server and never throws into the app.
@@ -132,17 +151,28 @@ export function initTenantBrand(): void {
   const cached = readCache();
   if (cached) apply(cached);
 
-  const slug = resolveSlug();
-  if (!slug) return;
-  if (cached && cached.slug === slug && cached.logoUrl) return;
+  const settle = (brand: TenantBrand | null) => {
+    if (!brand || !brand.slug) return;
+    writeCache(brand);
+    apply(brand);
+  };
 
-  void fetchBrand(slug)
-    .then((brand) => {
-      if (!brand) return;
-      writeCache(brand);
-      apply(brand);
-    })
-    .catch(() => {
+  // Once signed in, the company follows the person (the hub's workspace
+  // switcher writes it), so ask the core rather than reading the URL.
+  void (async () => {
+    try {
+      const { supabase } = await import("./supabaseClient");
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        const mine = await fetchMyBrand();
+        if (mine) return settle(mine);
+      }
+      const slug = resolveSlug();
+      if (!slug) return;
+      if (cached && cached.slug === slug && cached.logoUrl) return;
+      settle(await fetchBrand(slug));
+    } catch {
       // Offline or core unreachable: keep whatever is already painted.
-    });
+    }
+  })();
 }

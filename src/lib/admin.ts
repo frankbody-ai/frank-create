@@ -1,4 +1,5 @@
-import { supabase } from "./supabaseClient";
+import { supabase, os } from "./supabaseClient";
+import { APP_KEY } from "./coreConfig";
 
 export type AppRole = "admin" | "manager" | "user";
 
@@ -91,12 +92,14 @@ export async function getCurrentRole(): Promise<AppRole | null> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData?.user?.id;
   if (!uid) return null;
-  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", uid);
-  if (error || !data || data.length === 0) return null;
-  const roles = data.map((r) => r.role as AppRole);
-  if (roles.includes("admin")) return "admin";
-  if (roles.includes("manager")) return "manager";
-  return "user";
+  // Studio roles are OS app roles now: one place grants "who may use
+  // Create Studio, and as what" for every company.
+  const { data, error } = await os.rpc("app_role", { app_key: APP_KEY });
+  if (error) return null;
+  const role = (data as string | null)?.toLowerCase() ?? null;
+  if (role === "admin") return "admin";
+  if (role === "manager") return "manager";
+  return role ? "user" : null;
 }
 
 export async function isCurrentUserAdmin(): Promise<boolean> {

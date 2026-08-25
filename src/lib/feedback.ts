@@ -1,4 +1,5 @@
-import { supabase } from "./supabaseClient";
+import { supabase, os } from "./supabaseClient";
+import { APP_KEY } from "./coreConfig";
 
 export type FeedbackStatus = "open" | "in_progress" | "done" | "dismissed";
 
@@ -143,13 +144,10 @@ export async function getFeedbackScreenshotUrl(input: { path: string }): Promise
 }
 
 export async function isCurrentUserStaff(): Promise<boolean> {
-  const { data: userData } = await supabase.auth.getUser();
-  const uid = userData?.user?.id;
-  if (!uid) return false;
-  const { data, error } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", uid);
-  if (error || !data) return false;
-  return data.some((r) => r.role === "admin" || r.role === "manager");
+  // Same source of truth as the rest of the OS: the app role this person
+  // holds for Create Studio in the company they are acting in.
+  const { data, error } = await os.rpc("app_role", { app_key: APP_KEY });
+  if (error) return false;
+  const role = (data as string | null)?.toLowerCase() ?? null;
+  return role === "admin" || role === "manager";
 }

@@ -1,14 +1,21 @@
 import { createClient } from "@supabase/supabase-js";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string;
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+import { CORE_SUPABASE_PUBLISHABLE_KEY, CORE_SUPABASE_URL } from "./coreConfig";
 
-if (!url || !key) {
-  // eslint-disable-next-line no-console
-  console.error("Missing VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY");
-}
-
-export const supabase = createClient(url, key, {
+/**
+ * Create Studio talks to the AutoSolutions OS core.
+ *
+ * One Google account opens every app, so there is no studio-specific login and
+ * no email-domain allowlist any more: who may enter is decided by the core
+ * (membership + `is_entitled('frank_create')`), and what they can read is
+ * decided by RLS on the core's `studio` schema.
+ *
+ * The default client targets the `studio` schema, so existing calls such as
+ * `supabase.from("prompt_chats")` keep working unchanged. OS-level calls
+ * (entitlements, brand, app roles) go through `os`, which targets `public`.
+ */
+export const supabase = createClient(CORE_SUPABASE_URL, CORE_SUPABASE_PUBLISHABLE_KEY, {
+  db: { schema: "studio" },
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -16,15 +23,8 @@ export const supabase = createClient(url, key, {
   },
 });
 
-// Keep in step with ALLOWED_EMAIL_DOMAINS in supabase/functions/frank-api/index.ts.
-// When these drift, a user signs in happily and then 403s on every route.
-export const ALLOWED_EMAIL_DOMAINS = ["frankbody.com", "autosolutions.ai", "alivebody.com.au"];
-
-export function isAllowedEmail(email: string | null | undefined) {
-  if (!email) return false;
-  const lower = email.toLowerCase();
-  return ALLOWED_EMAIL_DOMAINS.some((d) => lower.endsWith(`@${d}`));
-}
+/** Platform-level tables and helpers (entitlements, tenants, brand). */
+export const os = supabase.schema("public");
 
 /**
  * Fully clear the local Supabase session: signs out via the SDK, then

@@ -1,9 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import type { ToolContext } from "@lovable.dev/mcp-js";
 
-// Direct Supabase project host. The project ref is public (like the
-// publishable key) and is the only value that survives publish unchanged.
-export const PROJECT_REF = "amwfmlqvaranonhyvqbj";
+// The AutoSolutions OS core. The project ref is public (like the publishable
+// key) and is the only value that survives publish unchanged. MCP tools read
+// the same rows the app does, so they must point at the same project.
+export const PROJECT_REF = "allzlfxbemhhhihdpxfv";
 export const DIRECT_SUPABASE_URL = `https://${PROJECT_REF}.supabase.co`;
 
 type RuntimeGlobals = typeof globalThis & {
@@ -59,6 +60,8 @@ export function supabaseForUser(ctx: ToolContext) {
   const token = ctx.getToken();
   if (!token) throw new Error("supabaseForUser requires a verified OAuth token");
   return createClient(supabaseProjectUrl(), supabasePublishableKey(), {
+    // Studio tables live in the core's `studio` schema.
+    db: { schema: "studio" },
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
