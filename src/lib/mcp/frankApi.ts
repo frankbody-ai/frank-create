@@ -1,8 +1,24 @@
 import type { ToolContext } from "@lovable.dev/mcp-js";
-import { DIRECT_SUPABASE_URL } from "./supabase";
 
-/** The studio's own API — MCP tools drive the exact same endpoints as the app UI. */
-const FRANK_BASE = `${DIRECT_SUPABASE_URL}/functions/v1/frank-api`;
+/**
+ * The studio's own API — MCP tools drive the exact same endpoints as the app UI.
+ *
+ * Data lives in the AutoSolutions core, but this function is DEPLOYED on the
+ * host that owns the AI gateway keys, so its base URL is not the core's host.
+ * Keep it configurable: moving the function later is then a setting, not a
+ * code change (the SPA uses VITE_FRANK_API_BASE for the same reason).
+ */
+const FRANK_API_FALLBACK = "https://amwfmlqvaranonhyvqbj.supabase.co/functions/v1/frank-api";
+
+function runtimeEnv(name: string): string | undefined {
+  const runtime = globalThis as typeof globalThis & {
+    Deno?: { env?: { get?: (key: string) => string | undefined } };
+    process?: { env?: Record<string, string | undefined> };
+  };
+  return runtime.Deno?.env?.get?.(name) ?? runtime.process?.env?.[name];
+}
+
+const FRANK_BASE = runtimeEnv("FRANK_API_BASE")?.trim() || FRANK_API_FALLBACK;
 
 export type FrankAsset = {
   id?: string;

@@ -15,9 +15,17 @@ import { loadPromptAgentConfig, buildPromptAgentSystem, DEFAULT_CONFIG } from ".
 // their own backend (Lovable Cloud) reserve those names and inject their own
 // project, so pointing this function at the core needs names the host will
 // not overwrite. Falls back to SUPABASE_* when deployed on the core itself.
-const SUPABASE_URL = Deno.env.get("CORE_SUPABASE_URL") ?? Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_SERVICE_ROLE_KEY =
-  Deno.env.get("CORE_SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+// No silent fallback: if the CORE_* secrets go missing this function would
+// quietly serve the HOST's database instead, and work would vanish into the
+// wrong project. Better to refuse to start.
+const SUPABASE_URL = Deno.env.get("CORE_SUPABASE_URL") ?? "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("CORE_SUPABASE_SERVICE_ROLE_KEY") ?? "";
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error(
+    "frank-api is missing CORE_SUPABASE_URL / CORE_SUPABASE_SERVICE_ROLE_KEY. " +
+      "It will not fall back to the host project — set the secrets and redeploy.",
+  );
+}
 // Public anon key of the same project — used to ask the OS about the caller.
 const SUPABASE_ANON_KEY =
   Deno.env.get("CORE_SUPABASE_ANON_KEY") ??

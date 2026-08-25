@@ -7,6 +7,10 @@ import type { ToolContext } from "@lovable.dev/mcp-js";
 export const PROJECT_REF = "allzlfxbemhhhihdpxfv";
 export const DIRECT_SUPABASE_URL = `https://${PROJECT_REF}.supabase.co`;
 
+/** Public anon key of the core — the same value the app bundles. */
+const CORE_PUBLISHABLE_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFsbHpsZnhiZW1oaGhpaGRweGZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwODE0ODksImV4cCI6MjEwMjY1NzQ4OX0.uGWNGg9onAFF88OZ6A_N3bacv805VLea1H_uKSH2LAI";
+
 type RuntimeGlobals = typeof globalThis & {
   Deno?: { env?: { get?: (name: string) => string | undefined } };
   process?: { env?: Record<string, string | undefined> };
@@ -25,34 +29,24 @@ function configuredEnv(names: readonly string[]): string | undefined {
   return undefined;
 }
 
+/**
+ * The core, always.
+ *
+ * This used to prefer SUPABASE_URL, but the host injects its own project
+ * into that name — so every MCP generation wrote to the old database while
+ * the app read the core. Only an explicit CORE_* override wins now.
+ */
 function supabaseProjectUrl(): string {
-  return configuredEnv(["SUPABASE_URL", "VITE_SUPABASE_URL"]) ?? DIRECT_SUPABASE_URL;
+  return configuredEnv(["CORE_SUPABASE_URL"]) ?? DIRECT_SUPABASE_URL;
 }
 
+/**
+ * Key for the core. Host-injected key names are deliberately ignored: they
+ * belong to a different project and would be rejected there ("Invalid API
+ * key"), or worse, silently read the wrong database.
+ */
 function supabasePublishableKey(): string {
-  const direct = configuredEnv([
-    "SUPABASE_PUBLISHABLE_KEY",
-    "VITE_SUPABASE_PUBLISHABLE_KEY",
-  ]);
-  if (direct) return direct;
-  const keyset = runtimeEnv("SUPABASE_PUBLISHABLE_KEYS");
-  if (keyset) {
-    try {
-      const parsed: unknown = JSON.parse(keyset);
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        const keys = parsed as Record<string, unknown>;
-        const key = [keys.default, ...Object.values(keys)]
-          .find((v): v is string => typeof v === "string" && v.trim().startsWith("sb_publishable_"))
-          ?.trim();
-        if (key) return key;
-      }
-    } catch {
-      // fall through to the legacy names
-    }
-  }
-  const legacy = configuredEnv(["SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY"]);
-  if (legacy) return legacy;
-  throw new Error("Supabase publishable key is not configured");
+  return configuredEnv(["CORE_SUPABASE_ANON_KEY"]) ?? CORE_PUBLISHABLE_KEY;
 }
 
 /** Client bound to the verified caller's token, so RLS runs as that user. */
