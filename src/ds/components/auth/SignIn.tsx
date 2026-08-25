@@ -49,7 +49,12 @@ export function SignIn({
   return (
     <form className={['as-auth', className].filter(Boolean).join(' ')} onSubmit={submit} style={style} {...rest}>
       <div className="as-auth__brand">
-        <span className="as-auth__os as-logo" role="img" aria-label="AutoSolutions OS" />
+        <span
+          className="as-auth__os as-logo"
+          role="img"
+          aria-label="AutoSolutions OS"
+          style={{ width: 'var(--logo-width)', height: 'var(--logo-height)' }}
+        />
         {app && <span className={`as-app as-app--${app} as-app--large as-app--center`} role="img" aria-label={appName || app} />}
       </div>
 
