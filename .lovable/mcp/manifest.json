@@ -4,11 +4,11 @@
   "path": "/mcp",
   "auth": {
     "type": "oauth",
-    "issuer": "https://amwfmlqvaranonhyvqbj.supabase.co/auth/v1",
+    "issuer": "https://allzlfxbemhhhihdpxfv.supabase.co/auth/v1",
     "accepted_audiences": [
       "authenticated"
     ],
-    "jwks_uri": "https://amwfmlqvaranonhyvqbj.supabase.co/auth/v1/.well-known/jwks.json"
+    "jwks_uri": "https://allzlfxbemhhhihdpxfv.supabase.co/auth/v1/.well-known/jwks.json"
   },
   "mcp": {
     "server": {
