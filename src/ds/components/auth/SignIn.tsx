@@ -33,37 +33,23 @@ export interface SignInProps extends Omit<React.FormHTMLAttributes<HTMLFormEleme
 
 /**
  * The standard sign-in card. Every AutoSolutions app uses this, so the
- * order of the lockup never varies: company mark, app wordmark, rule,
- * the form, then the AutoSolutions logo pinned at the very bottom.
+ * order of the lockup never varies: AutoSolutions OS mark, app wordmark,
+ * rule, the form, then the footer notes.
  */
 export function SignIn({
-  company, companyName, companyVariant = 'plain', app, appName,
-  eyebrow, title = 'Sign in', description, method = 'password',
+  company: _company, companyName: _companyName, companyVariant: _companyVariant,
+  app, appName, eyebrow, title = 'Sign in', description, method = 'password',
   email, onEmailChange, password, onPasswordChange, remember, onRememberChange,
   error, loading = false, submitLabel, onSubmit, forgotAction, providers,
   note, footer, className = '', style, ...rest
 }: SignInProps) {
   const submit = (e: React.FormEvent) => { e.preventDefault(); if (onSubmit) onSubmit({ email, password, remember }); };
   const label = submitLabel || (method === 'link' ? 'Email me a sign-in link' : 'Sign in');
-  // One mark, or a pair when two parties own the app (client + operator).
-  const companies = company == null ? [] : (Array.isArray(company) ? company : [company]);
-  const names = companyName == null ? [] : (Array.isArray(companyName) ? companyName : [companyName]);
 
   return (
     <form className={['as-auth', className].filter(Boolean).join(' ')} onSubmit={submit} style={style} {...rest}>
       <div className="as-auth__brand">
-        {companies.length > 0 && (
-          <div className={['as-auth__marks', companies.length > 1 && 'as-auth__marks--pair'].filter(Boolean).join(' ')}>
-            {companies.map((id, i) => (
-              <span
-                key={id}
-                className={['as-company', `as-company--${id}`, companies.length > 1 ? 'as-company--compact' : 'as-company--large', companyVariant === 'plain' && 'as-company--plain'].filter(Boolean).join(' ')}
-                role="img"
-                aria-label={names[i] || id}
-              />
-            ))}
-          </div>
-        )}
+        <span className="as-auth__os as-logo" role="img" aria-label="AutoSolutions OS" />
         {app && <span className={`as-app as-app--${app} as-app--large as-app--center`} role="img" aria-label={appName || app} />}
       </div>
 
@@ -121,7 +107,6 @@ export function SignIn({
       <div className="as-auth__foot">
         {note && <p className="as-auth__note">{note}</p>}
         {footer}
-        <span className="as-auth__os as-logo" role="img" aria-label="AutoSolutions OS" />
       </div>
     </form>
   );
