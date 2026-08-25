@@ -1,88 +1,86 @@
 # Create Studio → AutoSolutions OS core
 
-Status of the migration on branch `core-auth-migration` (commit `4019798d`), and
-what is still required to cut over.
+**Status: complete.** Create Studio runs on the AutoSolutions OS core. This is
+the record of what moved, how it was verified, and what is deliberately left
+behind.
 
-## What the branch changes
+## What runs where now
 
-| Area | Before | After |
-|---|---|---|
-| Identity | Own Supabase project + Lovable auth broker | **One Google account on the core** — no second login |
-| Who may enter | Email-domain allowlist (`@frankbody.com`, …) | `is_entitled('frank_create')` — the company owns the app and the person is assigned it |
-| Roles | `user_roles` table in the app's own database | OS app roles (`public.app_role('frank_create')`, backed by `app_assignments`) |
-| Data | App's own `public` schema | Core's `studio` schema (same table names, so queries are unchanged) |
-| Branding | Hardcoded Frank Body marks | `my_brand()` — follows the company the person is acting in |
-| API host | Hardcoded Lovable URL | `VITE_FRANK_API_BASE`, falling back to today's URL |
-
-Verified locally against the core with an OS session: entitlement gate passes,
-`my_access_state`, `release_seen` and `user_features` all serve from the core,
-and the brand resolves from the session (`data-brand=frank-body`).
-
-## What is NOT done yet (do not cut over before these)
-
-### 1. The data on the core is a snapshot from 19 August
-
-```
-assets        326 rows   newest 2026-08-19
-messages      121 rows   newest 2026-08-19
-prompt_chats   30 rows   newest 2026-08-19
-sessions       13 rows   newest 2026-08-19
-```
-
-The live studio has been in daily use since. **Cutting over now would strand
-about a week of work.** Cutover therefore needs a short freeze and a delta
-export from the Lovable-managed project (`amwfmlqvaranonhyvqbj`), which only
-Lovable can produce — that project is not in our Supabase organisation and its
-service-role key is deliberately not retrievable.
-
-### 2. Image files still live in the old bucket
-
-The core now has an empty private `studio-images` bucket with a read policy
-(entitled Create Studio users only). The actual objects are still in the old
-project, so historical assets would show as broken until they are copied.
-
-Sanctioned way to get them out, without any credential leaving Lovable: ask
-Lovable to add a temporary, admin-only function in the studio project that lists
-`studio-images` and returns **short-lived signed URLs in batches**. Those URLs
-are then downloaded and re-uploaded to the core, preserving paths.
-
-### 3. frank-api has to be repointed and redeployed
-
-The function is migrated in code (core auth, entitlement check, `studio`
-schema) but still runs on Lovable Cloud, which is where the AI gateway keys
-live. It reads these secrets, preferring the `CORE_*` names because Lovable
-reserves `SUPABASE_*`:
-
-| Secret | Value |
+| Concern | Where |
 |---|---|
-| `CORE_SUPABASE_URL` | `https://allzlfxbemhhhihdpxfv.supabase.co` |
-| `CORE_SUPABASE_SERVICE_ROLE_KEY` | core service-role key (Supabase → Settings → API) |
-| `CORE_SUPABASE_ANON_KEY` | core anon key (public value) |
+| Identity (one Google account), entitlements, roles | core |
+| Studio data — sessions, messages, assets, chats, feedback | core, `studio` schema |
+| Images (4.76 GB, 735 objects) | core, `studio-images` bucket |
+| Company branding | core (`my_brand()`) |
+| Email queue, send state, send log | core (`pgmq` + `studio` tables) |
+| `frank-api` (generation) | Lovable Cloud **compute**, reading/writing the core |
+| MCP tools | Lovable Cloud compute, reading/writing the core |
+| AI gateway keys (`LOVABLE_API_KEY`, Replicate, OpenRouter) | Lovable Cloud |
 
-Existing AI keys (`LOVABLE_API_KEY`, Replicate/OpenRouter) stay exactly as they
-are. Set the secrets **first**, then deploy, or the function will briefly serve
-the wrong database.
+The old project is now compute only. It holds no authoritative data.
 
-## Cutover order
+## How access works now
 
-1. Freeze studio use (announce a window).
-2. Lovable exports the delta (DB rows since 19 Aug + the `studio-images` objects).
-3. Load the delta into the core's `studio` schema; copy objects into the core bucket.
-4. Set the three `CORE_*` secrets on frank-api; deploy the function.
-5. Merge this branch and let the SPA deploy.
-6. Smoke test: sign in from the hub launcher → studio opens with no second login,
-   right company mark, sessions and assets load, a new generation round works.
-7. Grant Create Studio to the people who need it (OS app assignment) — the old
-   email-domain rule no longer admits anyone by itself.
+Before: an email-domain allowlist (`@frankbody.com`, `@autosolutions.ai`,
+`@alivebody.com.au`) plus a per-person approval flag.
 
-## Rollback
+Now: the company must own Create Studio (`entitlements`) **and** the person
+must be assigned it (`app_assignments`) — checked by `is_entitled('frank_create')`
+in the SPA, and again inside `frank-api` for every call. Company owners and
+admins pass automatically. Studio roles (admin/manager/user) are OS app roles,
+so one place decides who may use the studio and as what.
 
-Revert the merge and unset the `CORE_*` secrets: the function falls back to the
-platform-injected `SUPABASE_*` pair and the app returns to its own project.
-Nothing in the old project is deleted by this migration.
+Because Create Studio is an "everyone app" for Frank Body and al.ive
+(`entitlements.auto_assign`), anyone joining those companies by email domain
+receives it automatically — the same reach the old allowlist gave, without the
+guesswork.
 
-## After cutover
+## Verification performed
 
-- Retire the Lovable-managed project once a week has passed with no reads.
-- Move the function itself to the core when you want independence from the
-  Lovable AI gateway (needs your own OpenRouter / Replicate keys).
+- 735/735 storage objects reconciled path-by-path against the source database;
+  0 missing, 0 extra, 0 zero-byte. Real `assets.storage_path` values were
+  signed from the core and fetched: bytes and content types intact.
+- Row counts after merge: assets 749, messages 220, sessions 19, prompt chats
+  72, chat messages 367, feedback 5.
+- Ownership split corrected: al.ive designers' 246 assets belong to al.ive, not
+  Frank Body (the August migration had filed everything under Frank Body, which
+  would have hidden people's own work from them and exposed it to the other
+  company). Mis-tagged rows: 0.
+- End-to-end in production: sign-in, entitlement gate, `my_access_state`,
+  `release_seen`, `user_features`, brand resolution, and `frank-api`
+  `/sessions`, `/assets`, `/turns` all 200.
+
+## Things that bit us (worth remembering)
+
+- **Lovable reserves `SUPABASE_*` env names.** Pointing the function at the
+  core needed `CORE_SUPABASE_URL` / `CORE_SUPABASE_SERVICE_ROLE_KEY` /
+  `CORE_SUPABASE_ANON_KEY`. `frank-api` now *throws at boot* if they are
+  missing rather than silently serving the host's database.
+- **`service_role` bypasses RLS but still needs GRANTs.** Missing table grants
+  on the `studio` schema produced `42501` on every call (core migration 0024).
+- **Old app code knows nothing about companies.** `frank-api` inserts rows with
+  a `user_id` and no `tenant_id`; the core fills it from the author's acting
+  company via a trigger (core migration 0025) rather than every insert learning
+  about tenancy.
+- **The app and its edge functions deploy separately.** Pushing to main updated
+  the SPA while `frank-api` kept running the old code — the symptom was a
+  half-migrated app whose reads worked and whose generation 401'd.
+- **MCP silently resolved to the host project**, because it preferred
+  `SUPABASE_URL`. Every MCP generation was writing to the wrong database while
+  the app read the core. It is now pinned to the core.
+- **A dump taken with zstd compression** needs a `pg_restore` built with zstd
+  (Homebrew's `libpq` is not; `postgresql@18` is).
+
+## Left behind deliberately
+
+- `frank-generate`: removed from the repo; the deployed copy still needs
+  deleting once Lovable's publish gate releases it.
+- Auth emails: the core still sends them through Supabase's built-in sender
+  (rate limited to 2/hour, no custom SMTP). Nobody depends on it — sign-in is
+  Google — but see below.
+
+## Next
+
+1. Delete the deployed `frank-generate` function.
+2. Decide where platform email lives (see `docs/PLATFORM_EMAIL.md`).
+3. Retire the old Supabase project once a week passes with no reads.
