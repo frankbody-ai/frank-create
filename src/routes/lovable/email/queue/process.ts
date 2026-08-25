@@ -101,11 +101,41 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
           db: { schema: 'studio' },
         })
 
-        // 1. Check rate-limit cooldown and read queue config
-        const { data: state } = await supabase
+        // 1. Check rate-limit cooldown and read queue config.
+        //
+        // Settings are stored per company, but the queue and the provider key
+        // are shared, so a cooldown earned by one company applies to all of
+        // them. Take the strictest values rather than an arbitrary row —
+        // .single() would simply throw once a second company exists.
+        const { data: states } = await supabase
           .from('email_send_state')
           .select('retry_after_until, batch_size, send_delay_ms, auth_email_ttl_minutes, transactional_email_ttl_minutes')
-          .single()
+
+        const rows = (states ?? []) as Array<{
+          retry_after_until: string | null
+          batch_size: number | null
+          send_delay_ms: number | null
+          auth_email_ttl_minutes: number | null
+          transactional_email_ttl_minutes: number | null
+        }>
+
+        const strictest = <T>(values: Array<T | null | undefined>, pick: (a: T, b: T) => T): T | null =>
+          values.filter((v): v is T => v !== null && v !== undefined).reduce<T | null>(
+            (acc, v) => (acc === null ? v : pick(acc, v)),
+            null
+          )
+
+        const state = {
+          // latest cooldown wins: never send while any of them is paused
+          retry_after_until: strictest(rows.map((r) => r.retry_after_until), (a, b) => (a > b ? a : b)),
+          batch_size: strictest(rows.map((r) => r.batch_size), Math.min),
+          send_delay_ms: strictest(rows.map((r) => r.send_delay_ms), Math.max),
+          auth_email_ttl_minutes: strictest(rows.map((r) => r.auth_email_ttl_minutes), Math.min),
+          transactional_email_ttl_minutes: strictest(
+            rows.map((r) => r.transactional_email_ttl_minutes),
+            Math.min
+          ),
+        }
 
         if (state?.retry_after_until && new Date(state.retry_after_until) > new Date()) {
           return Response.json({ skipped: true, reason: 'rate_limited' })
@@ -287,6 +317,8 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
                 })
 
                 const retryAfterSecs = getRetryAfterSeconds(error)
+                // The provider rate-limits the key, not one company, so the
+                // cooldown is recorded for every company's settings row.
                 await supabase
                   .from('email_send_state')
                   .update({
@@ -296,6 +328,7 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
                     updated_at: new Date().toISOString(),
                   })
                   .eq('id', 1)
+                  .not('tenant_id', 'is', null)
 
                 // Stop processing — remaining messages stay in queue (VT expires, retried next cycle)
                 return Response.json({ processed: totalProcessed, stopped: 'rate_limited' })
