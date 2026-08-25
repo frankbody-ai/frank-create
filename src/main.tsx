@@ -10,6 +10,7 @@ import { AppErrorBoundary } from "./components/AppErrorBoundary";
 // so a lazy chunk here would only add a Suspense boundary for nothing.
 import { NotFoundPage } from "./components/NotFoundPage";
 import { installErrorReporter } from "./lib/errorReporter";
+import { initTenantBrand } from "./lib/tenantBrand";
 import { applyTheme, storedTheme } from "./ds";
 import { resolveScreen } from "./nav";
 import "./app.css";
@@ -29,6 +30,9 @@ const OAuthConsentPage = lazy(() =>
 // localStorage to read the theme from.
 if (typeof window !== "undefined") {
   applyTheme(storedTheme());
+  // Same reasoning as the theme: the company mark has to be right before
+  // first paint, or people see another brand's logo flash past.
+  initTenantBrand();
   installErrorReporter();
 }
 

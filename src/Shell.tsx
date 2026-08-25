@@ -4,6 +4,7 @@ import { AppFrame, SideNav, TopBar } from "./ds";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { ReleaseNotesModal } from "./components/ReleaseNotesModal";
 import { hardSignOut } from "./lib/supabaseClient";
+import { brandCompanyId, brandName } from "./lib/tenantBrand";
 import type { SideNavItem } from "./ds";
 import { NAV_FOOTER, NAV_MAIN, navigate } from "./nav";
 import type { Screen } from "./nav";
@@ -73,8 +74,8 @@ export function Shell({
       maxWidth={maxWidth}
       topBar={
         <TopBar
-          company="frankbody"
-          companyName="frank body"
+          company={brandCompanyId()}
+          companyName={brandName() ?? "frank body"}
           showSearch={onSearchChange != null}
           searchPlaceholder={searchPlaceholder}
           searchValue={search ?? ""}

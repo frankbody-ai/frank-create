@@ -23,6 +23,15 @@
 .as-company--frankbody{background-image:url("/brand/companies/frankbody.png")}
 .as-company--frankbody.as-company--plain{background-image:url("/brand/companies/frankbody-plain.png")}
 
+/* Runtime company branding. When the OS tells us which company the person
+   signed in from (see src/lib/tenantBrand.ts), <html> carries data-brand and
+   the mark is painted from the core's hosted logo. Nothing here changes the
+   built-in marks when no company is set, so the app looks exactly as before. */
+html[data-brand] .as-company{background-image:var(--brand-company-logo)}
+html[data-brand] .as-company.as-company--plain{
+  background-image:var(--brand-company-logo-plain, var(--brand-company-logo));
+}
+
 .as-app{display:block;flex:0 0 auto;height:var(--app-label-height);width:auto;background-position:left center;background-size:contain;background-repeat:no-repeat}
 .as-app--compact{height:var(--app-label-height-compact)}
 .as-app--large{height:var(--app-label-height-large)}
