@@ -33,21 +33,18 @@ export interface SignInProps extends Omit<React.FormHTMLAttributes<HTMLFormEleme
 
 /**
  * The standard sign-in card. Every AutoSolutions app uses this, so the
- * order of the lockup never varies: company mark, app wordmark, rule,
- * the form, then the AutoSolutions logo pinned at the very bottom.
+ * order of the lockup never varies: AutoSolutions OS mark, app wordmark,
+ * rule, the form, then the footer notes.
  */
 export function SignIn({
-  company, companyName, companyVariant = 'plain', app, appName,
-  eyebrow, title = 'Sign in', description, method = 'password',
+  company: _company, companyName: _companyName, companyVariant: _companyVariant,
+  app, appName, eyebrow, title = 'Sign in', description, method = 'password',
   email, onEmailChange, password, onPasswordChange, remember, onRememberChange,
   error, loading = false, submitLabel, onSubmit, forgotAction, providers,
   note, footer, className = '', style, ...rest
 }: SignInProps) {
   const submit = (e: React.FormEvent) => { e.preventDefault(); if (onSubmit) onSubmit({ email, password, remember }); };
   const label = submitLabel || (method === 'link' ? 'Email me a sign-in link' : 'Sign in');
-  // One mark, or a pair when two parties own the app (client + operator).
-  const companies = company == null ? [] : (Array.isArray(company) ? company : [company]);
-  const names = companyName == null ? [] : (Array.isArray(companyName) ? companyName : [companyName]);
 
   return (
     <form className={['as-auth', className].filter(Boolean).join(' ')} onSubmit={submit} style={style} {...rest}>
