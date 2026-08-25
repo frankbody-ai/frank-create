@@ -52,18 +52,7 @@ export function SignIn({
   return (
     <form className={['as-auth', className].filter(Boolean).join(' ')} onSubmit={submit} style={style} {...rest}>
       <div className="as-auth__brand">
-        {companies.length > 0 && (
-          <div className={['as-auth__marks', companies.length > 1 && 'as-auth__marks--pair'].filter(Boolean).join(' ')}>
-            {companies.map((id, i) => (
-              <span
-                key={id}
-                className={['as-company', `as-company--${id}`, companies.length > 1 ? 'as-company--compact' : 'as-company--large', companyVariant === 'plain' && 'as-company--plain'].filter(Boolean).join(' ')}
-                role="img"
-                aria-label={names[i] || id}
-              />
-            ))}
-          </div>
-        )}
+        <span className="as-auth__os as-logo" role="img" aria-label="AutoSolutions OS" />
         {app && <span className={`as-app as-app--${app} as-app--large as-app--center`} role="img" aria-label={appName || app} />}
       </div>
 
