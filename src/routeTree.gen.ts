@@ -19,6 +19,8 @@ import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } fr
 import { Route as AdminFeedbackRouteImport } from './routes/admin.feedback'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as ApiPublicExportHelperCopyStorageRouteImport } from './routes/api/public/export-helper/copy-storage'
+import { Route as ApiPublicExportHelperTablesRouteImport } from './routes/api/public/export-helper/tables'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 
 const IndexRoute = IndexRouteImport.update({
@@ -74,6 +76,18 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicExportHelperCopyStorageRoute =
+  ApiPublicExportHelperCopyStorageRouteImport.update({
+    id: '/api/public/export-helper/copy-storage',
+    path: '/api/public/export-helper/copy-storage',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicExportHelperTablesRoute =
+  ApiPublicExportHelperTablesRouteImport.update({
+    id: '/api/public/export-helper/tables',
+    path: '/api/public/export-helper/tables',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LovableEmailQueueProcessRoute =
   LovableEmailQueueProcessRouteImport.update({
     id: '/lovable/email/queue/process',
@@ -92,6 +106,8 @@ export interface FileRoutesByFullPath {
   '/admin/feedback': typeof AdminFeedbackRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/export-helper/copy-storage': typeof ApiPublicExportHelperCopyStorageRoute
+  '/api/public/export-helper/tables': typeof ApiPublicExportHelperTablesRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesByTo {
@@ -105,6 +121,8 @@ export interface FileRoutesByTo {
   '/admin/feedback': typeof AdminFeedbackRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/export-helper/copy-storage': typeof ApiPublicExportHelperCopyStorageRoute
+  '/api/public/export-helper/tables': typeof ApiPublicExportHelperTablesRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesById {
@@ -119,6 +137,8 @@ export interface FileRoutesById {
   '/admin/feedback': typeof AdminFeedbackRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/api/public/export-helper/copy-storage': typeof ApiPublicExportHelperCopyStorageRoute
+  '/api/public/export-helper/tables': typeof ApiPublicExportHelperTablesRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRouteTypes {
@@ -134,6 +154,8 @@ export interface FileRouteTypes {
     | '/admin/feedback'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/export-helper/copy-storage'
+    | '/api/public/export-helper/tables'
     | '/lovable/email/queue/process'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -147,6 +169,8 @@ export interface FileRouteTypes {
     | '/admin/feedback'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/export-helper/copy-storage'
+    | '/api/public/export-helper/tables'
     | '/lovable/email/queue/process'
   id:
     | '__root__'
@@ -160,6 +184,8 @@ export interface FileRouteTypes {
     | '/admin/feedback'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/api/public/export-helper/copy-storage'
+    | '/api/public/export-helper/tables'
     | '/lovable/email/queue/process'
   fileRoutesById: FileRoutesById
 }
@@ -173,6 +199,8 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  ApiPublicExportHelperCopyStorageRoute: typeof ApiPublicExportHelperCopyStorageRoute
+  ApiPublicExportHelperTablesRoute: typeof ApiPublicExportHelperTablesRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
 
@@ -248,6 +276,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/export-helper/copy-storage': {
+      id: '/api/public/export-helper/copy-storage'
+      path: '/api/public/export-helper/copy-storage'
+      fullPath: '/api/public/export-helper/copy-storage'
+      preLoaderRoute: typeof ApiPublicExportHelperCopyStorageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/export-helper/tables': {
+      id: '/api/public/export-helper/tables'
+      path: '/api/public/export-helper/tables'
+      fullPath: '/api/public/export-helper/tables'
+      preLoaderRoute: typeof ApiPublicExportHelperTablesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/queue/process': {
       id: '/lovable/email/queue/process'
       path: '/lovable/email/queue/process'
@@ -279,6 +321,8 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  ApiPublicExportHelperCopyStorageRoute: ApiPublicExportHelperCopyStorageRoute,
+  ApiPublicExportHelperTablesRoute: ApiPublicExportHelperTablesRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }
 export const routeTree = rootRouteImport
