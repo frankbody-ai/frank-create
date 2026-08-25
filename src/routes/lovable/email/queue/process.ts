@@ -64,12 +64,19 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // The queue, its state and the send log all live in the AutoSolutions
+        // core now, so this processor talks to the core — not to the host
+        // project that happens to run it. No fallback to the host's own
+        // SUPABASE_* names: sending mail from the wrong database would leave
+        // the log the UI shows and the state driving retries out of step.
         const apiKey = process.env.LOVABLE_API_KEY
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+        const supabaseUrl = process.env.CORE_SUPABASE_URL
+        const supabaseServiceKey = process.env.CORE_SUPABASE_SERVICE_ROLE_KEY
 
         if (!apiKey || !supabaseUrl || !supabaseServiceKey) {
-          console.error('Missing required environment variables')
+          console.error(
+            'Email queue processor needs LOVABLE_API_KEY, CORE_SUPABASE_URL and CORE_SUPABASE_SERVICE_ROLE_KEY'
+          )
           return Response.json(
             { error: 'Server configuration error' },
             { status: 500 }
@@ -88,7 +95,11 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
           return Response.json({ error: 'Forbidden' }, { status: 403 })
         }
 
-        const supabase: SupabaseClient<any, any> = createClient(supabaseUrl, supabaseServiceKey)
+        // Studio tables (email_send_state, email_send_log) and the queue
+        // helpers live in the core's `studio` schema.
+        const supabase: SupabaseClient<any, any> = createClient(supabaseUrl, supabaseServiceKey, {
+          db: { schema: 'studio' },
+        })
 
         // 1. Check rate-limit cooldown and read queue config
         const { data: state } = await supabase
