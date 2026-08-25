@@ -55,14 +55,12 @@ export function SignIn({
         {companies.length > 0 && (
           <div className={['as-auth__marks', companies.length > 1 && 'as-auth__marks--pair'].filter(Boolean).join(' ')}>
             {companies.map((id, i) => (
-              <React.Fragment key={id}>
-                {i > 0 && <span className="as-auth__marks-rule" aria-hidden="true" />}
-                <span
-                  className={['as-company', `as-company--${id}`, companies.length > 1 ? 'as-company--compact' : 'as-company--large', companyVariant === 'plain' && 'as-company--plain'].filter(Boolean).join(' ')}
-                  role="img"
-                  aria-label={names[i] || id}
-                />
-              </React.Fragment>
+              <span
+                key={id}
+                className={['as-company', `as-company--${id}`, companies.length > 1 ? 'as-company--compact' : 'as-company--large', companyVariant === 'plain' && 'as-company--plain'].filter(Boolean).join(' ')}
+                role="img"
+                aria-label={names[i] || id}
+              />
             ))}
           </div>
         )}
