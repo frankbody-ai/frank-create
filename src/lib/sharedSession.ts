@@ -12,6 +12,10 @@
  * own localStorage as the working copy; this only keeps them in step.
  *
  * Off that domain — localhost, *.lovable.app previews — nothing changes.
+ *
+ * Note for whoever wires this into another app: import and CALL it. A bare
+ * `import "./sharedSession"` is removed by the bundler in any package marked
+ * "sideEffects": false, and the build still succeeds — it just ships nothing.
  */
 
 const PROJECT_REF = "allzlfxbemhhhihdpxfv";
