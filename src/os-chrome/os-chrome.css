@@ -1,0 +1,74 @@
+/* AutoSolutions OS chrome — self-contained.
+   VENDORED BY COPY from core/os-chrome/. Do not edit inside an app.
+   Values are inlined on purpose: the menus must paint identically even in an
+   app whose own token sheets differ or are absent. */
+
+.osx-root { position: relative; display: inline-flex; flex: 0 0 auto; }
+
+/* ---- plates (the closed controls) ---- */
+.osx-plate {
+  display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px;
+  border: 1px solid rgb(0 0 0 / 14%); border-radius: 8px; background: #ffffff;
+  color: #14171f; font: 500 13px/20px Inter, ui-sans-serif, system-ui, sans-serif;
+  cursor: pointer;
+}
+.osx-plate:hover { background: #f4f5f7; }
+.osx-plate.is-static { cursor: default; }
+.osx-plate.is-static:hover { background: #ffffff; }
+.osx-plate__name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.osx-plate__mark { height: 20px; width: auto; display: block; }
+.osx-chevron {
+  width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent;
+  border-top: 5px solid currentColor; opacity: .65;
+}
+.osx-pipe { flex: 0 0 auto; width: 3px; height: 16px; border-radius: 2px; background: #FC3CF4; }
+
+/* ---- popover menus ---- */
+.osx-menu {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 60;
+  min-width: 260px; max-width: 320px; max-height: 70vh; overflow: auto; padding: 12px;
+  background: #ffffff; color: #14171f; border-radius: 12px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 18%), 0 0 0 1px rgb(0 0 0 / 5%);
+  font: 400 13px/20px Inter, ui-sans-serif, system-ui, sans-serif;
+}
+.osx-menu--right { left: auto; right: 0; min-width: 240px; display: flex; flex-direction: column; gap: 2px; }
+.osx-menu__label { padding: 4px 8px; font-size: 12px; line-height: 16px; font-weight: 600; color: #6b7078; }
+
+/* ---- the app grid (the hub's design, ported verbatim) ---- */
+.osx-cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: start; }
+.osx-cols--menu { min-width: 0; grid-template-columns: 1fr; gap: 12px; }
+.osx-grp { margin: 0 0 6px; font-size: 12px; line-height: 16px; font-weight: 600; color: #14171f; }
+.osx-sec { margin: 8px 0 4px; font-size: 11px; line-height: 16px; color: #6b7078; }
+
+.osx-appplate {
+  display: flex; align-items: center; height: 48px; padding-inline: 8px; margin-bottom: 4px;
+  background: #ffffff; border: 1px solid rgb(0 0 0 / 8%); border-radius: 8px;
+  text-decoration: none; color: inherit;
+  transition: box-shadow 120ms ease, background 120ms ease;
+}
+a.osx-appplate:hover { background: #f8f9fa; box-shadow: 0 2px 8px rgb(0 0 0 / 10%); }
+.osx-appplate.is-current { border-color: #FC3CF4; }
+.osx-appplate.is-disabled { opacity: .45; }
+.osx-label { height: 25px; width: auto; max-width: 100%; object-fit: contain; object-position: left center; }
+.osx-label-text { font: 600 14px/20px Inter, ui-sans-serif, system-ui, sans-serif; }
+
+/* ---- rows (company menu) ---- */
+.osx-item {
+  display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 8px;
+  border: 0; border-radius: 8px; background: transparent; color: inherit;
+  font: inherit; text-align: left; text-decoration: none; cursor: pointer;
+}
+.osx-item:hover { background: rgb(0 0 0 / 5%); }
+.osx-item.is-current { background: rgb(0 0 0 / 5%); font-weight: 600; }
+.osx-item__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.osx-item__mark { flex: 0 0 auto; height: 16px; width: auto; max-width: 84px; object-fit: contain; }
+.osx-check { flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%; background: #14171f; }
+.osx-empty { margin: 0; padding: 4px 8px; font: 400 13px/20px Inter, ui-sans-serif, system-ui, sans-serif; color: #6b7078; }
+
+/* ---- the slim OS bar for apps with no top chrome ---- */
+.osx-bar {
+  display: flex; align-items: center; gap: 12px;
+  height: 48px; padding: 0 16px;
+  background: #ffffff; border-bottom: 1px solid rgb(0 0 0 / 8%);
+}
+.osx-bar__spacer { flex: 1 1 auto; }

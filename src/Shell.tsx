@@ -3,8 +3,9 @@ import React from "react";
 import { AppFrame, SideNav, TopBar } from "./ds";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { ReleaseNotesModal } from "./components/ReleaseNotesModal";
-import { hardSignOut } from "./lib/supabaseClient";
-import { brandCompanyId, brandName } from "./lib/tenantBrand";
+import { hardSignOut, os } from "./lib/supabaseClient";
+import { OsAppSwitcherPlate, OsCompanySwitcher } from "./os-chrome/os-chrome";
+import { APP_KEY } from "./lib/coreConfig";
 import type { SideNavItem } from "./ds";
 import { NAV_FOOTER, NAV_MAIN, navigate } from "./nav";
 import type { Screen } from "./nav";
@@ -74,13 +75,20 @@ export function Shell({
       maxWidth={maxWidth}
       topBar={
         <TopBar
-          company={brandCompanyId()}
-          companyName={brandName() ?? "frank body"}
           showSearch={onSearchChange != null}
           searchPlaceholder={searchPlaceholder}
           searchValue={search ?? ""}
           onSearchChange={onSearchChange}
-          actions={<>{actions}</>}
+          actions={
+            <>
+              {actions}
+              {/* The OS chrome: identical app and company switchers in every
+                  AutoSolutions app. The company plate replaces the old static
+                  company mark — same position, now the real switcher. */}
+              <OsAppSwitcherPlate client={os} appKey={APP_KEY} />
+              <OsCompanySwitcher client={os} appKey={APP_KEY} />
+            </>
+          }
 
         />
       }
