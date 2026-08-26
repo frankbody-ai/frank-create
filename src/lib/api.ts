@@ -19,8 +19,30 @@ const FRANK_API_FALLBACK = "https://amwfmlqvaranonhyvqbj.supabase.co/functions/v
 const frankBase =
   (import.meta.env as Record<string, string | undefined>)["VITE_FRANK_API_BASE"] ?? FRANK_API_FALLBACK;
 
-export async function fetchHealth() {
-  return fetchJson<{ ok: boolean; product: string; store: string }>("/health");
+export type HealthStatus = {
+  ok: boolean;
+  product: string;
+  store: string;
+  degraded?: boolean;
+  error?: string;
+};
+
+export async function fetchHealth(): Promise<HealthStatus> {
+  try {
+    return await fetchJson<HealthStatus>("/health", {}, { attempts: 6 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (isTransientBackendError(message)) {
+      return {
+        ok: false,
+        product: "frank-create",
+        store: "degraded",
+        degraded: true,
+        error: "The studio backend is temporarily unavailable.",
+      };
+    }
+    throw err;
+  }
 }
 
 export async function fetchConfig() {
@@ -217,7 +239,7 @@ export async function uploadReferenceToStorage(
 }
 
 
-async function fetchJson<T>(path: string, init: RequestInit = {}) {
+async function fetchJson<T>(path: string, init: RequestInit = {}, options: { attempts?: number } = {}) {
   // The edge runtime occasionally answers 503 SUPABASE_EDGE_RUNTIME_SERVICE_DEGRADED
   // while a container is cycling — that cycle can last several seconds, so retry
   // with exponential backoff + jitter instead of giving up after ~1s.
@@ -225,7 +247,7 @@ async function fetchJson<T>(path: string, init: RequestInit = {}) {
   // Never replay expensive AI mutations after a gateway timeout: the original
   // job may still be running and a replay creates duplicate billed work.
   const replaySafe = method === "GET" || path === "/inference/status";
-  const maxAttempts = replaySafe ? 3 : 1;
+  const maxAttempts = replaySafe ? options.attempts ?? 3 : 1;
   const backoff = (attempt: number) =>
     Math.min(500 * 2 ** (attempt - 1), 4000) + Math.floor(Math.random() * 250);
   let lastError: Error | null = null;
@@ -261,7 +283,7 @@ async function fetchJson<T>(path: string, init: RequestInit = {}) {
       response.status === 503 ||
       response.status === 502 ||
       response.status === 504 ||
-      text.includes("SERVICE_DEGRADED");
+      isTransientBackendError(text);
 
     lastError = new Error(apiErrorMessage(text, response.status));
     if (transient && attempt < maxAttempts) {
@@ -281,11 +303,15 @@ function apiErrorMessage(text: string, status: number) {
   }
 
   try {
-    const parsed = JSON.parse(text) as { error?: { message?: string } };
-    return parsed.error?.message || text;
+    const parsed = JSON.parse(text) as { code?: string; message?: string; error?: { message?: string } };
+    return parsed.error?.message || parsed.message || parsed.code || text;
   } catch {
     return text;
   }
+}
+
+function isTransientBackendError(message: string) {
+  return /SUPABASE_EDGE_RUNTIME_SERVICE_DEGRADED|SERVICE_DEGRADED|Service is temporarily unavailable|\b50[234]\b/i.test(message);
 }
 
 
