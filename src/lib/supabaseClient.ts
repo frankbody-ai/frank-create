@@ -1,6 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { CORE_SUPABASE_PUBLISHABLE_KEY, CORE_SUPABASE_URL } from "./coreConfig";
+import { adoptSharedSession, publishSessionChanges } from "./sharedSession";
+
+// Someone who signed in at the hub arrives here already authenticated. This
+// has to run before the client below reads its storage, hence module scope.
+adoptSharedSession();
 
 /**
  * Create Studio talks to the AutoSolutions OS core.
@@ -25,6 +30,9 @@ export const supabase = createClient(CORE_SUPABASE_URL, CORE_SUPABASE_PUBLISHABL
 
 /** Platform-level tables and helpers (entitlements, tenants, brand). */
 export const os = supabase.schema("public");
+
+// Signing in or out here carries to every other AutoSolutions app.
+publishSessionChanges(supabase);
 
 /**
  * Fully clear the local Supabase session: signs out via the SDK, then
