@@ -74,12 +74,17 @@ const DESIGN_ALIAS: Record<string, string> = {
   "product-idea-validator": "product-validator",
 };
 
+/* One fetch per page — but a FAILURE is never cached: a call that races an
+   auth refresh would otherwise blank both switchers until a full reload. */
 let cached: Promise<OsContext | null> | null = null;
 function loadContext(client: OsClient): Promise<OsContext | null> {
   if (!cached) {
     cached = Promise.resolve(client.rpc("os_context"))
-      .then(({ data, error }) => (error ? null : (data as OsContext)))
-      .catch(() => null);
+      .then(({ data, error }) => {
+        if (error || !data) { cached = null; return null; }
+        return data as OsContext;
+      })
+      .catch(() => { cached = null; return null; });
   }
   return cached;
 }
@@ -255,7 +260,12 @@ export function OsCompanySwitcher({ client, appKey }: { client: OsClient; appKey
       <button type="button" className={"osx-plate osx-plate--company" + (single ? " is-static" : "")}
         onClick={() => !single && setOpen(!open)} aria-haspopup={!single} aria-expanded={open}
         aria-label={"Company: " + ctx.tenant.name + (single ? "" : ". Switch company")}>
-        {mark ? <img className="osx-plate__mark" src={mark} alt={ctx.tenant.name} /> : <span className="osx-plate__name">{ctx.tenant.name}</span>}
+        {mark ? (
+          <img className="osx-plate__mark" src={mark} alt={ctx.tenant.name} title={ctx.tenant.name}
+            onError={(e) => { (e.target as HTMLImageElement).outerHTML = '<span class="osx-plate__name">' + ctx.tenant!.name + "</span>"; }} />
+        ) : (
+          <span className="osx-plate__name">{ctx.tenant.name}</span>
+        )}
         {!single && <span className="osx-chevron" aria-hidden="true" />}
       </button>
       {open && (

@@ -3,7 +3,7 @@
    Values are inlined on purpose: the menus must paint identically even in an
    app whose own token sheets differ or are absent. */
 
-.osx-root { position: relative; display: inline-flex; flex: 0 0 auto; }
+.osx-root { position: relative; display: inline-flex; flex: 0 0 auto; z-index: 70; }
 
 /* ---- plates (the closed controls) ---- */
 .osx-plate {
@@ -67,6 +67,7 @@ a.osx-appplate:hover { background: #f8f9fa; box-shadow: 0 2px 8px rgb(0 0 0 / 10
 
 /* ---- the slim OS bar for apps with no top chrome ---- */
 .osx-bar {
+  position: sticky; top: 0; z-index: 80; /* above any app layer, always clickable */
   display: flex; align-items: center; gap: 12px;
   height: 48px; padding: 0 16px;
   background: #ffffff; border-bottom: 1px solid rgb(0 0 0 / 8%);
