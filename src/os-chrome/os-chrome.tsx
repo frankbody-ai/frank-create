@@ -63,6 +63,17 @@ const COLUMNS: Array<{ group: string; sections: { title?: string; apps: string[]
 
 const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
+/* Catalogue keys that differ from the design reference's label keys. Without
+   these, an app falls into "Other" with a text plate instead of its artwork. */
+const DESIGN_ALIAS: Record<string, string> = {
+  "frank-create": "design-studio",
+  "alive-reporting": "ecommerce-sales",
+  "enxgy-crm": "smart-leadgen-crm",
+  "candidate-hub": "ai-interviewer",
+  "frank-kitchen": "franks-kitchen",
+  "product-idea-validator": "product-validator",
+};
+
 let cached: Promise<OsContext | null> | null = null;
 function loadContext(client: OsClient): Promise<OsContext | null> {
   if (!cached) {
@@ -137,6 +148,8 @@ export function OsAppSwitcher({ client, appKey, variant = "menu", onOpen }: {
   for (const app of ctx.apps) {
     byKey.set(slugify(app.key), app);
     byKey.set(slugify(app.name), app);
+    const alias = DESIGN_ALIAS[slugify(app.key)];
+    if (alias) byKey.set(alias, app);
   }
   byKey.set("hub", { key: "hub", name: "Hub", url: HUB_URL });
 
