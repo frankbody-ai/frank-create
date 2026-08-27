@@ -385,6 +385,19 @@ function FeedbackBoard({ search, onCount }: { search: string; onCount: (n: numbe
   const [shots, setShots] = useState<Record<string, string>>({});
   const [showDismissed, setShowDismissed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [superAdmin, setSuperAdmin] = useState(false);
+  const [companies, setCompanies] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    void (async () => {
+      const [isSuper, names] = await Promise.all([
+        isCurrentUserSuperAdmin(),
+        listVisibleCompanies(),
+      ]);
+      setSuperAdmin(isSuper);
+      setCompanies(names);
+    })();
+  }, []);
 
   const refresh = async () => {
     setRefreshing(true);
