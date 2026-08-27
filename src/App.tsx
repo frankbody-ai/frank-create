@@ -1277,7 +1277,7 @@ export default function App() {
     }
 
     if (createdAssets.length) {
-      setAssets((current) => [...createdAssets, ...current]);
+      setAssets((current) => mergeAssets(current, createdAssets));
       if (attach) {
         setActiveReferenceIds((current) => Array.from(new Set([...current, ...createdAssets.map((asset) => asset.id)])));
       }
@@ -1649,7 +1649,7 @@ export default function App() {
         );
       } else {
         if (result.status === "complete" && result.assets?.length) {
-          setAssets((current) => [...result.assets!, ...current]);
+          setAssets((current) => mergeAssets(current, result.assets!));
           setSelectedAsset(result.assets[0]);
           onlineAssets = result.assets;
           if (activePromptMode !== "generate" && !override) {
@@ -1939,7 +1939,7 @@ export default function App() {
         return;
       }
       if (result.assets?.length) {
-        setAssets((current) => [...result.assets!, ...current]);
+        setAssets((current) => mergeAssets(current, result.assets!));
         setSelectedAsset(result.assets[0]);
         setStatusText("Motion board is on the wall.");
         return;
@@ -2111,7 +2111,7 @@ export default function App() {
 
       if (newTurns.length) setTurns((current) => [...current, ...newTurns]);
       if (newAssets.length) {
-        setAssets((current) => [...newAssets, ...current]);
+        setAssets((current) => mergeAssets(current, newAssets));
         setSelectedAsset(newAssets[0]);
       }
 
@@ -2461,10 +2461,7 @@ export default function App() {
           onPickSource={() => void openReferencePicker("upscaler")}
           onSourceChange={setUpscalerSource}
           onAssetsCreated={(created) =>
-            setAssets((current) => [
-              ...created.filter((asset) => !current.some((existing) => existing.id === asset.id)),
-              ...current
-            ])
+            setAssets((current) => mergeAssets(current, created))
           }
           onStatus={setStatusText}
           onExpandAsset={(asset) => setLightboxAsset(asset)}
