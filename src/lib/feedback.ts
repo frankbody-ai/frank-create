@@ -105,8 +105,11 @@ export async function submitFeedback(input: SubmitFeedbackInput): Promise<{
     .single();
 
   if (insErr || !inserted) {
+    // eslint-disable-next-line no-console
+    console.error("[feedback] submission failed", insErr);
     throw new Error(insErr?.message || "Failed to record feedback.");
   }
+
 
   // Task auto-creation: this project has no `tasks` table, so skip.
   const taskId: string | null = null;
