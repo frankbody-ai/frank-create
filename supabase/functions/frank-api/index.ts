@@ -666,7 +666,7 @@ async function handleVideo(body: any, userId: string) {
 
   if (!videoUrl) return await failTurn("empty_output", "The video model returned no clip.");
 
-  const res = await fetch(videoUrl);
+  const res = await downloadProviderMedia(videoUrl);
   if (!res.ok) return await failTurn("download_failed", `Could not download the clip (${res.status}).`);
   const mime = (res.headers.get("content-type") || "video/mp4").split(";")[0];
   const bytes = new Uint8Array(await res.arrayBuffer());
@@ -1049,6 +1049,21 @@ function openrouterHeaders(key: string): Record<string, string> {
   };
 }
 
+// OpenRouter's `unsigned_urls` point at openrouter.ai and require the API key,
+// so a plain fetch of a finished clip comes back 401. Retry authenticated.
+async function downloadProviderMedia(url: string): Promise<Response> {
+  const res = await fetch(url);
+  if (res.ok || !/^https:\/\/([a-z0-9-]+\.)*openrouter\.ai\//i.test(url)) return res;
+  if (res.status !== 401 && res.status !== 403) return res;
+  try {
+    const key = openrouterKey();
+    return await fetch(url, { headers: { Authorization: `Bearer ${key}` } });
+  } catch {
+    return res;
+  }
+}
+
+
 function openrouterKey(): string {
   const key = Deno.env.get("OPENROUTER_API_KEY");
   if (!key) throw new ProviderRunError("OpenRouter is not configured (missing OPENROUTER_API_KEY).", "auth_failed", false);
@@ -1324,8 +1339,12 @@ async function openrouterVideo(
     const status: any = await res.json();
     const state = String(status?.status || "").toLowerCase();
     if (state === "completed" || state === "succeeded") {
-      const url: string | undefined = status?.unsigned_urls?.[0] || status?.urls?.[0] || status?.output?.[0];
+      // Signed URLs are publicly fetchable; `unsigned_urls` are OpenRouter-hosted
+      // and need the API key on the download request (see downloadProviderMedia).
+      const url: string | undefined = status?.signed_urls?.[0] || status?.urls?.[0]
+        || status?.output?.[0] || status?.unsigned_urls?.[0];
       if (!url) throw new ProviderRunError("The video job completed without a downloadable clip.", "empty_output", true);
+
       const w = Number(status?.width ?? status?.metadata?.width ?? status?.video?.width);
       const h = Number(status?.height ?? status?.metadata?.height ?? status?.video?.height);
       if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) opts.onMeta?.({ width: w, height: h });
