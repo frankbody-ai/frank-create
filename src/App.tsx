@@ -134,6 +134,23 @@ const REFERENCE_PICKER_PAGE_SIZE = 9;
 /** Shared empty array so a turn with no outputs keeps a stable prop identity. */
 const NO_ASSETS: Asset[] = [];
 
+/**
+ * Prepend freshly returned assets without duplicating ones already on screen.
+ * A fan-out round lands its images in the background, so the session re-read
+ * and the finished-round response often carry the same rows; merging by id is
+ * what keeps a run of four from rendering as eight until the next refresh.
+ */
+function mergeAssets(current: Asset[], incoming: Asset[]): Asset[] {
+  if (!incoming.length) return current;
+  const incomingIds = new Set(incoming.map((asset) => asset.id));
+  const byId = new Map(incoming.map((asset) => [asset.id, asset]));
+  return [
+    ...Array.from(byId.values()),
+    ...current.filter((asset) => !incomingIds.has(asset.id)),
+  ];
+}
+
+
 
 
 export default function App() {
