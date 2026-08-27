@@ -134,6 +134,23 @@ const REFERENCE_PICKER_PAGE_SIZE = 9;
 /** Shared empty array so a turn with no outputs keeps a stable prop identity. */
 const NO_ASSETS: Asset[] = [];
 
+/**
+ * Prepend freshly returned assets without duplicating ones already on screen.
+ * A fan-out round lands its images in the background, so the session re-read
+ * and the finished-round response often carry the same rows; merging by id is
+ * what keeps a run of four from rendering as eight until the next refresh.
+ */
+function mergeAssets(current: Asset[], incoming: Asset[]): Asset[] {
+  if (!incoming.length) return current;
+  const incomingIds = new Set(incoming.map((asset) => asset.id));
+  const byId = new Map(incoming.map((asset) => [asset.id, asset]));
+  return [
+    ...Array.from(byId.values()),
+    ...current.filter((asset) => !incomingIds.has(asset.id)),
+  ];
+}
+
+
 
 
 export default function App() {
@@ -1260,7 +1277,7 @@ export default function App() {
     }
 
     if (createdAssets.length) {
-      setAssets((current) => [...createdAssets, ...current]);
+      setAssets((current) => mergeAssets(current, createdAssets));
       if (attach) {
         setActiveReferenceIds((current) => Array.from(new Set([...current, ...createdAssets.map((asset) => asset.id)])));
       }
@@ -1632,7 +1649,7 @@ export default function App() {
         );
       } else {
         if (result.status === "complete" && result.assets?.length) {
-          setAssets((current) => [...result.assets!, ...current]);
+          setAssets((current) => mergeAssets(current, result.assets!));
           setSelectedAsset(result.assets[0]);
           onlineAssets = result.assets;
           if (activePromptMode !== "generate" && !override) {
@@ -1922,7 +1939,7 @@ export default function App() {
         return;
       }
       if (result.assets?.length) {
-        setAssets((current) => [...result.assets!, ...current]);
+        setAssets((current) => mergeAssets(current, result.assets!));
         setSelectedAsset(result.assets[0]);
         setStatusText("Motion board is on the wall.");
         return;
@@ -2094,7 +2111,7 @@ export default function App() {
 
       if (newTurns.length) setTurns((current) => [...current, ...newTurns]);
       if (newAssets.length) {
-        setAssets((current) => [...newAssets, ...current]);
+        setAssets((current) => mergeAssets(current, newAssets));
         setSelectedAsset(newAssets[0]);
       }
 
@@ -2444,10 +2461,7 @@ export default function App() {
           onPickSource={() => void openReferencePicker("upscaler")}
           onSourceChange={setUpscalerSource}
           onAssetsCreated={(created) =>
-            setAssets((current) => [
-              ...created.filter((asset) => !current.some((existing) => existing.id === asset.id)),
-              ...current
-            ])
+            setAssets((current) => mergeAssets(current, created))
           }
           onStatus={setStatusText}
           onExpandAsset={(asset) => setLightboxAsset(asset)}
