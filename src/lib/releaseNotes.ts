@@ -15,6 +15,16 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-08-27-no-more-double-images",
+    date: "27 August 2026",
+    title: "No more double images",
+    items: [
+      "A round of four now shows four images, not eight.",
+      "\"What's new\" stays dismissed once you close it.",
+    ],
+  },
+  {
+
     id: "2026-08-20-4k-batches",
     date: "20 August 2026",
     title: "4K batches, four at a time",
