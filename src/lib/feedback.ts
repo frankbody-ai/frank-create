@@ -155,3 +155,25 @@ export async function isCurrentUserStaff(): Promise<boolean> {
   const role = (data as string | null)?.toLowerCase() ?? null;
   return role === "admin" || role === "manager";
 }
+
+/**
+ * A super admin is an admin across every company, not just the one they are
+ * acting in. The OS decides this (`is_super_admin()`), so triage stays a single
+ * place: an admin sees their own company, a super admin sees all of them.
+ */
+export async function isCurrentUserSuperAdmin(): Promise<boolean> {
+  const { data, error } = await os.rpc("is_super_admin");
+  if (error) return false;
+  return Boolean(data);
+}
+
+/** Company id -> display name, for labelling feedback that spans companies. */
+export async function listVisibleCompanies(): Promise<Record<string, string>> {
+  const { data, error } = await os.rpc("my_viewable_tenants");
+  if (error || !Array.isArray(data)) return {};
+  const out: Record<string, string> = {};
+  for (const row of data as Array<{ id?: string; name?: string; slug?: string }>) {
+    if (row?.id) out[row.id] = row.name ?? row.slug ?? row.id;
+  }
+  return out;
+}
