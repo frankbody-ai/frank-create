@@ -666,7 +666,7 @@ async function handleVideo(body: any, userId: string) {
 
   if (!videoUrl) return await failTurn("empty_output", "The video model returned no clip.");
 
-  const res = await fetch(videoUrl);
+  const res = await downloadProviderMedia(videoUrl);
   if (!res.ok) return await failTurn("download_failed", `Could not download the clip (${res.status}).`);
   const mime = (res.headers.get("content-type") || "video/mp4").split(";")[0];
   const bytes = new Uint8Array(await res.arrayBuffer());
