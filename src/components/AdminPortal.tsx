@@ -35,7 +35,7 @@ import {
   listFeedback,
   updateFeedbackStatus,
   getFeedbackScreenshotUrl,
-  isCurrentUserSuperAdmin,
+  isCurrentUserPlatformAdmin,
   listVisibleCompanies,
   type FeedbackRow,
   type FeedbackStatus,
@@ -391,7 +391,7 @@ function FeedbackBoard({ search, onCount }: { search: string; onCount: (n: numbe
   useEffect(() => {
     void (async () => {
       const [isSuper, names] = await Promise.all([
-        isCurrentUserSuperAdmin(),
+        isCurrentUserPlatformAdmin(),
         listVisibleCompanies(),
       ]);
       setSuperAdmin(isSuper);
