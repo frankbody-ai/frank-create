@@ -159,6 +159,25 @@ const UNKNOWN_REPLAY_LIMIT = 5;
 
 export const LATEST_RELEASE_ID = RELEASES[0]?.id ?? "";
 
+/** Local mirror of the dismissal, so a failed backend write can't spam the modal. */
+const LOCAL_SEEN_KEY = "frank-create:last-seen-release";
+
+function readLocalSeen(): string | null {
+  try {
+    return typeof window === "undefined" ? null : window.localStorage.getItem(LOCAL_SEEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalSeen(id: string): void {
+  try {
+    if (typeof window !== "undefined") window.localStorage.setItem(LOCAL_SEEN_KEY, id);
+  } catch {
+    /* private mode: the backend marker still carries it */
+  }
+}
+
 /**
  * Releases the signed-in user has not acknowledged yet, newest first. Returns an
  * empty list when there is no session, when they are up to date, or when the
@@ -170,13 +189,21 @@ export async function unseenReleases(): Promise<ReleaseNote[]> {
     const { data: auth } = await supabase.auth.getUser();
     const userId = auth.user?.id;
     if (!userId) return [];
+    // The marker table is keyed by company + person in the core, so a person can
+    // legitimately have more than one row: take the freshest instead of erroring.
     const { data, error } = await supabase
       .from("release_seen")
-      .select("last_seen_release_id")
+      .select("last_seen_release_id, updated_at")
       .eq("user_id", userId)
-      .maybeSingle();
-    if (error) return [];
-    const lastSeen = (data as { last_seen_release_id?: string } | null)?.last_seen_release_id ?? null;
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.warn("[releases] could not read the seen marker", error.message);
+    }
+    const remoteSeen =
+      (data?.[0] as { last_seen_release_id?: string } | undefined)?.last_seen_release_id ?? null;
+    const lastSeen = remoteSeen ?? readLocalSeen();
     if (!lastSeen) return RELEASES;
     if (lastSeen === LATEST_RELEASE_ID) return [];
     const index = RELEASES.findIndex((release) => release.id === lastSeen);
@@ -188,16 +215,40 @@ export async function unseenReleases(): Promise<ReleaseNote[]> {
   }
 }
 
-/** Marks every release up to and including the newest as read for this user. */
+/**
+ * Marks every release up to and including the newest as read for this user.
+ * Writes the device mirror first so the modal stays dismissed even if the
+ * backend write fails, then updates the person's existing marker row (the core
+ * keys it by company + person, so a blind upsert on `user_id` alone is rejected).
+ */
 export async function markReleasesSeen(): Promise<void> {
+  if (!LATEST_RELEASE_ID) return;
+  writeLocalSeen(LATEST_RELEASE_ID);
   try {
     const { data: auth } = await supabase.auth.getUser();
     const userId = auth.user?.id;
-    if (!userId || !LATEST_RELEASE_ID) return;
-    await supabase
+    if (!userId) return;
+    const { data: updated, error: updateError } = await supabase
       .from("release_seen")
-      .upsert({ user_id: userId, last_seen_release_id: LATEST_RELEASE_ID }, { onConflict: "user_id" });
-  } catch {
-    /* non-critical */
+      .update({ last_seen_release_id: LATEST_RELEASE_ID, updated_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .select("user_id");
+    if (updateError) {
+      // eslint-disable-next-line no-console
+      console.warn("[releases] could not save the seen marker", updateError.message);
+      return;
+    }
+    if (updated && updated.length) return;
+    const { error: insertError } = await supabase
+      .from("release_seen")
+      .insert({ user_id: userId, last_seen_release_id: LATEST_RELEASE_ID });
+    if (insertError) {
+      // eslint-disable-next-line no-console
+      console.warn("[releases] could not create the seen marker", insertError.message);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn("[releases] marker write failed", err);
   }
 }
+
