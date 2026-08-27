@@ -501,6 +501,7 @@ function FeedbackBoard({ search, onCount }: { search: string; onCount: (n: numbe
                   <FeedbackCard
                     key={r.id}
                     row={r}
+                    companyName={r.tenant_id ? (companies[r.tenant_id] ?? null) : null}
                     onStatus={onStatus}
                     onLoadShot={loadShot}
                     shotUrl={shots[r.id] ?? null}
