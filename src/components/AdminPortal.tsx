@@ -518,11 +518,13 @@ function FeedbackBoard({ search, onCount }: { search: string; onCount: (n: numbe
 
 function FeedbackCard({
   row,
+  companyName,
   onStatus,
   onLoadShot,
   shotUrl,
 }: {
   row: FeedbackRow;
+  companyName?: string | null;
   onStatus: (id: string, s: FeedbackStatus) => void;
   onLoadShot: (id: string, path: string) => void;
   shotUrl: string | null;
