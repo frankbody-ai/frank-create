@@ -467,7 +467,17 @@ function FeedbackBoard({ search, onCount }: { search: string; onCount: (n: numbe
           checked={showDismissed}
           onChange={(e) => setShowDismissed(e.target.checked)}
         />
+        <Badge tone={superAdmin ? "success" : "neutral"}>
+          {superAdmin ? "All companies" : "This company"}
+        </Badge>
       </div>
+
+      <Text variant="bodySm" tone="secondary" as="p">
+        {superAdmin
+          ? "You are a super admin: this board shows feedback from every company."
+          : "You see feedback from the company you are acting in. Super admins see every company."}
+      </Text>
+
 
       {rows === null ? (
         <Card>
