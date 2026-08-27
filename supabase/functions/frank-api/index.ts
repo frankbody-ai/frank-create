@@ -1324,8 +1324,12 @@ async function openrouterVideo(
     const status: any = await res.json();
     const state = String(status?.status || "").toLowerCase();
     if (state === "completed" || state === "succeeded") {
-      const url: string | undefined = status?.unsigned_urls?.[0] || status?.urls?.[0] || status?.output?.[0];
+      // Signed URLs are publicly fetchable; `unsigned_urls` are OpenRouter-hosted
+      // and need the API key on the download request (see downloadProviderMedia).
+      const url: string | undefined = status?.signed_urls?.[0] || status?.urls?.[0]
+        || status?.output?.[0] || status?.unsigned_urls?.[0];
       if (!url) throw new ProviderRunError("The video job completed without a downloadable clip.", "empty_output", true);
+
       const w = Number(status?.width ?? status?.metadata?.width ?? status?.video?.width);
       const h = Number(status?.height ?? status?.metadata?.height ?? status?.video?.height);
       if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) opts.onMeta?.({ width: w, height: h });
