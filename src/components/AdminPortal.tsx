@@ -35,7 +35,7 @@ import {
   listFeedback,
   updateFeedbackStatus,
   getFeedbackScreenshotUrl,
-  isCurrentUserSuperAdmin,
+  isCurrentUserPlatformAdmin,
   listVisibleCompanies,
   type FeedbackRow,
   type FeedbackStatus,
