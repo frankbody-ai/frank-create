@@ -5,6 +5,7 @@ export type FeedbackStatus = "open" | "in_progress" | "done" | "dismissed";
 
 export type FeedbackRow = {
   id: string;
+  tenant_id?: string | null;
   user_id: string | null;
   message: string;
   page_path: string | null;
