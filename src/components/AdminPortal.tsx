@@ -35,6 +35,8 @@ import {
   listFeedback,
   updateFeedbackStatus,
   getFeedbackScreenshotUrl,
+  isCurrentUserSuperAdmin,
+  listVisibleCompanies,
   type FeedbackRow,
   type FeedbackStatus,
 } from "../lib/feedback";
