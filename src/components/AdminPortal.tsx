@@ -538,6 +538,12 @@ function FeedbackCard({
     <article className="feedback-card">
       <div className="feedback-card__meta">
         <span>{fmt(row.created_at)}</span>
+        {companyName ? (
+          <>
+            <span aria-hidden="true">·</span>
+            <Badge tone="neutral">{companyName}</Badge>
+          </>
+        ) : null}
         {row.page_path ? (
           <>
             <span aria-hidden="true">·</span>
