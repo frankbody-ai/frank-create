@@ -33,6 +33,7 @@
 }
 .osx-menu--right { left: auto; right: 0; min-width: 240px; display: flex; flex-direction: column; gap: 2px; }
 .osx-menu__label { padding: 4px 8px; font-size: 12px; line-height: 16px; font-weight: 600; color: #6b7078; }
+.osx-menu__label--error { color: #b3261e; font-weight: 500; }
 
 /* ---- the app grid (the hub's design, ported verbatim) ---- */
 .osx-cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: start; }

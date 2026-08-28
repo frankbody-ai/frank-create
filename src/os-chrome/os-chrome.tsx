@@ -236,6 +236,7 @@ export function OsCompanySwitcher({ client, appKey }: { client: OsClient; appKey
   const ctx = useOsContext(client);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const root = useRef<HTMLDivElement>(null);
   useDismiss(open, () => setOpen(false), root);
   if (!ctx || !ctx.tenant) return null;
@@ -246,13 +247,38 @@ export function OsCompanySwitcher({ client, appKey }: { client: OsClient; appKey
   const choose = async (tenantId: string) => {
     if (busy || tenantId === ctx.tenant!.id) { setOpen(false); return; }
     setBusy(true);
+    setError(null);
     const { data, error } = await client.rpc("switch_company_for_app", {
       t: tenantId, app_key: appKey === "hub" ? null : appKey,
     });
-    if (error) { setBusy(false); return; }
+    if (error) {
+      // The switch never happened. Say so: a menu that closes (or sits there)
+      // in silence after a failed switch reads as "the switcher is broken",
+      // and the only recovery anyone finds is a full refresh.
+      setBusy(false);
+      setError("Couldn't switch — please try again.");
+      return;
+    }
     const result = (data ?? {}) as { appUrl?: string | null; tenantSlug?: string | null };
-    if (appKey === "hub") { window.location.assign(HUB_URL); return; }
-    window.location.assign(result.appUrl ? withTenant(result.appUrl, result.tenantSlug ?? null) : HUB_URL);
+    // The hub is where you already are: the switch has landed server-side, so
+    // reload in place — on the hub's own domain, on a preview, on localhost —
+    // and everything re-derives under the new company while the person keeps
+    // the view they are in. (switch_company_for_app never returns a per-company
+    // hub URL, so there is nowhere else the hub would send you.)
+    if (appKey === "hub") { window.location.reload(); return; }
+    const dest = result.appUrl ? withTenant(result.appUrl, result.tenantSlug ?? null) : HUB_URL;
+    // An app with a company-specific deployment: reloading the current origin
+    // is enough when that deployment is this one; only a genuine change of
+    // front end (or falling back to the hub) navigates elsewhere.
+    try {
+      if (new URL(dest).origin === window.location.origin) {
+        window.location.reload();
+        return;
+      }
+    } catch {
+      /* Malformed destination: fall through to assign, which will show it. */
+    }
+    window.location.assign(dest);
   };
 
   return (
@@ -285,6 +311,7 @@ export function OsCompanySwitcher({ client, appKey }: { client: OsClient; appKey
             );
           })}
           {busy && <span className="osx-menu__label">Switching…</span>}
+          {error && <span className="osx-menu__label osx-menu__label--error" role="alert">{error}</span>}
         </div>
       )}
     </div>
