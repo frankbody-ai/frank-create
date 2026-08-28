@@ -5,6 +5,7 @@ export type FeedbackStatus = "open" | "in_progress" | "done" | "dismissed";
 
 export type FeedbackRow = {
   id: string;
+  tenant_id?: string | null;
   user_id: string | null;
   message: string;
   page_path: string | null;
@@ -105,8 +106,11 @@ export async function submitFeedback(input: SubmitFeedbackInput): Promise<{
     .single();
 
   if (insErr || !inserted) {
+    // eslint-disable-next-line no-console
+    console.error("[feedback] submission failed", insErr);
     throw new Error(insErr?.message || "Failed to record feedback.");
   }
+
 
   // Task auto-creation: this project has no `tasks` table, so skip.
   const taskId: string | null = null;
@@ -150,4 +154,26 @@ export async function isCurrentUserStaff(): Promise<boolean> {
   if (error) return false;
   const role = (data as string | null)?.toLowerCase() ?? null;
   return role === "admin" || role === "manager";
+}
+
+/**
+ * A platform admin is an admin across every company, not just the one they are
+ * acting in. The OS decides this (`is_platform_admin()`), so triage stays a single
+ * place: an admin sees their own company, a platform admin sees all of them.
+ */
+export async function isCurrentUserPlatformAdmin(): Promise<boolean> {
+  const { data, error } = await os.rpc("is_platform_admin");
+  if (error) return false;
+  return Boolean(data);
+}
+
+/** Company id -> display name, for labelling feedback that spans companies. */
+export async function listVisibleCompanies(): Promise<Record<string, string>> {
+  const { data, error } = await os.rpc("my_viewable_tenants");
+  if (error || !Array.isArray(data)) return {};
+  const out: Record<string, string> = {};
+  for (const row of data as Array<{ id?: string; name?: string; slug?: string }>) {
+    if (row?.id) out[row.id] = row.name ?? row.slug ?? row.id;
+  }
+  return out;
 }

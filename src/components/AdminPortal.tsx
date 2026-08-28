@@ -35,6 +35,8 @@ import {
   listFeedback,
   updateFeedbackStatus,
   getFeedbackScreenshotUrl,
+  isCurrentUserPlatformAdmin,
+  listVisibleCompanies,
   type FeedbackRow,
   type FeedbackStatus,
 } from "../lib/feedback";
@@ -383,6 +385,19 @@ function FeedbackBoard({ search, onCount }: { search: string; onCount: (n: numbe
   const [shots, setShots] = useState<Record<string, string>>({});
   const [showDismissed, setShowDismissed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [superAdmin, setSuperAdmin] = useState(false);
+  const [companies, setCompanies] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    void (async () => {
+      const [isSuper, names] = await Promise.all([
+        isCurrentUserPlatformAdmin(),
+        listVisibleCompanies(),
+      ]);
+      setSuperAdmin(isSuper);
+      setCompanies(names);
+    })();
+  }, []);
 
   const refresh = async () => {
     setRefreshing(true);
@@ -452,7 +467,17 @@ function FeedbackBoard({ search, onCount }: { search: string; onCount: (n: numbe
           checked={showDismissed}
           onChange={(e) => setShowDismissed(e.target.checked)}
         />
+        <Badge tone={superAdmin ? "success" : "neutral"}>
+          {superAdmin ? "All companies" : "This company"}
+        </Badge>
       </div>
+
+      <Text variant="bodySm" tone="secondary" as="p">
+        {superAdmin
+          ? "You are a super admin: this board shows feedback from every company."
+          : "You see feedback from the company you are acting in. Super admins see every company."}
+      </Text>
+
 
       {rows === null ? (
         <Card>
@@ -476,6 +501,7 @@ function FeedbackBoard({ search, onCount }: { search: string; onCount: (n: numbe
                   <FeedbackCard
                     key={r.id}
                     row={r}
+                    companyName={r.tenant_id ? (companies[r.tenant_id] ?? null) : null}
                     onStatus={onStatus}
                     onLoadShot={loadShot}
                     shotUrl={shots[r.id] ?? null}
@@ -492,11 +518,13 @@ function FeedbackBoard({ search, onCount }: { search: string; onCount: (n: numbe
 
 function FeedbackCard({
   row,
+  companyName,
   onStatus,
   onLoadShot,
   shotUrl,
 }: {
   row: FeedbackRow;
+  companyName?: string | null;
   onStatus: (id: string, s: FeedbackStatus) => void;
   onLoadShot: (id: string, path: string) => void;
   shotUrl: string | null;
@@ -510,6 +538,12 @@ function FeedbackCard({
     <article className="feedback-card">
       <div className="feedback-card__meta">
         <span>{fmt(row.created_at)}</span>
+        {companyName ? (
+          <>
+            <span aria-hidden="true">·</span>
+            <Badge tone="neutral">{companyName}</Badge>
+          </>
+        ) : null}
         {row.page_path ? (
           <>
             <span aria-hidden="true">·</span>
