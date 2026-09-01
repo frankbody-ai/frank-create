@@ -44,7 +44,7 @@ export const supabase = createClient(CORE_SUPABASE_URL, CORE_SUPABASE_PUBLISHABL
 export const os = supabase.schema("public");
 
 // Signing in or out here carries to every other AutoSolutions app.
-publishSessionChanges(supabase);
+publishSessionChanges(supabase, CORE_PROJECT_REF);
 
 /**
  * Fully clear the local Supabase session: signs out via the SDK, then
