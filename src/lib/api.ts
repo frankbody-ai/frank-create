@@ -192,16 +192,31 @@ export async function deleteTurn(turnId: string) {
 }
 
 
-async function authHeader(): Promise<Record<string, string>> {
+async function authHeader(forceRefresh = false): Promise<Record<string, string>> {
   try {
     const { supabase } = await import("./supabaseClient");
+    if (forceRefresh) {
+      // A 401 means the token we just sent was stale (long-lived tab, laptop
+      // sleep, a refresh that failed while offline). Mint a fresh one.
+      await supabase.auth.refreshSession();
+    }
     const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    const session = data.session;
+    if (!session?.access_token) return {};
+    // Proactively refresh anything about to expire mid-request: long POSTs
+    // (video submits) otherwise arrive with an already-dead token.
+    const expiresAt = (session.expires_at ?? 0) * 1000;
+    if (!forceRefresh && expiresAt && expiresAt - Date.now() < 60_000) {
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      const token = refreshed.session?.access_token;
+      if (token) return { Authorization: `Bearer ${token}` };
+    }
+    return { Authorization: `Bearer ${session.access_token}` };
   } catch {
     return {};
   }
 }
+
 
 
 /**
