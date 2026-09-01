@@ -26,6 +26,8 @@ export interface TopBarProps extends Omit<React.HTMLAttributes<HTMLElement>, 'ti
   onCompanyAction?: () => void;
   /** Extra controls inserted before the company mark. */
   actions?: React.ReactNode;
+  /** Extra controls rendered on the left, immediately after the lockup. */
+  leading?: React.ReactNode;
 }
 
 /*
@@ -36,7 +38,7 @@ export interface TopBarProps extends Omit<React.HTMLAttributes<HTMLElement>, 'ti
 export function TopBar({
   brand, edition, searchPlaceholder = 'Search', searchValue, onSearchChange, showSearch = true,
   notificationCount, onNotifications, onHelp, helpUrl, company, companyName, onCompanyAction,
-  actions, className = '', style, ...rest
+  actions, leading, className = '', style, ...rest
 }: TopBarProps) {
   const HelpTag: React.ElementType = helpUrl ? 'a' : 'button';
   return (
@@ -46,6 +48,7 @@ export function TopBar({
           ? <span className="as-logo" role="img" aria-label="AutoSolutions OS" style={{ width: 'var(--logo-width)', height: 'var(--logo-height)' }} />
           : (typeof brand === 'string' ? <span className="as-topbar__wordmark">{brand}</span> : brand)}
       </div>
+      {leading}
       {edition && <span className="as-topbar__edition">{edition}</span>}
       {showSearch && (
         <label className="as-topbar__search">
