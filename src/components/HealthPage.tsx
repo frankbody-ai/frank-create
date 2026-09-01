@@ -66,12 +66,23 @@ async function runChecks(): Promise<CheckResult[]> {
     error: auth.error,
   });
 
+  // navigator.onLine is a hint, not a fact: Chrome reports false negatives
+  // behind VPNs and after interface changes. A completed backend request is
+  // the real proof of reachability, so only fail when both disagree with us.
+  const reachable = health.ok;
   results.push({
-    name: "Browser online",
-    ok: navigator.onLine,
+    name: "Network reachable",
+    ok: reachable || navigator.onLine,
     latencyMs: 0,
-    detail: navigator.onLine ? "online" : "offline",
+    detail: reachable
+      ? navigator.onLine
+        ? "online"
+        : "reachable (browser reported offline, but requests succeeded)"
+      : navigator.onLine
+        ? "browser reports online, but the backend request failed"
+        : "offline",
   });
+
 
   const storage = await timed(async () => {
     const k = "__frank_health__";
