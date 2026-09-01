@@ -20,18 +20,18 @@ import { loadPromptAgentConfig, buildPromptAgentSystem, DEFAULT_CONFIG } from ".
 // wrong project. Better to refuse to start.
 const SUPABASE_URL = Deno.env.get("CORE_SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("CORE_SUPABASE_SERVICE_ROLE_KEY") ?? "";
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+// Public anon key of the same project — used to ask the OS about the caller.
+// No fallback on purpose: a host-project anon key would be accepted at boot and
+// then rejected by the core's PostgREST, taking down every authenticated
+// request with no boot-time signal. All three CORE_* secrets are required.
+const SUPABASE_ANON_KEY = Deno.env.get("CORE_SUPABASE_ANON_KEY") ?? "";
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_ANON_KEY) {
   throw new Error(
-    "frank-api is missing CORE_SUPABASE_URL / CORE_SUPABASE_SERVICE_ROLE_KEY. " +
+    "frank-api is missing CORE_SUPABASE_URL / CORE_SUPABASE_SERVICE_ROLE_KEY / CORE_SUPABASE_ANON_KEY. " +
       "It will not fall back to the host project — set the secrets and redeploy.",
   );
 }
-// Public anon key of the same project — used to ask the OS about the caller.
-const SUPABASE_ANON_KEY =
-  Deno.env.get("CORE_SUPABASE_ANON_KEY") ??
-  Deno.env.get("SUPABASE_ANON_KEY") ??
-  Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
-  "";
+
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const LOVABLE_BASE = "https://ai.gateway.lovable.dev/v1";
 const BUCKET = "studio-images";
@@ -80,11 +80,16 @@ class AuthError extends Error {
 
 const USER_CACHE = new Map<string, { id: string; email: string; exp: number }>();
 
+/** The caller's bearer token, for checks that must run as them, not as service role. */
+function bearerToken(req: Request): string {
+  const m = (req.headers.get("authorization") || "").match(/^Bearer\s+(.+)$/i);
+  return m ? m[1] : "";
+}
+
 async function requireUser(req: Request): Promise<string> {
-  const h = req.headers.get("authorization") || "";
-  const m = h.match(/^Bearer\s+(.+)$/i);
-  const token = m ? m[1] : null;
+  const token = bearerToken(req) || null;
   if (!token) throw new AuthError(401, "Missing bearer token");
+
   const cached = USER_CACHE.get(token);
   const now = Date.now();
   if (cached && cached.exp > now) return cached.id;
@@ -2565,18 +2570,25 @@ Deno.serve(async (req) => {
 
     if (path.startsWith("/turns") && method === "GET") {
       const sid = url.searchParams.get("session_id");
-      const q = supabase().from("messages").select("*").order("seq", { ascending: true });
-      const { data } = sid ? await q.eq("session_id", sid) : await q.eq("user_id", userId);
+      // Service role bypasses RLS, so ownership is enforced here — always,
+      // session filter or not. A session UUID is not an access token.
+      let q = supabase().from("messages").select("*").eq("user_id", userId)
+        .order("seq", { ascending: true });
+      if (sid) q = q.eq("session_id", sid);
+      const { data } = await q;
       return json({ turns: (data || []).map(rowToTurn) });
     }
 
     if (path.startsWith("/assets") && method === "GET") {
       const sid = url.searchParams.get("session_id");
-      const q = supabase().from("assets").select("*").order("created_at", { ascending: true });
-      const { data } = sid ? await q.eq("session_id", sid) : await q.eq("user_id", userId);
+      let q = supabase().from("assets").select("*").eq("user_id", userId)
+        .order("created_at", { ascending: true });
+      if (sid) q = q.eq("session_id", sid);
+      const { data } = await q;
       const items = await Promise.all((data || []).map(async (r: any) => rowToAsset(r, await signed(r.storage_path))));
       return json({ assets: items });
     }
+
 
     if (path === "/references" && method === "POST") {
       const body = await readJson(req).catch(() => ({}));
@@ -2709,15 +2721,32 @@ Deno.serve(async (req) => {
     }
 
     if (path === "/prompt-agent/config" && method === "PUT") {
-      const isAdmin = await supabase().rpc("has_role", { _user_id: userId, _role: "admin" });
+      // has_role() and current_tenant() both resolve from auth.uid()/auth.jwt(),
+      // which are NULL under service role — so both must run as the caller.
+      const token = bearerToken(req);
+      const caller = asCaller(token); // public schema: current_tenant()
+      // has_role lives in the studio schema, current_tenant in public.
+      const callerStudio = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        db: { schema: "studio" },
+        global: { headers: { Authorization: `Bearer ${token}` } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const isAdmin = await callerStudio.rpc("has_role", { _user_id: userId, _role: "admin" });
       if (isAdmin.error || isAdmin.data !== true) {
         return json({ error: { code: "forbidden", message: "Admin role required" } }, 403);
+      }
+
+      const tenantRes = await caller.rpc("current_tenant");
+      const tenantId = typeof tenantRes.data === "string" ? tenantRes.data : "";
+      if (tenantRes.error || !tenantId) {
+        return json({ error: { code: "forbidden", message: "Could not resolve your workspace" } }, 403);
       }
       const body = await readJson(req) as {
         persona?: string; craftMethod?: string; conversationProtocol?: string; blueprint?: string; rules?: string;
         skills?: { key?: string; label?: string; hint?: string; instruction?: string; sort_order?: number; is_active?: boolean }[];
       };
       const up = await supabase().from("prompt_agent_config").upsert({
+        tenant_id: tenantId,
         id: 1,
         persona: String(body.persona ?? "").trim(),
         craft_method: String(body.craftMethod ?? "").trim(),
@@ -2726,7 +2755,7 @@ Deno.serve(async (req) => {
         rules: String(body.rules ?? "").trim(),
         updated_by: userId,
         updated_at: new Date().toISOString(),
-      }, { onConflict: "id" });
+      }, { onConflict: "tenant_id,id" });
 
       if (up.error) return json({ error: { code: "save_failed", message: up.error.message } }, 400);
 
@@ -2734,6 +2763,7 @@ Deno.serve(async (req) => {
         const rows = body.skills
           .filter((s) => s && String(s.key ?? "").trim())
           .map((s, i) => ({
+            tenant_id: tenantId,
             key: String(s.key).trim(),
             label: String(s.label ?? "").trim() || String(s.key).trim(),
             hint: String(s.hint ?? "").trim(),
@@ -2743,13 +2773,17 @@ Deno.serve(async (req) => {
           }));
         const keys = rows.map((r) => r.key);
         if (rows.length) {
-          const ups = await supabase().from("prompt_agent_skills").upsert(rows, { onConflict: "key" });
+          const ups = await supabase().from("prompt_agent_skills").upsert(rows, { onConflict: "tenant_id,key" });
           if (ups.error) return json({ error: { code: "save_failed", message: ups.error.message } }, 400);
         }
-        const existing = await supabase().from("prompt_agent_skills").select("key");
+        // Scoped to this workspace: unscoped cleanup would wipe other companies' skills.
+        const existing = await supabase().from("prompt_agent_skills").select("key").eq("tenant_id", tenantId);
         const stale = (existing.data || []).map((r: any) => String(r.key)).filter((k: string) => !keys.includes(k));
-        if (stale.length) await supabase().from("prompt_agent_skills").delete().in("key", stale);
+        if (stale.length) {
+          await supabase().from("prompt_agent_skills").delete().eq("tenant_id", tenantId).in("key", stale);
+        }
       }
+
 
       const cfg = await loadPromptAgentConfig(supabase());
       return json({ config: cfg });
