@@ -269,6 +269,10 @@ async function fetchJson<T>(path: string, init: RequestInit = {}, options: { att
   const backoff = (attempt: number) =>
     Math.min(500 * 2 ** (attempt - 1), 4000) + Math.floor(Math.random() * 250);
   let lastError: Error | null = null;
+  // A 401 means the request never started work upstream, so re-sending it once
+  // with a freshly minted token is safe even for expensive mutations.
+  let retriedAuth = false;
+  let refreshAuth = false;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     let response: Response;
@@ -277,10 +281,11 @@ async function fetchJson<T>(path: string, init: RequestInit = {}, options: { att
         ...init,
         headers: {
           "Content-Type": "application/json",
-          ...(await authHeader()),
+          ...(await authHeader(refreshAuth)),
           ...init.headers
         }
       });
+      refreshAuth = false;
     } catch (err: any) {
       // A user-cancelled run must never be retried.
       if (err?.name === "AbortError" || (init.signal as AbortSignal | undefined)?.aborted) throw err;
@@ -303,13 +308,25 @@ async function fetchJson<T>(path: string, init: RequestInit = {}, options: { att
       response.status === 504 ||
       isTransientBackendError(text);
 
-    lastError = new Error(apiErrorMessage(text, response.status));
+    if (response.status === 401 && !retriedAuth) {
+      retriedAuth = true;
+      refreshAuth = true;
+      attempt -= 1; // the retry with a fresh token doesn't consume a backoff attempt
+      continue;
+    }
+
+    lastError = new Error(
+      response.status === 401
+        ? "Your session expired. Please sign in again."
+        : apiErrorMessage(text, response.status)
+    );
     if (transient && attempt < maxAttempts) {
       await new Promise((r) => setTimeout(r, backoff(attempt)));
       continue;
     }
     throw lastError;
   }
+
 
   throw lastError ?? new Error("Frank Create API failed");
 }
