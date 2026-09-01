@@ -20,18 +20,18 @@ import { loadPromptAgentConfig, buildPromptAgentSystem, DEFAULT_CONFIG } from ".
 // wrong project. Better to refuse to start.
 const SUPABASE_URL = Deno.env.get("CORE_SUPABASE_URL") ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("CORE_SUPABASE_SERVICE_ROLE_KEY") ?? "";
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+// Public anon key of the same project — used to ask the OS about the caller.
+// No fallback on purpose: a host-project anon key would be accepted at boot and
+// then rejected by the core's PostgREST, taking down every authenticated
+// request with no boot-time signal. All three CORE_* secrets are required.
+const SUPABASE_ANON_KEY = Deno.env.get("CORE_SUPABASE_ANON_KEY") ?? "";
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_ANON_KEY) {
   throw new Error(
-    "frank-api is missing CORE_SUPABASE_URL / CORE_SUPABASE_SERVICE_ROLE_KEY. " +
+    "frank-api is missing CORE_SUPABASE_URL / CORE_SUPABASE_SERVICE_ROLE_KEY / CORE_SUPABASE_ANON_KEY. " +
       "It will not fall back to the host project — set the secrets and redeploy.",
   );
 }
-// Public anon key of the same project — used to ask the OS about the caller.
-const SUPABASE_ANON_KEY =
-  Deno.env.get("CORE_SUPABASE_ANON_KEY") ??
-  Deno.env.get("SUPABASE_ANON_KEY") ??
-  Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
-  "";
+
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 const LOVABLE_BASE = "https://ai.gateway.lovable.dev/v1";
 const BUCKET = "studio-images";
