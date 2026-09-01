@@ -636,9 +636,8 @@ async function handleVideo(body: any, userId: string) {
     }));
   };
 
-  let videoUrl: string | undefined;
-  let providerRequest: unknown = null;
-  let returnedSize: { width?: number; height?: number } = {};
+  let submitted: { pollUrl: string; request: unknown };
+  let clampedSettings: { aspectRatio?: string; resolution?: string; duration?: number } = {};
   try {
     const videoProviderPrompt = typeof body.provider_prompt === "string" && body.provider_prompt.trim()
       ? body.provider_prompt.trim()
@@ -648,7 +647,8 @@ async function handleVideo(body: any, userId: string) {
       duration: Number(reqSettings.duration ?? 5),
       resolution: reqSettings.video_resolution || reqSettings.image_size,
     });
-    videoUrl = await openrouterVideo(videoProviderPrompt, {
+    clampedSettings = clamped;
+    submitted = await submitOpenrouterVideo(videoProviderPrompt, {
       model: slug,
       aspectRatio: clamped.aspectRatio,
       resolution: clamped.resolution,
@@ -656,77 +656,97 @@ async function handleVideo(body: any, userId: string) {
       firstFrameUrl,
       lastFrameUrl,
       referenceUrls: firstFrameUrl ? [] : sourceUrls,
-      onRequest: (record) => { providerRequest = record; },
-      onMeta: (meta) => { returnedSize = meta; },
     });
   } catch (err) {
     const mapped = mapReplicateError(err);
     return await failTurn(mapped.code, mapped.message);
   }
 
-  if (!videoUrl) return await failTurn("empty_output", "The video model returned no clip.");
-
-  const res = await downloadProviderMedia(videoUrl);
-  if (!res.ok) return await failTurn("download_failed", `Could not download the clip (${res.status}).`);
-  const mime = (res.headers.get("content-type") || "video/mp4").split(";")[0];
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  const assetId = crypto.randomUUID();
-  const storagePath = `${sessionId}/${assetId}.mp4`;
-  let stored: StoredResult;
-  try {
-    stored = await storeOrFallback({ storagePath, bytes, mime, remoteUrl: videoUrl });
-  } catch (err) {
-    return await failTurn("storage_failed", err instanceof Error ? err.message : String(err));
-  }
-
-  const assetIns = await sb.from("assets").insert({
-    id: assetId,
-    user_id: userId,
-    session_id: sessionId,
-    message_id: turnId,
-    storage_path: stored.stored ? storagePath : "",
-    asset_type: "generated",
-    prompt_snapshot: prompt,
-    model_key: modelId,
-    metadata_json: {
-      media_type: "video",
-      mime,
-      title: prompt.slice(0, 80) || "Generated clip",
-      aspect_ratio: reqSettings.aspect_ratio,
-      duration: reqSettings.duration ?? null,
-      resolution: reqSettings.video_resolution ?? null,
-      bytes: bytes.byteLength,
-      provider: "openrouter",
-      provider_model: slug,
-      ...(returnedSize.width && returnedSize.height ? { width: returnedSize.width, height: returnedSize.height } : {}),
-      ...stored.meta,
-    },
-
-  }).select().single();
-  if (assetIns.error) return await failTurn("db_failed", assetIns.error.message);
-
-  const completedSnapshot = {
+  // The clip renders out of band; the client polls /inference/status, which
+  // resumes this job from the stored polling URL.
+  const runningSnapshot = {
     ...settingsSnapshot,
-    status: "complete",
-    output_asset_ids: [assetId],
+    status: "running",
     requested_count: 1,
-    provider_request: providerRequest,
+    video_poll_url: submitted.pollUrl,
+    video_started_at: nowIso(),
+    video_resolution: clampedSettings.resolution ?? null,
+    video_duration: clampedSettings.duration ?? null,
+    provider_request: submitted.request,
     provider: "openrouter",
     provider_model: slug,
   };
-
-  await sb.from("messages").update({ settings_snapshot_json: completedSnapshot }).eq("id", turnId);
+  await sb.from("messages").update({ settings_snapshot_json: runningSnapshot }).eq("id", turnId);
 
   return {
     turn: rowToTurn({
       id: turnId, session_id: sessionId, role: "user", message_type: "video",
-      prompt_text: prompt, settings_snapshot_json: completedSnapshot, seq: nextSeq, created_at: nowIso(),
+      prompt_text: prompt, settings_snapshot_json: runningSnapshot, seq: nextSeq, created_at: nowIso(),
     }),
-    status: "complete" as const,
-    assets: [rowToAsset(assetIns.data, await signed(storagePath))],
+    status: "running" as const,
+    assets: [],
     providerPayload: { provider: "openrouter", model: slug },
   };
 }
+
+// Store a finished clip and attach it to its run. Shared by the video status
+// resume path so every video asset row looks the same.
+async function storeVideoAsset(opts: {
+  userId: string;
+  sessionId: string;
+  turnId: string;
+  prompt: string;
+  modelId: string;
+  slug: string;
+  videoUrl: string;
+  settings: any;
+  size?: { width?: number; height?: number };
+}): Promise<{ assetId: string; storagePath: string; error?: { code: string; message: string } }> {
+  const sb = supabase();
+  const res = await downloadProviderMedia(opts.videoUrl);
+  if (!res.ok) {
+    return { assetId: "", storagePath: "", error: { code: "download_failed", message: `Could not download the clip (${res.status}).` } };
+  }
+  const mime = (res.headers.get("content-type") || "video/mp4").split(";")[0];
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  const assetId = crypto.randomUUID();
+  const storagePath = `${opts.sessionId}/${assetId}.mp4`;
+  let stored: StoredResult;
+  try {
+    stored = await storeOrFallback({ storagePath, bytes, mime, remoteUrl: opts.videoUrl });
+  } catch (err) {
+    return { assetId: "", storagePath: "", error: { code: "storage_failed", message: err instanceof Error ? err.message : String(err) } };
+  }
+
+  const assetIns = await sb.from("assets").insert({
+    id: assetId,
+    user_id: opts.userId,
+    session_id: opts.sessionId,
+    message_id: opts.turnId,
+    storage_path: stored.stored ? storagePath : "",
+    asset_type: "generated",
+    prompt_snapshot: opts.prompt,
+    model_key: opts.modelId,
+    metadata_json: {
+      media_type: "video",
+      mime,
+      title: opts.prompt.slice(0, 80) || "Generated clip",
+      aspect_ratio: opts.settings?.aspect_ratio,
+      duration: opts.settings?.duration ?? null,
+      resolution: opts.settings?.video_resolution ?? null,
+      bytes: bytes.byteLength,
+      provider: "openrouter",
+      provider_model: opts.slug,
+      ...(opts.size?.width && opts.size?.height ? { width: opts.size.width, height: opts.size.height } : {}),
+      ...stored.meta,
+    },
+  }).select().single();
+  if (assetIns.error) {
+    return { assetId: "", storagePath: "", error: { code: "db_failed", message: assetIns.error.message } };
+  }
+  return { assetId, storagePath };
+}
+
 
 // ---- Enhancer (upscale) ----------------------------------------------------
 
