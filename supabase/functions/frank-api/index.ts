@@ -1872,8 +1872,51 @@ async function handleTurnStatus(body: any, userId: string) {
     return await finishWithRows({ ...snapshot, pending_count: requested - done }, "running");
   }
 
+  // ---- Video runs: resume the provider job from its stored polling URL ------
+  if (snapshot.status === "running" && snapshot.kind === "video" && snapshot.video_poll_url) {
+    const startedAt = new Date(snapshot.video_started_at || row.created_at).getTime();
+    const ageMs = Date.now() - startedAt;
+    const failVideo = async (code: string, message: string) => {
+      const failed = { ...snapshot, status: "failed", error: message, error_code: code, error_retryable: true };
+      await sb.from("messages").update({ settings_snapshot_json: failed }).eq("id", turnId);
+      const result = await finishWithRows(failed, "failed");
+      return { ...result, error: { code, message, retryable: true } };
+    };
+
+    const poll = await pollOpenrouterVideoOnce(String(snapshot.video_poll_url));
+    if (poll.state === "failed") return await failVideo("provider_error", poll.message);
+
+    if (poll.state === "completed") {
+      const stored = await storeVideoAsset({
+        userId,
+        sessionId: row.session_id,
+        turnId,
+        prompt: row.prompt_text || "",
+        modelId: snapshot.model,
+        slug: snapshot.provider_model || snapshot.model,
+        videoUrl: poll.url,
+        settings: snapshot.settings || {},
+        size: { width: poll.width, height: poll.height },
+      });
+      if (stored.error) return await failVideo(stored.error.code, stored.error.message);
+      const complete = { ...snapshot, status: "complete", output_asset_ids: [stored.assetId] };
+      await sb.from("messages").update({ settings_snapshot_json: complete }).eq("id", turnId);
+      return await finishWithRows(complete, "complete");
+    }
+
+    if (Number.isFinite(ageMs) && ageMs > 12 * 60_000) {
+      return await failVideo(
+        "timeout",
+        "The clip is still rendering after 12 minutes. Try a shorter clip or a lower resolution.",
+      );
+    }
+    return await finishWithRows(snapshot, "running");
+  }
+
   if (snapshot.status !== "running" || !predictionIds.length) {
-    if (snapshot.status === "running" && !predictionIds.length) {
+    // Video runs live on their own clock (branch above) — the short
+    // interrupted-worker watchdog would kill a healthy render.
+    if (snapshot.status === "running" && !predictionIds.length && snapshot.kind !== "video") {
       const ageMs = Date.now() - new Date(row.created_at).getTime();
       if (Number.isFinite(ageMs) && ageMs > 3 * 60_000) {
         const failed = {
@@ -1890,6 +1933,7 @@ async function handleTurnStatus(body: any, userId: string) {
     const status = snapshot.status === "failed" ? "failed" : snapshot.status === "running" ? "running" : "complete";
     return await finishWithRows(snapshot, status as any);
   }
+
 
 
   const replicateKey = getReplicateGatewayKey();
