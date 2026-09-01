@@ -2724,11 +2724,18 @@ Deno.serve(async (req) => {
       // has_role() and current_tenant() both resolve from auth.uid()/auth.jwt(),
       // which are NULL under service role — so both must run as the caller.
       const token = bearerToken(req);
-      const caller = asCaller(token);
-      const isAdmin = await caller.rpc("has_role", { _user_id: userId, _role: "admin" });
+      const caller = asCaller(token); // public schema: current_tenant()
+      // has_role lives in the studio schema, current_tenant in public.
+      const callerStudio = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        db: { schema: "studio" },
+        global: { headers: { Authorization: `Bearer ${token}` } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const isAdmin = await callerStudio.rpc("has_role", { _user_id: userId, _role: "admin" });
       if (isAdmin.error || isAdmin.data !== true) {
         return json({ error: { code: "forbidden", message: "Admin role required" } }, 403);
       }
+
       const tenantRes = await caller.rpc("current_tenant");
       const tenantId = typeof tenantRes.data === "string" ? tenantRes.data : "";
       if (tenantRes.error || !tenantId) {
