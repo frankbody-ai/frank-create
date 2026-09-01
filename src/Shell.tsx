@@ -4,7 +4,7 @@ import { AppFrame, SideNav, TopBar } from "./ds";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { ReleaseNotesModal } from "./components/ReleaseNotesModal";
 import { hardSignOut, os } from "./lib/supabaseClient";
-import { OsAppSwitcherPlate, OsCompanySwitcher } from "./os-chrome/os-chrome";
+import { OsAppSwitcher, OsCompanySwitcher } from "./os-chrome/os-chrome";
 import { APP_KEY } from "./lib/coreConfig";
 import type { SideNavItem } from "./ds";
 import { NAV_FOOTER, NAV_MAIN, navigate } from "./nav";
@@ -52,6 +52,18 @@ export function Shell({
   children,
 }: ShellProps) {
   const [notesOpen, setNotesOpen] = React.useState(false);
+  const [appsOpen, setAppsOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!appsOpen) return;
+    const close = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest(".as-nav__app-wrap")) return;
+      setAppsOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [appsOpen]);
 
   const go = (id: string) => {
     if (id === "signout") {
@@ -79,7 +91,6 @@ export function Shell({
           searchPlaceholder={searchPlaceholder}
           searchValue={search ?? ""}
           onSearchChange={onSearchChange}
-          leading={<OsAppSwitcherPlate client={os} appKey={APP_KEY} />}
           actions={
             <>
               {actions}
@@ -95,6 +106,12 @@ export function Shell({
         <SideNav
           app="design-studio"
           appName="art-ificial design studio"
+          appAction={() => setAppsOpen((open) => !open)}
+          appMenu={appsOpen ? (
+            <div className="osx-menu" role="menu">
+              <OsAppSwitcher client={os} appKey={APP_KEY} variant="menu" onOpen={() => setAppsOpen(false)} />
+            </div>
+          ) : null}
           items={NAV_MAIN.map(toItem)}
           extra={navExtra}
           footerItems={[
