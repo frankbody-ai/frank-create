@@ -636,9 +636,8 @@ async function handleVideo(body: any, userId: string) {
     }));
   };
 
-  let videoUrl: string | undefined;
-  let providerRequest: unknown = null;
-  let returnedSize: { width?: number; height?: number } = {};
+  let submitted: { pollUrl: string; request: unknown };
+  let clampedSettings: { aspectRatio?: string; resolution?: string; duration?: number } = {};
   try {
     const videoProviderPrompt = typeof body.provider_prompt === "string" && body.provider_prompt.trim()
       ? body.provider_prompt.trim()
@@ -648,7 +647,8 @@ async function handleVideo(body: any, userId: string) {
       duration: Number(reqSettings.duration ?? 5),
       resolution: reqSettings.video_resolution || reqSettings.image_size,
     });
-    videoUrl = await openrouterVideo(videoProviderPrompt, {
+    clampedSettings = clamped;
+    submitted = await submitOpenrouterVideo(videoProviderPrompt, {
       model: slug,
       aspectRatio: clamped.aspectRatio,
       resolution: clamped.resolution,
@@ -656,77 +656,97 @@ async function handleVideo(body: any, userId: string) {
       firstFrameUrl,
       lastFrameUrl,
       referenceUrls: firstFrameUrl ? [] : sourceUrls,
-      onRequest: (record) => { providerRequest = record; },
-      onMeta: (meta) => { returnedSize = meta; },
     });
   } catch (err) {
     const mapped = mapReplicateError(err);
     return await failTurn(mapped.code, mapped.message);
   }
 
-  if (!videoUrl) return await failTurn("empty_output", "The video model returned no clip.");
-
-  const res = await downloadProviderMedia(videoUrl);
-  if (!res.ok) return await failTurn("download_failed", `Could not download the clip (${res.status}).`);
-  const mime = (res.headers.get("content-type") || "video/mp4").split(";")[0];
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  const assetId = crypto.randomUUID();
-  const storagePath = `${sessionId}/${assetId}.mp4`;
-  let stored: StoredResult;
-  try {
-    stored = await storeOrFallback({ storagePath, bytes, mime, remoteUrl: videoUrl });
-  } catch (err) {
-    return await failTurn("storage_failed", err instanceof Error ? err.message : String(err));
-  }
-
-  const assetIns = await sb.from("assets").insert({
-    id: assetId,
-    user_id: userId,
-    session_id: sessionId,
-    message_id: turnId,
-    storage_path: stored.stored ? storagePath : "",
-    asset_type: "generated",
-    prompt_snapshot: prompt,
-    model_key: modelId,
-    metadata_json: {
-      media_type: "video",
-      mime,
-      title: prompt.slice(0, 80) || "Generated clip",
-      aspect_ratio: reqSettings.aspect_ratio,
-      duration: reqSettings.duration ?? null,
-      resolution: reqSettings.video_resolution ?? null,
-      bytes: bytes.byteLength,
-      provider: "openrouter",
-      provider_model: slug,
-      ...(returnedSize.width && returnedSize.height ? { width: returnedSize.width, height: returnedSize.height } : {}),
-      ...stored.meta,
-    },
-
-  }).select().single();
-  if (assetIns.error) return await failTurn("db_failed", assetIns.error.message);
-
-  const completedSnapshot = {
+  // The clip renders out of band; the client polls /inference/status, which
+  // resumes this job from the stored polling URL.
+  const runningSnapshot = {
     ...settingsSnapshot,
-    status: "complete",
-    output_asset_ids: [assetId],
+    status: "running",
     requested_count: 1,
-    provider_request: providerRequest,
+    video_poll_url: submitted.pollUrl,
+    video_started_at: nowIso(),
+    video_resolution: clampedSettings.resolution ?? null,
+    video_duration: clampedSettings.duration ?? null,
+    provider_request: submitted.request,
     provider: "openrouter",
     provider_model: slug,
   };
-
-  await sb.from("messages").update({ settings_snapshot_json: completedSnapshot }).eq("id", turnId);
+  await sb.from("messages").update({ settings_snapshot_json: runningSnapshot }).eq("id", turnId);
 
   return {
     turn: rowToTurn({
       id: turnId, session_id: sessionId, role: "user", message_type: "video",
-      prompt_text: prompt, settings_snapshot_json: completedSnapshot, seq: nextSeq, created_at: nowIso(),
+      prompt_text: prompt, settings_snapshot_json: runningSnapshot, seq: nextSeq, created_at: nowIso(),
     }),
-    status: "complete" as const,
-    assets: [rowToAsset(assetIns.data, await signed(storagePath))],
+    status: "running" as const,
+    assets: [],
     providerPayload: { provider: "openrouter", model: slug },
   };
 }
+
+// Store a finished clip and attach it to its run. Shared by the video status
+// resume path so every video asset row looks the same.
+async function storeVideoAsset(opts: {
+  userId: string;
+  sessionId: string;
+  turnId: string;
+  prompt: string;
+  modelId: string;
+  slug: string;
+  videoUrl: string;
+  settings: any;
+  size?: { width?: number; height?: number };
+}): Promise<{ assetId: string; storagePath: string; error?: { code: string; message: string } }> {
+  const sb = supabase();
+  const res = await downloadProviderMedia(opts.videoUrl);
+  if (!res.ok) {
+    return { assetId: "", storagePath: "", error: { code: "download_failed", message: `Could not download the clip (${res.status}).` } };
+  }
+  const mime = (res.headers.get("content-type") || "video/mp4").split(";")[0];
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  const assetId = crypto.randomUUID();
+  const storagePath = `${opts.sessionId}/${assetId}.mp4`;
+  let stored: StoredResult;
+  try {
+    stored = await storeOrFallback({ storagePath, bytes, mime, remoteUrl: opts.videoUrl });
+  } catch (err) {
+    return { assetId: "", storagePath: "", error: { code: "storage_failed", message: err instanceof Error ? err.message : String(err) } };
+  }
+
+  const assetIns = await sb.from("assets").insert({
+    id: assetId,
+    user_id: opts.userId,
+    session_id: opts.sessionId,
+    message_id: opts.turnId,
+    storage_path: stored.stored ? storagePath : "",
+    asset_type: "generated",
+    prompt_snapshot: opts.prompt,
+    model_key: opts.modelId,
+    metadata_json: {
+      media_type: "video",
+      mime,
+      title: opts.prompt.slice(0, 80) || "Generated clip",
+      aspect_ratio: opts.settings?.aspect_ratio,
+      duration: opts.settings?.duration ?? null,
+      resolution: opts.settings?.video_resolution ?? null,
+      bytes: bytes.byteLength,
+      provider: "openrouter",
+      provider_model: opts.slug,
+      ...(opts.size?.width && opts.size?.height ? { width: opts.size.width, height: opts.size.height } : {}),
+      ...stored.meta,
+    },
+  }).select().single();
+  if (assetIns.error) {
+    return { assetId: "", storagePath: "", error: { code: "db_failed", message: assetIns.error.message } };
+  }
+  return { assetId, storagePath };
+}
+
 
 // ---- Enhancer (upscale) ----------------------------------------------------
 
@@ -1276,23 +1296,24 @@ async function openrouterImage(
   return out;
 }
 
-// Async video job: submit, poll, return the finished clip URL.
-async function openrouterVideo(
+// Async video job — submit only. A video render routinely outlives a single
+// serverless request, so the caller stores the polling URL on the run and the
+// /inference/status route resumes it (same shape as the image fan-out).
+type VideoSubmitOpts = {
+  model: string;
+  aspectRatio?: string;
+  resolution?: string;
+  duration?: number;
+  firstFrameUrl?: string;
+  lastFrameUrl?: string;
+  referenceUrls?: string[];
+  generateAudio?: boolean;
+};
+
+async function submitOpenrouterVideo(
   prompt: string,
-  opts: {
-    model: string;
-    aspectRatio?: string;
-    resolution?: string;
-    duration?: number;
-    firstFrameUrl?: string;
-    lastFrameUrl?: string;
-    referenceUrls?: string[];
-    generateAudio?: boolean;
-    onRequest?: (record: unknown) => void;
-    onMeta?: (meta: { width?: number; height?: number }) => void;
-  },
-  maxMs = 600_000,
-): Promise<string> {
+  opts: VideoSubmitOpts,
+): Promise<{ pollUrl: string; request: unknown }> {
   const payload: Record<string, unknown> = { model: opts.model, prompt };
   if (Number.isFinite(opts.duration) && Number(opts.duration) > 0) payload.duration = Math.round(Number(opts.duration));
   if (opts.resolution) payload.resolution = opts.resolution;
@@ -1311,53 +1332,54 @@ async function openrouterVideo(
   }
   if (opts.generateAudio === false) payload.generate_audio = false;
 
-  opts.onRequest?.(providerRequestRecord("POST https://openrouter.ai/api/v1/videos", payload));
+  const request = providerRequestRecord("POST https://openrouter.ai/api/v1/videos", payload);
   const job = await openrouterPost("/videos", payload);
-
   const jobId: string | undefined = job?.id;
   const pollUrl: string = job?.polling_url || (jobId ? `${OPENROUTER_BASE}/videos/${jobId}` : "");
   if (!pollUrl) {
     throw new ProviderRunError(`OpenRouter did not return a video job id. ${JSON.stringify(job).slice(0, 300)}`, "provider_error", true);
   }
-
-  const key = openrouterKey();
-  const started = Date.now();
-  let delay = 4_000;
-  while (Date.now() - started < maxMs) {
-    await new Promise((r) => setTimeout(r, delay));
-    delay = Math.min(delay + 2_000, 10_000);
-    let res: Response;
-    try {
-      res = await fetch(pollUrl, { headers: openrouterHeaders(key) });
-    } catch {
-      continue; // transient poll failure — keep waiting
-    }
-    if (!res.ok) {
-      if (res.status >= 500 || res.status === 429) continue;
-      throw mapOpenrouterHttpError(res.status, await res.text());
-    }
-    const status: any = await res.json();
-    const state = String(status?.status || "").toLowerCase();
-    if (state === "completed" || state === "succeeded") {
-      // Signed URLs are publicly fetchable; `unsigned_urls` are OpenRouter-hosted
-      // and need the API key on the download request (see downloadProviderMedia).
-      const url: string | undefined = status?.signed_urls?.[0] || status?.urls?.[0]
-        || status?.output?.[0] || status?.unsigned_urls?.[0];
-      if (!url) throw new ProviderRunError("The video job completed without a downloadable clip.", "empty_output", true);
-
-      const w = Number(status?.width ?? status?.metadata?.width ?? status?.video?.width);
-      const h = Number(status?.height ?? status?.metadata?.height ?? status?.video?.height);
-      if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) opts.onMeta?.({ width: w, height: h });
-      return url;
-    }
-
-    if (state === "failed" || state === "canceled" || state === "cancelled") {
-      const msg = status?.error?.message || status?.error || "The video model failed to render this clip.";
-      throw new ProviderRunError(String(msg).slice(0, 400), "provider_error", true);
-    }
-  }
-  throw new ProviderRunError("The video job is still rendering after 10 minutes. Try a shorter clip or a lower resolution.", "timeout", true);
+  return { pollUrl, request };
 }
+
+// One read of a submitted video job. "pending" means keep polling later.
+async function pollOpenrouterVideoOnce(pollUrl: string): Promise<
+  | { state: "pending" }
+  | { state: "completed"; url: string; width?: number; height?: number }
+  | { state: "failed"; message: string }
+> {
+  const key = openrouterKey();
+  let res: Response;
+  try {
+    res = await fetch(pollUrl, { headers: openrouterHeaders(key) });
+  } catch {
+    return { state: "pending" }; // transient poll failure — try again next tick
+  }
+  if (!res.ok) {
+    if (res.status >= 500 || res.status === 429) return { state: "pending" };
+    const mapped = mapOpenrouterHttpError(res.status, await res.text());
+    return { state: "failed", message: mapped instanceof Error ? mapped.message : String(mapped) };
+  }
+  const status: any = await res.json();
+  const state = String(status?.status || "").toLowerCase();
+  if (state === "completed" || state === "succeeded") {
+    // Signed URLs are publicly fetchable; `unsigned_urls` are OpenRouter-hosted
+    // and need the API key on the download request (see downloadProviderMedia).
+    const url: string | undefined = status?.signed_urls?.[0] || status?.urls?.[0]
+      || status?.output?.[0] || status?.unsigned_urls?.[0];
+    if (!url) return { state: "failed", message: "The video job completed without a downloadable clip." };
+    const w = Number(status?.width ?? status?.metadata?.width ?? status?.video?.width);
+    const h = Number(status?.height ?? status?.metadata?.height ?? status?.video?.height);
+    const size = Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0 ? { width: w, height: h } : {};
+    return { state: "completed", url, ...size };
+  }
+  if (state === "failed" || state === "canceled" || state === "cancelled") {
+    const msg = status?.error?.message || status?.error || "The video model failed to render this clip.";
+    return { state: "failed", message: String(msg).slice(0, 400) };
+  }
+  return { state: "pending" };
+}
+
 
 
 
@@ -1850,8 +1872,51 @@ async function handleTurnStatus(body: any, userId: string) {
     return await finishWithRows({ ...snapshot, pending_count: requested - done }, "running");
   }
 
+  // ---- Video runs: resume the provider job from its stored polling URL ------
+  if (snapshot.status === "running" && snapshot.kind === "video" && snapshot.video_poll_url) {
+    const startedAt = new Date(snapshot.video_started_at || row.created_at).getTime();
+    const ageMs = Date.now() - startedAt;
+    const failVideo = async (code: string, message: string) => {
+      const failed = { ...snapshot, status: "failed", error: message, error_code: code, error_retryable: true };
+      await sb.from("messages").update({ settings_snapshot_json: failed }).eq("id", turnId);
+      const result = await finishWithRows(failed, "failed");
+      return { ...result, error: { code, message, retryable: true } };
+    };
+
+    const poll = await pollOpenrouterVideoOnce(String(snapshot.video_poll_url));
+    if (poll.state === "failed") return await failVideo("provider_error", poll.message);
+
+    if (poll.state === "completed") {
+      const stored = await storeVideoAsset({
+        userId,
+        sessionId: row.session_id,
+        turnId,
+        prompt: row.prompt_text || "",
+        modelId: snapshot.model,
+        slug: snapshot.provider_model || snapshot.model,
+        videoUrl: poll.url,
+        settings: snapshot.settings || {},
+        size: { width: poll.width, height: poll.height },
+      });
+      if (stored.error) return await failVideo(stored.error.code, stored.error.message);
+      const complete = { ...snapshot, status: "complete", output_asset_ids: [stored.assetId] };
+      await sb.from("messages").update({ settings_snapshot_json: complete }).eq("id", turnId);
+      return await finishWithRows(complete, "complete");
+    }
+
+    if (Number.isFinite(ageMs) && ageMs > 12 * 60_000) {
+      return await failVideo(
+        "timeout",
+        "The clip is still rendering after 12 minutes. Try a shorter clip or a lower resolution.",
+      );
+    }
+    return await finishWithRows(snapshot, "running");
+  }
+
   if (snapshot.status !== "running" || !predictionIds.length) {
-    if (snapshot.status === "running" && !predictionIds.length) {
+    // Video runs live on their own clock (branch above) — the short
+    // interrupted-worker watchdog would kill a healthy render.
+    if (snapshot.status === "running" && !predictionIds.length && snapshot.kind !== "video") {
       const ageMs = Date.now() - new Date(row.created_at).getTime();
       if (Number.isFinite(ageMs) && ageMs > 3 * 60_000) {
         const failed = {
@@ -1868,6 +1933,7 @@ async function handleTurnStatus(body: any, userId: string) {
     const status = snapshot.status === "failed" ? "failed" : snapshot.status === "running" ? "running" : "complete";
     return await finishWithRows(snapshot, status as any);
   }
+
 
 
   const replicateKey = getReplicateGatewayKey();
