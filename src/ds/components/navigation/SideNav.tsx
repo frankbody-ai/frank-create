@@ -25,6 +25,8 @@ export interface SideNavProps extends Omit<React.HTMLAttributes<HTMLElement>, 'o
   appName?: string;
   /** Makes the plate an app switcher: adds a chevron and fires on click. */
   appAction?: () => void;
+  /** Popover rendered under the app plate — the app switcher menu. */
+  appMenu?: React.ReactNode;
   /** Pinned to the bottom edge of the nav and always visible — Settings lives here. */
   footerItems?: SideNavItem[];
   /** Extra controls below the footer items — sign out and the theme picker. */
