@@ -25,6 +25,8 @@ export interface SideNavProps extends Omit<React.HTMLAttributes<HTMLElement>, 'o
   appName?: string;
   /** Makes the plate an app switcher: adds a chevron and fires on click. */
   appAction?: () => void;
+  /** Popover rendered under the app plate — the app switcher menu. */
+  appMenu?: React.ReactNode;
   /** Pinned to the bottom edge of the nav and always visible — Settings lives here. */
   footerItems?: SideNavItem[];
   /** Extra controls below the footer items — sign out and the theme picker. */
@@ -37,7 +39,7 @@ export interface SideNavProps extends Omit<React.HTMLAttributes<HTMLElement>, 'o
  * Fixed 240px navigation on #EBEBEB — one step darker than the canvas so the
  * content area reads as raised. Icon colour never changes on hover or selection.
  */
-export function SideNav({ items = [], selected, onSelect, footerItems = [], footer, extra, app, appName, appAction, className = '', style, ...rest }: SideNavProps) {
+export function SideNav({ items = [], selected, onSelect, footerItems = [], footer, extra, app, appName, appAction, appMenu, className = '', style, ...rest }: SideNavProps) {
 
   const renderItem = (item: SideNavItem) => {
     if (item.group) {
@@ -77,11 +79,14 @@ export function SideNav({ items = [], selected, onSelect, footerItems = [], foot
   };
   return (
     <nav className={['as-nav', className].filter(Boolean).join(' ')} style={style} {...rest}>
-      <div className="as-nav__app" onClick={appAction} role={appAction ? 'button' : undefined} tabIndex={appAction ? 0 : undefined}>
-        {app
-          ? <span className={`as-app as-app--${app}`} role="img" aria-label={appName || app} />
-          : (appName ? <span className="as-nav__app-name">{appName}</span> : null)}
-        {appAction && <Icon source="chevron-up-down" size={16} tone="secondary" />}
+      <div className="as-nav__app-wrap">
+        <div className="as-nav__app" onClick={appAction} role={appAction ? 'button' : undefined} tabIndex={appAction ? 0 : undefined}>
+          {app
+            ? <span className={`as-app as-app--${app}`} role="img" aria-label={appName || app} />
+            : (appName ? <span className="as-nav__app-name">{appName}</span> : null)}
+          {appAction && <Icon source="chevron-up-down" size={16} tone="secondary" />}
+        </div>
+        {appMenu}
       </div>
       <ul className="as-nav__list as-nav__list--main">{items.map(renderItem)}</ul>
       {extra && <div className="as-nav__extra">{extra}</div>}

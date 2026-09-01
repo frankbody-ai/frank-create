@@ -82,3 +82,5 @@
 .as-topbar__company--static{cursor:default}
 .as-topbar__company--static:hover{background:var(--color-bg-surface)}
 .as-nav__footer-extra{flex:0 0 auto;padding:var(--space-200) 0 0}
+
+.as-nav__app-wrap{position:relative;flex:0 0 auto;z-index:70}
