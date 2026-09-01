@@ -2064,7 +2064,7 @@ export default function App() {
         if (model.requires_source_image && !sourceAsset) {
           throw new Error(`${model.short_label ?? model.label} needs a source frame.`);
         }
-        return createVideoStoryboard({
+        const startedVideo = await createVideoStoryboard({
           session_id: activeSession.id,
           model: model.id,
           prompt,
@@ -2073,7 +2073,13 @@ export default function App() {
           last_frame_asset_id: lastFrameAsset?.id,
           reference_asset_ids: sideReferenceAssets.map((asset) => asset.id),
           provider_prompt: composeVideoReferencePrompt(prompt, sideReferenceAssets, sourceAsset, lastFrameAsset)
-        });
+        }, { signal: compareCtrl.signal });
+        if (startedVideo.status === "running") {
+          const final = await pollTurnUntilDone(startedVideo.turn.id, compareCtrl.signal);
+          if (final) return { ...startedVideo, ...final } as typeof startedVideo;
+        }
+        return startedVideo;
+
       }
 
       const request = buildTurnRequest({
