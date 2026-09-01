@@ -192,16 +192,31 @@ export async function deleteTurn(turnId: string) {
 }
 
 
-async function authHeader(): Promise<Record<string, string>> {
+async function authHeader(forceRefresh = false): Promise<Record<string, string>> {
   try {
     const { supabase } = await import("./supabaseClient");
+    if (forceRefresh) {
+      // A 401 means the token we just sent was stale (long-lived tab, laptop
+      // sleep, a refresh that failed while offline). Mint a fresh one.
+      await supabase.auth.refreshSession();
+    }
     const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    const session = data.session;
+    if (!session?.access_token) return {};
+    // Proactively refresh anything about to expire mid-request: long POSTs
+    // (video submits) otherwise arrive with an already-dead token.
+    const expiresAt = (session.expires_at ?? 0) * 1000;
+    if (!forceRefresh && expiresAt && expiresAt - Date.now() < 60_000) {
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      const token = refreshed.session?.access_token;
+      if (token) return { Authorization: `Bearer ${token}` };
+    }
+    return { Authorization: `Bearer ${session.access_token}` };
   } catch {
     return {};
   }
 }
+
 
 
 /**
@@ -254,6 +269,10 @@ async function fetchJson<T>(path: string, init: RequestInit = {}, options: { att
   const backoff = (attempt: number) =>
     Math.min(500 * 2 ** (attempt - 1), 4000) + Math.floor(Math.random() * 250);
   let lastError: Error | null = null;
+  // A 401 means the request never started work upstream, so re-sending it once
+  // with a freshly minted token is safe even for expensive mutations.
+  let retriedAuth = false;
+  let refreshAuth = false;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     let response: Response;
@@ -262,10 +281,11 @@ async function fetchJson<T>(path: string, init: RequestInit = {}, options: { att
         ...init,
         headers: {
           "Content-Type": "application/json",
-          ...(await authHeader()),
+          ...(await authHeader(refreshAuth)),
           ...init.headers
         }
       });
+      refreshAuth = false;
     } catch (err: any) {
       // A user-cancelled run must never be retried.
       if (err?.name === "AbortError" || (init.signal as AbortSignal | undefined)?.aborted) throw err;
@@ -288,13 +308,25 @@ async function fetchJson<T>(path: string, init: RequestInit = {}, options: { att
       response.status === 504 ||
       isTransientBackendError(text);
 
-    lastError = new Error(apiErrorMessage(text, response.status));
+    if (response.status === 401 && !retriedAuth) {
+      retriedAuth = true;
+      refreshAuth = true;
+      attempt -= 1; // the retry with a fresh token doesn't consume a backoff attempt
+      continue;
+    }
+
+    lastError = new Error(
+      response.status === 401
+        ? "Your session expired. Please sign in again."
+        : apiErrorMessage(text, response.status)
+    );
     if (transient && attempt < maxAttempts) {
       await new Promise((r) => setTimeout(r, backoff(attempt)));
       continue;
     }
     throw lastError;
   }
+
 
   throw lastError ?? new Error("Frank Create API failed");
 }
