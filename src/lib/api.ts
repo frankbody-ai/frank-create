@@ -124,8 +124,10 @@ export async function fetchTurnStatus(turnId: string) {
 export async function createVideoStoryboard(payload: VideoRequest, opts: { signal?: AbortSignal } = {}) {
   return fetchJson<{
     turn: StudioTurn;
-    status: "complete" | "failed" | "blocked";
-    assets?: Asset[];
+    // Video renders outlive one request: the backend answers "running" with a
+    // job handle and the client polls /inference/status until it closes out.
+    status: "complete" | "failed" | "blocked" | "running";
+
     providerPayload?: Record<string, unknown>;
     localEngine?: "storyboard" | string;
     error?: { code: string; env_vars?: string[]; message?: string };
