@@ -2565,18 +2565,25 @@ Deno.serve(async (req) => {
 
     if (path.startsWith("/turns") && method === "GET") {
       const sid = url.searchParams.get("session_id");
-      const q = supabase().from("messages").select("*").order("seq", { ascending: true });
-      const { data } = sid ? await q.eq("session_id", sid) : await q.eq("user_id", userId);
+      // Service role bypasses RLS, so ownership is enforced here — always,
+      // session filter or not. A session UUID is not an access token.
+      let q = supabase().from("messages").select("*").eq("user_id", userId)
+        .order("seq", { ascending: true });
+      if (sid) q = q.eq("session_id", sid);
+      const { data } = await q;
       return json({ turns: (data || []).map(rowToTurn) });
     }
 
     if (path.startsWith("/assets") && method === "GET") {
       const sid = url.searchParams.get("session_id");
-      const q = supabase().from("assets").select("*").order("created_at", { ascending: true });
-      const { data } = sid ? await q.eq("session_id", sid) : await q.eq("user_id", userId);
+      let q = supabase().from("assets").select("*").eq("user_id", userId)
+        .order("created_at", { ascending: true });
+      if (sid) q = q.eq("session_id", sid);
+      const { data } = await q;
       const items = await Promise.all((data || []).map(async (r: any) => rowToAsset(r, await signed(r.storage_path))));
       return json({ assets: items });
     }
+
 
     if (path === "/references" && method === "POST") {
       const body = await readJson(req).catch(() => ({}));
