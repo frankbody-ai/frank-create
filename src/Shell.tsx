@@ -79,13 +79,12 @@ export function Shell({
           searchPlaceholder={searchPlaceholder}
           searchValue={search ?? ""}
           onSearchChange={onSearchChange}
+          leading={<OsAppSwitcherPlate client={os} appKey={APP_KEY} />}
           actions={
             <>
               {actions}
-              {/* The OS chrome: identical app and company switchers in every
-                  AutoSolutions app. The company plate replaces the old static
-                  company mark — same position, now the real switcher. */}
-              <OsAppSwitcherPlate client={os} appKey={APP_KEY} />
+              {/* The company switcher stays in the right cluster; the app
+                  switcher lives beside the lockup on the left. */}
               <OsCompanySwitcher client={os} appKey={APP_KEY} />
             </>
           }
