@@ -80,11 +80,16 @@ class AuthError extends Error {
 
 const USER_CACHE = new Map<string, { id: string; email: string; exp: number }>();
 
+/** The caller's bearer token, for checks that must run as them, not as service role. */
+function bearerToken(req: Request): string {
+  const m = (req.headers.get("authorization") || "").match(/^Bearer\s+(.+)$/i);
+  return m ? m[1] : "";
+}
+
 async function requireUser(req: Request): Promise<string> {
-  const h = req.headers.get("authorization") || "";
-  const m = h.match(/^Bearer\s+(.+)$/i);
-  const token = m ? m[1] : null;
+  const token = bearerToken(req) || null;
   if (!token) throw new AuthError(401, "Missing bearer token");
+
   const cached = USER_CACHE.get(token);
   const now = Date.now();
   if (cached && cached.exp > now) return cached.id;
