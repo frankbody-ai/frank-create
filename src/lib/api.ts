@@ -127,6 +127,7 @@ export async function createVideoStoryboard(payload: VideoRequest, opts: { signa
     // Video renders outlive one request: the backend answers "running" with a
     // job handle and the client polls /inference/status until it closes out.
     status: "complete" | "failed" | "blocked" | "running";
+    assets?: Asset[];
 
     providerPayload?: Record<string, unknown>;
     localEngine?: "storyboard" | string;
