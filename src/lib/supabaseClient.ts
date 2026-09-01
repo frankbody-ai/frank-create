@@ -3,9 +3,21 @@ import { createClient } from "@supabase/supabase-js";
 import { CORE_SUPABASE_PUBLISHABLE_KEY, CORE_SUPABASE_URL } from "./coreConfig";
 import { adoptSharedSession, publishSessionChanges } from "./sharedSession";
 
+// supabase-js keys its stored session by the project ref in its URL, so the
+// ref is derived from the same resolved URL rather than pinned separately.
+function coreProjectRef(url: string): string {
+  try {
+    return new URL(url).hostname.split(".")[0] ?? "";
+  } catch {
+    return "";
+  }
+}
+
+const CORE_PROJECT_REF = coreProjectRef(CORE_SUPABASE_URL);
+
 // Someone who signed in at the hub arrives here already authenticated. This
 // has to run before the client below reads its storage, hence module scope.
-adoptSharedSession();
+adoptSharedSession(CORE_PROJECT_REF);
 
 /**
  * Create Studio talks to the AutoSolutions OS core.
@@ -32,7 +44,7 @@ export const supabase = createClient(CORE_SUPABASE_URL, CORE_SUPABASE_PUBLISHABL
 export const os = supabase.schema("public");
 
 // Signing in or out here carries to every other AutoSolutions app.
-publishSessionChanges(supabase);
+publishSessionChanges(supabase, CORE_PROJECT_REF);
 
 /**
  * Fully clear the local Supabase session: signs out via the SDK, then
