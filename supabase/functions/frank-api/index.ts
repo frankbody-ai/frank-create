@@ -1276,23 +1276,24 @@ async function openrouterImage(
   return out;
 }
 
-// Async video job: submit, poll, return the finished clip URL.
-async function openrouterVideo(
+// Async video job — submit only. A video render routinely outlives a single
+// serverless request, so the caller stores the polling URL on the run and the
+// /inference/status route resumes it (same shape as the image fan-out).
+type VideoSubmitOpts = {
+  model: string;
+  aspectRatio?: string;
+  resolution?: string;
+  duration?: number;
+  firstFrameUrl?: string;
+  lastFrameUrl?: string;
+  referenceUrls?: string[];
+  generateAudio?: boolean;
+};
+
+async function submitOpenrouterVideo(
   prompt: string,
-  opts: {
-    model: string;
-    aspectRatio?: string;
-    resolution?: string;
-    duration?: number;
-    firstFrameUrl?: string;
-    lastFrameUrl?: string;
-    referenceUrls?: string[];
-    generateAudio?: boolean;
-    onRequest?: (record: unknown) => void;
-    onMeta?: (meta: { width?: number; height?: number }) => void;
-  },
-  maxMs = 600_000,
-): Promise<string> {
+  opts: VideoSubmitOpts,
+): Promise<{ pollUrl: string; request: unknown }> {
   const payload: Record<string, unknown> = { model: opts.model, prompt };
   if (Number.isFinite(opts.duration) && Number(opts.duration) > 0) payload.duration = Math.round(Number(opts.duration));
   if (opts.resolution) payload.resolution = opts.resolution;
@@ -1311,53 +1312,54 @@ async function openrouterVideo(
   }
   if (opts.generateAudio === false) payload.generate_audio = false;
 
-  opts.onRequest?.(providerRequestRecord("POST https://openrouter.ai/api/v1/videos", payload));
+  const request = providerRequestRecord("POST https://openrouter.ai/api/v1/videos", payload);
   const job = await openrouterPost("/videos", payload);
-
   const jobId: string | undefined = job?.id;
   const pollUrl: string = job?.polling_url || (jobId ? `${OPENROUTER_BASE}/videos/${jobId}` : "");
   if (!pollUrl) {
     throw new ProviderRunError(`OpenRouter did not return a video job id. ${JSON.stringify(job).slice(0, 300)}`, "provider_error", true);
   }
-
-  const key = openrouterKey();
-  const started = Date.now();
-  let delay = 4_000;
-  while (Date.now() - started < maxMs) {
-    await new Promise((r) => setTimeout(r, delay));
-    delay = Math.min(delay + 2_000, 10_000);
-    let res: Response;
-    try {
-      res = await fetch(pollUrl, { headers: openrouterHeaders(key) });
-    } catch {
-      continue; // transient poll failure — keep waiting
-    }
-    if (!res.ok) {
-      if (res.status >= 500 || res.status === 429) continue;
-      throw mapOpenrouterHttpError(res.status, await res.text());
-    }
-    const status: any = await res.json();
-    const state = String(status?.status || "").toLowerCase();
-    if (state === "completed" || state === "succeeded") {
-      // Signed URLs are publicly fetchable; `unsigned_urls` are OpenRouter-hosted
-      // and need the API key on the download request (see downloadProviderMedia).
-      const url: string | undefined = status?.signed_urls?.[0] || status?.urls?.[0]
-        || status?.output?.[0] || status?.unsigned_urls?.[0];
-      if (!url) throw new ProviderRunError("The video job completed without a downloadable clip.", "empty_output", true);
-
-      const w = Number(status?.width ?? status?.metadata?.width ?? status?.video?.width);
-      const h = Number(status?.height ?? status?.metadata?.height ?? status?.video?.height);
-      if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) opts.onMeta?.({ width: w, height: h });
-      return url;
-    }
-
-    if (state === "failed" || state === "canceled" || state === "cancelled") {
-      const msg = status?.error?.message || status?.error || "The video model failed to render this clip.";
-      throw new ProviderRunError(String(msg).slice(0, 400), "provider_error", true);
-    }
-  }
-  throw new ProviderRunError("The video job is still rendering after 10 minutes. Try a shorter clip or a lower resolution.", "timeout", true);
+  return { pollUrl, request };
 }
+
+// One read of a submitted video job. "pending" means keep polling later.
+async function pollOpenrouterVideoOnce(pollUrl: string): Promise<
+  | { state: "pending" }
+  | { state: "completed"; url: string; width?: number; height?: number }
+  | { state: "failed"; message: string }
+> {
+  const key = openrouterKey();
+  let res: Response;
+  try {
+    res = await fetch(pollUrl, { headers: openrouterHeaders(key) });
+  } catch {
+    return { state: "pending" }; // transient poll failure — try again next tick
+  }
+  if (!res.ok) {
+    if (res.status >= 500 || res.status === 429) return { state: "pending" };
+    const mapped = mapOpenrouterHttpError(res.status, await res.text());
+    return { state: "failed", message: mapped instanceof Error ? mapped.message : String(mapped) };
+  }
+  const status: any = await res.json();
+  const state = String(status?.status || "").toLowerCase();
+  if (state === "completed" || state === "succeeded") {
+    // Signed URLs are publicly fetchable; `unsigned_urls` are OpenRouter-hosted
+    // and need the API key on the download request (see downloadProviderMedia).
+    const url: string | undefined = status?.signed_urls?.[0] || status?.urls?.[0]
+      || status?.output?.[0] || status?.unsigned_urls?.[0];
+    if (!url) return { state: "failed", message: "The video job completed without a downloadable clip." };
+    const w = Number(status?.width ?? status?.metadata?.width ?? status?.video?.width);
+    const h = Number(status?.height ?? status?.metadata?.height ?? status?.video?.height);
+    const size = Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0 ? { width: w, height: h } : {};
+    return { state: "completed", url, ...size };
+  }
+  if (state === "failed" || state === "canceled" || state === "cancelled") {
+    const msg = status?.error?.message || status?.error || "The video model failed to render this clip.";
+    return { state: "failed", message: String(msg).slice(0, 400) };
+  }
+  return { state: "pending" };
+}
+
 
 
 
