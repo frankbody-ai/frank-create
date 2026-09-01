@@ -2721,15 +2721,25 @@ Deno.serve(async (req) => {
     }
 
     if (path === "/prompt-agent/config" && method === "PUT") {
-      const isAdmin = await supabase().rpc("has_role", { _user_id: userId, _role: "admin" });
+      // has_role() and current_tenant() both resolve from auth.uid()/auth.jwt(),
+      // which are NULL under service role — so both must run as the caller.
+      const token = bearerToken(req);
+      const caller = asCaller(token);
+      const isAdmin = await caller.rpc("has_role", { _user_id: userId, _role: "admin" });
       if (isAdmin.error || isAdmin.data !== true) {
         return json({ error: { code: "forbidden", message: "Admin role required" } }, 403);
+      }
+      const tenantRes = await caller.rpc("current_tenant");
+      const tenantId = typeof tenantRes.data === "string" ? tenantRes.data : "";
+      if (tenantRes.error || !tenantId) {
+        return json({ error: { code: "forbidden", message: "Could not resolve your workspace" } }, 403);
       }
       const body = await readJson(req) as {
         persona?: string; craftMethod?: string; conversationProtocol?: string; blueprint?: string; rules?: string;
         skills?: { key?: string; label?: string; hint?: string; instruction?: string; sort_order?: number; is_active?: boolean }[];
       };
       const up = await supabase().from("prompt_agent_config").upsert({
+        tenant_id: tenantId,
         id: 1,
         persona: String(body.persona ?? "").trim(),
         craft_method: String(body.craftMethod ?? "").trim(),
@@ -2738,7 +2748,7 @@ Deno.serve(async (req) => {
         rules: String(body.rules ?? "").trim(),
         updated_by: userId,
         updated_at: new Date().toISOString(),
-      }, { onConflict: "id" });
+      }, { onConflict: "tenant_id,id" });
 
       if (up.error) return json({ error: { code: "save_failed", message: up.error.message } }, 400);
 
@@ -2746,6 +2756,7 @@ Deno.serve(async (req) => {
         const rows = body.skills
           .filter((s) => s && String(s.key ?? "").trim())
           .map((s, i) => ({
+            tenant_id: tenantId,
             key: String(s.key).trim(),
             label: String(s.label ?? "").trim() || String(s.key).trim(),
             hint: String(s.hint ?? "").trim(),
@@ -2755,13 +2766,17 @@ Deno.serve(async (req) => {
           }));
         const keys = rows.map((r) => r.key);
         if (rows.length) {
-          const ups = await supabase().from("prompt_agent_skills").upsert(rows, { onConflict: "key" });
+          const ups = await supabase().from("prompt_agent_skills").upsert(rows, { onConflict: "tenant_id,key" });
           if (ups.error) return json({ error: { code: "save_failed", message: ups.error.message } }, 400);
         }
-        const existing = await supabase().from("prompt_agent_skills").select("key");
+        // Scoped to this workspace: unscoped cleanup would wipe other companies' skills.
+        const existing = await supabase().from("prompt_agent_skills").select("key").eq("tenant_id", tenantId);
         const stale = (existing.data || []).map((r: any) => String(r.key)).filter((k: string) => !keys.includes(k));
-        if (stale.length) await supabase().from("prompt_agent_skills").delete().in("key", stale);
+        if (stale.length) {
+          await supabase().from("prompt_agent_skills").delete().eq("tenant_id", tenantId).in("key", stale);
+        }
       }
+
 
       const cfg = await loadPromptAgentConfig(supabase());
       return json({ config: cfg });
