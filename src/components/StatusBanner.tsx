@@ -19,7 +19,9 @@ export function StatusBanner() {
         await fetchHealth();
         if (cancelled) return;
         failuresRef.current = 0;
-        setStatus(navigator.onLine ? "healthy" : "offline");
+        // A successful request outranks navigator.onLine, which reports false
+        // negatives behind VPNs and after network interface changes.
+        setStatus("healthy");
       } catch {
         if (cancelled) return;
         failuresRef.current += 1;
@@ -34,7 +36,12 @@ export function StatusBanner() {
       setStatus("reconnecting");
       ping();
     };
-    const onOffline = () => setStatus("offline");
+    // The flag alone never forces offline: confirm with a real request first.
+    const onOffline = () => {
+      setStatus((s) => (s === "healthy" ? "reconnecting" : s));
+      ping();
+    };
+
     const onWs = () => {
       setStatus((s) => (s === "healthy" ? "reconnecting" : s));
       // try to recover sooner
