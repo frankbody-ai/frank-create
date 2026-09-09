@@ -1621,6 +1621,9 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
           aspectRatio: reqSettings.aspect_ratio,
           size: reqSettings.image_size || reqSettings.size,
           quality: reqSettings.quality,
+          background: reqSettings.background,
+          moderation: reqSettings.moderation,
+          outputCompression: reqSettings.output_compression,
           n: nativeN ? count : 1,
           onRequest: (record) => { providerRequest = record; },
         })
