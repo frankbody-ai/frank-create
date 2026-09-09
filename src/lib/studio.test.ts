@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { fallbackConfig } from "./presets";
-import { buildTurnRequest, inferenceStatusCopy, normalizeStudioSettingsForModel, selectModelOptions, validateStudioSettings, hasStudioFieldErrors } from "./studio";
+import { buildTurnRequest, estimateImageCost, inferenceStatusCopy, normalizeStudioSettingsForModel, selectModelOptions, validateStudioSettings, hasStudioFieldErrors } from "./studio";
 import type { StudioModel } from "./types";
 
 const models: StudioModel[] = [
@@ -156,6 +156,48 @@ describe("studio helpers", () => {
     const seedream = fallbackConfig.models.find((m) => m.id === "seedream-5-pro")!;
     const errors = validateStudioSettings(seedream, { aspect_ratio: "16:9", image_size: "2K", count: 2 });
     expect(hasStudioFieldErrors(errors)).toBe(false);
+  });
+
+  it("exposes the GPT Image 2.5 extras only on Sunburst and Flare", () => {
+    const withExtras = fallbackConfig.models.filter((m) => (m.allowed_qualities ?? []).length).map((m) => m.id);
+    expect(withExtras).toEqual(["openai-gpt-image-2-5-sunburst", "openai-gpt-image-2-5-flare"]);
+    const sunburst = fallbackConfig.models.find((m) => m.id === "openai-gpt-image-2-5-sunburst")!;
+    expect(sunburst.allowed_backgrounds).toEqual(["auto", "opaque"]);
+    expect(sunburst.allowed_moderation).toEqual(["auto", "low"]);
+    expect(sunburst.supports_output_compression).toBe(true);
+  });
+
+  it("defaults the extras on GPT Image 2.5 and drops them on other models", () => {
+    const sunburst = fallbackConfig.models.find((m) => m.id === "openai-gpt-image-2-5-sunburst")!;
+    const withExtras = normalizeStudioSettingsForModel(
+      { aspect_ratio: "1:1", image_size: "2K", count: 2 },
+      sunburst
+    );
+    expect(withExtras).toMatchObject({ quality: "auto", background: "auto", moderation: "auto", output_compression: 100 });
+
+    const moved = normalizeStudioSettingsForModel(withExtras, models[0]);
+    expect(moved.quality).toBeUndefined();
+    expect(moved.background).toBeUndefined();
+    expect(moved.moderation).toBeUndefined();
+    expect(moved.output_compression).toBeUndefined();
+  });
+
+  it("flags extras that the selected model cannot take", () => {
+    const nb2 = fallbackConfig.models.find((m) => m.id === "google-nb-2")!;
+    const errors = validateStudioSettings(nb2, {
+      aspect_ratio: "1:1", image_size: "2K", count: 1, quality: "max", output_compression: 50
+    });
+    expect(errors.quality).toBeTruthy();
+    expect(errors.compression).toBeTruthy();
+    expect(hasStudioFieldErrors(errors)).toBe(true);
+  });
+
+  it("scales the price estimate with the chosen quality", () => {
+    const sunburst = fallbackConfig.models.find((m) => m.id === "openai-gpt-image-2-5-sunburst")!;
+    const low = estimateImageCost(sunburst, { aspect_ratio: "1:1", image_size: "2K", count: 1, quality: "low" })!;
+    const max = estimateImageCost(sunburst, { aspect_ratio: "1:1", image_size: "2K", count: 1, quality: "max" })!;
+    expect(low).not.toEqual(max);
+    expect(max).toContain("max quality");
   });
 
   it("flags too many reference images", () => {
