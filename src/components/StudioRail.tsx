@@ -95,6 +95,9 @@ export function StudioRail(props: StudioRailProps) {
   const sizes = model?.allowed_image_sizes?.length
     ? filterSizesForAspect(model.allowed_image_sizes, settings.aspect_ratio)
     : [];
+  const qualities = model?.allowed_qualities ?? [];
+  const backgrounds = model?.allowed_backgrounds ?? [];
+  const moderation = model?.allowed_moderation ?? [];
   const countCap = isVideo || isCompare ? 1 : maxCountForModel(model);
   const counts = Array.from({ length: Math.min(countCap, 10) }, (_, index) => index + 1);
   const costEstimate = isVideo ? estimateVideoCost(model, settings) : estimateImageCost(model, settings);
