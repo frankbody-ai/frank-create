@@ -103,6 +103,35 @@ export function filterSizesForAspect(sizes: string[], aspect: string): string[] 
   return filtered.length ? filtered : sizes;
 }
 
+/**
+ * Provider-specific extras (GPT Image 2.5 quality / background / compression /
+ * moderation). Values the selected model doesn't advertise are dropped so a
+ * model switch can never send an unsupported field.
+ */
+export function normalizeAdvancedImageSettings(settings: StudioSettings, model: StudioModel): StudioSettings {
+  const next: StudioSettings = { ...settings };
+
+  const qualities = model.allowed_qualities ?? [];
+  if (!qualities.length) delete next.quality;
+  else if (!next.quality || !qualities.includes(next.quality)) next.quality = qualities[0];
+
+  const backgrounds = model.allowed_backgrounds ?? [];
+  if (!backgrounds.length) delete next.background;
+  else if (!next.background || !backgrounds.includes(next.background)) next.background = backgrounds[0];
+
+  const moderation = model.allowed_moderation ?? [];
+  if (!moderation.length) delete next.moderation;
+  else if (!next.moderation || !moderation.includes(next.moderation)) next.moderation = moderation[0];
+
+  if (!model.supports_output_compression) delete next.output_compression;
+  else {
+    const raw = Number(next.output_compression);
+    next.output_compression = Number.isFinite(raw) ? Math.min(100, Math.max(0, Math.round(raw))) : 100;
+  }
+
+  return next;
+}
+
 export function normalizeStudioSettingsForModel(settings: StudioSettings, model: StudioModel): StudioSettings {
   const count = Number.isFinite(settings.count) ? Math.trunc(settings.count) : 1;
   const cap = maxCountForModel(model);
@@ -110,23 +139,23 @@ export function normalizeStudioSettingsForModel(settings: StudioSettings, model:
     ? settings.aspect_ratio
     : model.allowed_aspect_ratios[0] ?? "1:1";
   if (!model.allowed_image_sizes.length) {
-    return {
+    return normalizeAdvancedImageSettings({
       ...settings,
       aspect_ratio: aspect,
       image_size: "",
       count: Math.min(Math.max(count, 1), cap)
-    };
+    }, model);
   }
   const sizesForAspect = filterSizesForAspect(model.allowed_image_sizes, aspect);
 
-  return {
+  return normalizeAdvancedImageSettings({
     ...settings,
     aspect_ratio: aspect,
     image_size: sizesForAspect.includes(settings.image_size)
       ? settings.image_size
       : sizesForAspect[sizesForAspect.length - 1] ?? "1K",
     count: Math.min(Math.max(count, 1), cap)
-  };
+  }, model);
 }
 
 export function isVideoModel(model: StudioModel | undefined | null): boolean {
@@ -305,6 +334,10 @@ export interface StudioFieldErrors {
   count?: string;
   references?: string;
   compare?: string;
+  quality?: string;
+  background?: string;
+  moderation?: string;
+  compression?: string;
 }
 
 
@@ -338,6 +371,26 @@ export function validateStudioSettings(
     errors.count = `Pick 1–${cap} images.`;
   }
 
+  if (settings.quality && !(model.allowed_qualities ?? []).includes(settings.quality)) {
+    errors.quality = model.allowed_qualities?.length
+      ? `Unsupported for ${model.short_label ?? model.label}. Allowed: ${model.allowed_qualities.join(", ")}.`
+      : `${model.short_label ?? model.label} has no quality control.`;
+  }
+  if (settings.background && !(model.allowed_backgrounds ?? []).includes(settings.background)) {
+    errors.background = `${model.short_label ?? model.label} has no background control.`;
+  }
+  if (settings.moderation && !(model.allowed_moderation ?? []).includes(settings.moderation)) {
+    errors.moderation = `${model.short_label ?? model.label} has no moderation control.`;
+  }
+  if (settings.output_compression != null) {
+    const compression = Number(settings.output_compression);
+    if (!model.supports_output_compression) {
+      errors.compression = `${model.short_label ?? model.label} has no compression control.`;
+    } else if (!Number.isFinite(compression) || compression < 0 || compression > 100) {
+      errors.compression = "Pick a compression between 0 and 100.";
+    }
+  }
+
   const refCount = opts.referenceCount ?? 0;
   if (refCount > (model.reference_image_limit ?? 0)) {
     errors.references = `${model.short_label ?? model.label} accepts at most ${model.reference_image_limit} reference image${model.reference_image_limit === 1 ? "" : "s"}.`;
@@ -347,7 +400,10 @@ export function validateStudioSettings(
 }
 
 export function hasStudioFieldErrors(errors: StudioFieldErrors): boolean {
-  return Boolean(errors.aspect || errors.size || errors.count || errors.references);
+  return Boolean(
+    errors.aspect || errors.size || errors.count || errors.references
+    || errors.quality || errors.background || errors.moderation || errors.compression
+  );
 }
 
 // Preflight compatibility check — returns actionable messages BEFORE the
@@ -415,11 +471,11 @@ export function parseJsonList(value?: string) {
 }
 
 export function defaultStudioSettings(model: StudioModel): StudioSettings {
-  return {
+  return normalizeAdvancedImageSettings({
     aspect_ratio: model.allowed_aspect_ratios[0] ?? "1:1",
     image_size: model.allowed_image_sizes[model.allowed_image_sizes.length - 1] ?? "",
     count: 4
-  };
+  }, model);
 }
 
 export function makeLocalId(prefix: string) {
@@ -810,14 +866,39 @@ export function imageUnitPrice(
 }
 
 /** Live estimate for the current size / count selection, e.g. "~$0.24 · 4 × 2K". */
+/**
+ * Rough per-image multiplier for the GPT Image 2.5 quality tiers. The provider
+ * bills more tokens at the higher tiers, so the estimate scales with it.
+ */
+const QUALITY_MULTIPLIERS: Record<string, number> = {
+  auto: 1,
+  low: 0.5,
+  medium: 1,
+  high: 1.6,
+  xhigh: 2.4,
+  max: 3
+};
+
+export function qualityCostMultiplier(
+  model: StudioModel | undefined | null,
+  quality?: string
+): number {
+  if (!model?.allowed_qualities?.length || !quality) return 1;
+  return QUALITY_MULTIPLIERS[quality] ?? 1;
+}
+
 export function estimateImageCost(
   model: StudioModel | undefined | null,
   settings: StudioSettings
 ): string | null {
-  const unit = imageUnitPrice(model, settings.image_size);
-  if (unit == null) return null;
+  const base = imageUnitPrice(model, settings.image_size);
+  if (base == null) return null;
+  const unit = base * qualityCostMultiplier(model, settings.quality);
   const count = Math.max(1, Number(settings.count) || 1);
   const size = settings.image_size ? ` @ ${settings.image_size}` : "";
+  const qualityLabel = model?.allowed_qualities?.length && settings.quality && settings.quality !== "auto"
+    ? ` · ${settings.quality} quality`
+    : "";
   const total = unit * count;
-  return `~${usd(total)} · ${count} image${count > 1 ? "s" : ""}${size} · ${usd(unit)}/image`;
+  return `~${usd(total)} · ${count} image${count > 1 ? "s" : ""}${size}${qualityLabel} · ${usd(unit)}/image`;
 }

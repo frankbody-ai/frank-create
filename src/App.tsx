@@ -2516,6 +2516,7 @@ export default function App() {
                   <span className="brief-card-eyebrow">Brief</span>
                   <span className="brief-card-meta">
                     {settings.aspect_ratio} · {settings.image_size} · {settings.count} pick{settings.count === 1 ? "" : "s"}
+                    {settings.quality && settings.quality !== "auto" ? ` · ${settings.quality}` : ""}
                   </span>
                 </div>
 

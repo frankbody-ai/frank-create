@@ -15,6 +15,16 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-09-09-gpt-image-2-5-controls",
+    date: "9 September 2026",
+    title: "More control on the new OpenAI models",
+    items: [
+      "Pick a render quality from Auto up to Max on GPT Image 2.5 Sunburst and Flare.",
+      "Choose an opaque background, relax moderation, and set file compression.",
+      "The price estimate now moves with the quality you pick.",
+    ],
+  },
+  {
     id: "2026-09-09-gpt-image-2-5",
     date: "9 September 2026",
     title: "Two new OpenAI image models",

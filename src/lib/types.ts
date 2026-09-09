@@ -89,6 +89,15 @@ export interface StudioModel {
   scale_factor_min?: number;
   scale_factor_max?: number;
 
+  /** Image-only: provider quality enum, e.g. ["auto","low","medium","high","xhigh","max"]. */
+  allowed_qualities?: string[];
+  /** Image-only: provider background enum, e.g. ["auto","opaque"]. */
+  allowed_backgrounds?: string[];
+  /** Image-only: provider accepts an output_compression value 0–100. */
+  supports_output_compression?: boolean;
+  /** Image-only: provider moderation enum, e.g. ["auto","low"]. */
+  allowed_moderation?: string[];
+
   reference_image_limit: number;
   max_count?: number;
   cost_label: string;
@@ -275,6 +284,14 @@ export interface StudioSettings {
   count: number;
   /** Gemini "Nano Banana Pro" thinking budget (tokens). 0 = off, 1000 = low, 5000 = high. */
   thinking_budget?: number;
+  /** GPT Image 2.5: provider quality tier ("auto" | "low" | … | "max"). */
+  quality?: string;
+  /** GPT Image 2.5: background handling ("auto" | "opaque"). */
+  background?: string;
+  /** GPT Image 2.5: returned file compression, 0–100. */
+  output_compression?: number;
+  /** GPT Image 2.5: moderation strictness ("auto" | "low"). */
+  moderation?: string;
   /** Video-only: clip length in seconds. */
   duration?: number;
   /** Video-only: provider resolution enum value. */
