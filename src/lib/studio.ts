@@ -444,11 +444,11 @@ export function parseJsonList(value?: string) {
 }
 
 export function defaultStudioSettings(model: StudioModel): StudioSettings {
-  return {
+  return normalizeAdvancedImageSettings({
     aspect_ratio: model.allowed_aspect_ratios[0] ?? "1:1",
     image_size: model.allowed_image_sizes[model.allowed_image_sizes.length - 1] ?? "",
     count: 4
-  };
+  }, model);
 }
 
 export function makeLocalId(prefix: string) {
@@ -839,14 +839,39 @@ export function imageUnitPrice(
 }
 
 /** Live estimate for the current size / count selection, e.g. "~$0.24 · 4 × 2K". */
+/**
+ * Rough per-image multiplier for the GPT Image 2.5 quality tiers. The provider
+ * bills more tokens at the higher tiers, so the estimate scales with it.
+ */
+const QUALITY_MULTIPLIERS: Record<string, number> = {
+  auto: 1,
+  low: 0.5,
+  medium: 1,
+  high: 1.6,
+  xhigh: 2.4,
+  max: 3
+};
+
+export function qualityCostMultiplier(
+  model: StudioModel | undefined | null,
+  quality?: string
+): number {
+  if (!model?.allowed_qualities?.length || !quality) return 1;
+  return QUALITY_MULTIPLIERS[quality] ?? 1;
+}
+
 export function estimateImageCost(
   model: StudioModel | undefined | null,
   settings: StudioSettings
 ): string | null {
-  const unit = imageUnitPrice(model, settings.image_size);
-  if (unit == null) return null;
+  const base = imageUnitPrice(model, settings.image_size);
+  if (base == null) return null;
+  const unit = base * qualityCostMultiplier(model, settings.quality);
   const count = Math.max(1, Number(settings.count) || 1);
   const size = settings.image_size ? ` @ ${settings.image_size}` : "";
+  const qualityLabel = model?.allowed_qualities?.length && settings.quality && settings.quality !== "auto"
+    ? ` · ${settings.quality} quality`
+    : "";
   const total = unit * count;
-  return `~${usd(total)} · ${count} image${count > 1 ? "s" : ""}${size} · ${usd(unit)}/image`;
+  return `~${usd(total)} · ${count} image${count > 1 ? "s" : ""}${size}${qualityLabel} · ${usd(unit)}/image`;
 }
