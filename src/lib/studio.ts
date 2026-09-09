@@ -400,7 +400,10 @@ export function validateStudioSettings(
 }
 
 export function hasStudioFieldErrors(errors: StudioFieldErrors): boolean {
-  return Boolean(errors.aspect || errors.size || errors.count || errors.references);
+  return Boolean(
+    errors.aspect || errors.size || errors.count || errors.references
+    || errors.quality || errors.background || errors.moderation || errors.compression
+  );
 }
 
 // Preflight compatibility check — returns actionable messages BEFORE the
