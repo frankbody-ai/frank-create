@@ -334,6 +334,10 @@ export interface StudioFieldErrors {
   count?: string;
   references?: string;
   compare?: string;
+  quality?: string;
+  background?: string;
+  moderation?: string;
+  compression?: string;
 }
 
 
