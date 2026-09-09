@@ -410,6 +410,8 @@ const OPENROUTER_IMAGE_MAP: Record<string, string> = {
   "google-nb-2": "google/gemini-3.1-flash-image",
   "nano-banana-2": "google/gemini-3.1-flash-image",
   "openai-gpt-image-2": "openai/gpt-image-2",
+  "openai-gpt-image-2-5-sunburst": "openai/gpt-image-2.5-sunburst",
+  "openai-gpt-image-2-5-flare": "openai/gpt-image-2.5-flare",
   "seedream-5-pro": "bytedance-seed/seedream-5-0-pro",
   "seedream-4-5": "bytedance-seed/seedream-4.5",
 
@@ -426,6 +428,8 @@ const OPENROUTER_IMAGE_MAP: Record<string, string> = {
 // single-image calls.
 const OPENROUTER_NATIVE_N = new Set<string>([
   "openai/gpt-image-2",
+  "openai/gpt-image-2.5-sunburst",
+  "openai/gpt-image-2.5-flare",
   "bytedance-seed/seedream-5-0-pro",
   "bytedance-seed/seedream-4.5",
 
@@ -1278,7 +1282,7 @@ async function openrouterImage(
     const res = String(opts.size).toUpperCase().replace("512", "512");
     if (["512", "1K", "2K", "4K"].includes(res)) payload.resolution = res;
   }
-  if (opts.quality && ["auto", "low", "medium", "high"].includes(opts.quality)) payload.quality = opts.quality;
+  if (opts.quality && ["auto", "low", "medium", "high", "xhigh", "max"].includes(opts.quality)) payload.quality = opts.quality;
   if (opts.n && opts.n > 1) payload.n = opts.n;
   if (referenceImageUrls.length) payload.input_references = imageRefParts(referenceImageUrls);
 
@@ -1491,6 +1495,8 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
     "google-nb-pro": 4,
     "google-nb-2": 4,
     "openai-gpt-image-2": 10,
+    "openai-gpt-image-2-5-sunburst": 10,
+    "openai-gpt-image-2-5-flare": 10,
     "seedream-5-pro": 6,
     "seedream-4-5": 6,
 
