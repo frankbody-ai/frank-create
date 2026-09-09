@@ -367,6 +367,26 @@ export function validateStudioSettings(
     errors.count = `Pick 1–${cap} images.`;
   }
 
+  if (settings.quality && !(model.allowed_qualities ?? []).includes(settings.quality)) {
+    errors.quality = model.allowed_qualities?.length
+      ? `Unsupported for ${model.short_label ?? model.label}. Allowed: ${model.allowed_qualities.join(", ")}.`
+      : `${model.short_label ?? model.label} has no quality control.`;
+  }
+  if (settings.background && !(model.allowed_backgrounds ?? []).includes(settings.background)) {
+    errors.background = `${model.short_label ?? model.label} has no background control.`;
+  }
+  if (settings.moderation && !(model.allowed_moderation ?? []).includes(settings.moderation)) {
+    errors.moderation = `${model.short_label ?? model.label} has no moderation control.`;
+  }
+  if (settings.output_compression != null) {
+    const compression = Number(settings.output_compression);
+    if (!model.supports_output_compression) {
+      errors.compression = `${model.short_label ?? model.label} has no compression control.`;
+    } else if (!Number.isFinite(compression) || compression < 0 || compression > 100) {
+      errors.compression = "Pick a compression between 0 and 100.";
+    }
+  }
+
   const refCount = opts.referenceCount ?? 0;
   if (refCount > (model.reference_image_limit ?? 0)) {
     errors.references = `${model.short_label ?? model.label} accepts at most ${model.reference_image_limit} reference image${model.reference_image_limit === 1 ? "" : "s"}.`;
