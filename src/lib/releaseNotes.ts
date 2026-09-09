@@ -15,6 +15,15 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-09-09-gpt-image-2-5",
+    date: "9 September 2026",
+    title: "Two new OpenAI image models",
+    items: [
+      "GPT Image 2.5 Sunburst — the precision pick for detailed work and accurate edits.",
+      "GPT Image 2.5 Flare — the fast, cheaper pick for everyday volume.",
+    ],
+  },
+  {
     id: "2026-08-27-no-more-double-images",
     date: "27 August 2026",
     title: "No more double images",
