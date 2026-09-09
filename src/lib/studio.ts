@@ -220,7 +220,6 @@ const IMAGE_COST_TIERS: Record<string, 1 | 2 | 3> = {
   "seedream-4-5": 1,
   "grok-imagine-image": 1,
   "google-nb-2": 2,
-  "openai-gpt-image-2": 2,
   "openai-gpt-image-2-5-sunburst": 2,
   "openai-gpt-image-2-5-flare": 1,
   "flux-2-pro": 2,
@@ -782,7 +781,6 @@ export function thumbnailUrl(
 const IMAGE_PRICES: Record<string, Record<string, number>> = {
   "google-nb-pro": { "1K": 0.134, "2K": 0.134, "4K": 0.24 },
   "google-nb-2": { "1K": 0.04, "2K": 0.06, "4K": 0.12 },
-  "openai-gpt-image-2": { "1K": 0.04, "2K": 0.08 },
   "openai-gpt-image-2-5-sunburst": { "1K": 0.04, "2K": 0.08 },
   "openai-gpt-image-2-5-flare": { "1K": 0.02, "2K": 0.04 },
   "seedream-5-pro": { "2K": 0.03, "4K": 0.06 },
