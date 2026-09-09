@@ -42,6 +42,19 @@ export interface StudioRailProps {
 }
 
 
+const QUALITY_LABELS: Record<string, string> = {
+  auto: "Auto",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  xhigh: "X-High",
+  max: "Max"
+};
+
+const BACKGROUND_LABELS: Record<string, string> = { auto: "Auto", opaque: "Opaque" };
+
+const MODERATION_LABELS: Record<string, string> = { auto: "Standard", low: "Relaxed" };
+
 /** Long edge of the aspect thumbnail, in px. Matches --aspect-tile-cap in app.css. */
 const ASPECT_TILE_CAP = 30;
 
@@ -277,6 +290,80 @@ export function StudioRail(props: StudioRailProps) {
                 chip(value, settings.image_size === value, () => onSettingsChange({ image_size: value }), value)
               )}
             </div>
+          </div>
+        ) : null}
+
+        {!isVideo && qualities.length ? (
+          <div className="run-settings__field">
+            <span className="run-settings__label">Render quality</span>
+            <div className="chip-row">
+              {qualities.map((value) =>
+                chip(
+                  QUALITY_LABELS[value] ?? value,
+                  settings.quality === value,
+                  () => onSettingsChange({ quality: value }),
+                  value
+                )
+              )}
+            </div>
+            {fieldErrors.quality ? (
+              <Text variant="bodySm" tone="critical" as="p">{fieldErrors.quality}</Text>
+            ) : null}
+          </div>
+        ) : null}
+
+        {!isVideo && backgrounds.length ? (
+          <div className="run-settings__field">
+            <span className="run-settings__label">Background</span>
+            <div className="chip-row">
+              {backgrounds.map((value) =>
+                chip(
+                  BACKGROUND_LABELS[value] ?? value,
+                  settings.background === value,
+                  () => onSettingsChange({ background: value }),
+                  value
+                )
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        {!isVideo && moderation.length ? (
+          <div className="run-settings__field">
+            <span className="run-settings__label">Moderation</span>
+            <div className="chip-row">
+              {moderation.map((value) =>
+                chip(
+                  MODERATION_LABELS[value] ?? value,
+                  settings.moderation === value,
+                  () => onSettingsChange({ moderation: value }),
+                  value
+                )
+              )}
+            </div>
+          </div>
+        ) : null}
+
+        {!isVideo && model?.supports_output_compression ? (
+          <div className="run-settings__field">
+            <span className="run-settings__label">
+              File compression · {settings.output_compression ?? 100}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={settings.output_compression ?? 100}
+              aria-label="File compression"
+              onChange={(event) => onSettingsChange({ output_compression: Number(event.target.value) })}
+            />
+            <Text variant="bodySm" tone="secondary" as="p">
+              100 keeps the most detail, lower values return smaller files.
+            </Text>
+            {fieldErrors.compression ? (
+              <Text variant="bodySm" tone="critical" as="p">{fieldErrors.compression}</Text>
+            ) : null}
           </div>
         ) : null}
 
