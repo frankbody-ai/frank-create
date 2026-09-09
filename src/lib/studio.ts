@@ -103,6 +103,35 @@ export function filterSizesForAspect(sizes: string[], aspect: string): string[] 
   return filtered.length ? filtered : sizes;
 }
 
+/**
+ * Provider-specific extras (GPT Image 2.5 quality / background / compression /
+ * moderation). Values the selected model doesn't advertise are dropped so a
+ * model switch can never send an unsupported field.
+ */
+export function normalizeAdvancedImageSettings(settings: StudioSettings, model: StudioModel): StudioSettings {
+  const next: StudioSettings = { ...settings };
+
+  const qualities = model.allowed_qualities ?? [];
+  if (!qualities.length) delete next.quality;
+  else if (!next.quality || !qualities.includes(next.quality)) next.quality = qualities[0];
+
+  const backgrounds = model.allowed_backgrounds ?? [];
+  if (!backgrounds.length) delete next.background;
+  else if (!next.background || !backgrounds.includes(next.background)) next.background = backgrounds[0];
+
+  const moderation = model.allowed_moderation ?? [];
+  if (!moderation.length) delete next.moderation;
+  else if (!next.moderation || !moderation.includes(next.moderation)) next.moderation = moderation[0];
+
+  if (!model.supports_output_compression) delete next.output_compression;
+  else {
+    const raw = Number(next.output_compression);
+    next.output_compression = Number.isFinite(raw) ? Math.min(100, Math.max(0, Math.round(raw))) : 100;
+  }
+
+  return next;
+}
+
 export function normalizeStudioSettingsForModel(settings: StudioSettings, model: StudioModel): StudioSettings {
   const count = Number.isFinite(settings.count) ? Math.trunc(settings.count) : 1;
   const cap = maxCountForModel(model);
@@ -110,23 +139,23 @@ export function normalizeStudioSettingsForModel(settings: StudioSettings, model:
     ? settings.aspect_ratio
     : model.allowed_aspect_ratios[0] ?? "1:1";
   if (!model.allowed_image_sizes.length) {
-    return {
+    return normalizeAdvancedImageSettings({
       ...settings,
       aspect_ratio: aspect,
       image_size: "",
       count: Math.min(Math.max(count, 1), cap)
-    };
+    }, model);
   }
   const sizesForAspect = filterSizesForAspect(model.allowed_image_sizes, aspect);
 
-  return {
+  return normalizeAdvancedImageSettings({
     ...settings,
     aspect_ratio: aspect,
     image_size: sizesForAspect.includes(settings.image_size)
       ? settings.image_size
       : sizesForAspect[sizesForAspect.length - 1] ?? "1K",
     count: Math.min(Math.max(count, 1), cap)
-  };
+  }, model);
 }
 
 export function isVideoModel(model: StudioModel | undefined | null): boolean {
