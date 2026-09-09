@@ -68,7 +68,8 @@ describe("studio helpers", () => {
     expect(fallbackConfig.models.map((model) => model.id)).toEqual([
       "google-nb-pro",
       "google-nb-2",
-      "openai-gpt-image-2",
+      "openai-gpt-image-2-5-sunburst",
+      "openai-gpt-image-2-5-flare",
       "seedream-5-pro",
       "seedream-4-5",
       "flux-2-pro",
@@ -92,9 +93,7 @@ describe("studio helpers", () => {
     ]);
 
     expect(fallbackConfig.backlogModels).toEqual([]);
-    expect(fallbackConfig.models.find((model) => model.id === "openai-gpt-image-2")?.provider_model).toBe(
-      "openai/gpt-image-2"
-    );
+    expect(fallbackConfig.models.find((model) => model.id === "openai-gpt-image-2")).toBeUndefined();
     // Every image and video model runs on OpenRouter now; only upscalers stay on Replicate.
     expect(
       fallbackConfig.models

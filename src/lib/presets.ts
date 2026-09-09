@@ -113,25 +113,6 @@ export const fallbackConfig: FrankConfig = {
       missing_env_vars: []
     },
     {
-      id: "openai-gpt-image-2",
-      label: "OpenAI gpt-image-2",
-      short_label: "gpt-image-2",
-      provider: "openrouter",
-      provider_model: "openai/gpt-image-2",
-      status: "ready",
-      badge: "2K",
-      max_resolution_label: "2K",
-      description: "OpenAI gpt-image-2 via OpenRouter — strongest text rendering and instruction following, native batches up to 10.",
-      capabilities: { generation: true, edit: true, masked_edit: true, video: false },
-      allowed_aspect_ratios: ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16"],
-      allowed_image_sizes: ["1K", "2K"],
-      reference_image_limit: 10,
-      max_count: 10,
-      cost_label: "premium",
-      configured: true,
-      missing_env_vars: []
-    },
-    {
       id: "openai-gpt-image-2-5-sunburst",
       label: "OpenAI GPT Image 2.5 Sunburst",
       short_label: "GPT Image 2.5 Sunburst",
