@@ -423,6 +423,13 @@ const OPENROUTER_IMAGE_MAP: Record<string, string> = {
   "grok-imagine-image": "x-ai/grok-imagine-image-quality",
 };
 
+// GPT Image 2.5 accepts background / moderation / output_compression on top of
+// the shared image params.
+const GPT_IMAGE_25_MODELS = new Set<string>([
+  "openai/gpt-image-2.5-sunburst",
+  "openai/gpt-image-2.5-flare",
+]);
+
 // Models that accept n > 1 natively; everything else is fanned out as parallel
 // single-image calls.
 const OPENROUTER_NATIVE_N = new Set<string>([
@@ -1291,6 +1298,16 @@ async function openrouterImage(
     if (["512", "1K", "2K", "4K"].includes(res)) payload.resolution = res;
   }
   if (opts.quality && ["auto", "low", "medium", "high", "xhigh", "max"].includes(opts.quality)) payload.quality = opts.quality;
+  // GPT Image 2.5 (Sunburst / Flare) is the only family in the roster whose
+  // schema exposes these; sending them to another provider is a 400.
+  if (GPT_IMAGE_25_MODELS.has(opts.model)) {
+    if (opts.background && ["auto", "opaque"].includes(opts.background)) payload.background = opts.background;
+    if (opts.moderation && ["auto", "low"].includes(opts.moderation)) payload.moderation = opts.moderation;
+    const compression = Number(opts.outputCompression);
+    if (Number.isFinite(compression) && compression >= 0 && compression <= 100) {
+      payload.output_compression = Math.round(compression);
+    }
+  }
   if (opts.n && opts.n > 1) payload.n = opts.n;
   if (referenceImageUrls.length) payload.input_references = imageRefParts(referenceImageUrls);
 
