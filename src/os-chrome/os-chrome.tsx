@@ -242,7 +242,9 @@ export function OsCompanySwitcher({ client, appKey }: { client: OsClient; appKey
   if (!ctx || !ctx.tenant) return null;
 
   const single = ctx.tenants.length <= 1;
-  const mark = ctx.tenant.logoPlainUrl ?? ctx.tenant.logoUrl;
+  // The closed switcher sits on the inverse top bar, so it takes the tile cut;
+  // the popover below it is a white surface and keeps the plain (ink) cut.
+  const mark = ctx.tenant.logoUrl ?? ctx.tenant.logoPlainUrl;
 
   const choose = async (tenantId: string) => {
     if (busy || tenantId === ctx.tenant!.id) { setOpen(false); return; }
