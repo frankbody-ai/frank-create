@@ -15,6 +15,15 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-09-10-gpt-image-2-5-compression-fix",
+    date: "10 September 2026",
+    title: "GPT Image 2.5 runs land again",
+    items: [
+      "Fixed the failed rounds on Sunburst and Flare caused by the file compression setting.",
+      "Compression below 100 now returns a JPEG; leave it at 100 for full-quality PNGs.",
+    ],
+  },
+  {
     id: "2026-09-09-gpt-image-2-5-controls",
     date: "9 September 2026",
     title: "More control on the new OpenAI models",
