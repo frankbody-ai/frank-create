@@ -41,6 +41,15 @@
   height: auto;
 }
 
+/* Sign-in card: the OS lockup spans the full card width, matching the
+   Sign in with Google button. Width is set; height derives from the
+   artwork's aspect ratio. Lives here so it beats the library's locked
+   .as-logo height. */
+.as-auth__logo.as-logo {
+  width: 100%;
+  height: auto;
+}
+
 :root {
   color-scheme: light;
   /* Long edge of an aspect-ratio thumbnail. StudioRail reads the same number. */

@@ -102,6 +102,7 @@ export function SignIn({
       <div className="as-auth__foot">
         {note && <p className="as-auth__note">{note}</p>}
         {footer}
+        <span className="as-logo as-auth__logo" role="img" aria-label="AutoSolutions OS" />
       </div>
     </form>
   );
