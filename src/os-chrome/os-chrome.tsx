@@ -63,6 +63,35 @@ const COLUMNS: Array<{ group: string; sections: { title?: string; apps: string[]
 
 const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
+/* The official company marks from the design system, ink cut (for the white
+   popover surface). A company outside this set keeps its stored logo. */
+import aliveInk from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/alive-ink.png";
+import coreiqInk from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/coreiq-ink.png";
+import enxgyInk from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/enxgy-ink.png";
+import frankbodyInk from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/frankbody-ink.png";
+import ledgifyInk from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/ledgify-ink.png";
+import seniorsnoutsInk from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/seniorsnouts-ink.png";
+import strengthlabInk from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/strengthlab-ink.png";
+
+const OFFICIAL_MARKS: Record<string, string> = {
+  alive: aliveInk,
+  "al-ive-body": aliveInk,
+  coreiq: coreiqInk,
+  "core-iq": coreiqInk,
+  enxgy: enxgyInk,
+  frankbody: frankbodyInk,
+  "frank-body": frankbodyInk,
+  ledgify: ledgifyInk,
+  seniorsnouts: seniorsnoutsInk,
+  "senior-snouts": seniorsnoutsInk,
+  strengthlab: strengthlabInk,
+  "strength-lab": strengthlabInk,
+};
+
+function officialMark(slug: string | null | undefined, name: string): string | null {
+  return (slug && OFFICIAL_MARKS[slugify(slug)]) || OFFICIAL_MARKS[slugify(name)] || null;
+}
+
 /* Catalogue keys that differ from the design reference's label keys. Without
    these, an app falls into "Other" with a text plate instead of its artwork. */
 const DESIGN_ALIAS: Record<string, string> = {
@@ -301,7 +330,7 @@ export function OsCompanySwitcher({ client, appKey }: { client: OsClient; appKey
           <span className="osx-menu__label">Your companies</span>
           {ctx.tenants.map((t) => {
             const isCurrent = t.id === ctx.tenant!.id;
-            const m = t.logoPlainUrl ?? t.logoUrl;
+            const m = officialMark(t.slug, t.name) ?? t.logoPlainUrl ?? t.logoUrl;
             return (
               <button key={t.id} type="button" role="menuitem" disabled={busy}
                 className={"osx-item" + (isCurrent ? " is-current" : "")}
