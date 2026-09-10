@@ -1,7 +1,8 @@
 [[libraries]]
-project_id = "d9e36884-7257-4148-8c35-63e0bbefd685"
-version = "4.0.0"
-slug = "new-autosolutions-os-e87004"
+  name = "NEW AutoSolutions OS"
+  project_id = "d9e36884-7257-4148-8c35-63e0bbefd685"
+  slug = "new-autosolutions-os-e87004"
+  version = "4.0.0"
 
 [run]
   build = "npm run build"
