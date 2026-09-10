@@ -74,3 +74,26 @@ a.osx-appplate:hover { background: #f8f9fa; box-shadow: 0 2px 8px rgb(0 0 0 / 10
   background: #ffffff; border-bottom: 1px solid rgb(0 0 0 / 8%);
 }
 .osx-bar__spacer { flex: 1 1 auto; }
+
+/* ---- company switcher (no plate) ----
+   The one company-switcher treatment: the mark sits on whatever is behind it
+   with a disclosure chevron to its right. Transparent at rest, the faintest
+   wash on hover and while open, chevron rotating when the menu opens. */
+.osx-switch {
+  display: inline-flex; align-items: center; gap: 8px; height: 36px; padding-inline: 8px;
+  border: 0; border-radius: 8px; background: transparent; color: inherit; cursor: pointer;
+  font: 500 13px/20px Inter, ui-sans-serif, system-ui, sans-serif;
+  transition: background-color 120ms ease;
+}
+.osx-switch:hover { background: rgb(255 255 255 / 8%); }
+.osx-switch.is-open { background: rgb(255 255 255 / 14%); }
+.osx-switch.is-static, .osx-switch.is-static:hover { cursor: default; background: transparent; }
+.osx-switch__mark { height: 32px; width: auto; display: block; }
+.osx-switch__name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.osx-switch__chev {
+  flex: 0 0 auto; width: 0; height: 0; opacity: .72;
+  border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+.osx-switch:hover .osx-switch__chev { opacity: 1; }
+.osx-switch.is-open .osx-switch__chev { opacity: 1; transform: rotate(180deg); }
