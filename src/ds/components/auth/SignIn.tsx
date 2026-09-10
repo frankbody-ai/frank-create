@@ -5,9 +5,6 @@ import { Checkbox } from '../forms/Checkbox';
 import { Banner } from '../feedback/Banner';
 
 export interface SignInProps extends Omit<React.FormHTMLAttributes<HTMLFormElement>, 'onSubmit' | 'title'> {
-  company?: string | string[] | null;
-  companyName?: string | (string | undefined)[] | null;
-  companyVariant?: 'plain' | 'tile';
   app?: string;
   appName?: string;
   eyebrow?: React.ReactNode;
@@ -37,7 +34,6 @@ export interface SignInProps extends Omit<React.FormHTMLAttributes<HTMLFormEleme
  * footer notes.
  */
 export function SignIn({
-  company: _company, companyName: _companyName, companyVariant: _companyVariant,
   app, appName, eyebrow, title = 'Sign in', description, method = 'password',
   email, onEmailChange, password, onPasswordChange, remember, onRememberChange,
   error, loading = false, submitLabel, onSubmit, forgotAction, providers,
