@@ -19,6 +19,20 @@
    vendored port so its token values and component skins take precedence. */
 @import "./design-system/new-autosolutions-os-e87004/design-system/autosolutions/styles.css";
 
+/* The shell lockup is the masthead for the navigation rail. Its width follows
+   the rail while its height derives from the artwork's own aspect ratio. */
+.as-topbar > .as-topbar__brand {
+  justify-content: flex-start;
+  width: var(--sidenav-width);
+  height: var(--topbar-height);
+  padding-inline: var(--space-400);
+}
+
+.as-topbar > .as-topbar__brand .as-logo {
+  width: 100%;
+  height: auto;
+}
+
 :root {
   color-scheme: light;
   /* Long edge of an aspect-ratio thumbnail. StudioRail reads the same number. */
