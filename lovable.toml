@@ -1,8 +1,7 @@
 [[libraries]]
-  name = "NEW AutoSolutions OS"
-  project_id = "d9e36884-7257-4148-8c35-63e0bbefd685"
-  slug = "new-autosolutions-os-e87004"
-  version = "3.0.0"
+project_id = "d9e36884-7257-4148-8c35-63e0bbefd685"
+version = "4.0.0"
+slug = "new-autosolutions-os-e87004"
 
 [run]
   build = "npm run build"

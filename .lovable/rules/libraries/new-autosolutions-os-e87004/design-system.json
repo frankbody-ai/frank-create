@@ -2,7 +2,7 @@
   "meta": {
     "name": "NEW AutoSolutions OS",
     "package": "@ws-mptzrrrtzb2ybcslxi0m/d9e36884-7257-4148-8c35-63e0bbefd685",
-    "version": "3.0.0",
+    "version": "4.0.0",
     "framework": "react",
     "css_framework": "css-variables",
     "starter_template": "custom_design_system",
@@ -23,6 +23,7 @@
       ".github/workflows/verify.yml": "b899bf545daaf27aab73822c813c12c6",
       ".gitignore": "c348d6b1414707d2b3c256e7ed62d059",
       ".lovable/meta.yaml": "731dc53c4191bd35cabf4a0af7095d7f",
+      ".lovable/plan.md": "4026bcb20ed58eb5fa431fa91e37de56",
       ".lovable/plan/ci-verification-wider-visual-coverage-a11y-checks-and-a-reba-2026-08-20.md": "7d1876dad819cbdd80e35822a50a6e97",
       ".lovable/plan/rebuild-the-autosolutions-os-library-straight-from-the-packa-2026-08-20.md": "0e1e7b99c5aea150cfe8c3e8f35840b9",
       ".lovable/plan/template-audit-visual-regression-and-token-lint-rules-2026-08-20.md": "0dbe65c389c032b4dc279721cc9edbab",
