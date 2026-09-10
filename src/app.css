@@ -23,7 +23,7 @@
    Explicit user instruction, so it deliberately replaces the library artwork. */
 .as-logo,
 .as-logo--inverse {
-  aspect-ratio: 3.9494;
+  aspect-ratio: 5.6742; /* 1010×178 supplied artwork */
   background-image: url("/brand/autosolutions-os.svg");
 }
 
