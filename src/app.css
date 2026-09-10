@@ -19,6 +19,14 @@
    vendored port so its token values and component skins take precedence. */
 @import "./design-system/new-autosolutions-os-e87004/design-system/autosolutions/styles.css";
 
+/* Project brand override: the supplied AutoSolutions lockup, everywhere.
+   Explicit user instruction, so it deliberately replaces the library artwork. */
+.as-logo,
+.as-logo--inverse {
+  aspect-ratio: 3.9494;
+  background-image: url("/brand/autosolutions-os.svg");
+}
+
 /* The shell lockup is the masthead for the navigation rail. Its width follows
    the rail while its height derives from the artwork's own aspect ratio. */
 .as-topbar > .as-topbar__brand {
