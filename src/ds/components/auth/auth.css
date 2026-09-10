@@ -41,6 +41,9 @@
 .as-google__mark{display:inline-flex;flex:0 0 auto}
 
 .as-auth__foot{display:flex;flex-direction:column;align-items:center;gap:var(--space-600)}
+/* The OS lockup spans the full card width, matching the Sign in with Google
+   button. Width is set, height derives from the lockup's own aspect ratio. */
+.as-auth__logo{width:100%;height:auto}
 .as-auth__note{margin:0;font-size:var(--type-body-sm-size);line-height:var(--type-body-sm-line);color:var(--color-text-secondary);text-align:center;text-wrap:pretty}
 /* PORT: loading row shown while the session is being checked. */
 .as-auth__loading{display:flex;align-items:center;justify-content:center;gap:var(--space-200)}
