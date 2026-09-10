@@ -11,7 +11,7 @@ import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { NotFoundPage } from "./components/NotFoundPage";
 import { installErrorReporter } from "./lib/errorReporter";
 import { initTenantBrand } from "./lib/tenantBrand";
-import { applyTheme, storedTheme } from "./ds";
+import { applyTheme, storedTheme } from "./lib/theme";
 import { resolveScreen } from "./nav";
 import "./app.css";
 

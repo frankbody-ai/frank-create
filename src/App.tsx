@@ -18,9 +18,8 @@ import {
   Icon,
   PageHeader,
   Pagination,
-
   Spinner,
-} from "./ds";
+} from "@/design-system/new-autosolutions-os-e87004";
 import { Shell } from "./Shell";
 import { modeFromUrl, navigate } from "./nav";
 import type { InAppScreen, Screen } from "./nav";

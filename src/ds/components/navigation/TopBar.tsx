@@ -45,7 +45,7 @@ export function TopBar({
     <header className={['as-topbar', className].filter(Boolean).join(' ')} style={style} {...rest}>
       <div className="as-topbar__brand">
         {brand == null
-          ? <span className="as-logo" role="img" aria-label="AutoSolutions OS" style={{ width: 'var(--logo-width)', height: 'var(--logo-height)' }} />
+          ? <span className="as-logo" role="img" aria-label="AutoSolutions OS" />
           : (typeof brand === 'string' ? <span className="as-topbar__wordmark">{brand}</span> : brand)}
       </div>
       {leading}
