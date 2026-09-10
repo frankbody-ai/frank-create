@@ -75,6 +75,7 @@ import strengthlabInk from "@/design-system/new-autosolutions-os-e87004/design-s
 
 const OFFICIAL_MARKS: Record<string, string> = {
   alive: aliveInk,
+  "al-ive": aliveInk,
   "al-ive-body": aliveInk,
   coreiq: coreiqInk,
   "core-iq": coreiqInk,
@@ -86,6 +87,7 @@ const OFFICIAL_MARKS: Record<string, string> = {
   "senior-snouts": seniorsnoutsInk,
   strengthlab: strengthlabInk,
   "strength-lab": strengthlabInk,
+  "strength-labs": strengthlabInk,
 };
 
 function officialMark(slug: string | null | undefined, name: string): string | null {
