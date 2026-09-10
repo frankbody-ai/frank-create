@@ -1,0 +1,64 @@
+/* ============================================================
+   AutoSolutions OS — Mobile
+   The phone adaptation. The product's desktop density assumes a
+   mouse and a professional staring at data all day; a thumb on a
+   390px screen is a different instrument, so four things change
+   and nothing else does.
+
+   1. TARGETS GROW. 28px desktop controls become 44px. This is the
+      accessibility contract, not a preference.
+   2. TYPE GROWS ONE STEP. 13/20 body becomes 15/20; inputs go to
+      16px minimum because iOS Safari zooms the viewport on any
+      focused field below 16px.
+   3. TABLES BECOME ROWS. A DataTable cannot survive 390px, so a
+      resource index becomes a stack of two-line rows.
+   4. POPOVERS BECOME SHEETS. Anchored overlays need a cursor;
+      sheets rise from the bottom edge, into the thumb.
+
+   Colour, radius, elevation, motion and every semantic token are
+   IDENTICAL to desktop. A phone screen is the same system at a
+   different scale, not a second design language.
+   ============================================================ */
+:root{
+/* ---------- device ---------- */
+--m-viewport-width:24.5625rem;  /* 393 — iPhone 15/16 logical width */
+--m-viewport-height:53.25rem;   /* 852 */
+--m-viewport-width-small:20.4375rem;/* 327 — the narrow end we still support */
+
+/* ---------- safe areas (real insets on device, 0 in a preview) ---------- */
+--m-safe-top:env(safe-area-inset-top,0px); /* @kind other */
+--m-safe-bottom:env(safe-area-inset-bottom,0px); /* @kind other */
+--m-status-height:2.75rem;/* 44 — the OS status strip a phone reserves */
+
+/* ---------- shell ---------- */
+--m-topbar-height:3.5rem;    /* 56 — same as desktop, so the two shells align */
+--m-topbar-height-large:6rem;/* 96 — the large-title variant before it collapses */
+--m-tabbar-height:3.0625rem; /* 49 — platform standard, plus the safe inset */
+--m-toolbar-height:4rem;     /* 64 — the sticky bottom action bar */
+--m-gutter:1rem;             /* 16 — inline page padding, matches desktop */
+--m-section-gap:var(--space-300);/* 12 — one step tighter than desktop's 16 */
+
+/* ---------- touch ---------- */
+--m-hit-min:2.75rem;          /* 44 — the floor for anything tappable */
+--m-control-height:2.75rem;   /* 44 — buttons */
+--m-control-height-small:2.25rem;/* 36 — inline chips, WITH a 44px hit extension */
+--m-field-height:3rem;        /* 48 — inputs */
+--m-row-min-height:4rem;      /* 64 — a two-line list row */
+--m-row-min-height-single:3.5rem;/* 56 — a one-line list row */
+--m-icon-size:1.5rem;         /* 24 — nav and row icons; 20 is too small for a thumb */
+
+/* ---------- type: one step up from desktop ---------- */
+--type-m-title-lg-size:1.75rem;  --type-m-title-lg-line:2.125rem; /* 28/34 large title */
+--type-m-title-size:1.25rem;     --type-m-title-line:1.75rem;     /* 20/28 top-bar title */
+--type-m-heading-size:1.0625rem; --type-m-heading-line:1.5rem;    /* 17/24 card title */
+--type-m-body-lg-size:1.0625rem; --type-m-body-lg-line:1.5rem;    /* 17/24 */
+--type-m-body-size:.9375rem;     --type-m-body-line:1.25rem;      /* 15/20 default body */
+--type-m-body-sm-size:.8125rem;  --type-m-body-sm-line:1.125rem;  /* 13/18 metadata */
+--type-m-caption-size:.6875rem;  --type-m-caption-line:.875rem;   /* 11/14 tab labels */
+--type-m-input-size:1rem;        /* 16 — NEVER lower; iOS zooms below this */
+
+/* ---------- sheets ---------- */
+--m-sheet-radius:var(--radius-500);/* 20 top corners */
+--m-sheet-grabber-width:2.25rem;   /* 36 */
+--m-sheet-max-height:88vh;
+}

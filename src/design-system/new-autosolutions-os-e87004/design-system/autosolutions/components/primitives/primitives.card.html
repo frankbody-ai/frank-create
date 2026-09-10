@@ -1,0 +1,48 @@
+<!-- @dsCard group="Components" viewport="700x260" name="Primitives" subtitle="Text ramp, Box, Stack, Grid" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Primitives</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;padding:16px;background:var(--color-bg)}.lbl{font-size:11px;line-height:12px;color:var(--color-text-disabled);font-variant-numeric:tabular-nums}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { Text, Box, Stack, Grid } = window.AutoSolutionsOSDesignSystem_27c955;
+const Row = ({ code, children }) => (
+  <div style={{display:'grid',gridTemplateColumns:'92px 1fr',alignItems:'baseline',gap:12}}>
+    <span className="lbl">{code}</span>{children}
+  </div>
+);
+function Demo(){
+  return (
+    <Grid columns="1fr 296px" gap="400" align="start">
+      <Box background="bg-surface" padding="400" borderRadius="300" shadow="100">
+        <Stack gap="300">
+          <Row code="headingXl"><Text variant="headingXl">Workflows</Text></Row>
+          <Row code="headingLg"><Text variant="headingLg">Run history</Text></Row>
+          <Row code="headingMd"><Text variant="headingMd">Card title, 14/20 · 600</Text></Row>
+          <Row code="bodyMd"><Text>Default body — 13/20 at weight 450.</Text></Row>
+          <Row code="bodySm"><Text variant="bodySm" tone="secondary">Helper text and metadata, 12/16.</Text></Row>
+        </Stack>
+      </Box>
+      <Box background="bg-surface" padding="400" borderRadius="300" shadow="100">
+        <Stack gap="300">
+          <Text variant="headingSm">Grid · 3 columns · gap 400</Text>
+          <Grid columns={3} gap="200">
+            {['Runs','Agents','Errors'].map((t,i)=>(
+              <Box key={t} background="bg-surface-secondary" padding="300" borderRadius="200">
+                <Text variant="bodyXs" tone="secondary">{t}</Text>
+                <Text variant="headingLg" numeric>{['1,044','12','3'][i]}</Text>
+              </Box>
+            ))}
+          </Grid>
+          <Text variant="bodySm" tone="secondary">Box · padding 400 · radius 300 · shadow 100</Text>
+        </Stack>
+      </Box>
+    </Grid>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

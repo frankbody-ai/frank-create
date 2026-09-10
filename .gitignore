@@ -38,3 +38,6 @@ vite.config.d.ts
 venv*/
 .venv/
 __pycache__/
+
+# Lovable sandbox workspace directory
+.workspace/

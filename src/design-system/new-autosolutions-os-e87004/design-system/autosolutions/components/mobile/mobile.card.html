@@ -1,0 +1,84 @@
+<!-- @dsCard group="Components" viewport="700x400" name="Mobile shell" subtitle="MobileFrame, MobileTopBar, TabBar, list rows, segmented control, sheet" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Mobile shell</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script>window.AS_ICON_BASE = '../../assets/icons';</script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;padding:16px;background:var(--color-bg)}.rail{display:flex;gap:20px;align-items:flex-start}
+.as-m-phone__screen{transform:scale(.42);transform-origin:top left;margin-bottom:-500px;margin-inline-end:-228px}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { MobileFrame, MobileTopBar, TabBar, MobileList, MobileListRow, SegmentedControl, Sheet, MobileToolbar, PhoneFrame, Button, IconButton, Badge, Thumbnail, ActionList, Card, Text, Stack, TextField, Switch } = window.AutoSolutionsOSDesignSystem_27c955;
+
+const TABS = [
+  { id:'home', label:'Home', icon:'home' },
+  { id:'flows', label:'Workflows', icon:'bolt' },
+  { id:'runs', label:'Runs', icon:'clock', badge:'3' },
+  { id:'more', label:'More', icon:'bars-3' },
+];
+
+function Demo(){
+  const [sheet,setSheet] = React.useState(false);
+  return (
+    <div className="rail">
+      <PhoneFrame>
+        <MobileFrame
+          topBar={<MobileTopBar size="large" title="Workflows" app="ops-hub" appName="ops hub"
+            actions={<IconButton icon="plus" label="Add workflow" variant="primary" />} />}
+          tabBar={<TabBar tabs={TABS} selected="flows" />}
+        >
+          <SegmentedControl options={[{id:'a',label:'All',count:24},{id:'b',label:'Active'},{id:'c',label:'Failing',count:2}]} selected="a" />
+          <MobileList>
+            <MobileListRow media={<Thumbnail size="medium" />} title="Invoice triage" subtitle="Finance ops · every 15 min" value="1,044" badge={<Badge tone="success">Active</Badge>} onClick={()=>{}} />
+            <MobileListRow media={<Thumbnail size="medium" />} title="Contract summariser" subtitle="Legal · manual" value="96" badge={<Badge tone="critical">Failing</Badge>} onClick={()=>{}} />
+            <MobileListRow media={<Thumbnail size="medium" />} title="Support triage" subtitle="Customer care · webhook" value="4,181" badge={<Badge tone="success">Active</Badge>} onClick={()=>{}} />
+          </MobileList>
+        </MobileFrame>
+      </PhoneFrame>
+
+      <PhoneFrame>
+        <MobileFrame
+          topBar={<MobileTopBar title="Invoice triage" backAction={()=>{}} actions={<IconButton icon="ellipsis-horizontal" label="Actions" onClick={()=>setSheet(true)} />} />}
+          toolbar={<MobileToolbar note="1 unsaved change"><Button>Discard</Button><Button variant="primary">Save</Button></MobileToolbar>}
+        >
+          <Card title="Schedule">
+            <Stack direction="inline" gap="300" align="center" justify="space-between">
+              <Text tone="secondary">Active</Text>
+              <Switch label="Active" labelHidden checked onChange={()=>{}} />
+            </Stack>
+          </Card>
+          <Card title="Run budget"><TextField label="Daily cap" prefix="A$" defaultValue="500" /></Card>
+          <MobileList title="Steps" inset={false}>
+            <MobileListRow title="Fetch new invoices" subtitle="Xero · 42 records" badge={<Badge tone="success">Passed</Badge>} chevron={false} />
+            <MobileListRow title="Post to ledger" subtitle="Xero · create bill" badge={<Badge tone="critical">Failed</Badge>} chevron={false} />
+          </MobileList>
+          <Sheet open={sheet} title="Workflow actions" onClose={()=>setSheet(false)}>
+            <ActionList sections={[
+              { items:[{content:'Run now',icon:'play'},{content:'Duplicate',icon:'document-duplicate'},{content:'Export runs',icon:'arrow-down-tray'}] },
+              { items:[{content:'Delete workflow',icon:'trash',destructive:true}] },
+            ]} />
+          </Sheet>
+        </MobileFrame>
+      </PhoneFrame>
+
+      <Stack gap="300" style={{flex:'1 1 auto',minWidth:0}}>
+        <Card title="What changes on a phone">
+          <Stack gap="150">
+            {[['Targets','28px → 44px, always'],['Type','13/20 body → 15/20; inputs 16px minimum'],['Tables','DataTable → MobileList + MobileListRow'],['Overlays','Popover and Modal → Sheet'],['Nav','240px side nav → 5-tab bar'],['Top bar','#1A1A1A → light surface']].map(([k,v])=>(
+              <Stack key={k} direction="inline" gap="300" align="baseline">
+                <Text variant="bodySm" tone="disabled" style={{width:64,flex:'0 0 auto'}}>{k}</Text>
+                <Text variant="bodySm">{v}</Text>
+              </Stack>
+            ))}
+          </Stack>
+          <Text variant="bodySm" tone="secondary">Colour, radius, elevation and motion are identical — it is the same system at thumb scale, not a second language.</Text>
+        </Card>
+      </Stack>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

@@ -1,0 +1,42 @@
+/* ============================================================
+   AutoSolutions OS — Logo
+   TWO official cuts of ONE redesigned lockup, THREE locked heights.
+   Never scale freehand, never re-crop, never recolour.
+
+     assets/logos/autosolutions-os-pink.svg
+                              robot + autosolutions|OS in magenta.
+                              THE DEFAULT — including on the dark
+                              top bar, where the magenta holds.
+     assets/logos/autosolutions-os-white.svg
+                              the same lockup in white. Only where
+                              magenta would clash with a brand
+                              colour behind it.
+
+   No subtitle. The `theunmarked` group line was removed from the
+   mark; if you find a lockup carrying it, that art is stale.
+
+   Both use the official 2898.7×280.87 viewBox (10.3205:1), transparent
+   ground. HEIGHT is the authority: the class carries the aspect
+   ratio, so width follows and can never be set wrong. The width
+   tokens below are for sizing a slot, not the mark itself.
+   ============================================================ */
+:root{
+--logo-aspect:10.3205; /* @kind other */
+
+/* default — the app shell top bar. 20px tall, about 201px wide, so the
+   lockup and its clear space fit the 240px nav-width slot. */
+--logo-height:1.25rem; /* 20 */
+--logo-width:12.9006rem; /* 206.41 — derived, do not set on .as-logo */
+
+/* compact — sign-in cards, marketing nav, footers, dense headers. */
+--logo-height-compact:1rem;/* 16 */
+--logo-width-compact:10.3205rem; /* 165.13 — derived */
+
+/* large — marketing hero, covers, title slides. */
+--logo-height-large:1.75rem; /* 28 */
+--logo-width-large:18.0609rem; /* 288.97 — derived */
+
+/* the slot the lockup is centred in */
+--logo-slot-width:var(--sidenav-width);  /* 240 */
+--logo-slot-height:var(--topbar-height); /* 56  */
+}

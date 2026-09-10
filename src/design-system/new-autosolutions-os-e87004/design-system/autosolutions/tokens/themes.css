@@ -1,0 +1,180 @@
+/* ============================================================
+   AutoSolutions OS — Themes
+   Seven palettes. `ink` is the default and is what the product
+   wears unless a tenant picks otherwise.
+
+   Set the theme on the ROOT element so the semantic mapping at
+   the bottom of this file resolves for the whole document:
+     document.documentElement.dataset.theme = 'marina'
+
+   What a theme MAY change: the accent family, the page canvas
+   and nav tint, and the large "field" surface.
+   What a theme MUST NOT change: the neutral ramp, and the
+   status colours (success/critical/warning/caution/info/ai) —
+   those carry meaning and stay constant across every tenant.
+   ============================================================ */
+
+/* ---------- ink · default (near-black, achromatic) ---------- */
+:root{
+--theme-1:#F1F1F1;--theme-2:#E3E3E3;--theme-3:#616161;--theme-4:#303030;
+--theme-accent:#303030;
+--theme-accent-hover:#1A1A1A;
+--theme-accent-active:#1A1A1A;
+--theme-accent-on:#FFFFFF;
+--theme-accent-strong:#303030;
+--theme-accent-soft:#F1F1F1;
+--theme-accent-border:#E3E3E3;
+--theme-accent-bevel:rgba(0,0,0,.80);
+--theme-field:#F1F1F1;
+--theme-field-text:#303030;
+--theme-canvas:#F1F1F1;
+--theme-nav:#EBEBEB;
+}
+
+/* ---------- marina ---------- */
+[data-theme="marina"]{
+--theme-1:#FFF1E7;--theme-2:#B5D2E6;--theme-3:#326080;--theme-4:#805232;
+--theme-accent:#326080;
+--theme-accent-hover:#294F69;
+--theme-accent-active:#1F3D51;
+--theme-accent-on:#FFF9F5;
+--theme-accent-strong:#2A5470;
+--theme-accent-soft:#E7F0F7;
+--theme-accent-border:#B5D2E6;
+--theme-accent-bevel:rgba(0,0,0,.80);
+--theme-field:#FFF1E7;
+--theme-field-text:#3A2415;
+--theme-canvas:#FAF5F0;
+--theme-nav:#F1EAE3;
+--brand-accent:var(--theme-accent); /* @kind color */
+--brand-accent-hover:var(--theme-accent-hover); /* @kind color */
+--brand-accent-soft:var(--theme-accent-soft); /* @kind color */
+--brand-accent-contrast:var(--theme-accent-on); /* @kind color */
+}
+
+/* ---------- moon dust ---------- */
+[data-theme="moondust"]{
+--theme-1:#D3D3FF;--theme-2:#CEB5FF;--theme-3:#8EC1DE;--theme-4:#80A8FF;
+--theme-accent:#80A8FF;
+--theme-accent-hover:#6693F0;
+--theme-accent-active:#4E7BD8;
+--theme-accent-on:#12203D;
+--theme-accent-strong:#2E5BC0;
+--theme-accent-soft:#ECF1FF;
+--theme-accent-border:#B9CEFF;
+--theme-accent-bevel:rgba(0,0,0,.28);
+--theme-field:#D3D3FF;
+--theme-field-text:#1B1B4A;
+--theme-canvas:#F6F6FD;
+--theme-nav:#ECECF8;
+--brand-accent:var(--theme-accent); /* @kind color */
+--brand-accent-hover:var(--theme-accent-hover); /* @kind color */
+--brand-accent-soft:var(--theme-accent-soft); /* @kind color */
+--brand-accent-contrast:var(--theme-accent-on); /* @kind color */
+}
+
+/* ---------- sapphire ash morning ---------- */
+[data-theme="sapphire"]{
+--theme-1:#35627A;--theme-2:#E5AEA9;--theme-3:#B46258;--theme-4:#A6A9D0;
+--theme-accent:#35627A;
+--theme-accent-hover:#2B5064;
+--theme-accent-active:#213E4E;
+--theme-accent-on:#F7FBFC;
+--theme-accent-strong:#2E5769;
+--theme-accent-soft:#E8F1F5;
+--theme-accent-border:#A6A9D0;
+--theme-accent-bevel:rgba(0,0,0,.80);
+--theme-field:#35627A;
+--theme-field-text:#F4FAFC;
+--theme-canvas:#F6F1F0;
+--theme-nav:#EEE7E5;
+--brand-accent:var(--theme-accent); /* @kind color */
+--brand-accent-hover:var(--theme-accent-hover); /* @kind color */
+--brand-accent-soft:var(--theme-accent-soft); /* @kind color */
+--brand-accent-contrast:var(--theme-accent-on); /* @kind color */
+}
+
+/* ---------- neptune ---------- */
+[data-theme="neptune"]{
+--theme-1:#8FD9FB;--theme-2:#4AB5B5;--theme-3:#6D8BC0;--theme-4:#525AFF;
+--theme-accent:#4AB5B5;
+--theme-accent-hover:#3C9C9C;
+--theme-accent-active:#2E8484;
+--theme-accent-on:#04302F;
+--theme-accent-strong:#1E7373;
+--theme-accent-soft:#E4F7F7;
+--theme-accent-border:#9FE0E0;
+--theme-accent-bevel:rgba(0,0,0,.32);
+--theme-field:#8FD9FB;
+--theme-field-text:#06283A;
+--theme-canvas:#F1F8FB;
+--theme-nav:#E7F1F6;
+--brand-accent:var(--theme-accent); /* @kind color */
+--brand-accent-hover:var(--theme-accent-hover); /* @kind color */
+--brand-accent-soft:var(--theme-accent-soft); /* @kind color */
+--brand-accent-contrast:var(--theme-accent-on); /* @kind color */
+}
+
+/* ---------- amethyst mint harmony ---------- */
+[data-theme="amethyst"]{
+--theme-1:#2A3F38;--theme-2:#8DF688;--theme-3:#562F54;--theme-4:#F650BD;
+--theme-accent:#F650BD;
+--theme-accent-hover:#DE3AA6;
+--theme-accent-active:#C22C8F;
+--theme-accent-on:#3D0A2C;
+--theme-accent-strong:#B02279;
+--theme-accent-soft:#FEEAF6;
+--theme-accent-border:#FBB8E0;
+--theme-accent-bevel:rgba(0,0,0,.30);
+--theme-field:#2A3F38;
+--theme-field-text:#EAFBEA;
+--theme-canvas:#F5F3F5;
+--theme-nav:#EDE9EE;
+--brand-accent:var(--theme-accent); /* @kind color */
+--brand-accent-hover:var(--theme-accent-hover); /* @kind color */
+--brand-accent-soft:var(--theme-accent-soft); /* @kind color */
+--brand-accent-contrast:var(--theme-accent-on); /* @kind color */
+}
+
+/* ---------- opaline ---------- */
+[data-theme="opaline"]{
+--theme-1:#F4F4F6;--theme-2:#E7E7E7;--theme-3:#D2D2D4;--theme-4:#FF634A;
+--theme-accent:#FF634A;
+--theme-accent-hover:#E84F37;
+--theme-accent-active:#C93E29;
+--theme-accent-on:#3A1006;
+--theme-accent-strong:#C43A22;
+--theme-accent-soft:#FFEDE9;
+--theme-accent-border:#FFC2B6;
+--theme-accent-bevel:rgba(0,0,0,.30);
+--theme-field:#F4F4F6;
+--theme-field-text:#2B2B2E;
+--theme-canvas:#F4F4F6;
+--theme-nav:#E7E7E9;
+--brand-accent:var(--theme-accent); /* @kind color */
+--brand-accent-hover:var(--theme-accent-hover); /* @kind color */
+--brand-accent-soft:var(--theme-accent-soft); /* @kind color */
+--brand-accent-contrast:var(--theme-accent-on); /* @kind color */
+}
+
+/* ============================================================
+   Semantic mapping — the only place themes reach the components.
+   Custom properties resolve at use time, so this stays correct
+   for whichever theme is set on the root element.
+   ============================================================ */
+:root{
+--color-bg:var(--theme-canvas);
+--color-nav-bg:var(--theme-nav);
+--color-bg-fill-brand:var(--theme-accent);
+--color-bg-fill-brand-hover:var(--theme-accent-hover);
+--color-bg-fill-brand-active:var(--theme-accent-active);
+--color-text-brand-on-bg-fill:var(--theme-accent-on);
+--color-icon-brand-on-bg-fill:var(--theme-accent-on);
+--color-border-brand:var(--theme-accent);
+--color-text-link:var(--theme-accent-strong);
+--color-text-link-hover:var(--theme-accent-active);
+--color-text-link-active:var(--theme-accent-active);
+--color-border-focus:var(--theme-accent-strong);
+--button-primary-gradient:linear-gradient(180deg,rgba(255,255,255,0) 63.53%,rgba(255,255,255,.15) 100%); /* @kind other */
+--button-primary-inset:inset 0 -1px 0 1px var(--theme-accent-bevel),inset 0 0 0 1px var(--theme-accent),inset 0 .5px 0 1.5px rgba(255,255,255,.25); /* @kind shadow */
+}

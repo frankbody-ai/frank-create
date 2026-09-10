@@ -1,0 +1,33 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Theming" subtitle="ThemePicker — seven tenant palettes, click to re-theme this card" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Theming</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;padding:16px;background:var(--color-bg)}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+window.AS_ICON_BASE = '../../assets/icons';
+const { ThemePicker, Button, ButtonGroup, Badge, Card, Text, Stack } = window.AutoSolutionsOSDesignSystem_27c955;
+function Demo(){
+  const [theme,setTheme] = React.useState('ink');  return (
+    <Stack gap="400">
+      <ThemePicker value={theme} onChange={setTheme} columns={7} />
+      <Card title="Live preview" subtitle="Accent, canvas, nav tint and links follow the theme — status colours never do">
+        <Stack direction="inline" gap="200" align="center" wrap>
+          <Button variant="primary">Add workflow</Button>
+          <Button>Export</Button>
+          <Button variant="plain">Learn more</Button>
+          <Badge tone="success">Active</Badge>
+          <Badge tone="critical">Failed</Badge>
+          <Badge tone="ai">Assisted</Badge>
+          <Text tone="secondary">Canvas and navigation retint; the neutral ramp does not.</Text>
+        </Stack>
+      </Card>
+    </Stack>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

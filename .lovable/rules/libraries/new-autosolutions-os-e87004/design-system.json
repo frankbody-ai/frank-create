@@ -1,0 +1,2329 @@
+{
+  "meta": {
+    "name": "NEW AutoSolutions OS",
+    "package": "@ws-mptzrrrtzb2ybcslxi0m/d9e36884-7257-4148-8c35-63e0bbefd685",
+    "version": "3.0.0",
+    "framework": "react",
+    "css_framework": "css-variables",
+    "starter_template": "custom_design_system",
+    "theme_files": [
+      "src/design-system/autosolutions/tokens/colors.css",
+      "src/design-system/autosolutions/tokens/typography.css",
+      "src/design-system/autosolutions/tokens/spacing.css",
+      "src/design-system/autosolutions/tokens/shape.css",
+      "src/design-system/autosolutions/tokens/elevation.css",
+      "src/design-system/autosolutions/tokens/motion.css",
+      "src/design-system/autosolutions/tokens/layout.css",
+      "src/design-system/autosolutions/tokens/themes.css"
+    ],
+    "source_type": "local",
+    "source_manifest": {
+      "#enrichment": "ba5eafbbad1621f751d17ef4eb06f99b2e20b774f658bc01d4819a6b6efc1f4e",
+      ".dsignore": "2c7d76468c15bc0f1499420154f01ae3",
+      ".github/workflows/verify.yml": "b899bf545daaf27aab73822c813c12c6",
+      ".gitignore": "c348d6b1414707d2b3c256e7ed62d059",
+      ".lovable/meta.yaml": "731dc53c4191bd35cabf4a0af7095d7f",
+      ".lovable/plan/ci-verification-wider-visual-coverage-a11y-checks-and-a-reba-2026-08-20.md": "7d1876dad819cbdd80e35822a50a6e97",
+      ".lovable/plan/rebuild-the-autosolutions-os-library-straight-from-the-packa-2026-08-20.md": "0e1e7b99c5aea150cfe8c3e8f35840b9",
+      ".lovable/plan/template-audit-visual-regression-and-token-lint-rules-2026-08-20.md": "0dbe65c389c032b4dc279721cc9edbab",
+      ".lovable/plan/update-autosolutions-os-to-the-new-design-system-version-2026-09-08.md": "5265884fd22d6ddd394ac1634eff6656",
+      ".lovable/sources.yaml": "1a07fa1873af43b85602acbba891c4e8",
+      ".lovable/system.md": "0af968241833ae1aa5df324f5e723e0a",
+      "README.md": "d19675c449605f23c7cfa133c69b398b",
+      "bunfig.toml": "25f4c8696b22b0943db7191e0cdf7942",
+      "docs/redesign/DESIGN-DECISIONS.md": "672680f78a270f54b1f1965fc75d3108",
+      "docs/redesign/MAPPING.md": "f50b76cd8d0c1dc32b1340ed4abb1d5c",
+      "eslint.config.js": "d123d4e819867664d8f18eb35fb400e5",
+      "lovable.toml": "9636c1bf32f9901bfba4eabb92981217",
+      "mockupPreviewPlugin.ts": "e42e31c16e4b3b36f860729f5224edad",
+      "package.json": "0c3b35ac9317e327929fde474943a0d9",
+      "public/favicon.svg": "299a22c46034371cceb53b591eabfafd",
+      "scripts/a11y-allowlist.json": "be61a63d617d467de6804b0bd8755e79",
+      "scripts/a11y.mjs": "17e7912d5c161fec1da3306743498977",
+      "scripts/audit-template.mjs": "3f8f854995c4e9fe0b6784cc188816f4",
+      "scripts/lint-tokens.mjs": "9d99c613433e6c39f4479ca58721007b",
+      "scripts/rebaseline.mjs": "119b538b72462628c4ab27e6bc078a00",
+      "scripts/shots.mjs": "7cb4f4112706c7b59fe003205ead04b2",
+      "scripts/token-lint-budget.json": "9a548c0ffc7f79ba599d37cf269bee3f",
+      "scripts/visual.mjs": "8219262b44691cb07924da7e22312062",
+      "src/design-system/autosolutions/assets/_magenta.txt": "7d61446a3e3a4fd602fee882e74f2522",
+      "src/design-system/autosolutions/assets/apps/ad-management-label.png": "3eae4d551b0cbe2d4f60253e8fcd9edd",
+      "src/design-system/autosolutions/assets/apps/ad-management.png": "46c6774b13516c388ceeea0000a6d6a9",
+      "src/design-system/autosolutions/assets/apps/asset-portal-label.png": "1d778921cc873636bab776fb8e333a46",
+      "src/design-system/autosolutions/assets/apps/banking-balance-label.png": "f59f662bdcc4c22cac72ccf5776a29ef",
+      "src/design-system/autosolutions/assets/apps/content-calendar-label.png": "0f7e23ad58bf3eba28d6e331fc637332",
+      "src/design-system/autosolutions/assets/apps/content-calendar.png": "3018e38041138575877c68e486111094",
+      "src/design-system/autosolutions/assets/apps/design-studio-label.png": "6d07480a2375bf9a9c5e650978a53100",
+      "src/design-system/autosolutions/assets/apps/design-studio.png": "933218af340d9b02bd9ae8aa816c52e8",
+      "src/design-system/autosolutions/assets/apps/ecommerce-sales-label.png": "de79ef88f37a2c024297900346215531",
+      "src/design-system/autosolutions/assets/apps/ecommerce-sales.png": "f436d8b51e694a771c205c32dca7b979",
+      "src/design-system/autosolutions/assets/apps/franks-kitchen-label.png": "26ae1d7d5c5adf86bd8c8fdaa75f60f3",
+      "src/design-system/autosolutions/assets/apps/franks-kitchen.png": "73e1a1fcd92917526caf394b108fb44f",
+      "src/design-system/autosolutions/assets/apps/growth-engine-label.png": "fa12252728a62da38fc5921f7597fc84",
+      "src/design-system/autosolutions/assets/apps/growth-engine.png": "7d20fb86e57b78cbf05c1fa15d2b358b",
+      "src/design-system/autosolutions/assets/apps/label-maker-label.png": "82e00d4ac57fee5bd32089798de104e6",
+      "src/design-system/autosolutions/assets/apps/label-maker.png": "caf2b0bcdf6a24a3d9b01fdbc8886655",
+      "src/design-system/autosolutions/assets/apps/ops-hub-label.png": "1b36461d357892c437559e014ff214bb",
+      "src/design-system/autosolutions/assets/apps/ops-hub.png": "0f76316d78380cf4b97207a5e4a89b75",
+      "src/design-system/autosolutions/assets/apps/product-validator-label.png": "d032b8d7a102016d0b8136a81b4999f5",
+      "src/design-system/autosolutions/assets/apps/product-validator.png": "907a04992132aab8a622ee8a1d0f8f41",
+      "src/design-system/autosolutions/assets/apps/shelf-simulator-label.png": "75aa04feb5f89762748ce4902ea92125",
+      "src/design-system/autosolutions/assets/apps/shelf-simulator.png": "519d317856aaa8e3ee2ddfa9a85606c5",
+      "src/design-system/autosolutions/assets/apps/shopify-sales-label.png": "ee4a6899189ba66f3b7dfc01e8e6febc",
+      "src/design-system/autosolutions/assets/apps/shopify-sales.png": "0afeb1a93d871bb0ad4798ea743e85d8",
+      "src/design-system/autosolutions/assets/apps/smart-comms-hub-label.png": "42f41f49933fd250618b4aaf4acaf4df",
+      "src/design-system/autosolutions/assets/apps/smart-comms-hub.png": "33c20ebe81c76aa31171eb54b3083d65",
+      "src/design-system/autosolutions/assets/apps/smart-leadgen-crm-label.png": "3ef754a42cb954e2751b6dd02547b980",
+      "src/design-system/autosolutions/assets/apps/social-simulator-label.png": "1a30c26dd1fc765610c12afd7cb6efa4",
+      "src/design-system/autosolutions/assets/apps/social-simulator.png": "9defd5f9d2a47321e415e624be4f04b1",
+      "src/design-system/autosolutions/assets/companies/_ratios.json": "4b94a9329acb0626a361701ff69605a2",
+      "src/design-system/autosolutions/assets/companies/alive-ink.png": "0882e00e92be2ec92efdf2622c8074e4",
+      "src/design-system/autosolutions/assets/companies/alive-plain.png": "66e6f1a281905d2bbc869a821fec549d",
+      "src/design-system/autosolutions/assets/companies/alive-white.png": "87b68b3898c2d44761e212e074a90e9c",
+      "src/design-system/autosolutions/assets/companies/alive.png": "e9b36fa761d761990cab430cff4f9f83",
+      "src/design-system/autosolutions/assets/companies/coreiq-ink.png": "c7ddf801b2ccae973edf562c5d37bb86",
+      "src/design-system/autosolutions/assets/companies/coreiq-plain.png": "8bd57c5887e2e560fb936f3077d85ecf",
+      "src/design-system/autosolutions/assets/companies/coreiq-white.png": "3729c8b35392cc144d26e4d014828334",
+      "src/design-system/autosolutions/assets/companies/coreiq.png": "7402dba0b821e67d28f9a8678cce22f2",
+      "src/design-system/autosolutions/assets/companies/enxgy-ink.png": "50665bb45421187a396bb5a644951c5a",
+      "src/design-system/autosolutions/assets/companies/enxgy-plain.png": "b67e9d5386e4ca2f6fe115ab723b3f6f",
+      "src/design-system/autosolutions/assets/companies/enxgy-white.png": "7468dde50f9b445bf88877c03da46d51",
+      "src/design-system/autosolutions/assets/companies/enxgy.png": "ea447779ec5e713f3e62d8bebd0f9c47",
+      "src/design-system/autosolutions/assets/companies/frankbody-ink.png": "7ffa86a05dd418c01dae9d7848795faf",
+      "src/design-system/autosolutions/assets/companies/frankbody-plain.png": "244466fea1ea65e477dbf6c25279f23a",
+      "src/design-system/autosolutions/assets/companies/frankbody-white.png": "7850ef2553f74cee95b56d66fe13230f",
+      "src/design-system/autosolutions/assets/companies/frankbody.png": "ff8ff4cb19c097e4f86f4942ef7d6782",
+      "src/design-system/autosolutions/assets/companies/ledgify-ink.png": "ffb30cb518b50c4bce9cd06dea5306c9",
+      "src/design-system/autosolutions/assets/companies/ledgify-plain.png": "4be74c35d1664a78ee5f88fff5925518",
+      "src/design-system/autosolutions/assets/companies/ledgify-white.png": "add761b4ad99c2ec3a3d694808e88dad",
+      "src/design-system/autosolutions/assets/companies/ledgify.png": "24f7da86fa64adf1d85217281124d351",
+      "src/design-system/autosolutions/assets/companies/seniorsnouts-ink.png": "e69bff7a282ef9d4657834f0db474346",
+      "src/design-system/autosolutions/assets/companies/seniorsnouts-plain.png": "75e84b741792bae066579d77605fa444",
+      "src/design-system/autosolutions/assets/companies/seniorsnouts-white.png": "902ac47fce5706bc7a1c48dcd18afab7",
+      "src/design-system/autosolutions/assets/companies/seniorsnouts.png": "a57db7907b03eb6b25474ab0ffd423a6",
+      "src/design-system/autosolutions/assets/companies/strengthlab-ink.png": "414eff77d2245b9d8c7b198891f7189e",
+      "src/design-system/autosolutions/assets/companies/strengthlab-plain.png": "229bb8d94a66e9d8e47c6fa89b82cc48",
+      "src/design-system/autosolutions/assets/companies/strengthlab-white.png": "71efc1a067cdc05f2911aa295ac588c7",
+      "src/design-system/autosolutions/assets/companies/strengthlab.png": "df962a04f8a8c72ec046d476e4d87993",
+      "src/design-system/autosolutions/assets/fonts/InterDisplay-Light.woff2": "5aa9ac5c3bfa084417bd7c7b131d7269",
+      "src/design-system/autosolutions/assets/fonts/InterDisplay-Medium.woff2": "2c7a1529ffe6eba3fc03ceb8aad104dc",
+      "src/design-system/autosolutions/assets/fonts/InterDisplay-Regular.woff2": "e0236b70e4908a9df3c8b18f3ca5ca23",
+      "src/design-system/autosolutions/assets/fonts/InterDisplay-SemiBold.woff2": "21835ce27dd9e58dd992c7e6ea7236ca",
+      "src/design-system/autosolutions/assets/fonts/InterVariable-Italic.woff2": "8d1dc86da25893737b6bb8a9c64b790e",
+      "src/design-system/autosolutions/assets/fonts/InterVariable.woff2": "2bf3d951bf9d6109437ea0874bbf12fb",
+      "src/design-system/autosolutions/assets/icons/16/adjustments-horizontal.svg": "e62fd95fa29bcfb94e61dde74969d90b",
+      "src/design-system/autosolutions/assets/icons/16/arrow-down-tray.svg": "fcc1e6ff9a11f88021b1ed03311c7028",
+      "src/design-system/autosolutions/assets/icons/16/arrow-left.svg": "0383eab28a001689c221087dd00a0af3",
+      "src/design-system/autosolutions/assets/icons/16/arrow-path.svg": "34ffed8177404ac174b0adecaebd9f50",
+      "src/design-system/autosolutions/assets/icons/16/arrow-right.svg": "a9f182945fabc20d2ebd1576fe00f744",
+      "src/design-system/autosolutions/assets/icons/16/arrow-top-right-on-square.svg": "76282f995b502ec7f2a92a730b39bf12",
+      "src/design-system/autosolutions/assets/icons/16/arrow-up-tray.svg": "c4cccaae6cbbf9dcd42cf4cf0d75203c",
+      "src/design-system/autosolutions/assets/icons/16/banknotes.svg": "4578aec01cea2e590c8f51aacef95d65",
+      "src/design-system/autosolutions/assets/icons/16/bell.svg": "c8ad14c2ba6a6566414d06dadc3e2924",
+      "src/design-system/autosolutions/assets/icons/16/bolt.svg": "df23f0b9c9c630fda4e9d83f9bceb7a1",
+      "src/design-system/autosolutions/assets/icons/16/bookmark.svg": "29128b03b1eed8481e44ac3e3e391e81",
+      "src/design-system/autosolutions/assets/icons/16/briefcase.svg": "f3469341c0844a5efbe109c561465517",
+      "src/design-system/autosolutions/assets/icons/16/calendar.svg": "79ffe0767033aca3b1fae1bafd1f755d",
+      "src/design-system/autosolutions/assets/icons/16/chart-bar.svg": "1135c1fe038f6c4e97babeb2b36c04bb",
+      "src/design-system/autosolutions/assets/icons/16/check-circle.svg": "cf586b54a9e39f62c20ad3ba9bbd9dd4",
+      "src/design-system/autosolutions/assets/icons/16/check.svg": "95b884a2dec7564870305df2c413b795",
+      "src/design-system/autosolutions/assets/icons/16/chevron-down.svg": "061c08b79fd63f294d01af27d0d30db4",
+      "src/design-system/autosolutions/assets/icons/16/chevron-left.svg": "9941d2e1688f0408f3ac60da7033fcad",
+      "src/design-system/autosolutions/assets/icons/16/chevron-right.svg": "159952c05da09ffe64e7b3248d495db4",
+      "src/design-system/autosolutions/assets/icons/16/chevron-up-down.svg": "2d282c3901cf39404e07a22597f42418",
+      "src/design-system/autosolutions/assets/icons/16/chevron-up.svg": "9cf171e4b5bac887aa14e9430f1100de",
+      "src/design-system/autosolutions/assets/icons/16/circle-stack.svg": "067a39b05e93287f134af5c6061e3054",
+      "src/design-system/autosolutions/assets/icons/16/clock.svg": "6ba90b78d572aba34a062f4bfe05d798",
+      "src/design-system/autosolutions/assets/icons/16/cog-6-tooth.svg": "977443f7e7cae34988c9632d0cd45ef7",
+      "src/design-system/autosolutions/assets/icons/16/cpu-chip.svg": "d2c8c19b0a0c6dcd5eb23ea72ae843dd",
+      "src/design-system/autosolutions/assets/icons/16/credit-card.svg": "4af4ebf2eae5150b2330e262825831dc",
+      "src/design-system/autosolutions/assets/icons/16/document-duplicate.svg": "b6b647738032579423e0ad19291d33cb",
+      "src/design-system/autosolutions/assets/icons/16/document-text.svg": "d52efb9a88c6f672b191eeb98699ef60",
+      "src/design-system/autosolutions/assets/icons/16/ellipsis-horizontal.svg": "24919e44eb3b8a9954c37fe260e2a644",
+      "src/design-system/autosolutions/assets/icons/16/ellipsis-vertical.svg": "6b3229e6a985ca19575aee22dd662e75",
+      "src/design-system/autosolutions/assets/icons/16/envelope.svg": "72237cd5757416a81e07efebbf5dade0",
+      "src/design-system/autosolutions/assets/icons/16/exclamation-circle.svg": "8348097a8d9472cdca945fe7734b6e9f",
+      "src/design-system/autosolutions/assets/icons/16/exclamation-triangle.svg": "59435ebc38a9424c15955f62d5f15cba",
+      "src/design-system/autosolutions/assets/icons/16/eye.svg": "21be64579cc4ab654688f3063e124772",
+      "src/design-system/autosolutions/assets/icons/16/flag.svg": "8c7ce36d21f55ded9ed5cec104fc1e64",
+      "src/design-system/autosolutions/assets/icons/16/folder.svg": "03d839572e35bd8d96e8127306b0e433",
+      "src/design-system/autosolutions/assets/icons/16/funnel.svg": "a907f9461fea7e4f15933b40d700f636",
+      "src/design-system/autosolutions/assets/icons/16/globe-alt.svg": "01dfdbf8d8b705de6e0c8f221b61aca2",
+      "src/design-system/autosolutions/assets/icons/16/home.svg": "b696704f53cdc78f18eee5d469be9bf4",
+      "src/design-system/autosolutions/assets/icons/16/inbox.svg": "229a3edb737ded57149268bab86bd614",
+      "src/design-system/autosolutions/assets/icons/16/information-circle.svg": "e26775375630eb4a93d7d479f75d7f35",
+      "src/design-system/autosolutions/assets/icons/16/light-bulb.svg": "8f2380fc07e70826433530a7e65adb38",
+      "src/design-system/autosolutions/assets/icons/16/link.svg": "a520118080b98ca86106a0a5a495de91",
+      "src/design-system/autosolutions/assets/icons/16/list-bullet.svg": "97a6f92f265e7c0b3f542d431926ffa7",
+      "src/design-system/autosolutions/assets/icons/16/lock-closed.svg": "fbcb61f5e754ebd3b2f37327258e88d7",
+      "src/design-system/autosolutions/assets/icons/16/magnifying-glass.svg": "231f7b28c35820d52cc278b5f6d78b7a",
+      "src/design-system/autosolutions/assets/icons/16/megaphone.svg": "7886da48fba9381c507865e08282080b",
+      "src/design-system/autosolutions/assets/icons/16/minus.svg": "5e9c36b1f328b2b4e266838538eddc40",
+      "src/design-system/autosolutions/assets/icons/16/no-symbol.svg": "b9d4ad11b04fadbccb4a1717af561ce8",
+      "src/design-system/autosolutions/assets/icons/16/paper-airplane.svg": "5bad577cd5890e28dd8e5ea3371b3ae3",
+      "src/design-system/autosolutions/assets/icons/16/pause.svg": "66cf5290d89355cb0737f1bf7630f5cb",
+      "src/design-system/autosolutions/assets/icons/16/pencil-square.svg": "018425c6542c3a92e580290b3b5081af",
+      "src/design-system/autosolutions/assets/icons/16/photo.svg": "5981b1c514362d3c6bd0c32617932b91",
+      "src/design-system/autosolutions/assets/icons/16/play.svg": "a31a73f9364cb7bb89286da5edeeedac",
+      "src/design-system/autosolutions/assets/icons/16/plus-circle.svg": "eb1fe578d7678ef4034da9732d0abc10",
+      "src/design-system/autosolutions/assets/icons/16/plus.svg": "c67f71b0dbbb3b0bb0432e25b77dd1cb",
+      "src/design-system/autosolutions/assets/icons/16/power.svg": "5f1d6308763689c10a4397f33d60bf36",
+      "src/design-system/autosolutions/assets/icons/16/puzzle-piece.svg": "0fb30797033a4d5ec2d5ca021eb64d0e",
+      "src/design-system/autosolutions/assets/icons/16/question-mark-circle.svg": "61e1cd29602c3cb0b4683dfbcce43cc3",
+      "src/design-system/autosolutions/assets/icons/16/shield-check.svg": "877d46482520ee9a7890043d838341fe",
+      "src/design-system/autosolutions/assets/icons/16/sparkles.svg": "73a006d5b393ae3416678507ab90f43a",
+      "src/design-system/autosolutions/assets/icons/16/star.svg": "dcc25a8925d890e169766302ed018ecf",
+      "src/design-system/autosolutions/assets/icons/16/table-cells.svg": "7e66bacfff090f1e75ce24d112789819",
+      "src/design-system/autosolutions/assets/icons/16/tag.svg": "8294985512cd0ae54da32e7a62de2d86",
+      "src/design-system/autosolutions/assets/icons/16/trash.svg": "6c492f3e83dddc2e9d582d41b4b6ce66",
+      "src/design-system/autosolutions/assets/icons/16/user-circle.svg": "ff40bac6715dd4cafa649e68a827102a",
+      "src/design-system/autosolutions/assets/icons/16/users.svg": "87962b2ebaa5ad8f9be94d4593f20eae",
+      "src/design-system/autosolutions/assets/icons/16/x-mark.svg": "0d03f7c43eab25bb8c655ad0f61c3e72",
+      "src/design-system/autosolutions/assets/icons/20/adjustments-horizontal.svg": "b39c2cfc632dac07bd8f76d9db922a86",
+      "src/design-system/autosolutions/assets/icons/20/arrow-down-tray.svg": "873cd6c516d4f494cc95bbe0d4ee1ea2",
+      "src/design-system/autosolutions/assets/icons/20/arrow-left.svg": "766c43f586f90ea03f05504f8fb1b4fc",
+      "src/design-system/autosolutions/assets/icons/20/arrow-path.svg": "d95aad9d2e410762e65978347a0b9c18",
+      "src/design-system/autosolutions/assets/icons/20/arrow-right.svg": "2285798f17104b5a78fb9abc68e236ea",
+      "src/design-system/autosolutions/assets/icons/20/arrow-top-right-on-square.svg": "a399e5425b981f50a7c86daacffcb868",
+      "src/design-system/autosolutions/assets/icons/20/arrow-trending-down.svg": "c14dcb90943494141b447bd7f0bec17b",
+      "src/design-system/autosolutions/assets/icons/20/arrow-trending-up.svg": "fe24dc46e8a7cf2b4d175a12e61d1d67",
+      "src/design-system/autosolutions/assets/icons/20/arrow-up-right.svg": "786bb3f17af4055778287f9e041b5180",
+      "src/design-system/autosolutions/assets/icons/20/arrow-up-tray.svg": "5ed00cfe53e98080d5dfaff28348c3be",
+      "src/design-system/autosolutions/assets/icons/20/banknotes.svg": "98a47cdad96b984bdc796663e0b7d130",
+      "src/design-system/autosolutions/assets/icons/20/bars-3.svg": "8fad0c21c50e12bd0f7185a04c89c060",
+      "src/design-system/autosolutions/assets/icons/20/beaker.svg": "f4aae774c552394400af16ded31a3944",
+      "src/design-system/autosolutions/assets/icons/20/bell.svg": "0ec91e317a778eb4b57d8b1405127569",
+      "src/design-system/autosolutions/assets/icons/20/bolt.svg": "4e53672145be674f7706e840f9dd8fc5",
+      "src/design-system/autosolutions/assets/icons/20/bookmark.svg": "cf895e97c78363244596dbe7bbf5f7a2",
+      "src/design-system/autosolutions/assets/icons/20/briefcase.svg": "769a1f9a48daaf7b1b90365e9120fc00",
+      "src/design-system/autosolutions/assets/icons/20/building-office-2.svg": "f3b4cc651cf732d99fcdd935700dc5b4",
+      "src/design-system/autosolutions/assets/icons/20/calendar.svg": "bce254e9d85cb21e5f7849a36de5d854",
+      "src/design-system/autosolutions/assets/icons/20/chart-bar.svg": "cacd6299d864da0b22f7d237ea45d0e6",
+      "src/design-system/autosolutions/assets/icons/20/chart-pie.svg": "b011ad72a64e6e4e4b0d2dfc75685a75",
+      "src/design-system/autosolutions/assets/icons/20/chat-bubble-left-right.svg": "ec5b30107df901d6cdaaf3e95b5ca4a0",
+      "src/design-system/autosolutions/assets/icons/20/check-circle.svg": "c6da3bed876fddc384d6b3652acf48bf",
+      "src/design-system/autosolutions/assets/icons/20/check.svg": "373541bef2f3c49470d9c9a047b6a951",
+      "src/design-system/autosolutions/assets/icons/20/chevron-down.svg": "b8dfeb3edf87a31f77459558fb5501c9",
+      "src/design-system/autosolutions/assets/icons/20/chevron-left.svg": "96626e7866289be4bb46a9b6e8e36ccb",
+      "src/design-system/autosolutions/assets/icons/20/chevron-right.svg": "38f0cdfeb72075c7ba23ee53e461db48",
+      "src/design-system/autosolutions/assets/icons/20/chevron-up-down.svg": "9a7c5fb2d3deb3585353174738425b0e",
+      "src/design-system/autosolutions/assets/icons/20/chevron-up.svg": "0c98abc447093cb7f4eed8963649c6e3",
+      "src/design-system/autosolutions/assets/icons/20/circle-stack.svg": "5881362b4cde4ad79d4388d29dfde9fb",
+      "src/design-system/autosolutions/assets/icons/20/clipboard-document-check.svg": "09c1b68f81f1b76ec28e2aadb2d37f8d",
+      "src/design-system/autosolutions/assets/icons/20/clock.svg": "721932e29d2e8e8105d8af68389ab408",
+      "src/design-system/autosolutions/assets/icons/20/cloud.svg": "e12a1491f2c83f8f02ee8dc562ceed5c",
+      "src/design-system/autosolutions/assets/icons/20/code-bracket.svg": "003b1a9d874d1a8a61221fe3945b53a9",
+      "src/design-system/autosolutions/assets/icons/20/cog-6-tooth.svg": "fa262267c3367fe02daa5adb8baaf885",
+      "src/design-system/autosolutions/assets/icons/20/command-line.svg": "ad7243d5189ebd0e588fa8d45cc1dcc5",
+      "src/design-system/autosolutions/assets/icons/20/cpu-chip.svg": "9b5a5710c4fe361e96825a9e8f6b4771",
+      "src/design-system/autosolutions/assets/icons/20/credit-card.svg": "8b236abdd23450fa2f57f0d4a49a6306",
+      "src/design-system/autosolutions/assets/icons/20/document-duplicate.svg": "9cae6393851cf34fda3d688ee7029e00",
+      "src/design-system/autosolutions/assets/icons/20/document-text.svg": "218c08e4f9a706d22f8144cc0ad1ea7f",
+      "src/design-system/autosolutions/assets/icons/20/ellipsis-horizontal.svg": "633222875ff472c5e53d97c4310021e9",
+      "src/design-system/autosolutions/assets/icons/20/ellipsis-vertical.svg": "6f5c9da531c18165b074f693193ae471",
+      "src/design-system/autosolutions/assets/icons/20/envelope.svg": "cca887dc9a4e70d6bf9ff0b153da21d5",
+      "src/design-system/autosolutions/assets/icons/20/exclamation-circle.svg": "c08208f771e195fa6792e6559ad5515e",
+      "src/design-system/autosolutions/assets/icons/20/exclamation-triangle.svg": "6e1d448ba79165f58f5935d774706460",
+      "src/design-system/autosolutions/assets/icons/20/eye.svg": "152da81062dcb77db944bea08d0e4413",
+      "src/design-system/autosolutions/assets/icons/20/flag.svg": "417de559f9ba25cb136919ed09798d01",
+      "src/design-system/autosolutions/assets/icons/20/folder.svg": "1907bd5485dae9495d721449df1c2f36",
+      "src/design-system/autosolutions/assets/icons/20/funnel.svg": "f6e00a213f584f89880429701b096b53",
+      "src/design-system/autosolutions/assets/icons/20/globe-alt.svg": "0881cf8918673c974b0d65b55438b3e4",
+      "src/design-system/autosolutions/assets/icons/20/hand-thumb-up.svg": "7f7fa82886caf336822aab4c23737603",
+      "src/design-system/autosolutions/assets/icons/20/home.svg": "bd2cb53e5bf717b86b36bc7fc2f18dcf",
+      "src/design-system/autosolutions/assets/icons/20/inbox.svg": "75d5ca975523e71028c925f6a0165959",
+      "src/design-system/autosolutions/assets/icons/20/information-circle.svg": "f49de6be1b106eb7b1d1a5d02fb97ac0",
+      "src/design-system/autosolutions/assets/icons/20/key.svg": "60d3d1659ae458d344b40c4c41cf53fa",
+      "src/design-system/autosolutions/assets/icons/20/light-bulb.svg": "9736733e0876605d2ff5b865b6c89e9e",
+      "src/design-system/autosolutions/assets/icons/20/link.svg": "8851975220cb8bdb72491fc7161053f4",
+      "src/design-system/autosolutions/assets/icons/20/list-bullet.svg": "4fa4db31afcba1130afbeaa27da940ec",
+      "src/design-system/autosolutions/assets/icons/20/lock-closed.svg": "7c934c9e45ff9fead823a80e350b10f1",
+      "src/design-system/autosolutions/assets/icons/20/magnifying-glass.svg": "7dcc88ef353d212098de801501755870",
+      "src/design-system/autosolutions/assets/icons/20/megaphone.svg": "5d13ca68dcb5871a371cfdb6ecf301cf",
+      "src/design-system/autosolutions/assets/icons/20/microphone.svg": "f4888074e9c327fc1e318c022a75fae4",
+      "src/design-system/autosolutions/assets/icons/20/minus.svg": "124a765b66a324f8380746b942b0fe12",
+      "src/design-system/autosolutions/assets/icons/20/no-symbol.svg": "17145ce7b87de51b76ddb05a1f643f13",
+      "src/design-system/autosolutions/assets/icons/20/paper-airplane.svg": "f0c9966ecbe6dd369e8d666c60bf5fae",
+      "src/design-system/autosolutions/assets/icons/20/pause.svg": "ab393028aa7e850b21149fb2f689a382",
+      "src/design-system/autosolutions/assets/icons/20/pencil-square.svg": "5b86206d5c4ec75e686f0b04e7a3f4c9",
+      "src/design-system/autosolutions/assets/icons/20/phone.svg": "438526ef5272a84201261146f4142e01",
+      "src/design-system/autosolutions/assets/icons/20/photo.svg": "bd3600882e24f3529928ef2afd399f8c",
+      "src/design-system/autosolutions/assets/icons/20/play.svg": "d39c422416a5bb60a4c67c49d77b83c5",
+      "src/design-system/autosolutions/assets/icons/20/plus-circle.svg": "65fdad5cd0c229f1c2b3b722e99c8528",
+      "src/design-system/autosolutions/assets/icons/20/plus.svg": "a6049d086ee36a3e847c67f40b3da638",
+      "src/design-system/autosolutions/assets/icons/20/power.svg": "8a7bb1da394bbb5c92c3bc5a1cf74445",
+      "src/design-system/autosolutions/assets/icons/20/puzzle-piece.svg": "d38638a0489db04469490ec0954c8a9d",
+      "src/design-system/autosolutions/assets/icons/20/question-mark-circle.svg": "58fa77d9d44abb72fff7c5fba263b572",
+      "src/design-system/autosolutions/assets/icons/20/rectangle-stack.svg": "57fb39be3e6c07e50f784e0640a56ff6",
+      "src/design-system/autosolutions/assets/icons/20/server-stack.svg": "b4a44d769a1e81f6b6cc634cf5628aac",
+      "src/design-system/autosolutions/assets/icons/20/shield-check.svg": "cc8dd0351876610cb40d66455878f01d",
+      "src/design-system/autosolutions/assets/icons/20/signal.svg": "76deade3e7b8670b99755ef64f2fb100",
+      "src/design-system/autosolutions/assets/icons/20/sparkles.svg": "93719a0cb3335009e0ea5b4a98b44924",
+      "src/design-system/autosolutions/assets/icons/20/squares-2x2.svg": "7da79072774d10383560837b5b92841b",
+      "src/design-system/autosolutions/assets/icons/20/squares-plus.svg": "040813bbfe234ad6b5762615e0abbe8c",
+      "src/design-system/autosolutions/assets/icons/20/star.svg": "6be190bd73ddd9ad278b58a211c2d76d",
+      "src/design-system/autosolutions/assets/icons/20/table-cells.svg": "b8a0aa5724f786f60478a996f5d42f3c",
+      "src/design-system/autosolutions/assets/icons/20/tag.svg": "68d479746619bfa86d42f4151911974b",
+      "src/design-system/autosolutions/assets/icons/20/trash.svg": "924bdb221080281249e018ea77af94a5",
+      "src/design-system/autosolutions/assets/icons/20/user-circle.svg": "8d2436f5b026c8c2e87209910dc70205",
+      "src/design-system/autosolutions/assets/icons/20/users.svg": "27511c758cbdf2ee6c17a769a8b940e3",
+      "src/design-system/autosolutions/assets/icons/20/wrench-screwdriver.svg": "1bc3706a2c5d48764b88905ce91a6e93",
+      "src/design-system/autosolutions/assets/icons/20/x-mark.svg": "43755c6210ce0a17dacb53c0a86ecfcb",
+      "src/design-system/autosolutions/assets/logos/autosolutions-os-pink.svg": "299a22c46034371cceb53b591eabfafd",
+      "src/design-system/autosolutions/assets/logos/autosolutions-os-white.svg": "fbdf21ea6cc22f918f78d212ea2cc776",
+      "src/design-system/autosolutions/components/actions/Button.d.ts": "f2e7f54a5ce7846a202a1b6f87c25d4f",
+      "src/design-system/autosolutions/components/actions/Button.jsx": "a7a7653326732a1a85dcdeed895db76f",
+      "src/design-system/autosolutions/components/actions/Button.prompt.md": "cc170582af8f23a396ef3fc6fa1527ba",
+      "src/design-system/autosolutions/components/actions/ButtonGroup.d.ts": "2eb2ecab928f475f4196e7a07157a482",
+      "src/design-system/autosolutions/components/actions/ButtonGroup.jsx": "03b18d59c37e31dfc00f9a46fcd9fe5b",
+      "src/design-system/autosolutions/components/actions/IconButton.d.ts": "6cd6e369f31907f85906c80a5d3a2481",
+      "src/design-system/autosolutions/components/actions/IconButton.jsx": "0c09de3c293cc485a5f047f7cea68370",
+      "src/design-system/autosolutions/components/actions/actions.card.html": "7e6dec0d98beb628bed54d9140980f61",
+      "src/design-system/autosolutions/components/actions/actions.css": "5e84d3f70f4382bbf77f8e3912b6fedb",
+      "src/design-system/autosolutions/components/auth/AuthLayout.d.ts": "8955f285ecacb3a3df90db6e9289ae27",
+      "src/design-system/autosolutions/components/auth/AuthLayout.jsx": "b56d59e8a48ec26728e5224c5e271758",
+      "src/design-system/autosolutions/components/auth/GoogleButton.d.ts": "1e6bdba27e9feaa1f62fc3a158014052",
+      "src/design-system/autosolutions/components/auth/GoogleButton.jsx": "f773f18034f1741b991fed49e77e4d1d",
+      "src/design-system/autosolutions/components/auth/GoogleButton.prompt.md": "2d9d4cf2b084ed640b51acebf20bfc81",
+      "src/design-system/autosolutions/components/auth/SignIn.d.ts": "299f5202b8fbfd8e696823bdbc39c11f",
+      "src/design-system/autosolutions/components/auth/SignIn.jsx": "d3eb0b22e62c88c6ca44bae4a06990b0",
+      "src/design-system/autosolutions/components/auth/SignIn.prompt.md": "c8ab3674fa9f2c23b6f13f3dae031f88",
+      "src/design-system/autosolutions/components/auth/SignedOut.d.ts": "babecef972a6ec6df3febb73011b9045",
+      "src/design-system/autosolutions/components/auth/SignedOut.jsx": "81333b8a102afa077370d49947a7e07b",
+      "src/design-system/autosolutions/components/auth/SignedOut.prompt.md": "4309befcaa08cc75c1ec0373af4cf6eb",
+      "src/design-system/autosolutions/components/auth/auth.card.html": "8702d0f13a9b6069ef90ee3fa553810a",
+      "src/design-system/autosolutions/components/auth/auth.css": "059ec602c9e2cef5611ea8ca18ef0570",
+      "src/design-system/autosolutions/components/brand/AppMark.d.ts": "e1338ab0c5ab2a9efd1b637f90b9ab71",
+      "src/design-system/autosolutions/components/brand/AppMark.jsx": "b4a3ee74a6be8d8d4ca4c32a50c04e1c",
+      "src/design-system/autosolutions/components/brand/AppMark.prompt.md": "adfe19a6714834d803e544c2fce5ea42",
+      "src/design-system/autosolutions/components/brand/CompanyMark.d.ts": "33d7abb28eb71a1dac8ad1e8cab75bd6",
+      "src/design-system/autosolutions/components/brand/CompanyMark.jsx": "8a2d0fbe2ac8f2d0e563804ad3b8a6cf",
+      "src/design-system/autosolutions/components/brand/CompanyMark.prompt.md": "d9a869d3295a6a99298cc24bf739be68",
+      "src/design-system/autosolutions/components/brand/Logo.d.ts": "d309a3cd401e8b7a745981b2687acb79",
+      "src/design-system/autosolutions/components/brand/Logo.jsx": "b6d0d9f79dd9985762344f3383053d87",
+      "src/design-system/autosolutions/components/brand/Logo.prompt.md": "c104e0e63071ff9501820f0279a40e75",
+      "src/design-system/autosolutions/components/brand/brand.card.html": "0863dc7dd18500880af90044c393d55e",
+      "src/design-system/autosolutions/components/brand/brand.css": "3565cb1115f574b64eaa1abc605db520",
+      "src/design-system/autosolutions/components/components.css": "bfff9b4e98154a9fc7bd86e5cfa9dc92",
+      "src/design-system/autosolutions/components/data/DataTable.d.ts": "f8878364863c706e10ab4b984307ad40",
+      "src/design-system/autosolutions/components/data/DataTable.jsx": "ff6f8306f8251f6fcb7b6eac2627016e",
+      "src/design-system/autosolutions/components/data/DataTable.prompt.md": "51397a8d64141f20d068002eeae4e21b",
+      "src/design-system/autosolutions/components/data/FilterBar.d.ts": "d2b7c62e0af93272580fd6968ec7b0ce",
+      "src/design-system/autosolutions/components/data/FilterBar.jsx": "9e8164ab6ae6adf1ab2b01c911349af8",
+      "src/design-system/autosolutions/components/data/Pagination.d.ts": "af3df25130a024fa0258f786ad605809",
+      "src/design-system/autosolutions/components/data/Pagination.jsx": "b9e76595568e128168dcd67108ef7b6d",
+      "src/design-system/autosolutions/components/data/data.card.html": "a4c440c6dc26b2a4400fc1ae1eb14e22",
+      "src/design-system/autosolutions/components/data/data.css": "137d42fd7e94f82085f3c1dbc9685109",
+      "src/design-system/autosolutions/components/feedback/Badge.d.ts": "1119ddfd4acfc3e365ab87666bff357c",
+      "src/design-system/autosolutions/components/feedback/Badge.jsx": "fd77682dc8c05669a616249fb8d13831",
+      "src/design-system/autosolutions/components/feedback/Badge.prompt.md": "68a54ec5d09ead850970942d7f69d37f",
+      "src/design-system/autosolutions/components/feedback/Banner.d.ts": "6c1a6f2f787924827e9cde6efccb3697",
+      "src/design-system/autosolutions/components/feedback/Banner.jsx": "6a8d6031c17ad41dcb95b96f240ba107",
+      "src/design-system/autosolutions/components/feedback/Skeleton.d.ts": "292714c61bb581ba416f9ea5956162a0",
+      "src/design-system/autosolutions/components/feedback/Skeleton.jsx": "d75e9b8c779ca8a9f5b4438f25e77161",
+      "src/design-system/autosolutions/components/feedback/Spinner.d.ts": "822c55b4b0eec40b3bf085658a219f10",
+      "src/design-system/autosolutions/components/feedback/Spinner.jsx": "d39575f5d85598f8cbd2603fd68d31c9",
+      "src/design-system/autosolutions/components/feedback/Tooltip.d.ts": "163469ce2224420286fbcbd09cc3b27c",
+      "src/design-system/autosolutions/components/feedback/Tooltip.jsx": "56bcd3b4ec222bfeaa3694a18e11ceff",
+      "src/design-system/autosolutions/components/feedback/feedback.card.html": "fdb51c561dc2e1d23c8ac004f57e5a46",
+      "src/design-system/autosolutions/components/feedback/feedback.css": "b25e6de46f55e4653fd88a760b1bac54",
+      "src/design-system/autosolutions/components/forms/Checkbox.d.ts": "aeced977003a574ebb914d5158386b93",
+      "src/design-system/autosolutions/components/forms/Checkbox.jsx": "dc33b3810f060680047ec764c3417636",
+      "src/design-system/autosolutions/components/forms/RadioButton.d.ts": "86d371523cf8b35ecb653b658a1d00e4",
+      "src/design-system/autosolutions/components/forms/RadioButton.jsx": "be68dd12a1385d2669cc04d0f458956b",
+      "src/design-system/autosolutions/components/forms/Select.d.ts": "9efacdc5224d61030cd3a2abf2e0ff7a",
+      "src/design-system/autosolutions/components/forms/Select.jsx": "80d5b3a534fca37499722149286315dd",
+      "src/design-system/autosolutions/components/forms/Switch.d.ts": "37ddbb221c19c9966d3bed143d30f88f",
+      "src/design-system/autosolutions/components/forms/Switch.jsx": "c37035c9497aa6ec6d68aaf8d4dcf085",
+      "src/design-system/autosolutions/components/forms/TextField.d.ts": "8e4c1c5ef7c9ce2fe05d66d3b7d47499",
+      "src/design-system/autosolutions/components/forms/TextField.jsx": "2f29475e5bfb987cf730764b8c8b1c63",
+      "src/design-system/autosolutions/components/forms/TextField.prompt.md": "b502c04147fcfc7f85e8f88242d33c27",
+      "src/design-system/autosolutions/components/forms/forms.card.html": "3a513626b3cb6e2ab14287a055937a68",
+      "src/design-system/autosolutions/components/forms/forms.css": "73eabbe0ac738ecfda6724d1c439ddac",
+      "src/design-system/autosolutions/components/media/Avatar.d.ts": "2133fddab6e45e10b7d44c15366684b1",
+      "src/design-system/autosolutions/components/media/Avatar.jsx": "d7687800554c68a5d90c29e3ea4d7e67",
+      "src/design-system/autosolutions/components/media/Avatar.prompt.md": "4bc2bd1304b555ea895c9b7f02ddb6c7",
+      "src/design-system/autosolutions/components/media/Icon.d.ts": "3db770d86720fa6cdb6829104c90aa45",
+      "src/design-system/autosolutions/components/media/Icon.jsx": "1ce1417832082494cc81ce9a50a0dd3b",
+      "src/design-system/autosolutions/components/media/Icon.prompt.md": "dc1f8876c70792bd1bcc1e627f6b628b",
+      "src/design-system/autosolutions/components/media/Thumbnail.d.ts": "0a8684e1bcc5586519b3c01d10079ef4",
+      "src/design-system/autosolutions/components/media/Thumbnail.jsx": "3cb733a8247b53d4572e36c494fe3722",
+      "src/design-system/autosolutions/components/media/media.card.html": "6bbe239ce2f8e16f5d7bbfccfd5091da",
+      "src/design-system/autosolutions/components/media/media.css": "3f0e1d725f42988716dcc20d6ff4cf56",
+      "src/design-system/autosolutions/components/mobile/MobileFrame.d.ts": "9b17019a01a2252745a54b813f0a4071",
+      "src/design-system/autosolutions/components/mobile/MobileFrame.jsx": "4d23266255dcc24b383020216e32104c",
+      "src/design-system/autosolutions/components/mobile/MobileFrame.prompt.md": "39fe8e7ae2f40de93d49203f6a84642c",
+      "src/design-system/autosolutions/components/mobile/MobileListRow.d.ts": "2226cad5379d4ef51e26cd4732f89eae",
+      "src/design-system/autosolutions/components/mobile/MobileListRow.jsx": "b5e40069350c0730786c9e3829be0d42",
+      "src/design-system/autosolutions/components/mobile/MobileListRow.prompt.md": "2ad2915968e210bb815721edf6b5f764",
+      "src/design-system/autosolutions/components/mobile/MobileToolbar.d.ts": "826e6acf2f3cd36f6277e6b2fc7e37bf",
+      "src/design-system/autosolutions/components/mobile/MobileToolbar.jsx": "a3e49f7606b28aaf3ba26b38cbd75fcd",
+      "src/design-system/autosolutions/components/mobile/MobileTopBar.d.ts": "c83aafd18cc401a9cecf175b446f76f2",
+      "src/design-system/autosolutions/components/mobile/MobileTopBar.jsx": "31fb88af347c1445c7c59ead2aa67036",
+      "src/design-system/autosolutions/components/mobile/PhoneFrame.d.ts": "15ed588e46dadf45617600020746a912",
+      "src/design-system/autosolutions/components/mobile/PhoneFrame.jsx": "0913fde498021deefd53b232c8177256",
+      "src/design-system/autosolutions/components/mobile/SegmentedControl.d.ts": "0eacaadd01418145c5dded3caa2e30fa",
+      "src/design-system/autosolutions/components/mobile/SegmentedControl.jsx": "23b9b418e20d960bd3b4d3e3a4e1f9b4",
+      "src/design-system/autosolutions/components/mobile/Sheet.d.ts": "a4d31b854f95a1e066ac5a656ed157fa",
+      "src/design-system/autosolutions/components/mobile/Sheet.jsx": "f7e47e2d49b97ec74d1db9a24b811671",
+      "src/design-system/autosolutions/components/mobile/Sheet.prompt.md": "4f20126cf93bb13fff0195e1b10d7f73",
+      "src/design-system/autosolutions/components/mobile/TabBar.d.ts": "17a23daf531525dc6cd075d92e671fe5",
+      "src/design-system/autosolutions/components/mobile/TabBar.jsx": "02e538f96a2c37d21ac23e79088930ad",
+      "src/design-system/autosolutions/components/mobile/mobile.card.html": "c8f2847b754ebf6f0910638e74c89b3b",
+      "src/design-system/autosolutions/components/mobile/mobile.css": "36d92e30187b6f1b1d63e0b14afed0ef",
+      "src/design-system/autosolutions/components/navigation/AppFrame.d.ts": "3e60e7070554b14707c8ddf936eb5785",
+      "src/design-system/autosolutions/components/navigation/AppFrame.jsx": "7561b82923f2c064c08ec8e7694b4454",
+      "src/design-system/autosolutions/components/navigation/AppFrame.prompt.md": "8ed9c897493c48971a97b011f61f53b4",
+      "src/design-system/autosolutions/components/navigation/PageHeader.d.ts": "aa281030d2103701162aea471c2ebc4e",
+      "src/design-system/autosolutions/components/navigation/PageHeader.jsx": "ef38d5e2c2e30bfd2be332043d641f43",
+      "src/design-system/autosolutions/components/navigation/SideNav.d.ts": "7a3260687c122dfa08e6e4128ae2e16b",
+      "src/design-system/autosolutions/components/navigation/SideNav.jsx": "c98aeb79ab592917b2c0d034116bba8e",
+      "src/design-system/autosolutions/components/navigation/Tabs.d.ts": "c0a264162abbe01a0c62560c8f761cf1",
+      "src/design-system/autosolutions/components/navigation/Tabs.jsx": "0ceee6a1d0689da5e5674c5c61649af5",
+      "src/design-system/autosolutions/components/navigation/TopBar.d.ts": "295761212b6d1f8791425b142ebda966",
+      "src/design-system/autosolutions/components/navigation/TopBar.jsx": "b2789c4969cb516aae683c3502a01858",
+      "src/design-system/autosolutions/components/navigation/navigation.card.html": "395ce6b9119a6859e451c65b508fbe52",
+      "src/design-system/autosolutions/components/navigation/navigation.css": "b387d539ed054187b5d9690c3dd224be",
+      "src/design-system/autosolutions/components/overlays/ActionList.d.ts": "0a47c2bae183d999dde63b8b2843a186",
+      "src/design-system/autosolutions/components/overlays/ActionList.jsx": "6a78c081c360b4095cdb99e9a39467de",
+      "src/design-system/autosolutions/components/overlays/Modal.d.ts": "20d8edff2c69789a4772e298e1c82d33",
+      "src/design-system/autosolutions/components/overlays/Modal.jsx": "17f47e39233925cbfa6e4c8a2425cf41",
+      "src/design-system/autosolutions/components/overlays/Modal.prompt.md": "69e5b7e29bf8408d1ff7975175eaef91",
+      "src/design-system/autosolutions/components/overlays/Popover.d.ts": "b47cbf30306d06f96e3c7452d717f629",
+      "src/design-system/autosolutions/components/overlays/Popover.jsx": "9f84167e1101b754d2d3c71d85382441",
+      "src/design-system/autosolutions/components/overlays/overlays.card.html": "0e367739b90778a96857ed756d9b225f",
+      "src/design-system/autosolutions/components/overlays/overlays.css": "8354d52890a7eea388acd948da1771a0",
+      "src/design-system/autosolutions/components/primitives/Box.d.ts": "5c39c9512a0d29c29ccd1df6d8d06d78",
+      "src/design-system/autosolutions/components/primitives/Box.jsx": "ed47b078a272a4629a4f0999f9c5add0",
+      "src/design-system/autosolutions/components/primitives/Grid.d.ts": "5bd1e67cc06c96069e2d956ab2c6bf30",
+      "src/design-system/autosolutions/components/primitives/Grid.jsx": "2ca122ca7d9daad16e52c7b9f7fb3a6d",
+      "src/design-system/autosolutions/components/primitives/Layout.prompt.md": "3c191dfbe984d7f936ac74a77da4ca17",
+      "src/design-system/autosolutions/components/primitives/Stack.d.ts": "26403fea5f2369388a179f4f2c1f7502",
+      "src/design-system/autosolutions/components/primitives/Stack.jsx": "f836f52c7b998586093da17f3b21b672",
+      "src/design-system/autosolutions/components/primitives/Text.d.ts": "2f17f7ebbd7741cb23cdd025a736f452",
+      "src/design-system/autosolutions/components/primitives/Text.jsx": "31b50c83eed67528dd70fd7607c70c78",
+      "src/design-system/autosolutions/components/primitives/Text.prompt.md": "bd11d36edc7ec14305bf4b01b2cb3c20",
+      "src/design-system/autosolutions/components/primitives/primitives.card.html": "b2db6f3e14b98fce77aa7ba0394a3c8b",
+      "src/design-system/autosolutions/components/primitives/primitives.css": "1249bb63312adc2ba895817d09cef013",
+      "src/design-system/autosolutions/components/structure/Card.d.ts": "e4a1eb8ad2da4a37603741cc0940d6c6",
+      "src/design-system/autosolutions/components/structure/Card.jsx": "d6728f3185ee8c2a5e2f51aaeef1a728",
+      "src/design-system/autosolutions/components/structure/Card.prompt.md": "4961beed8337b31515939704ab5455bf",
+      "src/design-system/autosolutions/components/structure/Divider.d.ts": "517092a88274989271fe5e83af7c2bd2",
+      "src/design-system/autosolutions/components/structure/Divider.jsx": "0837d1f78c92c48a7a806ba0bf4966b5",
+      "src/design-system/autosolutions/components/structure/Section.d.ts": "069a819570cee4700dd7ca579a322447",
+      "src/design-system/autosolutions/components/structure/Section.jsx": "5051077f775918eaa17da3a044aacd55",
+      "src/design-system/autosolutions/components/structure/structure.card.html": "00fe0f7339ec918a345cf69a287e7de9",
+      "src/design-system/autosolutions/components/structure/structure.css": "52ee2c5adb9a51a272ea18ef8ce00109",
+      "src/design-system/autosolutions/components/theming/ThemePicker.d.ts": "63773edbca199a5090284079539c22e2",
+      "src/design-system/autosolutions/components/theming/ThemePicker.jsx": "2e9c7851ee7af08a2ba6d9bc0f29630b",
+      "src/design-system/autosolutions/components/theming/ThemePicker.prompt.md": "5831a2cbbf276df5a3bfb1ee9b3c9d2e",
+      "src/design-system/autosolutions/components/theming/theming.card.html": "eff13b4ae05fdd522a5e10ecca09159a",
+      "src/design-system/autosolutions/components/theming/theming.css": "63d97afc26b51bd0b46b622016d2ecb1",
+      "src/design-system/autosolutions/index.ts": "fc1be9dbb72c01fde7900c919b5c7b60",
+      "src/design-system/autosolutions/styles.css": "b86679c66ee26f595d36224d4e3b0389",
+      "src/design-system/autosolutions/tokens/app.css": "8b1fc2f6033db821612124a7a51e82ee",
+      "src/design-system/autosolutions/tokens/base.css": "11ab4a5451f9a974ed96ca2ce0166dc4",
+      "src/design-system/autosolutions/tokens/brand-marketing.css": "b1b3a57f267fcaac1ee4c1ef96d0937a",
+      "src/design-system/autosolutions/tokens/colors.css": "40c6519e83659adf3a0b511b3e433994",
+      "src/design-system/autosolutions/tokens/company.css": "f839f756e7642ceed6e6e9c1d125fb42",
+      "src/design-system/autosolutions/tokens/elevation.css": "19c4737e36ac6b7327c90eb50dac60b1",
+      "src/design-system/autosolutions/tokens/fonts.css": "4103dd61b42506af2de2217471e52da7",
+      "src/design-system/autosolutions/tokens/layout.css": "a57a6b2353de3f0ef307276e61179f41",
+      "src/design-system/autosolutions/tokens/logo.css": "27df64e6283f7ee88824d45abdc552d0",
+      "src/design-system/autosolutions/tokens/mobile.css": "801ce0f39116a1adee42f4fd2fac254b",
+      "src/design-system/autosolutions/tokens/motion.css": "270e07be4985dfedaa917d5f696e9db7",
+      "src/design-system/autosolutions/tokens/shape.css": "ae9c37e9ce54d766320f1e6f526860a0",
+      "src/design-system/autosolutions/tokens/spacing.css": "5edba5e9b3680eef4496ad1a5cc32cff",
+      "src/design-system/autosolutions/tokens/themes.css": "a512bfbc9574d3527aec7d13c78643c9",
+      "src/design-system/autosolutions/tokens/typography.css": "b4f63f4ed0f1f18b21046d185854ad43",
+      "src/mockup-preview.d.ts": "38969839f35ce2966e32a9f01a5c09ea",
+      "src/routeTree.gen.ts": "12a2799c286006d545c4374c3b24b76f",
+      "src/router.tsx": "8f905e713b0eba7fa8148b7995a708c9",
+      "src/routes/[__component].preview.$.tsx": "06d671f4774ac83355e59ad69a350bab",
+      "src/routes/[__mockup].preview.$.tsx": "5d9f42470848aa60148f20f9580e240e",
+      "src/routes/__root.tsx": "547911a18561576279ac576bf6889f86",
+      "src/routes/colors.tsx": "c629f8904eb6422120e2cc0c4526aa48",
+      "src/routes/components.tsx": "947ecf05420b5f8d63a528d6145a8e38",
+      "src/routes/icons.tsx": "e4a532584d55117d8c75fe6e357a5118",
+      "src/routes/index.tsx": "b7ddca5f25d5bb0e8fd75dcbb0675fd6",
+      "src/routes/kits.auth.tsx": "b3657216910925929b9fd4ef6d9bd58d",
+      "src/routes/kits.banking.tsx": "8d91545221a41e2bc85a08f3777087af",
+      "src/routes/kits.console.tsx": "70e9ca8b3c9eb5a31889386d5dfca547",
+      "src/routes/kits.marketing.tsx": "8ac90a2f7c41a23c13c93ac2c50514d2",
+      "src/routes/kits.mobile.tsx": "70169150048416764f0558e3890561d7",
+      "src/routes/states.tsx": "896568eb00b8bdfcc9d692ac234e1e7e",
+      "src/routes/typography.tsx": "ba65c6077eeb3ad8c86d50fe600371d7",
+      "src/showcase/Chrome.tsx": "8d3bbcf5e4d48443116b6380951ec523",
+      "src/showcase/States.tsx": "6a605559136ecbcbc1c3c07308ee073e",
+      "src/showcase/kits/AuthKit.tsx": "c334a91b88460a452b2c14842ff80335",
+      "src/showcase/kits/MarketingSite.d.ts": "4e64149447600785d0e618df7626f605",
+      "src/showcase/kits/MarketingSite.jsx": "4d0255374144d674cc636e7f66f0b8a5",
+      "src/showcase/kits/auth.css": "e83ef8395bb040562bf026fbed4adb57",
+      "src/showcase/kits/banking.css": "c7a1596833dd62d5dd8fd7b334f0225b",
+      "src/showcase/kits/banking.d.ts": "c3ca31eb03e25d0fc28b8b102039acb0",
+      "src/showcase/kits/banking.data.ts": "443a8a5988f487e58624230719578c2b",
+      "src/showcase/kits/banking.jsx": "cb0f6397ffa756dd3ed741e267f806b4",
+      "src/showcase/kits/console.css": "f732496535d769a261b6972fbfd048bf",
+      "src/showcase/kits/console.d.ts": "a69ff2a22455588b87e9b22fbb9307b8",
+      "src/showcase/kits/console.data.ts": "31db2c3a545eb3e8784606205e8d5039",
+      "src/showcase/kits/console.jsx": "6b9b4afcfb3aea464a9ed063daaaa486",
+      "src/showcase/kits/marketing.css": "5faa6cdba38fefa8554b66dbd494ff8f",
+      "src/showcase/kits/marketing.d.ts": "7d55a14be07153aabe869b1727f5cf2d",
+      "src/showcase/kits/marketing.jsx": "4afcca6c75d8487082950804e2243199",
+      "src/showcase/kits/mobile.css": "a4d27c11ac14ac51458848996707c634",
+      "src/showcase/kits/mobile.d.ts": "d9e6a07fbcca47b0432185015b924101",
+      "src/showcase/kits/mobile.data.ts": "3083a7eec76941be2cad36d7c83533c7",
+      "src/showcase/kits/mobile.jsx": "9a929642fb763abdaf909922098fc924",
+      "src/showcase/showcase.css": "5837b4cc51ca0c057d0a67929626fe34",
+      "src/showcase/tokens.ts": "04c5ab3a2812476eeecdd4dca20c90b4",
+      "src/styles.css": "3947199e416024b827f3f4d042c475ec",
+      "tests/a11y/report.json": "cc85d028b708f4f90b29d666c24664de",
+      "tests/visual/baseline/colors--amethyst--desktop.png": "931685ef74ed358d86995765b55c7409",
+      "tests/visual/baseline/colors--ink--desktop.png": "35adca7c45b7c752aeccab29c1be082b",
+      "tests/visual/baseline/colors--marina--desktop.png": "fce00204d39b12c8130a6b00682f8e5e",
+      "tests/visual/baseline/colors--moondust--desktop.png": "81bde2e7a9b1281f1746ad14523fd082",
+      "tests/visual/baseline/colors--neptune--desktop.png": "e19646b8101efd96433e2e9424151ac1",
+      "tests/visual/baseline/colors--opaline--desktop.png": "355731dab88edecbaf477d919892e705",
+      "tests/visual/baseline/colors--sapphire--desktop.png": "a2f4c0b060dbe57d5251e50de66cf475",
+      "tests/visual/baseline/components--amethyst--desktop.png": "e47d6eb9cb0d44301589a56f40ec52bd",
+      "tests/visual/baseline/components--amethyst--mobile.png": "31b6b6bc71b6632a19301732812c725d",
+      "tests/visual/baseline/components--amethyst--tablet.png": "17c83208d42b65be61aa26458347e9df",
+      "tests/visual/baseline/components--ink--desktop.png": "bf1d578f27fd4151feaa5a61b34a7a42",
+      "tests/visual/baseline/components--ink--mobile.png": "31b6b6bc71b6632a19301732812c725d",
+      "tests/visual/baseline/components--ink--tablet.png": "17c83208d42b65be61aa26458347e9df",
+      "tests/visual/baseline/components--marina--desktop.png": "57f6ed28a8ce90ad1289bdabb44f455a",
+      "tests/visual/baseline/components--marina--mobile.png": "31b6b6bc71b6632a19301732812c725d",
+      "tests/visual/baseline/components--marina--tablet.png": "17c83208d42b65be61aa26458347e9df",
+      "tests/visual/baseline/components--moondust--desktop.png": "4d56e31d34dce95ad856f315d734944a",
+      "tests/visual/baseline/components--moondust--mobile.png": "31b6b6bc71b6632a19301732812c725d",
+      "tests/visual/baseline/components--moondust--tablet.png": "17c83208d42b65be61aa26458347e9df",
+      "tests/visual/baseline/components--neptune--desktop.png": "c0ff04eeb27eb251c8587324bb78ab8e",
+      "tests/visual/baseline/components--neptune--mobile.png": "31b6b6bc71b6632a19301732812c725d",
+      "tests/visual/baseline/components--neptune--tablet.png": "17c83208d42b65be61aa26458347e9df",
+      "tests/visual/baseline/components--opaline--desktop.png": "55e7e47c1b5c28a5e81b8eea7877ec22",
+      "tests/visual/baseline/components--opaline--mobile.png": "31b6b6bc71b6632a19301732812c725d",
+      "tests/visual/baseline/components--opaline--tablet.png": "17c83208d42b65be61aa26458347e9df",
+      "tests/visual/baseline/components--sapphire--desktop.png": "673d849a491e50cd06321b436a16dcb9",
+      "tests/visual/baseline/components--sapphire--mobile.png": "31b6b6bc71b6632a19301732812c725d",
+      "tests/visual/baseline/components--sapphire--tablet.png": "17c83208d42b65be61aa26458347e9df",
+      "tests/visual/baseline/icons--ink--desktop.png": "2d0aa5c769311cde9a7f1824139e86fd",
+      "tests/visual/baseline/kit-auth--ink--desktop.png": "af62e31388dafe1d54713e518975267c",
+      "tests/visual/baseline/kit-auth--ink--mobile.png": "df3dac7f3af54772f537d8ab5f315af5",
+      "tests/visual/baseline/kit-auth--marina--desktop.png": "b00b0ba4fcfa64053267ecca9a768ba9",
+      "tests/visual/baseline/kit-auth--marina--mobile.png": "741dbf0ad2c19acb22a3b648101573b3",
+      "tests/visual/baseline/kit-auth--opaline--desktop.png": "b08dbea65952b4c0c582b14a6ba20194",
+      "tests/visual/baseline/kit-auth--opaline--mobile.png": "807198469e304003a1cff510c158aa2f",
+      "tests/visual/baseline/kit-banking--ink--desktop.png": "0c91a864140f486da36b728be79614b5",
+      "tests/visual/baseline/kit-banking--ink--tablet.png": "af4339a4a174baf495a777d3b9452446",
+      "tests/visual/baseline/kit-banking--marina--desktop.png": "d3b7452570e3ccab38bcee991f33ff9d",
+      "tests/visual/baseline/kit-banking--marina--tablet.png": "aaeaa06c46d6b46685a9cabc7c06ba6c",
+      "tests/visual/baseline/kit-banking--opaline--desktop.png": "05c0b5af51a43b4a15b09e42b5c997f9",
+      "tests/visual/baseline/kit-banking--opaline--tablet.png": "1c1257009fbb4b51bb4fc118622e124a",
+      "tests/visual/baseline/kit-console--ink--desktop.png": "e4c95f07fb2b2f79b98955926780cbcd",
+      "tests/visual/baseline/kit-console--ink--mobile.png": "6edc266e0908959b8bcb0afb9497a77d",
+      "tests/visual/baseline/kit-console--ink--tablet.png": "e97fc2804497109ab10f4f01650c81bc",
+      "tests/visual/baseline/kit-console--marina--desktop.png": "0fa0b03eaff560a04236211b1a16b5b5",
+      "tests/visual/baseline/kit-console--marina--mobile.png": "da4fd8ea8c91a92f8394427956fc97e4",
+      "tests/visual/baseline/kit-console--marina--tablet.png": "d29dd8fcb1e6fb67bb1f9ef9c33c84eb",
+      "tests/visual/baseline/kit-console--opaline--desktop.png": "60c30baa0c49ea56fbe942f097964bb9",
+      "tests/visual/baseline/kit-console--opaline--mobile.png": "5c87686b69066b093505a7a0e96f7469",
+      "tests/visual/baseline/kit-console--opaline--tablet.png": "ad11a26690b06f6c058170ff2a19fb27",
+      "tests/visual/baseline/kit-marketing--ink--desktop.png": "1abf8f0306dedce4dd2ae507488386f0",
+      "tests/visual/baseline/kit-marketing--ink--mobile.png": "e592e4179589fb038c6524dc1876e08d",
+      "tests/visual/baseline/kit-marketing--ink--tablet.png": "bf5a78b047b8efe0141701e5a30f4760",
+      "tests/visual/baseline/kit-marketing--marina--desktop.png": "55a70274295a7bd42d8dea1fb1984dbd",
+      "tests/visual/baseline/kit-marketing--marina--mobile.png": "40c56a929f029bd3020704db8070605a",
+      "tests/visual/baseline/kit-marketing--marina--tablet.png": "69d7ef7ab602d933671031a8beaa9631",
+      "tests/visual/baseline/kit-mobile--ink--desktop.png": "a42ff26478b259234bc70673b11d3915",
+      "tests/visual/baseline/kit-mobile--ink--mobile.png": "7751007975b8418445f9f1f43960ec9d",
+      "tests/visual/baseline/kit-mobile--marina--desktop.png": "baad6dfffbc8446a9f9894c9f3401b6c",
+      "tests/visual/baseline/kit-mobile--marina--mobile.png": "79110b15709a0d5466dd45818763b30f",
+      "tests/visual/baseline/overview--amethyst--desktop.png": "79aacbb9970ec15e5a4f0fe62b9d20ec",
+      "tests/visual/baseline/overview--ink--desktop.png": "2e4d3f74dabd967705401cb5371bd390",
+      "tests/visual/baseline/overview--marina--desktop.png": "4203a2dc1faf6308693648e0118fc2b9",
+      "tests/visual/baseline/overview--moondust--desktop.png": "7f0686bd5761b674cd419a785ac6bd4d",
+      "tests/visual/baseline/overview--neptune--desktop.png": "67092fc7a483c9eb69beddf3b7003f4d",
+      "tests/visual/baseline/overview--opaline--desktop.png": "e829e3aec01f3e51288c8113d50c4a58",
+      "tests/visual/baseline/overview--sapphire--desktop.png": "15eac1889920f103f238392201a73a62",
+      "tests/visual/baseline/states--ink--desktop.png": "6b5eb0d05c4ca1ef23d90afa939f4a54",
+      "tests/visual/baseline/states--ink--mobile.png": "88ebed65c7df75ad41fda3fc63cdd4b4",
+      "tests/visual/baseline/states--ink--tablet.png": "0c202f99643a93ad584438c6a7e3a208",
+      "tests/visual/baseline/states--marina--desktop.png": "29501f6be94eed024b7edcc2b5bd7ddc",
+      "tests/visual/baseline/states--marina--mobile.png": "88ebed65c7df75ad41fda3fc63cdd4b4",
+      "tests/visual/baseline/states--marina--tablet.png": "0c202f99643a93ad584438c6a7e3a208",
+      "tests/visual/baseline/states--opaline--desktop.png": "3fc7d830d3e6d7ac77bd921ab4236272",
+      "tests/visual/baseline/states--opaline--mobile.png": "88ebed65c7df75ad41fda3fc63cdd4b4",
+      "tests/visual/baseline/states--opaline--tablet.png": "0c202f99643a93ad584438c6a7e3a208",
+      "tests/visual/baseline/states-modal--ink--desktop.png": "8f9f542069c23312f02c66cc910888a0",
+      "tests/visual/baseline/states-modal--ink--mobile.png": "659df853ad93b5ec7b467fc0a57f472e",
+      "tests/visual/baseline/states-modal--opaline--desktop.png": "59c9adf3a7956d70b3cea352d0dc2f83",
+      "tests/visual/baseline/states-modal--opaline--mobile.png": "659df853ad93b5ec7b467fc0a57f472e",
+      "tests/visual/baseline/typography--ink--desktop.png": "4c9fac6de8680a6404971d3f8a07a740",
+      "tsconfig.json": "994abf64c2b9f78b568879f80ed0170e",
+      "vite.config.ts": "9f787596cc6f9a2aa3de5a021aed28f3",
+      "wrangler.jsonc": "680b897d48e44bcc65fe437c29b38f3b"
+    },
+    "pipeline_version": 8
+  },
+  "tokens": {
+    "color": [
+      {
+        "name": "--color-gray-0",
+        "raw": "#FFFFFF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-25",
+        "raw": "#FDFDFD",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-50",
+        "raw": "#FAFAFA",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-75",
+        "raw": "#F7F7F7",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-100",
+        "raw": "#F3F3F3",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-150",
+        "raw": "#F1F1F1",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-200",
+        "raw": "#EBEBEB",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-300",
+        "raw": "#E3E3E3",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-400",
+        "raw": "#D4D4D4",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-500",
+        "raw": "#CCCCCC",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-600",
+        "raw": "#B5B5B5",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-700",
+        "raw": "#8A8A8A",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-800",
+        "raw": "#616161",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-900",
+        "raw": "#4A4A4A",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-950",
+        "raw": "#303030",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-975",
+        "raw": "#1A1A1A",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-gray-1000",
+        "raw": "#0A0A0A",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-success-fill",
+        "raw": "#047B5D",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-success-fill-hover",
+        "raw": "#035E4C",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-success-fill-active",
+        "raw": "#014B40",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-success-fill-secondary",
+        "raw": "#AFFEBF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-success-surface",
+        "raw": "#CDFED4",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-success-surface-hover",
+        "raw": "#AFFEBF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-success-surface-active",
+        "raw": "#92FCAC",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-success-border",
+        "raw": "#92FCAC",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-success-icon",
+        "raw": "#047B5D",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-critical-fill",
+        "raw": "#C70A24",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-critical-fill-hover",
+        "raw": "#A30A24",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-critical-fill-active",
+        "raw": "#8E0B21",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-critical-fill-secondary",
+        "raw": "#FED1D7",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-critical-surface",
+        "raw": "#FEE8EB",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-critical-surface-hover",
+        "raw": "#FEE1E6",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-critical-surface-active",
+        "raw": "#FED9DF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-critical-border",
+        "raw": "#FEC1C7",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-critical-icon",
+        "raw": "#E22C38",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-warning-fill",
+        "raw": "#FFB800",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-warning-fill-hover",
+        "raw": "#E5A500",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-warning-fill-active",
+        "raw": "#B28400",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-warning-fill-secondary",
+        "raw": "#FFD6A4",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-warning-surface",
+        "raw": "#FFF1E3",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-warning-surface-hover",
+        "raw": "#FFEBD5",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-warning-surface-active",
+        "raw": "#FFE4C6",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-warning-border",
+        "raw": "#FFC879",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-warning-icon",
+        "raw": "#B28400",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-caution-fill",
+        "raw": "#FFE600",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-caution-fill-hover",
+        "raw": "#EAD300",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-caution-fill-active",
+        "raw": "#E1CB00",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-caution-fill-secondary",
+        "raw": "#FFEB78",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-caution-surface",
+        "raw": "#FFF8DB",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-caution-surface-hover",
+        "raw": "#FFF4BF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-caution-surface-active",
+        "raw": "#FFEF9D",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-caution-border",
+        "raw": "#FFEB78",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-caution-icon",
+        "raw": "#998A00",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-info-fill",
+        "raw": "#91D0FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-info-fill-hover",
+        "raw": "#51C0FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-info-fill-active",
+        "raw": "#0094D5",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-info-fill-secondary",
+        "raw": "#D5EBFF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-info-surface",
+        "raw": "#EAF4FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-info-surface-hover",
+        "raw": "#E0F0FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-info-surface-active",
+        "raw": "#CAE6FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-info-border",
+        "raw": "#A8D8FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-info-icon",
+        "raw": "#0094D5",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-highlight-fill",
+        "raw": "#005BD3",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-highlight-fill-hover",
+        "raw": "#004299",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-highlight-fill-active",
+        "raw": "#002E6A",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-highlight-fill-secondary",
+        "raw": "#E2E7FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-highlight-surface",
+        "raw": "#F0F2FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-highlight-surface-hover",
+        "raw": "#EAEDFF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-highlight-surface-active",
+        "raw": "#E2E7FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-highlight-border",
+        "raw": "#005BD3",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-highlight-icon",
+        "raw": "#005BD3",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-ai-fill",
+        "raw": "#8051FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-ai-fill-hover",
+        "raw": "#5700D1",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-ai-fill-active",
+        "raw": "#3B0093",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-ai-fill-secondary",
+        "raw": "#E9E5FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-ai-surface",
+        "raw": "#F8F7FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-ai-surface-hover",
+        "raw": "#F3F1FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-ai-surface-active",
+        "raw": "#E9E5FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-ai-border",
+        "raw": "#E4DEFF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-ai-icon",
+        "raw": "#8051FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-bg-surface-disabled",
+        "raw": "rgba(0,0,0,.05)",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-bg-surface-overlay",
+        "raw": "rgba(255,255,255,.8)",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-bg-fill-brand-disabled",
+        "raw": "rgba(0,0,0,.17)",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-bg-fill-disabled",
+        "raw": "rgba(0,0,0,.05)",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-bg-fill-transparent",
+        "raw": "rgba(0,0,0,.02)",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-bg-fill-transparent-hover",
+        "raw": "rgba(0,0,0,.05)",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-bg-fill-transparent-active",
+        "raw": "rgba(0,0,0,.08)",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-bg-fill-transparent-secondary",
+        "raw": "rgba(0,0,0,.06)",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-bg-fill-transparent-secondary-hover",
+        "raw": "rgba(0,0,0,.08)",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-bg-fill-transparent-secondary-active",
+        "raw": "rgba(0,0,0,.11)",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-border-focus",
+        "raw": "#005BD3",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-topbar-fill",
+        "raw": "rgba(255,255,255,.08)",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-topbar-fill-hover",
+        "raw": "rgba(255,255,255,.12)",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-backdrop-bg",
+        "raw": "rgba(0,0,0,.71)",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-one-bg",
+        "raw": "#C530C5",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-two-bg",
+        "raw": "#52F490",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-three-bg",
+        "raw": "#2CE0D4",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-four-bg",
+        "raw": "#51C0FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-five-bg",
+        "raw": "#FD4B92",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-six-bg",
+        "raw": "#25E82B",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-seven-bg",
+        "raw": "#9474FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--focus-ring",
+        "raw": ".125rem solid var(--color-border-focus)",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--focus-ring-offset",
+        "raw": ".0625rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--button-primary-gradient",
+        "raw": "linear-gradient(180deg,rgba(48,48,48,0) 63.53%,rgba(255,255,255,.15) 100%)",
+        "source": "src/design-system/autosolutions/tokens/elevation.css"
+      },
+      {
+        "name": "--motion-popover",
+        "raw": "1ms linear",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--theme-1",
+        "raw": "#F1F1F1",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-2",
+        "raw": "#E3E3E3",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-3",
+        "raw": "#616161",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-4",
+        "raw": "#303030",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-accent",
+        "raw": "#303030",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-accent-hover",
+        "raw": "#1A1A1A",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-accent-active",
+        "raw": "#1A1A1A",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-accent-on",
+        "raw": "#FFFFFF",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-accent-strong",
+        "raw": "#303030",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-accent-soft",
+        "raw": "#F1F1F1",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-accent-border",
+        "raw": "#E3E3E3",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-accent-bevel",
+        "raw": "rgba(0,0,0,.80)",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-field",
+        "raw": "#F1F1F1",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-canvas",
+        "raw": "#F1F1F1",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      },
+      {
+        "name": "--theme-nav",
+        "raw": "#EBEBEB",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      }
+    ],
+    "spacing": [
+      {
+        "name": "--font-letter-spacing-normal",
+        "raw": "0",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-letter-spacing-dense",
+        "raw": "-.00833em",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-letter-spacing-denser",
+        "raw": "-.0166em",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-letter-spacing-densest",
+        "raw": "-.0291em",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--space-0",
+        "raw": "0",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-025",
+        "raw": ".0625rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-050",
+        "raw": ".125rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-100",
+        "raw": ".25rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-150",
+        "raw": ".375rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-200",
+        "raw": ".5rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-250",
+        "raw": ".625rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-300",
+        "raw": ".75rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-350",
+        "raw": ".875rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-400",
+        "raw": "1rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-500",
+        "raw": "1.25rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-600",
+        "raw": "1.5rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-700",
+        "raw": "1.75rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-800",
+        "raw": "2rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-1000",
+        "raw": "2.5rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-1200",
+        "raw": "3rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-1600",
+        "raw": "4rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-2000",
+        "raw": "5rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-2400",
+        "raw": "6rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-2800",
+        "raw": "7rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--space-3200",
+        "raw": "8rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--border-width-0",
+        "raw": "0",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--border-width-0165",
+        "raw": ".04125rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--border-width-025",
+        "raw": ".0625rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--border-width-050",
+        "raw": ".125rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--border-width-100",
+        "raw": ".25rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--button-primary-inset",
+        "raw": "inset 0 -1px 0 1px rgba(0,0,0,.80),inset 0 0 0 1px #303030,inset 0 .5px 0 1.5px rgba(255,255,255,.25)",
+        "source": "src/design-system/autosolutions/tokens/elevation.css"
+      },
+      {
+        "name": "--button-critical-inset",
+        "raw": "inset 0 -1px 0 1px rgba(0,0,0,.40),inset 0 0 0 1px #C70A24,inset 0 .5px 0 1.5px rgba(255,255,255,.25)",
+        "source": "src/design-system/autosolutions/tokens/elevation.css"
+      }
+    ],
+    "typography": [
+      {
+        "name": "--color-success-text",
+        "raw": "#014B40",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-success-text-secondary",
+        "raw": "#047B5D",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-success-text-on-fill",
+        "raw": "#FAFFFB",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-critical-text",
+        "raw": "#8E0B21",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-critical-text-secondary",
+        "raw": "#C70A24",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-critical-text-on-fill",
+        "raw": "#FFFAFB",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-warning-text",
+        "raw": "#5E4200",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-warning-text-secondary",
+        "raw": "#956F00",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-warning-text-on-fill",
+        "raw": "#251A00",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-caution-text",
+        "raw": "#4F4700",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-caution-text-secondary",
+        "raw": "#827500",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-caution-text-on-fill",
+        "raw": "#332E00",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-info-text",
+        "raw": "#003A5A",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-info-text-secondary",
+        "raw": "#007CB4",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-info-text-on-fill",
+        "raw": "#002133",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-highlight-text",
+        "raw": "#005BD3",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-highlight-text-secondary",
+        "raw": "#0071E9",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-highlight-text-on-fill",
+        "raw": "#FCFDFF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-ai-text",
+        "raw": "#5700D1",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-ai-text-secondary",
+        "raw": "#7126FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-ai-text-on-fill",
+        "raw": "#FDFDFF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-text-link",
+        "raw": "#005BD3",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-text-link-hover",
+        "raw": "#004299",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-text-link-active",
+        "raw": "#002E6A",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-text-link-inverse",
+        "raw": "#C5D0FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-topbar-text",
+        "raw": "#DCDCDC",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-text",
+        "raw": "#FFFFFF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-one-text",
+        "raw": "#FDEFFD",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-two-text",
+        "raw": "#014B40",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-three-text",
+        "raw": "#033C39",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-four-text",
+        "raw": "#002133",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-five-text",
+        "raw": "#FFF6F8",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-six-text",
+        "raw": "#033D05",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--color-avatar-seven-text",
+        "raw": "#F8F7FF",
+        "source": "src/design-system/autosolutions/tokens/colors.css"
+      },
+      {
+        "name": "--font-weight-regular",
+        "raw": "450",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-weight-medium",
+        "raw": "550",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-weight-semibold",
+        "raw": "600",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-weight-bold",
+        "raw": "650",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-size-275",
+        "raw": ".6875rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-size-300",
+        "raw": ".75rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-size-325",
+        "raw": ".8125rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-size-350",
+        "raw": ".875rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-size-400",
+        "raw": "1rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-size-450",
+        "raw": "1.125rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-size-500",
+        "raw": "1.25rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-size-550",
+        "raw": "1.375rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-size-600",
+        "raw": "1.5rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-size-750",
+        "raw": "1.875rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-size-800",
+        "raw": "2rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-size-900",
+        "raw": "2.25rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-size-1000",
+        "raw": "2.5rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-line-height-300",
+        "raw": ".75rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-line-height-400",
+        "raw": "1rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-line-height-500",
+        "raw": "1.25rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-line-height-600",
+        "raw": "1.5rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-line-height-700",
+        "raw": "1.75rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-line-height-800",
+        "raw": "2rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-line-height-1000",
+        "raw": "2.5rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--font-line-height-1200",
+        "raw": "3rem",
+        "source": "src/design-system/autosolutions/tokens/typography.css"
+      },
+      {
+        "name": "--theme-field-text",
+        "raw": "#303030",
+        "source": "src/design-system/autosolutions/tokens/themes.css"
+      }
+    ],
+    "radius": [
+      {
+        "name": "--radius-0",
+        "raw": "0",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--radius-050",
+        "raw": ".125rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--radius-100",
+        "raw": ".25rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--radius-150",
+        "raw": ".375rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--radius-200",
+        "raw": ".5rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--radius-300",
+        "raw": ".75rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--radius-400",
+        "raw": "1rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--radius-500",
+        "raw": "1.25rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--radius-750",
+        "raw": "1.875rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--radius-full",
+        "raw": "624.9375rem",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      },
+      {
+        "name": "--radius-avatar",
+        "raw": "clamp(4px,round(25%,2px),8px)",
+        "source": "src/design-system/autosolutions/tokens/shape.css"
+      }
+    ],
+    "shadow": [
+      {
+        "name": "--shadow-0",
+        "raw": "none",
+        "source": "src/design-system/autosolutions/tokens/elevation.css"
+      },
+      {
+        "name": "--shadow-100",
+        "raw": "0 5px 5px -2.5px rgba(0,0,0,.03),0 3px 3px -1.5px rgba(0,0,0,.02),0 2px 2px -1px rgba(0,0,0,.02),0 1px 1px -.5px rgba(0,0,0,.03),0 .5px .5px 0 rgba(0,0,0,.04),0 0 0 1px rgba(0,0,0,.06)",
+        "source": "src/design-system/autosolutions/tokens/elevation.css"
+      },
+      {
+        "name": "--shadow-200",
+        "raw": "0 8px 10px -5px rgba(0,0,0,.08),0 5px 5px -2.5px rgba(0,0,0,.03),0 3px 3px -1.5px rgba(0,0,0,.02),0 2px 2px -1px rgba(0,0,0,.02),0 1px 1px -.5px rgba(0,0,0,.03),0 .5px .5px 0 rgba(0,0,0,.04),0 0 0 1px rgba(0,0,0,.06)",
+        "source": "src/design-system/autosolutions/tokens/elevation.css"
+      },
+      {
+        "name": "--shadow-300",
+        "raw": "0 8px 24px -8px rgba(0,0,0,.28),0 8px 16px -4px rgba(0,0,0,.05),0 3px 6px 0 rgba(0,0,0,.05),0 2px 4px 0 rgba(0,0,0,.05),0 1px 2px 0 rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.06)",
+        "source": "src/design-system/autosolutions/tokens/elevation.css"
+      },
+      {
+        "name": "--shadow-400",
+        "raw": "0 20px 32px -12px rgba(0,0,0,.20),0 10px 16px -6px rgba(0,0,0,.08),0 4px 8px -2px rgba(0,0,0,.05),0 2px 4px 0 rgba(0,0,0,.05),0 1px 2px 0 rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.06)",
+        "source": "src/design-system/autosolutions/tokens/elevation.css"
+      },
+      {
+        "name": "--shadow-500",
+        "raw": "0 24px 36px -12px rgba(0,0,0,.12),0 24px 24px -12px rgba(0,0,0,.08),0 12px 16px -6px rgba(0,0,0,.05),0 4px 8px -2px rgba(0,0,0,.05),0 1px 2px 0 rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.06)",
+        "source": "src/design-system/autosolutions/tokens/elevation.css"
+      },
+      {
+        "name": "--shadow-600",
+        "raw": "0 24px 56px -12px rgba(0,0,0,.24),0 24px 24px -12px rgba(0,0,0,.12),0 12px 16px -6px rgba(0,0,0,.06),0 4px 8px -2px rgba(0,0,0,.05),0 1px 2px 0 rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.06)",
+        "source": "src/design-system/autosolutions/tokens/elevation.css"
+      },
+      {
+        "name": "--shadow-bevel-100",
+        "raw": "inset 1px 0 0 0 rgba(0,0,0,.13),inset -1px 0 0 0 rgba(0,0,0,.13),inset 0 -1px 0 0 rgba(0,0,0,.17),inset 0 1px 0 0 rgba(204,204,204,.50)",
+        "source": "src/design-system/autosolutions/tokens/elevation.css"
+      },
+      {
+        "name": "--shadow-inset-100",
+        "raw": "inset 0 1px 2px 0 rgba(26,26,26,.15),inset 0 1px 1px 0 rgba(26,26,26,.15)",
+        "source": "src/design-system/autosolutions/tokens/elevation.css"
+      },
+      {
+        "name": "--shadow-inset-200",
+        "raw": "inset 0 2px 1px 0 rgba(26,26,26,.20),inset 1px 0 1px 0 rgba(26,26,26,.12),inset -1px 0 1px 0 rgba(26,26,26,.12)",
+        "source": "src/design-system/autosolutions/tokens/elevation.css"
+      }
+    ],
+    "other": [
+      {
+        "name": "--size-0",
+        "raw": "0",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-100",
+        "raw": ".25rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-200",
+        "raw": ".5rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-300",
+        "raw": ".75rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-400",
+        "raw": "1rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-500",
+        "raw": "1.25rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-600",
+        "raw": "1.5rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-700",
+        "raw": "1.75rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-800",
+        "raw": "2rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-900",
+        "raw": "2.25rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-1000",
+        "raw": "2.5rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-1200",
+        "raw": "3rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-1600",
+        "raw": "4rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-2000",
+        "raw": "5rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-2400",
+        "raw": "6rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-2800",
+        "raw": "7rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--size-3200",
+        "raw": "8rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--control-height",
+        "raw": "1.75rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--badge-height",
+        "raw": "1.25rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--row-height",
+        "raw": "3.25rem",
+        "source": "src/design-system/autosolutions/tokens/spacing.css"
+      },
+      {
+        "name": "--duration-0",
+        "raw": "0ms",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--duration-50",
+        "raw": "50ms",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--duration-100",
+        "raw": "100ms",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--duration-150",
+        "raw": "150ms",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--duration-200",
+        "raw": "200ms",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--duration-250",
+        "raw": "250ms",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--duration-300",
+        "raw": "300ms",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--duration-350",
+        "raw": "350ms",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--duration-400",
+        "raw": "400ms",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--duration-450",
+        "raw": "450ms",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--duration-500",
+        "raw": "500ms",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--duration-5000",
+        "raw": "5000ms",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--ease",
+        "raw": "cubic-bezier(.25,.1,.25,1)",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--ease-in",
+        "raw": "cubic-bezier(.42,0,1,1)",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--ease-out",
+        "raw": "cubic-bezier(.19,.91,.38,1)",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--ease-in-out",
+        "raw": "cubic-bezier(.42,0,.58,1)",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--ease-linear",
+        "raw": "cubic-bezier(0,0,1,1)",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--motion-hover",
+        "raw": "1ms linear",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--motion-modal",
+        "raw": "1ms linear",
+        "source": "src/design-system/autosolutions/tokens/motion.css"
+      },
+      {
+        "name": "--breakpoint-xs",
+        "raw": "0",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--breakpoint-sm",
+        "raw": "30.625rem",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--breakpoint-md",
+        "raw": "48rem",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--breakpoint-lg",
+        "raw": "65rem",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--breakpoint-xl",
+        "raw": "90rem",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--topbar-height",
+        "raw": "3.5rem",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--sidenav-width",
+        "raw": "15rem",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--nav-appname-height",
+        "raw": "3rem",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--page-max-width",
+        "raw": "78.75rem",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--content-max-width-one-column",
+        "raw": "62.5rem",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--content-sidebar-width",
+        "raw": "20rem",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--z-auto",
+        "raw": "auto",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--z-100",
+        "raw": "100",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--z-400",
+        "raw": "400",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--z-510",
+        "raw": "510",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--z-512",
+        "raw": "512",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--z-513",
+        "raw": "513",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--z-514",
+        "raw": "514",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--z-515",
+        "raw": "515",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--z-516",
+        "raw": "516",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--z-517",
+        "raw": "517",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--z-518",
+        "raw": "518",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--z-519",
+        "raw": "519",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      },
+      {
+        "name": "--z-520",
+        "raw": "520",
+        "source": "src/design-system/autosolutions/tokens/layout.css"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Button",
+      "file": "src/design-system/autosolutions/components/actions/Button.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "ButtonGroup",
+      "file": "src/design-system/autosolutions/components/actions/ButtonGroup.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "IconButton",
+      "file": "src/design-system/autosolutions/components/actions/IconButton.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "AuthLayout",
+      "file": "src/design-system/autosolutions/components/auth/AuthLayout.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "GoogleButton",
+      "file": "src/design-system/autosolutions/components/auth/GoogleButton.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "SignIn",
+      "file": "src/design-system/autosolutions/components/auth/SignIn.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "SignedOut",
+      "file": "src/design-system/autosolutions/components/auth/SignedOut.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "AppMark",
+      "file": "src/design-system/autosolutions/components/brand/AppMark.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "CompanyMark",
+      "file": "src/design-system/autosolutions/components/brand/CompanyMark.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "CompanySwitcher",
+      "file": "src/design-system/autosolutions/components/brand/CompanyMark.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Logo",
+      "file": "src/design-system/autosolutions/components/brand/Logo.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "DataTable",
+      "file": "src/design-system/autosolutions/components/data/DataTable.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "FilterBar",
+      "file": "src/design-system/autosolutions/components/data/FilterBar.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Pagination",
+      "file": "src/design-system/autosolutions/components/data/Pagination.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Badge",
+      "file": "src/design-system/autosolutions/components/feedback/Badge.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Banner",
+      "file": "src/design-system/autosolutions/components/feedback/Banner.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Skeleton",
+      "file": "src/design-system/autosolutions/components/feedback/Skeleton.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Spinner",
+      "file": "src/design-system/autosolutions/components/feedback/Spinner.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Tooltip",
+      "file": "src/design-system/autosolutions/components/feedback/Tooltip.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Checkbox",
+      "file": "src/design-system/autosolutions/components/forms/Checkbox.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "RadioButton",
+      "file": "src/design-system/autosolutions/components/forms/RadioButton.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Select",
+      "file": "src/design-system/autosolutions/components/forms/Select.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Switch",
+      "file": "src/design-system/autosolutions/components/forms/Switch.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "TextField",
+      "file": "src/design-system/autosolutions/components/forms/TextField.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Avatar",
+      "file": "src/design-system/autosolutions/components/media/Avatar.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Icon",
+      "file": "src/design-system/autosolutions/components/media/Icon.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Thumbnail",
+      "file": "src/design-system/autosolutions/components/media/Thumbnail.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "MobileFrame",
+      "file": "src/design-system/autosolutions/components/mobile/MobileFrame.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "StatusBar",
+      "file": "src/design-system/autosolutions/components/mobile/MobileFrame.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "MobileList",
+      "file": "src/design-system/autosolutions/components/mobile/MobileListRow.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "MobileListRow",
+      "file": "src/design-system/autosolutions/components/mobile/MobileListRow.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "MobileToolbar",
+      "file": "src/design-system/autosolutions/components/mobile/MobileToolbar.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "MobileTopBar",
+      "file": "src/design-system/autosolutions/components/mobile/MobileTopBar.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "PhoneFrame",
+      "file": "src/design-system/autosolutions/components/mobile/PhoneFrame.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "SegmentedControl",
+      "file": "src/design-system/autosolutions/components/mobile/SegmentedControl.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Sheet",
+      "file": "src/design-system/autosolutions/components/mobile/Sheet.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "TabBar",
+      "file": "src/design-system/autosolutions/components/mobile/TabBar.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "AppFrame",
+      "file": "src/design-system/autosolutions/components/navigation/AppFrame.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "PageHeader",
+      "file": "src/design-system/autosolutions/components/navigation/PageHeader.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "SideNav",
+      "file": "src/design-system/autosolutions/components/navigation/SideNav.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Tabs",
+      "file": "src/design-system/autosolutions/components/navigation/Tabs.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "TopBar",
+      "file": "src/design-system/autosolutions/components/navigation/TopBar.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "ActionList",
+      "file": "src/design-system/autosolutions/components/overlays/ActionList.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Modal",
+      "file": "src/design-system/autosolutions/components/overlays/Modal.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Popover",
+      "file": "src/design-system/autosolutions/components/overlays/Popover.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Box",
+      "file": "src/design-system/autosolutions/components/primitives/Box.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Grid",
+      "file": "src/design-system/autosolutions/components/primitives/Grid.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Stack",
+      "file": "src/design-system/autosolutions/components/primitives/Stack.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Text",
+      "file": "src/design-system/autosolutions/components/primitives/Text.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Card",
+      "file": "src/design-system/autosolutions/components/structure/Card.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Divider",
+      "file": "src/design-system/autosolutions/components/structure/Divider.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "Section",
+      "file": "src/design-system/autosolutions/components/structure/Section.jsx",
+      "import_path": ""
+    },
+    {
+      "name": "ThemePicker",
+      "file": "src/design-system/autosolutions/components/theming/ThemePicker.jsx",
+      "import_path": ""
+    }
+  ]
+}

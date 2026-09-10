@@ -1,0 +1,106 @@
+.as-logo{display:block;flex:0 0 auto;height:var(--logo-height);width:auto;aspect-ratio:var(--logo-aspect);background:center/contain no-repeat url("../../assets/logos/autosolutions-os-pink.svg")}
+.as-logo--inverse{background-image:url("../../assets/logos/autosolutions-os-white.svg")}
+.as-logo--compact{height:var(--logo-height-compact)}
+.as-logo--large{height:var(--logo-height-large)}
+.as-logo-slot{display:flex;align-items:center;justify-content:center;flex:0 0 auto;width:var(--logo-slot-width);height:var(--logo-slot-height)}
+/* ── Company marks ───────────────────────────────────────────────────
+   Three cuts per company:
+     <id>-white.png   single colour, transparent ground — DARK surfaces.
+                      THE DEFAULT: this is what a switcher renders.
+     <id>-ink.png     single colour #303030, transparent ground — LIGHT
+                      surfaces, where the mark sits on the page itself.
+     <id>.png         the full-colour lockup on the brand's own plate.
+                      Opt in with .as-company--full; only where a brand's
+                      colour field is genuinely wanted.
+
+   The white and ink cuts are derived from the brand art — the mark's own
+   ink, recoloured, nothing redrawn.
+
+   HEIGHT is the authority. Each cut carries its own aspect-ratio, so a
+   mark on a transparent ground is never padded out to a shared box.
+   NEVER set a width on .as-company: that padding is what made a chevron
+   sit a different distance from every logo.
+   ────────────────────────────────────────────────────────────────── */
+.as-company{display:block;flex:0 0 auto;height:var(--company-height);width:auto;background-position:center;background-size:contain;background-repeat:no-repeat}
+.as-company--large{height:var(--company-height-large)}
+.as-company--compact{height:var(--company-height-compact)}
+.as-company--full{width:var(--company-width);height:var(--company-height)}
+.as-company--full.as-company--large{width:var(--company-width-large);height:var(--company-height-large)}
+.as-company--full.as-company--compact{width:var(--company-width-compact);height:var(--company-height-compact)}
+.as-company--alive{aspect-ratio:2.435;background-image:url("../../assets/companies/alive-white.png")}
+.as-company--alive.as-company--ink{background-image:url("../../assets/companies/alive-ink.png")}
+.as-company--alive.as-company--full{aspect-ratio:auto;background-image:url("../../assets/companies/alive.png")}
+.as-company--coreiq{aspect-ratio:2.440;background-image:url("../../assets/companies/coreiq-white.png")}
+.as-company--coreiq.as-company--ink{background-image:url("../../assets/companies/coreiq-ink.png")}
+.as-company--coreiq.as-company--full{aspect-ratio:auto;background-image:url("../../assets/companies/coreiq.png")}
+.as-company--enxgy{aspect-ratio:2.867;background-image:url("../../assets/companies/enxgy-white.png")}
+.as-company--enxgy.as-company--ink{background-image:url("../../assets/companies/enxgy-ink.png")}
+.as-company--enxgy.as-company--full{aspect-ratio:auto;background-image:url("../../assets/companies/enxgy.png")}
+.as-company--frankbody{aspect-ratio:3.948;background-image:url("../../assets/companies/frankbody-white.png")}
+.as-company--frankbody.as-company--ink{background-image:url("../../assets/companies/frankbody-ink.png")}
+.as-company--frankbody.as-company--full{aspect-ratio:auto;background-image:url("../../assets/companies/frankbody.png")}
+.as-company--ledgify{aspect-ratio:4.111;background-image:url("../../assets/companies/ledgify-white.png")}
+.as-company--ledgify.as-company--ink{background-image:url("../../assets/companies/ledgify-ink.png")}
+.as-company--ledgify.as-company--full{aspect-ratio:auto;background-image:url("../../assets/companies/ledgify.png")}
+.as-company--seniorsnouts{aspect-ratio:1.843;background-image:url("../../assets/companies/seniorsnouts-white.png")}
+.as-company--seniorsnouts.as-company--ink{background-image:url("../../assets/companies/seniorsnouts-ink.png")}
+.as-company--seniorsnouts.as-company--full{aspect-ratio:auto;background-image:url("../../assets/companies/seniorsnouts.png")}
+.as-company--strengthlab{aspect-ratio:4.578;background-image:url("../../assets/companies/strengthlab-white.png")}
+.as-company--strengthlab.as-company--ink{background-image:url("../../assets/companies/strengthlab-ink.png")}
+.as-company--strengthlab.as-company--full{aspect-ratio:auto;background-image:url("../../assets/companies/strengthlab.png")}
+.as-app{display:block;flex:0 0 auto;height:var(--app-label-height);width:auto;background-position:left center;background-size:contain;background-repeat:no-repeat}
+.as-app--compact{height:var(--app-label-height-compact)}
+.as-app--large{height:var(--app-label-height-large)}
+.as-app--center{background-position:center}
+.as-app--ad-management{aspect-ratio:5.9714;background-image:url("../../assets/apps/ad-management-label.png")}
+.as-app--shopify-sales{aspect-ratio:4.8857;background-image:url("../../assets/apps/shopify-sales-label.png")}
+.as-app--content-calendar{aspect-ratio:6.2000;background-image:url("../../assets/apps/content-calendar-label.png")}
+.as-app--social-simulator{aspect-ratio:5.7571;background-image:url("../../assets/apps/social-simulator-label.png")}
+.as-app--franks-kitchen{aspect-ratio:5.4286;background-image:url("../../assets/apps/franks-kitchen-label.png")}
+.as-app--shelf-simulator{aspect-ratio:5.4500;background-image:url("../../assets/apps/shelf-simulator-label.png")}
+.as-app--product-validator{aspect-ratio:7.9357;background-image:url("../../assets/apps/product-validator-label.png")}
+.as-app--design-studio{aspect-ratio:8.2214;background-image:url("../../assets/apps/design-studio-label.png")}
+.as-app--label-maker{aspect-ratio:4.3571;background-image:url("../../assets/apps/label-maker-label.png")}
+.as-app--ops-hub{aspect-ratio:3.1571;background-image:url("../../assets/apps/ops-hub-label.png")}
+.as-app--growth-engine{aspect-ratio:5.3214;background-image:url("../../assets/apps/growth-engine-label.png")}
+.as-app--ecommerce-sales{aspect-ratio:6.7500;background-image:url("../../assets/apps/ecommerce-sales-label.png")}
+.as-app--smart-comms-hub{aspect-ratio:6.5786;background-image:url("../../assets/apps/smart-comms-hub-label.png")}
+.as-app--smart-leadgen-crm{aspect-ratio:7.0429;background-image:url("../../assets/apps/smart-leadgen-crm-label.png")}
+.as-app--banking-balance{aspect-ratio:6.0214;background-image:url("../../assets/apps/banking-balance-label.png")}
+.as-app--asset-portal{aspect-ratio:4.5714;background-image:url("../../assets/apps/asset-portal-label.png")}
+
+/* ── Company switcher ────────────────────────────────────────────────
+   The ONE treatment, everywhere: the mark on its own with a disclosure
+   chevron. Transparent at rest; the faintest wash on hover and while
+   open, so the target is discoverable without a permanent plate.
+
+   The wash is a transparent-fill token, so the same class works on the
+   dark top bar and on a white card without a second variant. */
+.as-company-switch{display:inline-flex;align-items:center;gap:var(--space-200);height:2.25rem;padding-inline:var(--space-200);border:0;border-radius:var(--radius-200);background:transparent;color:inherit;cursor:pointer;transition:background-color var(--motion-hover)}
+.as-company-switch:hover{background:var(--color-bg-fill-transparent-hover)}
+.as-company-switch.is-open{background:var(--color-bg-fill-transparent-active)}
+.as-company-switch__chev{display:inline-flex;flex:0 0 auto;opacity:.72;transition:opacity var(--motion-hover),transform var(--motion-hover)}
+.as-company-switch:hover .as-company-switch__chev{opacity:1}
+.as-company-switch.is-open .as-company-switch__chev{opacity:1;transform:rotate(180deg)}
+/* On the inverse bar the transparent-fill tokens are too dark to read, so
+   the wash is a light one there instead. */
+.as-topbar .as-company-switch:hover{background:var(--color-topbar-fill)}
+.as-topbar .as-company-switch.is-open{background:var(--color-topbar-fill-hover)}
+
+/* ── Compatibility ───────────────────────────────────────────────────
+   Markup from a bundle predating the switcher rework still emits
+   .as-topbar__company and as-company--plain. Without these two rules
+   that markup renders as an unstyled native button with an invisible
+   white mark inside it, so keep them until no artifact emits either. */
+.as-topbar__company{all:unset;display:inline-flex;align-items:center;gap:var(--space-200);height:2.25rem;padding-inline:var(--space-200);border-radius:var(--radius-200);background:transparent;cursor:pointer;transition:background-color var(--motion-hover)}
+.as-topbar .as-topbar__company:hover{background:var(--color-topbar-fill)}
+/* Legacy --plain was used on light cards AND on the dark bar. On the bar it
+   correctly falls through to the white default; anywhere else it must resolve
+   to the ink cut or the mark is white-on-white and invisible. */
+.as-company--alive.as-company--plain:not(.as-topbar *){background-image:url("../../assets/companies/alive-ink.png")}
+.as-company--coreiq.as-company--plain:not(.as-topbar *){background-image:url("../../assets/companies/coreiq-ink.png")}
+.as-company--enxgy.as-company--plain:not(.as-topbar *){background-image:url("../../assets/companies/enxgy-ink.png")}
+.as-company--frankbody.as-company--plain:not(.as-topbar *){background-image:url("../../assets/companies/frankbody-ink.png")}
+.as-company--ledgify.as-company--plain:not(.as-topbar *){background-image:url("../../assets/companies/ledgify-ink.png")}
+.as-company--seniorsnouts.as-company--plain:not(.as-topbar *){background-image:url("../../assets/companies/seniorsnouts-ink.png")}
+.as-company--strengthlab.as-company--plain:not(.as-topbar *){background-image:url("../../assets/companies/strengthlab-ink.png")}

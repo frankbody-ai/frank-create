@@ -1,0 +1,12 @@
+/* AutoSolutions OS — webfonts. Inter (SIL OFL 1.1) ships with this system. */
+@font-face{font-family:"Inter";font-style:normal;font-weight:100 900;font-display:swap;src:url("../assets/fonts/InterVariable.woff2") format("woff2")}
+@font-face{font-family:"Inter";font-style:italic;font-weight:100 900;font-display:swap;src:url("../assets/fonts/InterVariable-Italic.woff2") format("woff2")}
+@font-face{font-family:"Inter Display";font-style:normal;font-weight:300;font-display:swap;src:url("../assets/fonts/InterDisplay-Light.woff2") format("woff2")}
+@font-face{font-family:"Inter Display";font-style:normal;font-weight:400;font-display:swap;src:url("../assets/fonts/InterDisplay-Regular.woff2") format("woff2")}
+@font-face{font-family:"Inter Display";font-style:normal;font-weight:500;font-display:swap;src:url("../assets/fonts/InterDisplay-Medium.woff2") format("woff2")}
+@font-face{font-family:"Inter Display";font-style:normal;font-weight:600;font-display:swap;src:url("../assets/fonts/InterDisplay-SemiBold.woff2") format("woff2")}
+:root{
+--font-sans:"Inter","Noto Sans Arabic","Noto Sans Hebrew",-apple-system,BlinkMacSystemFont,"San Francisco","Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+--font-display:"Inter Display","Inter",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+--font-mono:ui-monospace,SFMono-Regular,"SF Mono",Consolas,"Liberation Mono",Menlo,monospace;
+}

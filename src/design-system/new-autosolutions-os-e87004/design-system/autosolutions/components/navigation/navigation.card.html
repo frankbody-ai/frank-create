@@ -1,0 +1,41 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Navigation & shell" subtitle="TopBar, SideNav, PageHeader, Tabs inside AppFrame" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Navigation</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>html,body{margin:0;height:100%}.as-frame{min-height:100%}.as-frame__body{min-height:calc(100% - var(--topbar-height))}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+window.AS_ICON_BASE = '../../assets/icons';
+const { AppFrame, TopBar, SideNav, PageHeader, Tabs, Card, Button, ButtonGroup, Badge, Text, Stack } = window.AutoSolutionsOSDesignSystem_27c955;
+const NAV = [
+  { id:'home', label:'Home', icon:'home' },
+  { id:'workflows', label:'Workflows', icon:'bolt', badge:'24' },
+  { id:'agents', label:'Agents', icon:'cpu-chip' },
+  { id:'runs', label:'Runs', icon:'clock', badge:'1,044' },
+  { id:'connections', label:'Connections', icon:'puzzle-piece' },
+];
+function Demo(){
+  const [page,setPage] = React.useState('workflows');
+  const [tab,setTab] = React.useState('all');
+  return (
+    <AppFrame
+      topBar={<TopBar notificationCount={1} company="frankbody" onCompanyAction={()=>{}} />}
+      navigation={<SideNav app="ops-hub" appAction={()=>{}} items={NAV} selected={page} onSelect={setPage} footerItems={[{id:'settings',label:'Settings',icon:'cog-6-tooth'}]} />}
+    >
+      <PageHeader
+        title="Workflows" icon="bolt" badge={<Badge tone="success">4 active</Badge>}
+        actions={<ButtonGroup><Button>Export</Button><Button disclosure>More actions</Button><Button variant="primary">Add workflow</Button></ButtonGroup>}
+      />
+      <Tabs tabs={[{id:'all',label:'All',count:24},{id:'mine',label:'Mine',count:6},{id:'failing',label:'Failing',count:2}]} selected={tab} onSelect={setTab} />
+      <Card title="Content region">
+        <Text tone="secondary">Canvas #F1F1F1, 12px top-left radius, 1260px column, 16px gutters and 16px between sections.</Text>
+      </Card>
+    </AppFrame>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

@@ -1,0 +1,60 @@
+/* ============================================================
+   AutoSolutions OS — Space & size
+   One 4px base unit, with a 1px sub-step (025) and a 10px odd
+   step (250) reserved for optical corrections.
+   ============================================================ */
+:root{
+--space-0:0;
+--space-025:.0625rem;/* 1 */
+--space-050:.125rem; /* 2 */
+--space-100:.25rem;  /* 4 */
+--space-150:.375rem; /* 6 */
+--space-200:.5rem;   /* 8 */
+--space-250:.625rem; /* 10 */
+--space-300:.75rem;  /* 12 */
+--space-350:.875rem;/* 14 — control inline padding */
+--space-400:1rem;    /* 16 */
+--space-500:1.25rem; /* 20 */
+--space-600:1.5rem;  /* 24 */
+--space-700:1.75rem; /* 28 */
+--space-800:2rem;    /* 32 */
+--space-1000:2.5rem; /* 40 */
+--space-1200:3rem;   /* 48 */
+--space-1600:4rem;   /* 64 */
+--space-2000:5rem;   /* 80 */
+--space-2400:6rem;   /* 96 */
+--space-2800:7rem;   /* 112 */
+--space-3200:8rem;   /* 128 */
+
+/* ---------- semantic spacing (relative deviation from base) ---------- */
+--space-small-500:var(--space-025);
+--space-small-400:var(--space-050);
+--space-small-300:var(--space-100);
+--space-small-200:var(--space-150);
+--space-small-100:var(--space-200);
+--space-small:var(--space-300);
+--space-base:var(--space-400);
+--space-large:var(--space-500);
+--space-large-100:var(--space-600);
+--space-large-200:var(--space-800);
+--space-large-300:var(--space-1200);
+--space-large-400:var(--space-1600);
+--space-large-500:var(--space-2400);
+
+/* ---------- width / height scale (same maths as space) ---------- */
+--size-0:0;--size-100:.25rem;--size-200:.5rem;--size-300:.75rem;--size-400:1rem;
+--size-500:1.25rem;--size-600:1.5rem;--size-700:1.75rem;--size-800:2rem;--size-900:2.25rem;
+--size-1000:2.5rem;--size-1200:3rem;--size-1600:4rem;--size-2000:5rem;--size-2400:6rem;
+--size-2800:7rem;--size-3200:8rem;
+
+/* ---------- component spacing aliases ---------- */
+--card-padding:var(--space-400);      /* 16 */
+--card-gap:var(--space-400);          /* 16 */
+--button-group-gap:var(--space-200);  /* 8  */
+--table-cell-padding:var(--space-150);/* 6  */
+--choice-size:var(--space-400);       /* 16 */
+--field-min-height:var(--space-800);  /* 32 */
+--control-height:1.75rem;             /* 28 — every button */
+--badge-height:1.25rem;               /* 20 */
+--row-height:3.25rem;                 /* 52 */
+}

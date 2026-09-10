@@ -1,0 +1,48 @@
+/* ============================================================
+   AutoSolutions OS — Layer B: marketing brand tokens
+   Editorial, high-contrast, near-black. Only autosolutions.ai
+   marketing surfaces use these; the product never does.
+   ============================================================ */
+:root{
+/* hue-tinted near-blacks, never pure #000 for large surfaces */
+--brand-bg:#02090A;
+--brand-bg-indigo:#010624;
+--brand-bg-blue:#000A1E;
+--brand-bg-teal:#061A1C;
+--brand-bg-ink:#020A08;
+--brand-bg-black:#000000;
+--brand-bg-paper:#FFFFFF;
+--brand-overlay:rgba(255,255,255,.10);
+--brand-overlay-strong:rgba(255,255,255,.18);
+--brand-hairline:rgba(255,255,255,.14);
+
+/* single bright accent */
+--brand-accent:#8051FF;
+--brand-accent-hover:#5700D1;
+--brand-accent-soft:#E9E5FF;
+--brand-accent-contrast:#FDFDFF;
+
+--brand-text:#FFFFFF;
+--brand-text-secondary:rgba(255,255,255,.68);
+--brand-text-muted:rgba(255,255,255,.46);
+--brand-text-on-light:#02090A;
+
+/* display scale — line-height at or below font size above 48px */
+--brand-display-1-size:6rem;    --brand-display-1-line:6rem;      /* 96/96 */
+--brand-display-2-size:4.375rem;--brand-display-2-line:4.375rem;  /* 70/70 */
+--brand-display-3-size:3.4375rem;--brand-display-3-line:4rem;     /* 55/64 */
+--brand-display-4-size:3rem;    --brand-display-4-line:3.41875rem;/* 48/54.7 */
+--brand-eyebrow-size:1.25rem;   --brand-eyebrow-line:1.75rem;     /* 20/28 +0.3px */
+--brand-eyebrow-tracking:.3px;
+--brand-body-size:1rem;         --brand-body-line:1.5rem;         /* 16/24 */
+--brand-weight-light:330;
+--brand-weight-regular:400;
+--brand-weight-medium:550;
+
+/* pills */
+--brand-radius-pill:9999px;
+--brand-button-height:2.75rem;/* 44 */
+--brand-button-padding:.5rem 1.25rem;
+--brand-section-padding:var(--space-2400);
+--brand-transition:.15s var(--ease-out); /* @kind other */
+}

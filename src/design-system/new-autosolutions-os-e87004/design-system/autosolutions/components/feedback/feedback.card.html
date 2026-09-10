@@ -1,0 +1,58 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Feedback" subtitle="Badge tones, Banner, Spinner, Skeleton, Tooltip" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Feedback</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;padding:16px;background:var(--color-bg)}.lbl{font-size:11px;line-height:12px;color:var(--color-text-disabled)}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+window.AS_ICON_BASE = '../../assets/icons';
+const { Badge, Banner, Spinner, Skeleton, Tooltip, Button, Box, Stack, Grid, Text } = window.AutoSolutionsOSDesignSystem_27c955;
+function Demo(){
+  return (
+    <Stack gap="400">
+      <Box background="bg-surface" padding="400" borderRadius="300" shadow="100">
+        <Stack gap="300">
+          <Stack direction="inline" gap="200" wrap align="center">
+            <Badge tone="success">Active</Badge>
+            <Badge tone="info">Draft</Badge>
+            <Badge tone="warning">Action needed</Badge>
+            <Badge tone="caution">Check</Badge>
+            <Badge tone="critical">Failed</Badge>
+            <Badge tone="highlight">New</Badge>
+            <Badge tone="ai" icon="sparkles">Assisted</Badge>
+            <Badge>1,044 runs</Badge>
+            <Badge tone="success" progress="complete">Synced</Badge>
+          </Stack>
+          <Stack direction="inline" gap="600" align="center">
+            <Stack direction="inline" gap="300" align="center">
+              <Spinner size="small" /><Spinner /><Spinner size="large" />
+              <span className="lbl">indeterminate &lt; 3s only</span>
+            </Stack>
+            <Tooltip content="Runs every 15 minutes">
+              <Button size="micro" icon="clock">Schedule</Button>
+            </Tooltip>
+          </Stack>
+          <Stack gap="200" style={{maxWidth:320}}>
+            <span className="lbl">skeleton — predictable layout</span>
+            <Skeleton variant="heading" width="45%" />
+            <Skeleton variant="text" lines={2} />
+          </Stack>
+        </Stack>
+      </Box>
+      <Grid columns={2} gap="400" align="start">
+        <Banner tone="critical" title="3 runs failed overnight" action={<Button size="micro">View runs</Button>} onDismiss={()=>{}}>
+          The ledger connector returned 401. Reconnect it to resume the schedule.
+        </Banner>
+        <Banner tone="ai" title="Draft this workflow with AI" action={<Button size="micro" icon="sparkles">Draft</Button>}>
+          Describe the outcome and AutoSolutions will assemble the steps.
+        </Banner>
+      </Grid>
+    </Stack>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

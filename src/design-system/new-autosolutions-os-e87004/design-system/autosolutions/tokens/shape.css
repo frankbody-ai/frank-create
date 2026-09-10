@@ -1,0 +1,30 @@
+/* ============================================================
+   AutoSolutions OS — Shape
+   Two-radius rhythm: 8px for anything you click,
+   12px for anything that contains things.
+   ============================================================ */
+:root{
+--radius-0:0; /* @kind radius */
+--radius-050:.125rem;  /* 2  micro chips */
+--radius-100:.25rem;   /* 4  small inline */
+--radius-150:.375rem;  /* 6  compact inputs */
+--radius-200:.5rem;    /* 8  buttons, badges, inputs, menu items */
+--radius-300:.75rem;   /* 12 cards, sections, app shell */
+--radius-400:1rem;     /* 16 large panels */
+--radius-500:1.25rem;  /* 20 modals, hero tiles */
+--radius-750:1.875rem; /* 30 pills, banners */
+--radius-full:624.9375rem;
+--radius-avatar:clamp(4px,round(25%,2px),8px);
+--radius-container:var(--radius-300);
+--radius-control:var(--radius-200);
+
+--border-width-0:0; /* @kind other */
+--border-width-0165:.04125rem;/* .66 hairline, hi-DPI */
+--border-width-025:.0625rem;  /* 1 */
+--border-width-050:.125rem;   /* 2 */
+--border-width-100:.25rem;    /* 4 */
+
+--border-hairline:var(--border-width-025) solid var(--color-border);
+--focus-ring:.125rem solid var(--color-border-focus);
+--focus-ring-offset:.0625rem;
+}

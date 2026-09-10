@@ -1,0 +1,22 @@
+/* ============================================================
+   AutoSolutions OS — Company marks
+   The tenant brands that live inside the hub. Every mark is
+   supplied at 1234×372 (3.32:1) in two cuts:
+     <slug>.png        tile — the brand's own colour field with
+                       its own rounded corners. Use this on the
+                       inverse top bar and on any dark surface.
+     <slug>-plain.png  transparent ground, brand-coloured art.
+                       Use on white cards and light surfaces.
+   ONE locked height everywhere; width follows the ratio.
+   Never stretch, recolour, or re-crop a tenant's mark.
+   ============================================================ */
+:root{
+--company-aspect:3.32; /* @kind other */
+--company-height:2rem;        /* 32 — the top-bar slot */
+--company-width:6.625rem;     /* 106 */
+--company-height-compact:1.5rem;/* 24 — table rows, list items */
+--company-width-compact:5rem;   /* 80 */
+--company-height-large:3rem;    /* 48 — switcher menu, settings */
+--company-width-large:9.9375rem;/* 159 */
+--company-radius:var(--radius-200);
+}

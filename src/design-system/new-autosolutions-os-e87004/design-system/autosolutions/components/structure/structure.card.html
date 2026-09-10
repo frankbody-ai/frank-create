@@ -1,0 +1,45 @@
+<!-- @dsCard group="Components" viewport="700x260" name="Structure" subtitle="Card, nested Section, Divider" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Structure</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;padding:16px;background:var(--color-bg)}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+window.AS_ICON_BASE = '../../assets/icons';
+const { Card, Section, Divider, Text, Stack, Grid, Button, Badge } = window.AutoSolutionsOSDesignSystem_27c955;
+function Demo(){
+  return (
+    <Grid columns={2} gap="400" align="start">
+      <Card title="Invoice triage" subtitle="Updated 4 minutes ago" actions={<Button size="micro">Edit</Button>}>
+        <Text tone="secondary">Level 1 — white surface, 12px radius, shadow-100.</Text>
+        <Section title="Schedule" variant="flat">
+          <Text variant="bodySm" tone="secondary">Level 2 — flat inset group on #F7F7F7 at radius 8.</Text>
+        </Section>
+        <Section title="Failure handling" variant="divided">
+          <Text variant="bodySm" tone="secondary">Level 3 — hairline-divided run inside the card.</Text>
+        </Section>
+      </Card>
+      <Card title="Run detail" padding="none">
+        <div style={{padding:'0 16px 16px'}}>
+          <Text tone="secondary">padding="none" lets tables and media bleed to the card edge.</Text>
+        </div>
+        <Divider tone="secondary" />
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px'}}>
+          <Text variant="headingSm">Step 4 · Extract line items</Text>
+          <Badge tone="success">Passed</Badge>
+        </div>
+        <Divider tone="secondary" />
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 16px'}}>
+          <Text variant="headingSm">Step 5 · Post to ledger</Text>
+          <Badge tone="critical">Failed</Badge>
+        </div>
+      </Card>
+    </Grid>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

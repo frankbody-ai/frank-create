@@ -1,0 +1,34 @@
+/* ============================================================
+   AutoSolutions OS — Elevation
+   Many near-invisible layers, never one blurry one. The final
+   0 0 0 1px rgba(0,0,0,.06) ring is what separates a white card
+   from the #F1F1F1 canvas — never drop it.
+   ============================================================ */
+:root{
+--shadow-0:none;
+--shadow-100:0 5px 5px -2.5px rgba(0,0,0,.03),0 3px 3px -1.5px rgba(0,0,0,.02),0 2px 2px -1px rgba(0,0,0,.02),0 1px 1px -.5px rgba(0,0,0,.03),0 .5px .5px 0 rgba(0,0,0,.04),0 0 0 1px rgba(0,0,0,.06);
+--shadow-200:0 8px 10px -5px rgba(0,0,0,.08),0 5px 5px -2.5px rgba(0,0,0,.03),0 3px 3px -1.5px rgba(0,0,0,.02),0 2px 2px -1px rgba(0,0,0,.02),0 1px 1px -.5px rgba(0,0,0,.03),0 .5px .5px 0 rgba(0,0,0,.04),0 0 0 1px rgba(0,0,0,.06);
+--shadow-300:0 8px 24px -8px rgba(0,0,0,.28),0 8px 16px -4px rgba(0,0,0,.05),0 3px 6px 0 rgba(0,0,0,.05),0 2px 4px 0 rgba(0,0,0,.05),0 1px 2px 0 rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.06);
+--shadow-400:0 20px 32px -12px rgba(0,0,0,.20),0 10px 16px -6px rgba(0,0,0,.08),0 4px 8px -2px rgba(0,0,0,.05),0 2px 4px 0 rgba(0,0,0,.05),0 1px 2px 0 rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.06);
+--shadow-500:0 24px 36px -12px rgba(0,0,0,.12),0 24px 24px -12px rgba(0,0,0,.08),0 12px 16px -6px rgba(0,0,0,.05),0 4px 8px -2px rgba(0,0,0,.05),0 1px 2px 0 rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.06);
+--shadow-600:0 24px 56px -12px rgba(0,0,0,.24),0 24px 24px -12px rgba(0,0,0,.12),0 12px 16px -6px rgba(0,0,0,.06),0 4px 8px -2px rgba(0,0,0,.05),0 1px 2px 0 rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.06);
+
+/* Bevel — the physical edge on secondary buttons and segmented controls */
+--shadow-bevel-100:inset 1px 0 0 0 rgba(0,0,0,.13),inset -1px 0 0 0 rgba(0,0,0,.13),inset 0 -1px 0 0 rgba(0,0,0,.17),inset 0 1px 0 0 rgba(204,204,204,.50);
+/* Inset — pressed states and text inputs */
+--shadow-inset-100:inset 0 1px 2px 0 rgba(26,26,26,.15),inset 0 1px 1px 0 rgba(26,26,26,.15);
+--shadow-inset-200:inset 0 2px 1px 0 rgba(26,26,26,.20),inset 1px 0 1px 0 rgba(26,26,26,.12),inset -1px 0 1px 0 rgba(26,26,26,.12);
+
+/* Semantic aliases */
+--shadow-card:var(--shadow-100);
+--shadow-card-raised:var(--shadow-200);
+--shadow-popover:var(--shadow-300);
+--shadow-modal:var(--shadow-400);
+--shadow-sheet:var(--shadow-500);
+--shadow-overlay:var(--shadow-600);
+
+/* The primary button is a fill + gradient + triple inset, not a flat colour */
+--button-primary-gradient:linear-gradient(180deg,rgba(48,48,48,0) 63.53%,rgba(255,255,255,.15) 100%); /* @kind other */
+--button-primary-inset:inset 0 -1px 0 1px rgba(0,0,0,.80),inset 0 0 0 1px #303030,inset 0 .5px 0 1.5px rgba(255,255,255,.25); /* @kind shadow */
+--button-critical-inset:inset 0 -1px 0 1px rgba(0,0,0,.40),inset 0 0 0 1px #C70A24,inset 0 .5px 0 1.5px rgba(255,255,255,.25); /* @kind shadow */
+}

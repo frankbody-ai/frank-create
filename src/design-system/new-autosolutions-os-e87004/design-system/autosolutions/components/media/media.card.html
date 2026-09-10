@@ -1,0 +1,59 @@
+<!-- @dsCard group="Components" viewport="700x230" name="Media" subtitle="Icon (20/16), Avatar rotation, Thumbnail" -->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Media</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;padding:16px;background:var(--color-bg)}.lbl{font-size:11px;line-height:12px;color:var(--color-text-disabled)}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+window.AS_ICON_BASE = '../../assets/icons';
+const { Icon, Avatar, Thumbnail, Text, Stack, Box } = window.AutoSolutionsOSDesignSystem_27c955;
+const names20 = ['home','bolt','cpu-chip','sparkles','arrow-path','clock','chart-bar','users','cog-6-tooth','bell','magnifying-glass','funnel','play','check-circle','exclamation-triangle','trash','pencil-square','link','globe-alt','puzzle-piece'];
+function Demo(){
+  return (
+    <Box background="bg-surface" padding="400" borderRadius="300" shadow="100">
+      <Stack gap="400">
+        <Stack gap="200">
+          <span className="lbl">20px solid · default icon #4A4A4A</span>
+          <Stack direction="inline" gap="300" wrap align="center">
+            {names20.map(n => <Icon key={n} source={n} />)}
+          </Stack>
+        </Stack>
+        <Stack direction="inline" gap="600" align="center">
+          <Stack gap="200">
+            <span className="lbl">tones</span>
+            <Stack direction="inline" gap="200" align="center">
+              {['base','secondary','success','critical','warning','info','highlight','ai','disabled'].map(t =>
+                <Icon key={t} source="check-circle" tone={t} />)}
+            </Stack>
+          </Stack>
+          <Stack gap="200">
+            <span className="lbl">16px dense</span>
+            <Stack direction="inline" gap="200" align="center">
+              {['chevron-down','check','x-mark','exclamation-circle','magnifying-glass','sparkles'].map(n =>
+                <Icon key={n} source={n} size={16} tone="secondary" />)}
+            </Stack>
+          </Stack>
+          <Stack gap="200">
+            <span className="lbl">avatar 20/24/28/32/40</span>
+            <Stack direction="inline" gap="200" align="center">
+              <Avatar name="Ada Ng" size={20} /><Avatar name="Bo Chen" size={24} /><Avatar name="Cam Ruiz" size={28} />
+              <Avatar name="Dev Patel" size={32} /><Avatar name="Eli Ford" size={40} />
+            </Stack>
+          </Stack>
+          <Stack gap="200">
+            <span className="lbl">thumbnail</span>
+            <Stack direction="inline" gap="200" align="center">
+              <Thumbnail size="small" /><Thumbnail size="medium" /><Thumbnail size="large" />
+            </Stack>
+          </Stack>
+        </Stack>
+      </Stack>
+    </Box>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

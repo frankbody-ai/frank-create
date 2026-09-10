@@ -1,0 +1,155 @@
+/* ============================================================
+   Mobile — the phone adaptation of the shell.
+
+   Everything here is the same system at thumb scale: identical
+   colour, radius, elevation and motion tokens, 44px targets and
+   one type step up. What genuinely changes shape:
+     side nav → tab bar · table → list rows · popover → sheet
+     inverse top bar → light top bar (a dark 56px bar eats a
+     tenth of a 390px screen; the phone keeps its canvas)
+   ============================================================ */
+
+/* ── Frame ─────────────────────────────────────────────────────────── */
+.as-m-frame{position:relative;display:flex;flex-direction:column;height:100%;min-height:0;background:var(--color-bg);overflow:hidden;font-size:var(--type-m-body-size);line-height:var(--type-m-body-line)}
+.as-m-frame__content{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:var(--m-section-gap);padding:var(--space-300) 0 var(--space-1200);scrollbar-width:none}
+.as-m-frame__content::-webkit-scrollbar{display:none}
+.as-m-frame__content>*{flex:0 0 auto}
+
+/* ── Status strip ──────────────────────────────────────────────────── */
+.as-m-status{display:flex;align-items:center;justify-content:space-between;flex:0 0 auto;height:var(--m-status-height);padding:var(--m-safe-top) var(--space-500) 0;background:var(--color-bg-surface);color:var(--color-text)}
+.as-m-status__time{font-size:var(--type-m-body-sm-size);font-weight:var(--font-weight-semibold);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.as-m-status__glyphs{display:flex;align-items:center;gap:var(--space-100)}
+
+/* ── Top bar ───────────────────────────────────────────────────────── */
+.as-m-topbar{flex:0 0 auto;background:var(--color-bg-surface);border-bottom:var(--border-width-025) solid var(--color-border-secondary)}
+.as-m-topbar.is-sticky{position:sticky;top:0;z-index:var(--z-400)}
+.as-m-topbar__row{display:flex;align-items:center;gap:var(--space-200);height:var(--m-topbar-height);padding-inline:var(--space-200) var(--m-gutter)}
+.as-m-topbar__back{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:var(--m-hit-min);height:var(--m-hit-min);margin-inline-start:calc(var(--space-100) * -1);border:0;border-radius:var(--radius-200);background:transparent;color:var(--color-icon);cursor:pointer;transition:background-color var(--motion-hover)}
+.as-m-topbar__back:active{background:var(--color-bg-fill-transparent-active)}
+.as-m-topbar__title{flex:1 1 auto;min-width:0;margin:0;font-size:var(--type-m-title-size);line-height:var(--type-m-title-line);font-weight:var(--font-weight-bold);letter-spacing:var(--font-letter-spacing-dense);color:var(--color-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.as-m-topbar__actions{display:flex;align-items:center;gap:var(--space-100);flex:0 0 auto;margin-inline-start:auto}
+.as-m-topbar__large{padding:0 var(--m-gutter) var(--space-300)}
+.as-m-topbar__large-title{margin:0;font-size:var(--type-m-title-lg-size);line-height:var(--type-m-title-lg-line);font-weight:var(--font-weight-bold);letter-spacing:var(--font-letter-spacing-denser);color:var(--color-text)}
+.as-m-topbar__subtitle{margin:var(--space-050) 0 0;font-size:var(--type-m-body-sm-size);line-height:var(--type-m-body-sm-line);color:var(--color-text-secondary);text-wrap:pretty}
+/* Icon buttons in a mobile bar grow to the touch floor. */
+.as-m-topbar .as-btn--icon{width:var(--m-hit-min);height:var(--m-hit-min);min-height:var(--m-hit-min)}
+.as-m-topbar .as-btn{height:var(--space-800);min-height:var(--space-800);padding-inline:var(--space-300);font-size:var(--type-m-body-sm-size)}
+
+/* ── Tab bar ───────────────────────────────────────────────────────── */
+/* The tab bar reserves the home-indicator strip itself. env() resolves to 0
+   in a browser preview, so max() keeps the labels clear either way. */
+.as-m-tabbar{display:flex;align-items:stretch;flex:0 0 auto;padding-bottom:max(var(--m-safe-bottom),var(--space-500));background:var(--color-bg-surface);border-top:var(--border-width-025) solid var(--color-border-secondary);z-index:var(--z-400)}
+.as-m-tabbar__tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--space-050);flex:1 1 0;min-width:0;height:var(--m-tabbar-height);padding:var(--space-100) var(--space-050) var(--space-150);border:0;background:transparent;color:var(--color-icon-secondary);cursor:pointer;transition:color var(--motion-hover)}
+.as-m-tabbar__tab.is-selected{color:var(--color-text)}
+.as-m-tabbar__tab:active{background:var(--color-bg-fill-transparent)}
+.as-m-tabbar__glyph{position:relative;display:inline-flex}
+.as-m-tabbar__badge{position:absolute;top:-3px;inset-inline-start:calc(100% - 8px);min-width:16px;height:16px;padding-inline:4px;border-radius:var(--radius-full);background:var(--color-critical-fill);color:#fff;font-size:10px;line-height:16px;font-weight:var(--font-weight-medium);text-align:center;font-variant-numeric:tabular-nums}
+.as-m-tabbar__label{font-size:var(--type-m-caption-size);line-height:var(--type-m-caption-line);font-weight:var(--font-weight-medium);color:currentColor;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+
+/* ── List rows ─────────────────────────────────────────────────────── */
+.as-m-list{display:flex;flex-direction:column;gap:var(--space-150)}
+.as-m-list__header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-200);padding-inline:var(--m-gutter)}
+.as-m-list__title{margin:0;font-size:var(--type-heading-xs-size);line-height:var(--type-heading-xs-line);font-weight:var(--type-heading-xs-weight);letter-spacing:.04em;text-transform:uppercase;color:var(--color-text-secondary)}
+.as-m-list__rows{display:flex;flex-direction:column;background:var(--color-bg-surface)}
+.as-m-list--inset .as-m-list__rows{margin-inline:var(--m-gutter);border-radius:var(--radius-300);box-shadow:var(--shadow-card);overflow:hidden}
+.as-m-list:not(.as-m-list--inset) .as-m-list__rows{box-shadow:0 -1px 0 rgba(0,0,0,.06),0 1px 0 rgba(0,0,0,.06)}
+
+.as-m-row{display:flex;align-items:center;gap:var(--space-300);width:100%;min-height:var(--m-row-min-height);padding:var(--space-300) var(--m-gutter);border:0;background:transparent;text-align:start;cursor:default;transition:background-color var(--motion-hover)}
+button.as-m-row{cursor:pointer}
+.as-m-row+.as-m-row{box-shadow:inset 0 1px 0 var(--color-border-secondary)}
+button.as-m-row:active{background:var(--color-bg-surface-active)}
+.as-m-row.is-selected{background:var(--color-bg-surface-selected)}
+.as-m-row.is-destructive .as-m-row__title{color:var(--color-critical-text-secondary)}
+.as-m-row.is-disabled{cursor:default}
+.as-m-row.is-disabled .as-m-row__title{color:var(--color-text-disabled)}
+.as-m-row__media{display:flex;flex:0 0 auto}
+.as-m-row__body{display:flex;flex-direction:column;gap:1px;flex:1 1 auto;min-width:0}
+.as-m-row__title{font-size:var(--type-m-body-size);line-height:var(--type-m-body-line);font-weight:var(--font-weight-medium);color:var(--color-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.as-m-row__subtitle{font-size:var(--type-m-body-sm-size);line-height:var(--type-m-body-sm-line);color:var(--color-text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* A trailing badge is flex:0 0 auto, so a wide one starves the body: on those
+   rows the title and subtitle both wrap to two lines instead of clipping
+   mid-word. The 64px row already has the height. Same treatment as
+   .as-page-header__subtitle. */
+.as-m-row:has(.as-m-row__trailing) .as-m-row__title,
+.as-m-row:has(.as-m-row__trailing) .as-m-row__subtitle{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;text-overflow:clip;text-wrap:pretty}
+.as-m-row__meta{margin-top:var(--space-050);font-size:var(--type-m-body-sm-size);line-height:var(--type-m-body-sm-line);color:var(--color-text-secondary)}
+.as-m-row__trailing{display:flex;flex-direction:column;align-items:flex-end;gap:var(--space-050);flex:0 0 auto}
+.as-m-row__value{font-size:var(--type-m-body-size);line-height:var(--type-m-body-line);font-weight:var(--font-weight-medium);color:var(--color-text)}
+.as-m-row__chevron{flex:0 0 auto;margin-inline-start:calc(var(--space-150) * -1)}
+
+/* ── Segmented control ─────────────────────────────────────────────── */
+.as-m-seg{display:flex;align-items:center}
+.as-m-seg--segmented{gap:2px;margin-inline:var(--m-gutter);padding:2px;border-radius:var(--radius-200);background:var(--color-bg-fill-transparent-secondary)}
+.as-m-seg--segmented .as-m-seg__item{flex:1 1 0;justify-content:center}
+.as-m-seg--segmented .as-m-seg__item.is-selected{background:var(--color-bg-surface);box-shadow:var(--shadow-100);color:var(--color-text)}
+.as-m-seg--scroll{gap:var(--space-200);padding-inline:var(--m-gutter);overflow-x:auto;scrollbar-width:none}
+.as-m-seg--scroll::-webkit-scrollbar{display:none}
+.as-m-seg--scroll .as-m-seg__item{flex:0 0 auto;background:var(--color-bg-surface);box-shadow:var(--shadow-100)}
+.as-m-seg--scroll .as-m-seg__item.is-selected{background:var(--color-bg-fill-brand);background-image:var(--button-primary-gradient);box-shadow:var(--button-primary-inset);color:var(--color-text-brand-on-bg-fill)}
+.as-m-seg__item{position:relative;display:inline-flex;align-items:center;gap:var(--space-150);height:var(--m-control-height-small);padding-inline:var(--space-300);border:0;border-radius:var(--radius-200);background:transparent;font-size:var(--type-m-body-sm-size);line-height:var(--type-m-body-sm-line);font-weight:var(--font-weight-medium);color:var(--color-text-secondary);white-space:nowrap;cursor:pointer;transition:background-color var(--motion-hover),color var(--motion-hover)}
+/* the invisible 44px hit extension a 36px chip owes the thumb */
+.as-m-seg__item::after{content:"";position:absolute;inset-inline:0;top:50%;height:var(--m-hit-min);transform:translateY(-50%)}
+.as-m-seg__count{padding-inline:var(--space-150);border-radius:var(--radius-200);background:var(--color-bg-fill-transparent-secondary);font-size:var(--type-m-caption-size);color:inherit}
+.as-m-seg--scroll .as-m-seg__item.is-selected .as-m-seg__count{background:rgba(255,255,255,.22)}
+
+/* ── Toolbar ───────────────────────────────────────────────────────── */
+.as-m-toolbar{display:flex;flex-direction:column;gap:var(--space-150);flex:0 0 auto;padding:var(--space-300) var(--m-gutter) calc(var(--space-300) + var(--m-safe-bottom));background:var(--color-bg-surface-overlay);backdrop-filter:blur(12px);border-top:var(--border-width-025) solid var(--color-border-secondary);z-index:var(--z-100)}
+.as-m-toolbar__note{font-size:var(--type-m-body-sm-size);line-height:var(--type-m-body-sm-line);color:var(--color-text-secondary);text-align:center}
+.as-m-toolbar__actions{display:flex;align-items:center;gap:var(--space-200)}
+.as-m-toolbar__actions>*{flex:1 1 0}
+
+/* ── Sheet ─────────────────────────────────────────────────────────── */
+.as-m-sheet-layer{position:absolute;inset:0;z-index:var(--z-512);display:flex;align-items:flex-end}
+.as-m-sheet__backdrop{position:absolute;inset:0;background:var(--color-backdrop-bg);opacity:1;animation:as-m-fade var(--duration-200) var(--ease-out) both}
+.as-m-sheet{position:relative;display:flex;flex-direction:column;width:100%;max-height:var(--m-sheet-max-height);padding-bottom:var(--m-safe-bottom);background:var(--color-bg-surface);border-start-start-radius:var(--m-sheet-radius);border-start-end-radius:var(--m-sheet-radius);box-shadow:var(--shadow-500);transform:none;animation:as-m-rise var(--duration-300) var(--ease-out) both}
+.as-m-sheet--full{height:var(--m-sheet-max-height)}
+.as-m-sheet--half{height:52%}
+.as-m-sheet__grabber{align-self:center;flex:0 0 auto;width:var(--m-sheet-grabber-width);height:5px;margin-top:var(--space-150);border-radius:var(--radius-full);background:var(--color-gray-500)}
+.as-m-sheet__header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-300);flex:0 0 auto;padding:var(--space-300) var(--m-gutter);border-bottom:var(--border-width-025) solid var(--color-border-secondary)}
+.as-m-sheet__title{margin:0;font-size:var(--type-m-heading-size);line-height:var(--type-m-heading-line);font-weight:var(--font-weight-semibold);color:var(--color-text)}
+.as-m-sheet__close{min-height:var(--m-hit-min);padding-inline:var(--space-200);margin-inline-end:calc(var(--space-200) * -1);border:0;background:none;font-size:var(--type-m-body-size);font-weight:var(--font-weight-medium);color:var(--color-text-link);cursor:pointer}
+.as-m-sheet__body{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:var(--space-300);padding:var(--space-300) 0}
+.as-m-sheet__footer{display:flex;gap:var(--space-200);flex:0 0 auto;padding:var(--space-300) var(--m-gutter);border-top:var(--border-width-025) solid var(--color-border-secondary)}
+.as-m-sheet__footer>*{flex:1 1 0}
+@keyframes as-m-fade{from{opacity:0}to{opacity:1}}
+@keyframes as-m-rise{from{transform:translateY(100%)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){.as-m-sheet,.as-m-sheet__backdrop{animation-duration:1ms}}
+
+/* ── Mobile-sized primitives ───────────────────────────────────────── */
+/* Inside a mobile frame the shared controls grow to the touch floor and the
+   type steps up. One rule set, so no component needs a mobile twin. */
+.as-m-frame .as-btn{height:var(--m-control-height);min-height:var(--m-control-height);padding-inline:var(--space-400);font-size:var(--type-m-body-size);line-height:var(--type-m-body-line)}
+.as-m-frame .as-btn--icon{width:var(--m-control-height);padding-inline:0}
+/* Micro and plain controls keep their compact box but owe the thumb the
+   44px floor, taken as an invisible hit extension like the segmented chip. */
+.as-m-frame .as-btn--plain{position:relative;height:auto;min-height:var(--space-800);padding-inline:0}
+.as-m-frame .as-btn--micro{position:relative;height:var(--space-800);min-height:var(--space-800);padding-inline:var(--space-300);font-size:var(--type-m-body-sm-size)}
+.as-m-frame .as-btn--micro.as-btn--icon{width:var(--space-800)}
+.as-m-frame .as-btn--micro::after,.as-m-frame .as-btn--plain::after{content:"";position:absolute;inset-inline:0;top:50%;height:var(--m-hit-min);transform:translateY(-50%)}
+.as-m-frame .as-input{min-height:var(--m-field-height)}
+.as-m-frame .as-input__control{font-size:var(--type-m-input-size)}
+.as-m-frame .as-field__label{font-size:var(--type-m-body-sm-size);line-height:var(--type-m-body-sm-line)}
+.as-m-frame .as-choice__input{width:1.375rem;height:1.375rem}
+.as-m-frame .as-choice__label{font-size:var(--type-m-body-size);line-height:var(--type-m-body-line)}
+.as-m-frame .as-switch__track{position:relative;width:51px;height:31px}
+.as-m-frame .as-switch__track::after{content:"";position:absolute;inset-inline:0;top:50%;height:var(--m-hit-min);transform:translateY(-50%)}
+.as-m-frame .as-switch__knob{top:2px;inset-inline-start:2px;width:27px;height:27px}
+.as-m-frame .as-switch__track[aria-checked="true"] .as-switch__knob{transform:translateX(20px)}
+.as-m-frame .as-switch__label{font-size:var(--type-m-body-size);line-height:var(--type-m-body-line)}
+.as-m-frame .as-badge{height:1.375rem;font-size:var(--type-m-body-sm-size)}
+.as-m-frame .as-card{margin-inline:var(--m-gutter)}
+.as-m-frame .as-card--bleed{margin-inline:0;border-radius:0;box-shadow:0 -1px 0 rgba(0,0,0,.06),0 1px 0 rgba(0,0,0,.06)}
+.as-m-frame .as-text--body-md{font-size:var(--type-m-body-size);line-height:var(--type-m-body-line)}
+.as-m-frame .as-text--body-sm{font-size:var(--type-m-body-sm-size);line-height:var(--type-m-body-sm-line)}
+.as-m-frame .as-text--heading-md{font-size:var(--type-m-heading-size);line-height:var(--type-m-heading-line)}
+.as-m-frame .as-banner{margin-inline:var(--m-gutter);border-radius:var(--radius-300)}
+.as-m-frame .as-actionlist__item{min-height:var(--m-hit-min);padding:var(--space-200) var(--m-gutter);border-radius:0;font-size:var(--type-m-body-size)}
+.as-m-frame .as-actionlist__item+.as-actionlist__item{box-shadow:inset 0 1px 0 var(--color-border-secondary)}
+
+/* ── Phone bezel (preview only, never product chrome) ─────────────── */
+.as-m-phone{display:inline-flex;flex-direction:column;align-items:center;gap:var(--space-300)}
+.as-m-phone__screen{position:relative;flex:0 0 auto;border-radius:2.75rem;background:var(--color-bg);box-shadow:0 0 0 10px #1A1A1A,0 0 0 11px #3A3A3A,var(--shadow-400);overflow:hidden}
+.as-m-phone__screen>.as-m-frame{border-radius:inherit}
+.as-m-phone__notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:78px;height:24px;border-radius:var(--radius-full);background:#0A0A0A;z-index:var(--z-520)}
+.as-m-phone__home{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:var(--radius-full);background:var(--color-text);opacity:.28;z-index:var(--z-520);pointer-events:none}
+.as-m-phone__label{font-size:var(--type-body-sm-size);line-height:var(--type-body-sm-line);color:var(--color-text-secondary)}

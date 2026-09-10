@@ -1,0 +1,4 @@
+.as-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+.as-icon>svg{display:block;width:100%;height:100%}
+.as-avatar{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;border-radius:var(--radius-avatar);font-weight:var(--font-weight-medium);line-height:1;letter-spacing:0;overflow:hidden;user-select:none}
+.as-thumbnail{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;background:var(--color-bg-surface-secondary);border-radius:var(--radius-200);box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);overflow:hidden}
