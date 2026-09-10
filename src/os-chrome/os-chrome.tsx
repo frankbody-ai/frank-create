@@ -64,7 +64,7 @@ const COLUMNS: Array<{ group: string; sections: { title?: string; apps: string[]
 const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 /* The official company marks from the design system, ink cut (for the white
-   popover surface). A company outside this set keeps its stored logo. */
+   popover surface). These must win over the legacy coloured tenant artwork. */
 import aliveInk from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/alive-ink.png";
 import coreiqInk from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/coreiq-ink.png";
 import enxgyInk from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/enxgy-ink.png";
@@ -89,7 +89,17 @@ const OFFICIAL_MARKS: Record<string, string> = {
 };
 
 function officialMark(slug: string | null | undefined, name: string): string | null {
-  return (slug && OFFICIAL_MARKS[slugify(slug)]) || OFFICIAL_MARKS[slugify(name)] || null;
+  const keys = [slug, name]
+    .filter((value): value is string => Boolean(value))
+    .flatMap((value) => {
+      const key = slugify(value);
+      return [key, key.replace(/-?(pty|ltd|limited|inc|company)$/g, "")];
+    });
+  for (const key of keys) {
+    const mark = OFFICIAL_MARKS[key];
+    if (mark) return mark;
+  }
+  return null;
 }
 
 /* Catalogue keys that differ from the design reference's label keys. Without
@@ -330,7 +340,7 @@ export function OsCompanySwitcher({ client, appKey }: { client: OsClient; appKey
           <span className="osx-menu__label">Your companies</span>
           {ctx.tenants.map((t) => {
             const isCurrent = t.id === ctx.tenant!.id;
-            const m = officialMark(t.slug, t.name) ?? t.logoPlainUrl ?? t.logoUrl;
+            const m = officialMark(t.slug, t.name);
             return (
               <button key={t.id} type="button" role="menuitem" disabled={busy}
                 className={"osx-item" + (isCurrent ? " is-current" : "")}
