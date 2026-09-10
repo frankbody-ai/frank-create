@@ -1,6 +1,6 @@
 import { memo } from "react";
 
-import { Icon } from "../ds";
+import { Icon } from "@/design-system/new-autosolutions-os-e87004";
 import { OutputStrip } from "./StudioPieces";
 import {
   formatAspectChip,

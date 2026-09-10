@@ -3,7 +3,6 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase, os, hardSignOut } from "./lib/supabaseClient";
 import { APP_KEY } from "./lib/coreConfig";
 import { getMyAccessState } from "./lib/admin";
-import { brandCompanyId, brandName } from "./lib/tenantBrand";
 import { AuthLayout, SignIn, GoogleButton, Button, Spinner, Text } from "./ds";
 
 type Status = "loading" | "signed-out" | "denied" | "pending" | "ready";
@@ -92,8 +91,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   return (
     <AuthLayout>
       <SignIn
-        company={brandCompanyId()}
-        companyName={brandName() ?? "frank body"}
         app="design-studio"
         appName="art-ificial design studio"
         method="sso"

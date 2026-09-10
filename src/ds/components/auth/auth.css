@@ -6,7 +6,7 @@
    sitting in a page column. Padding is 32px for the same reason.
 
    The lockup order is fixed and must not be rearranged:
-   company mark → app wordmark → rule → form → AutoSolutions logo.
+   app wordmark → rule → form.
    ============================================================ */
 .as-auth-page{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:var(--space-1200) var(--space-400);background:var(--color-bg)}
 .as-auth{display:flex;flex-direction:column;gap:var(--space-600);width:100%;max-width:25rem;padding:var(--space-800);background:var(--color-bg-surface);border-radius:var(--radius-500);box-shadow:var(--shadow-400)}
@@ -42,10 +42,5 @@
 
 .as-auth__foot{display:flex;flex-direction:column;align-items:center;gap:var(--space-600)}
 .as-auth__note{margin:0;font-size:var(--type-body-sm-size);line-height:var(--type-body-sm-line);color:var(--color-text-secondary);text-align:center;text-wrap:pretty}
-.as-auth__os{height:var(--logo-height-compact)}
-
 /* PORT: loading row shown while the session is being checked. */
 .as-auth__loading{display:flex;align-items:center;justify-content:center;gap:var(--space-200)}
-/* PORT: our .as-logo takes its width from the size class, so the footer
-   lockup needs the 4.5:1 aspect to resolve a width from its height. */
-.as-auth__os{aspect-ratio:var(--logo-aspect);width:auto}

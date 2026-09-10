@@ -5,9 +5,6 @@ import { Checkbox } from '../forms/Checkbox';
 import { Banner } from '../feedback/Banner';
 
 export interface SignInProps extends Omit<React.FormHTMLAttributes<HTMLFormElement>, 'onSubmit' | 'title'> {
-  company?: string | string[] | null;
-  companyName?: string | (string | undefined)[] | null;
-  companyVariant?: 'plain' | 'tile';
   app?: string;
   appName?: string;
   eyebrow?: React.ReactNode;
@@ -33,11 +30,10 @@ export interface SignInProps extends Omit<React.FormHTMLAttributes<HTMLFormEleme
 
 /**
  * The standard sign-in card. Every AutoSolutions app uses this, so the
- * order of the lockup never varies: AutoSolutions OS mark, app wordmark,
- * rule, the form, then the footer notes.
+ * order of the lockup never varies: app wordmark, rule, the form, then the
+ * footer notes.
  */
 export function SignIn({
-  company: _company, companyName: _companyName, companyVariant: _companyVariant,
   app, appName, eyebrow, title = 'Sign in', description, method = 'password',
   email, onEmailChange, password, onPasswordChange, remember, onRememberChange,
   error, loading = false, submitLabel, onSubmit, forgotAction, providers,
@@ -49,12 +45,6 @@ export function SignIn({
   return (
     <form className={['as-auth', className].filter(Boolean).join(' ')} onSubmit={submit} style={style} {...rest}>
       <div className="as-auth__brand">
-        <span
-          className="as-auth__os as-logo"
-          role="img"
-          aria-label="AutoSolutions OS"
-          style={{ width: 'var(--logo-width)', height: 'var(--logo-height)' }}
-        />
         {app && <span className={`as-app as-app--${app} as-app--large as-app--center`} role="img" aria-label={appName || app} />}
       </div>
 
