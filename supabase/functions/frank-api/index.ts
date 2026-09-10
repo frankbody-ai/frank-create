@@ -1303,9 +1303,12 @@ async function openrouterImage(
   if (GPT_IMAGE_25_MODELS.has(opts.model)) {
     if (opts.background && ["auto", "opaque"].includes(opts.background)) payload.background = opts.background;
     if (opts.moderation && ["auto", "low"].includes(opts.moderation)) payload.moderation = opts.moderation;
+    // OpenAI rejects output_compression unless output_format is jpeg/webp, so
+    // only send the pair when the user actually asked for a smaller file.
     const compression = Number(opts.outputCompression);
-    if (Number.isFinite(compression) && compression >= 0 && compression <= 100) {
+    if (Number.isFinite(compression) && compression >= 0 && compression < 100) {
       payload.output_compression = Math.round(compression);
+      payload.output_format = "jpeg";
     }
   }
   if (opts.n && opts.n > 1) payload.n = opts.n;
