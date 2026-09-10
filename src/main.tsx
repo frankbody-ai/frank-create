@@ -11,17 +11,9 @@ import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { NotFoundPage } from "./components/NotFoundPage";
 import { installErrorReporter } from "./lib/errorReporter";
 import { initTenantBrand } from "./lib/tenantBrand";
-import { applyTheme } from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/components/theming/ThemePicker";
+import { applyTheme, storedTheme } from "./lib/theme";
 import { resolveScreen } from "./nav";
 import "./app.css";
-
-function storedTheme() {
-  try {
-    return window.localStorage.getItem("as-theme") || "ink";
-  } catch {
-    return "ink";
-  }
-}
 
 // Studio is where everyone lands, so it is the only screen in the first bundle.
 // The rest arrive when someone actually navigates to them.
