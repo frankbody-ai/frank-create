@@ -73,24 +73,49 @@ import ledgifyInk from "@/design-system/new-autosolutions-os-e87004/design-syste
 import seniorsnoutsInk from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/seniorsnouts-ink.png";
 import strengthlabInk from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/strengthlab-ink.png";
 
-const OFFICIAL_MARKS: Record<string, string> = {
-  alive: aliveInk,
-  "al-ive": aliveInk,
-  "al-ive-body": aliveInk,
-  coreiq: coreiqInk,
-  "core-iq": coreiqInk,
-  enxgy: enxgyInk,
-  frankbody: frankbodyInk,
-  "frank-body": frankbodyInk,
-  ledgify: ledgifyInk,
-  seniorsnouts: seniorsnoutsInk,
-  "senior-snouts": seniorsnoutsInk,
-  strengthlab: strengthlabInk,
-  "strength-lab": strengthlabInk,
-  "strength-labs": strengthlabInk,
+/* The white cut of the same official marks, for the dark top bar. */
+import aliveWhite from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/alive-white.png";
+import coreiqWhite from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/coreiq-white.png";
+import enxgyWhite from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/enxgy-white.png";
+import frankbodyWhite from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/frankbody-white.png";
+import ledgifyWhite from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/ledgify-white.png";
+import seniorsnoutsWhite from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/seniorsnouts-white.png";
+import strengthlabWhite from "@/design-system/new-autosolutions-os-e87004/design-system/autosolutions/assets/companies/strengthlab-white.png";
+
+/* slug/name key -> official company id. Every spelling anyone stores maps here,
+   so the legacy coloured tenant artwork never wins for a known company. */
+const OFFICIAL_IDS: Record<string, string> = {
+  alive: "alive",
+  "al-ive": "alive",
+  "al-ive-body": "alive",
+  "alive-body": "alive",
+  "alivebody": "alive",
+  "alive-body-au": "alive",
+  coreiq: "coreiq",
+  "core-iq": "coreiq",
+  enxgy: "enxgy",
+  frankbody: "frankbody",
+  "frank-body": "frankbody",
+  ledgify: "ledgify",
+  seniorsnouts: "seniorsnouts",
+  "senior-snouts": "seniorsnouts",
+  strengthlab: "strengthlab",
+  "strength-lab": "strengthlab",
+  "strength-labs": "strengthlab",
+  strengthlabs: "strengthlab",
 };
 
-function officialMark(slug: string | null | undefined, name: string): string | null {
+const INK_MARKS: Record<string, string> = {
+  alive: aliveInk, coreiq: coreiqInk, enxgy: enxgyInk, frankbody: frankbodyInk,
+  ledgify: ledgifyInk, seniorsnouts: seniorsnoutsInk, strengthlab: strengthlabInk,
+};
+
+const WHITE_MARKS: Record<string, string> = {
+  alive: aliveWhite, coreiq: coreiqWhite, enxgy: enxgyWhite, frankbody: frankbodyWhite,
+  ledgify: ledgifyWhite, seniorsnouts: seniorsnoutsWhite, strengthlab: strengthlabWhite,
+};
+
+function officialMark(slug: string | null | undefined, name: string, cut: "ink" | "white" = "ink"): string | null {
   const keys = [slug, name]
     .filter((value): value is string => Boolean(value))
     .flatMap((value) => {
@@ -98,8 +123,8 @@ function officialMark(slug: string | null | undefined, name: string): string | n
       return [key, key.replace(/-?(pty|ltd|limited|inc|company)$/g, "")];
     });
   for (const key of keys) {
-    const mark = OFFICIAL_MARKS[key];
-    if (mark) return mark;
+    const id = OFFICIAL_IDS[key];
+    if (id) return (cut === "white" ? WHITE_MARKS : INK_MARKS)[id] ?? null;
   }
   return null;
 }
@@ -285,7 +310,8 @@ export function OsCompanySwitcher({ client, appKey }: { client: OsClient; appKey
   const single = ctx.tenants.length <= 1;
   // The closed switcher sits on the inverse top bar, so it takes the tile cut;
   // the popover below it is a white surface and keeps the plain (ink) cut.
-  const mark = ctx.tenant.logoUrl ?? ctx.tenant.logoPlainUrl;
+  const mark = officialMark(ctx.tenant.slug, ctx.tenant.name, "white")
+    ?? ctx.tenant.logoUrl ?? ctx.tenant.logoPlainUrl;
 
   const choose = async (tenantId: string) => {
     if (busy || tenantId === ctx.tenant!.id) { setOpen(false); return; }
