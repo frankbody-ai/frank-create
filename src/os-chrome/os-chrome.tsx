@@ -283,16 +283,16 @@ export function OsCompanySwitcher({ client, appKey }: { client: OsClient; appKey
 
   return (
     <div className="osx-root" ref={root}>
-      <button type="button" className={"osx-plate osx-plate--company" + (single ? " is-static" : "")}
+      <button type="button" className={"osx-switch" + (single ? " is-static" : "") + (open ? " is-open" : "")}
         onClick={() => !single && setOpen(!open)} aria-haspopup={!single} aria-expanded={open}
         aria-label={"Company: " + ctx.tenant.name + (single ? "" : ". Switch company")}>
         {mark ? (
-          <img className="osx-plate__mark" src={mark} alt={ctx.tenant.name} title={ctx.tenant.name}
-            onError={(e) => { (e.target as HTMLImageElement).outerHTML = '<span class="osx-plate__name">' + ctx.tenant!.name + "</span>"; }} />
+          <img className="osx-switch__mark" src={mark} alt={ctx.tenant.name} title={ctx.tenant.name}
+            onError={(e) => { (e.target as HTMLImageElement).outerHTML = '<span class="osx-switch__name">' + ctx.tenant!.name + "</span>"; }} />
         ) : (
-          <span className="osx-plate__name">{ctx.tenant.name}</span>
+          <span className="osx-switch__name">{ctx.tenant.name}</span>
         )}
-        {!single && <span className="osx-chevron" aria-hidden="true" />}
+        {!single && <span className="osx-switch__chev" aria-hidden="true" />}
       </button>
       {open && (
         <div className="osx-menu osx-menu--right" role="menu">
