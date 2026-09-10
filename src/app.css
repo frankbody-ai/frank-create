@@ -15,6 +15,9 @@
    ============================================================ */
 
 @import "./ds/ds.css";
+/* Attached design system (NEW AutoSolutions OS v3). Loaded after the older
+   vendored port so its token values and component skins take precedence. */
+@import "./design-system/new-autosolutions-os-e87004/design-system/autosolutions/styles.css";
 
 :root {
   color-scheme: light;
