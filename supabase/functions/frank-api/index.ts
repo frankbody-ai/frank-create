@@ -1292,6 +1292,18 @@ async function openrouterImage(
   const payload: Record<string, unknown> = { model: opts.model, prompt };
   if (opts.aspectRatio && opts.aspectRatio !== "match_input_image" && opts.aspectRatio !== "adaptive") {
     payload.aspect_ratio = opts.aspectRatio;
+    // GPT Image 2.5 only accepts a fixed set of ratios (no 4:5, 5:4, ...); a ratio
+    // carried over from another model would 400 the whole run, so snap to nearest.
+    if (GPT_IMAGE_25_MODELS.has(opts.model)) {
+      const accepted = ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"];
+      if (!accepted.includes(opts.aspectRatio)) {
+        const toNum = (r: string) => { const [w, h] = r.split(":").map(Number); return w / h; };
+        const want = toNum(opts.aspectRatio);
+        payload.aspect_ratio = Number.isFinite(want)
+          ? accepted.reduce((best, r) => Math.abs(Math.log(toNum(r) / want)) < Math.abs(Math.log(toNum(best) / want)) ? r : best, "1:1")
+          : "auto";
+      }
+    }
   }
   if (opts.size) {
     const res = String(opts.size).toUpperCase().replace("512", "512");
