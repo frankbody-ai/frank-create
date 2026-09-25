@@ -132,7 +132,15 @@ if (!existsSync(SERVER_DIR)) {
     }
   }
 
-  if (!existsSync(WRANGLER_CONFIG)) {
+  // Newer nitro releases no longer emit wrangler.json; dist/nitro.json recording the
+  // cloudflare-module preset is equally good proof that the worker was bundled.
+  let nitroPreset = "";
+  try {
+    nitroPreset = JSON.parse(readFileSync("dist/nitro.json", "utf8"))?.preset ?? "";
+  } catch {
+    nitroPreset = "";
+  }
+  if (!existsSync(WRANGLER_CONFIG) && !String(nitroPreset).startsWith("cloudflare")) {
     failures.push(`${WRANGLER_CONFIG} is missing — nitro's cloudflare-module preset did not run.`);
   }
 }
