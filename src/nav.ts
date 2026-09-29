@@ -3,10 +3,12 @@
  *
  * Three of them (studio, prompt, upscaler) are states inside `App` — they share
  * its session and asset state, so routing between them is a mode change, not a
- * page change. The rest are their own routes. Both kinds sit in the same side
- * nav, which is the point: the operator should not be able to tell which is
+ * page change. The rest are their own routes. Both kinds sit in the same tab
+ * menu, which is the point: the operator should not be able to tell which is
  * which.
  */
+
+import type { OsAppTool, OsTab } from "autosolutions-os/nav";
 
 export type Screen =
   | "studio"
@@ -16,13 +18,6 @@ export type Screen =
   | "health"
   | "settings";
 
-export interface NavEntry {
-  id: Screen;
-  label: string;
-  /** 20px icon name from the design system's set. */
-  icon: string;
-}
-
 /** The screens that live inside `App` and switch by mode rather than by route. */
 export const IN_APP_SCREENS = ["studio", "prompt", "upscaler"] as const;
 export type InAppScreen = (typeof IN_APP_SCREENS)[number];
@@ -31,19 +26,66 @@ export function isInApp(screen: Screen): screen is InAppScreen {
   return (IN_APP_SCREENS as readonly string[]).includes(screen);
 }
 
-export const NAV_MAIN: NavEntry[] = [
-  { id: "studio", label: "Studio", icon: "bolt" },
-  { id: "prompt", label: "Prompt generator", icon: "chat-bubble-left-right" },
-  { id: "upscaler", label: "Upscaler", icon: "arrow-trending-up" },
+/**
+ * Where each screen sits in the OS workspace frame, as the pathname plus query
+ * the frame reads. The frame never sees the real URL: the screen comes from
+ * this app's own hash router (and App's mode), and these are its names for it.
+ * Settings is the rail footer's Settings; health is reachable by URL only.
+ *
+ * The studio's place carries its own mode, although its URL does not: the
+ * tool is placed at the studio's place, and a bare "/" would claim every
+ * place, so health would read as the studio's first tab and a click on
+ * Studio from health would go nowhere. These places never reach the address
+ * bar: a click goes through screenForPlace and then the hash router.
+ */
+const PLACES: Record<Screen, string> = {
+  studio: "/?mode=studio",
+  prompt: "/?mode=prompt",
+  upscaler: "/?mode=upscaler",
+  admin: "/admin",
+  settings: "/settings",
+  health: "/health",
+};
+
+/** Where the frame should show `screen`. */
+export function placeFor(screen: Screen): string {
+  return PLACES[screen];
+}
+
+/** The screen a frame destination names, or null for one this app does not have. */
+export function screenForPlace(href: string): Screen | null {
+  let url: URL;
+  try {
+    url = new URL(href, "http://studio.invalid");
+  } catch {
+    return null;
+  }
+  const path = url.pathname.replace(/\/+$/, "") || "/";
+  if (path === "/") {
+    const mode = url.searchParams.get("mode");
+    return (IN_APP_SCREENS as readonly string[]).includes(mode || "") ? (mode as InAppScreen) : "studio";
+  }
+  const screen = (Object.keys(PLACES) as Screen[]).find((key) => PLACES[key] === path);
+  return screen ?? null;
+}
+
+/**
+ * The tool's views: the frame's third menu under Marketing > Creative >
+ * Artificial Design Studio. Icons are NAV_ICONS glyph ids, which the frame
+ * draws inline. Admin portal is last and shown to everyone, as before: the
+ * page checks the role and keeps its own Users / Feedback / Prompt agent tabs.
+ */
+export const STUDIO_TABS: OsTab[] = [
+  { id: "studio", label: "Studio", icon: "mkt-image-generator", path: PLACES.studio },
+  { id: "prompt", label: "Prompt generator", icon: "agent", path: PLACES.prompt },
+  { id: "upscaler", label: "Upscaler", icon: "ops-demand-plan", path: PLACES.upscaler },
+  { id: "admin", label: "Admin portal", icon: "fin-approvals", path: PLACES.admin },
 ];
 
-
-export const NAV_FOOTER: NavEntry[] = [
-  { id: "admin", label: "Admin portal", icon: "shield-check" },
-  // App health stays reachable at /health, but it is not a nav destination.
-  { id: "settings", label: "Settings", icon: "cog-6-tooth" },
+/** This app in the OS menu, by its menu-map id. */
+export const STUDIO_TOOLS: OsAppTool[] = [
+  { id: "image-generator", path: PLACES.studio, tabs: STUDIO_TABS },
 ];
-
 
 /** Where a screen lives. */
 export function hashFor(screen: Screen): string {

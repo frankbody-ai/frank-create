@@ -18,6 +18,11 @@
 /* Attached design system (NEW AutoSolutions OS v3). Loaded after the older
    vendored port so its token values and component skins take precedence. */
 @import "./design-system/new-autosolutions-os-e87004/design-system/autosolutions/styles.css";
+/* The OS workspace frame (top bar, rail, menus, work sheet), from the shared
+   package. Unlayered and last, so it outranks both copies above on the frame's
+   class names; it styles nothing outside the frame, so page bodies keep what
+   they inherit. */
+@import "autosolutions-design-system/frame.css";
 
 /* Project brand override: the supplied AutoSolutions lockup, everywhere.
    Explicit user instruction, so it deliberately replaces the library artwork. */
@@ -25,20 +30,6 @@
 .as-logo--inverse {
   aspect-ratio: 5.6742; /* 1010×178 supplied artwork */
   background-image: url("/brand/autosolutions-os.svg");
-}
-
-/* The shell lockup is the masthead for the navigation rail. Its width follows
-   the rail while its height derives from the artwork's own aspect ratio. */
-.as-topbar > .as-topbar__brand {
-  justify-content: flex-start;
-  width: var(--sidenav-width);
-  height: var(--topbar-height);
-  padding-inline: var(--space-400);
-}
-
-.as-topbar > .as-topbar__brand .as-logo {
-  width: 100%;
-  height: auto;
 }
 
 /* Sign-in card: the OS lockup spans the full card width, matching the
@@ -1688,17 +1679,23 @@ matched to the system's
 
 
 /* ============================================================
-   13. Shell corrections
+   13. The page column inside the workspace frame
 
-   The system's TopBar leans on the search field's auto margins to push the
-   right-hand cluster over. Screens without a searchable list lose that, so the
-   cluster needs its own push.
+   The frame's sheet has no width cap. A screen that asks for a column cap
+   (Shell's maxWidth) gets it here, centred, as the old AppFrame drew it, with
+   the same section gap and query container, so page bodies lay out as before.
+   The sheet's padding stands in for the old page gutters.
    ============================================================ */
 
-.as-topbar:not(:has(.as-topbar__search)) .as-topbar__cluster { margin-inline-start: auto; }
-
-/* Nothing may sit on top of the nav's footer group — Settings lives there. */
-.as-nav__list--footer { background: var(--color-nav-bg); }
+.studio-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-section-gap);
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+  container-type: inline-size;
+}
 
 /* Reference picker pagination — 10 cards per page keeps the overlay instant. */
 .reference-picker-pagination {
@@ -1863,15 +1860,11 @@ matched to the system's
   font-size: 0.875rem;
 }
 
-/* Session organiser in the left nav */
-.as-nav__extra {
-  padding: 8px 10px 4px;
+/* Session organiser, in the frame's menu panel under the tool's tabs, set off
+   from them by the rule it had under the old side nav's items. */
+.studio-panel-extra {
+  padding-top: 8px;
   border-top: 1px solid var(--as-border, rgba(0, 0, 0, 0.08));
-  margin-top: 6px;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 .session-folders { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
 .session-folders__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
