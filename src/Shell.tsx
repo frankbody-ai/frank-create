@@ -37,6 +37,40 @@ export interface ShellProps {
 const NARROW = "(max-width: 767px)";
 
 /**
+ * Lists a page opens upward from its own control: the brief's @ reference
+ * list. The frame's work sheet clips at its top edge, 27px under the bar,
+ * where the old page ran on to the top of the document, so a long list lost
+ * its first rows sooner. One that would pass the edge keeps to the room
+ * above it, less this gap, and scrolls in itself, as it does past its own
+ * 240px; a list that fits is left exactly as it is.
+ */
+const UPWARD_LISTS = ".prompt-mention-popover";
+const UPWARD_GAP = 8;
+
+function useListsInsideSheet(column: React.RefObject<HTMLDivElement | null>) {
+  React.useEffect(() => {
+    const root = column.current;
+    if (!root || typeof MutationObserver === "undefined") return undefined;
+    const fit = () => {
+      const lists = root.querySelectorAll<HTMLElement>(UPWARD_LISTS);
+      const sheet = lists.length ? root.closest(".as-frame__content") : null;
+      if (!sheet) return;
+      const edge = sheet.getBoundingClientRect().top + UPWARD_GAP;
+      for (const list of lists) {
+        list.style.maxHeight = "";
+        const box = list.getBoundingClientRect();
+        if (box.top < edge) list.style.maxHeight = `${Math.max(0, Math.floor(box.bottom - edge))}px`;
+      }
+    };
+    /* The list opens, fills and empties as the brief is typed; the page
+       above it moves when a notice comes or goes. */
+    const watch = new MutationObserver(fit);
+    watch.observe(root, { childList: true, subtree: true });
+    return () => watch.disconnect();
+  }, [column]);
+}
+
+/**
  * The application shell: the AutoSolutions OS workspace frame every app on the
  * core wears (autosolutions-os/frame). The 56px bar with the OS lockup, the
  * search and the company plate; the rail (Hub, Finance, Marketing, Commercial,
@@ -66,6 +100,8 @@ export function Shell({
   const [narrow] = React.useState(
     () => typeof window !== "undefined" && window.matchMedia(NARROW).matches,
   );
+  const columnRef = React.useRef<HTMLDivElement>(null);
+  useListsInsideSheet(columnRef);
 
   const go = (target: Screen) => {
     if (onSelectInApp) onSelectInApp(target);
@@ -119,7 +155,7 @@ export function Shell({
       settingsPath={placeFor("settings")}
       {...(narrow ? { initialOpen: false } : {})}
     >
-      <div className="studio-page" style={column}>
+      <div className="studio-page" style={column} ref={columnRef}>
         {children}
         <FeedbackWidget variant="fixed" />
         <ReleaseNotesModal forceOpen={notesOpen} onClose={() => setNotesOpen(false)} />
