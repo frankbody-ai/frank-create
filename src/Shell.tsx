@@ -6,7 +6,7 @@ import { FeedbackWidget } from "./components/FeedbackWidget";
 import { ReleaseNotesModal } from "./components/ReleaseNotesModal";
 import { hardSignOut, os } from "./lib/supabaseClient";
 import { APP_KEY } from "./lib/coreConfig";
-import { STUDIO_TOOLS, navigate, placeFor, screenForPlace } from "./nav";
+import { STUDIO_TOOLS, frameLocation, navigate, placeFor, screenForPlace } from "./nav";
 import type { Screen } from "./nav";
 
 export interface ShellProps {
@@ -45,9 +45,10 @@ const NARROW = "(max-width: 767px)";
  * its screens as the tool's tabs with the session organiser under them.
  *
  * The frame follows `screen`, which this app's hash router (and App's mode)
- * decides, and reports only clicks: a tab becomes the same mode change or
- * hash navigation the old side nav made. Other apps' tools, the rail's Hub and
- * Admin open in the same tab, through the catalogue.
+ * decides, and reports only clicks: a tab, the one already shown included,
+ * becomes the same mode change or hash navigation the old side nav made.
+ * Other apps' tools, the rail's Hub and Admin open in the same tab, through
+ * the catalogue.
  */
 export function Shell({
   screen,
@@ -84,7 +85,7 @@ export function Shell({
       os={os}
       appKey={APP_KEY}
       tools={STUDIO_TOOLS}
-      location={placeFor(screen)}
+      location={frameLocation(screen)}
       onNavigate={(href) => {
         const target = screenForPlace(href);
         if (target) go(target);

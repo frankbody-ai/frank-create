@@ -52,6 +52,20 @@ export function placeFor(screen: Screen): string {
   return PLACES[screen];
 }
 
+/**
+ * The location the frame is given for `screen`: its place, marked as the one
+ * on show. The frame sends a click on the tab it already shows to that tab's
+ * place unless the location is exactly that place. The old side nav ran every
+ * click, the current item's too (Studio again reopens the run settings), so
+ * the location is never exactly a place, and that click does what it did.
+ * The mark sits in the query, where it changes no place the frame finds, and
+ * it never reaches the address bar.
+ */
+export function frameLocation(screen: Screen): string {
+  const place = PLACES[screen];
+  return `${place}${place.includes("?") ? "&" : "?"}shown`;
+}
+
 /** The screen a frame destination names, or null for one this app does not have. */
 export function screenForPlace(href: string): Screen | null {
   let url: URL;
