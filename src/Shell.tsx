@@ -40,9 +40,11 @@ const NARROW = "(max-width: 767px)";
  * Lists a page opens upward from its own control: the brief's @ reference
  * list. The frame's work sheet clips at its top edge, 27px under the bar,
  * where the old page ran on to the top of the document, so a long list lost
- * its first rows sooner. One that would pass the edge keeps to the room
- * above it, less this gap, and scrolls in itself, as it does past its own
- * 240px; a list that fits is left exactly as it is.
+ * its first rows sooner. One that would pass the edge (or the sticky bar,
+ * once the document has scrolled the edge under it) keeps to the room above
+ * it, less this gap, and scrolls in itself, as it does past its own 240px,
+ * keeping its scroll position and the keyboard's highlighted row in view; a
+ * list that fits is left exactly as it is.
  */
 const UPWARD_LISTS = ".prompt-mention-popover";
 const UPWARD_GAP = 8;
@@ -55,17 +57,42 @@ function useListsInsideSheet(column: React.RefObject<HTMLDivElement | null>) {
       const lists = root.querySelectorAll<HTMLElement>(UPWARD_LISTS);
       const sheet = lists.length ? root.closest(".as-frame__content") : null;
       if (!sheet) return;
-      const edge = sheet.getBoundingClientRect().top + UPWARD_GAP;
+      const bar = sheet.closest(".as-frame")?.querySelector(":scope > .as-topbar");
+      const edge =
+        Math.max(sheet.getBoundingClientRect().top, bar ? bar.getBoundingClientRect().bottom : 0) +
+        UPWARD_GAP;
       for (const list of lists) {
+        /* Measuring at full height drops the list's own scroll position;
+           put it back, so a page update never moves a list being read. */
+        const scrolled = list.scrollTop;
         list.style.maxHeight = "";
         const box = list.getBoundingClientRect();
         if (box.top < edge) list.style.maxHeight = `${Math.max(0, Math.floor(box.bottom - edge))}px`;
+        list.scrollTop = scrolled;
+      }
+    };
+    /* The arrow keys move the page's highlight (its class). The full list
+       showed every row, so a shortened one scrolls the highlighted row into
+       view when the highlight moves, and only then. */
+    const follow = (records: MutationRecord[]) => {
+      for (const record of records) {
+        const row = record.target as HTMLElement;
+        if (record.type !== "attributes" || !row.classList.contains("is-active")) continue;
+        const list = row.closest<HTMLElement>(UPWARD_LISTS);
+        if (!list || !list.style.maxHeight) continue;
+        const top = row.offsetTop;
+        const bottom = top + row.offsetHeight;
+        if (top < list.scrollTop) list.scrollTop = top;
+        else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
       }
     };
     /* The list opens, fills and empties as the brief is typed; the page
        above it moves when a notice comes or goes. */
-    const watch = new MutationObserver(fit);
-    watch.observe(root, { childList: true, subtree: true });
+    const watch = new MutationObserver((records) => {
+      fit();
+      follow(records);
+    });
+    watch.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
     return () => watch.disconnect();
   }, [column]);
 }
