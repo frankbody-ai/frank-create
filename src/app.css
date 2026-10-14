@@ -1697,6 +1697,16 @@ matched to the system's
   container-type: inline-size;
 }
 
+/* The frame's sheet stretches the page to its own height, so the column is
+   no longer only as tall as its content. Stacked (a column of 768px or
+   less), the studio's settings rail is a column item whose 100% basis then
+   resolves against that height and squeezes the rounds feed below it, which
+   hides the rounds it cannot show. Sized by its content, as the old page
+   column sized it, every round shows again. */
+@container (max-width: 768px) {
+  .studio-page .studio-columns > .studio-rail { flex-basis: auto; }
+}
+
 /* Reference picker pagination — 10 cards per page keeps the overlay instant. */
 .reference-picker-pagination {
   display: flex;
