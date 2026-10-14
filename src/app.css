@@ -1871,8 +1871,12 @@ matched to the system's
 }
 
 /* Session organiser, in the frame's menu panel under the tool's tabs, set off
-   from them by the rule it had under the old side nav's items. */
+   from them by the rule it had under the old side nav's items. The panel is
+   narrower than the old side nav, so the organiser reaches into its padding,
+   8px from the panel's edges as the old nav's rows were from its edges: the
+   list keeps the old list's 204px and session names as many characters. */
 .studio-panel-extra {
+  margin-inline: -8px -9px;
   padding-top: 8px;
   border-top: 1px solid var(--as-border, rgba(0, 0, 0, 0.08));
 }
