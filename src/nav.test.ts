@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { osFrame } from "autosolutions-os/nav";
 import type { OsFrameState } from "autosolutions-os/nav";
 // The glyph table on its own: the package index also loads the components.
 import { NAV_ICONS } from "autosolutions-design-system/components/media/navIcons.js";
 
-import { STUDIO_TABS, STUDIO_TOOLS, frameLocation, placeFor, screenForPlace } from "./nav";
+import { STUDIO_TABS, STUDIO_TOOLS, frameLocation, navigate, placeFor, resolveScreen, screenForPlace } from "./nav";
 import type { Screen } from "./nav";
 
 const SCREENS: Screen[] = ["studio", "prompt", "upscaler", "admin", "settings", "health"];
@@ -99,6 +99,48 @@ describe("the studio in the workspace frame", () => {
         ? again(screen, "settings", null, null)
         : again(screen, "marketing", "image-generator", screen);
       expect(screenForPlace(target?.href ?? ""), screen).toBe(screen);
+    }
+  });
+
+  it("numbers a new visit to a screen as a new location at the same place", () => {
+    const frame = studioFrame();
+    for (const screen of SCREENS) {
+      expect(frameLocation(screen, 0)).toBe(frameLocation(screen));
+      expect(frameLocation(screen, 1), screen).not.toBe(frameLocation(screen));
+      expect(frameLocation(screen, 2), screen).not.toBe(frameLocation(screen, 1));
+      expect(frame.locate(frameLocation(screen, 2)), screen).toEqual(frame.locate(placeFor(screen)));
+      expect(screenForPlace(frameLocation(screen, 3)), screen).toBe(screen);
+    }
+    // Still never exactly a place: a click on the tab already shown still runs.
+    expect(
+      frame.targetFor(
+        { fn: { id: "marketing" }, item: { id: "image-generator" }, tab: { id: "prompt" }, reselect: true },
+        frameLocation("prompt", 4),
+      ),
+    ).toEqual({ href: "/?mode=prompt", external: false });
+  });
+});
+
+describe("the hash router the frame's clicks go through", () => {
+  const at = (url: string) => window.history.replaceState(null, "", url);
+  afterEach(() => at("/"));
+
+  it("reaches every screen from the app's own root", () => {
+    for (const screen of SCREENS) {
+      at("/");
+      navigate(screen);
+      expect(resolveScreen().screen, screen).toBe(screen);
+    }
+  });
+
+  it("keeps a page opened by its path whatever the hash says, as the old side nav found", () => {
+    const pages: [string, Screen][] = [["/settings", "settings"], ["/admin", "admin"], ["/admin/feedback", "admin"], ["/health", "health"]];
+    for (const [path, page] of pages) {
+      for (const target of ["studio", "prompt", "upscaler"] as Screen[]) {
+        at(path);
+        navigate(target);
+        expect(resolveScreen().screen, `${path} -> ${target}`).toBe(page);
+      }
     }
   });
 });

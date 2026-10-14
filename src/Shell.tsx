@@ -7,7 +7,7 @@ import { FeedbackWidget } from "./components/FeedbackWidget";
 import { ReleaseNotesModal } from "./components/ReleaseNotesModal";
 import { hardSignOut, os } from "./lib/supabaseClient";
 import { APP_KEY } from "./lib/coreConfig";
-import { STUDIO_TOOLS, frameLocation, navigate, placeFor, screenForPlace } from "./nav";
+import { STUDIO_TOOLS, frameLocation, navigate, placeFor, resolveScreen, screenForPlace } from "./nav";
 import type { Screen } from "./nav";
 
 export interface ShellProps {
@@ -171,10 +171,20 @@ export function Shell({
   const columnRef = React.useRef<HTMLDivElement>(null);
   useListsInsideSheet(columnRef);
   const manages = useManages();
+  const [visit, setVisit] = React.useState(0);
 
   const go = (target: Screen) => {
-    if (onSelectInApp) onSelectInApp(target);
-    else navigate(target);
+    if (onSelectInApp) {
+      onSelectInApp(target);
+      return;
+    }
+    navigate(target);
+    /* On a page opened by its path (/settings, /admin, /health) the hash
+       router keeps that page whatever the hash says, so the click went
+       nowhere, as it did under the old side nav, which stayed on the page
+       shown. The frame has already moved to what was clicked: a new visit
+       to the same place takes it back to the page on show. */
+    if (resolveScreen().screen !== target) setVisit((count) => count + 1);
   };
 
   const signOut = () => {
@@ -190,7 +200,7 @@ export function Shell({
       os={os}
       appKey={APP_KEY}
       tools={STUDIO_TOOLS}
-      location={frameLocation(screen)}
+      location={frameLocation(screen, visit)}
       onNavigate={(href) => {
         const target = screenForPlace(href);
         if (target) go(target);

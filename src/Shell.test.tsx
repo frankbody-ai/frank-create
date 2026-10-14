@@ -91,3 +91,50 @@ describe("the Admin row at the foot of the rail", () => {
     expect(myAdminScope).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("a click in the frame", () => {
+  beforeEach(() => {
+    myAdminScope.mockResolvedValue({ isPlatformAdmin: false, managesTenants: [], groupAdminOf: [] });
+  });
+
+  it("takes the frame back to the page on show when it goes nowhere", async () => {
+    const Shell = await loadShell();
+    for (const [path, screen] of [["/settings", "settings"], ["/admin", "admin"], ["/health", "health"]] as const) {
+      at(path);
+      frames.length = 0;
+      const view = render(<Shell screen={screen} />);
+      const shown = lastFrame().location;
+      act(() => lastFrame().onNavigate("/?mode=studio"));
+      // The hash router keeps the page opened by its path...
+      expect(window.location.pathname).toBe(path);
+      expect(window.location.hash).toBe("#/");
+      // ...and the frame is given the same place under a new location.
+      expect(lastFrame().location).not.toBe(shown);
+      expect(lastFrame().location.startsWith(shown)).toBe(true);
+      act(() => lastFrame().onNavigate("/?mode=prompt"));
+      expect(lastFrame().location).not.toBe(shown);
+      view.unmount();
+    }
+  });
+
+  it("leaves the frame alone when the click reaches its screen", async () => {
+    const Shell = await loadShell();
+    at("/#/settings");
+    render(<Shell screen="settings" />);
+    const shown = lastFrame().location;
+    act(() => lastFrame().onNavigate("/?mode=prompt"));
+    expect(window.location.hash).toBe("#/?mode=prompt");
+    expect(lastFrame().location).toBe(shown);
+  });
+
+  it("is the studio's own mode change inside App, with no hash written", async () => {
+    const Shell = await loadShell();
+    const onSelectInApp = vi.fn();
+    render(<Shell screen="studio" onSelectInApp={onSelectInApp} />);
+    const shown = lastFrame().location;
+    act(() => lastFrame().onNavigate("/?mode=upscaler"));
+    expect(onSelectInApp).toHaveBeenCalledWith("upscaler");
+    expect(window.location.hash).toBe("");
+    expect(lastFrame().location).toBe(shown);
+  });
+});

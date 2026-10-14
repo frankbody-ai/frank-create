@@ -60,10 +60,14 @@ export function placeFor(screen: Screen): string {
  * the location is never exactly a place, and that click does what it did.
  * The mark sits in the query, where it changes no place the frame finds, and
  * it never reaches the address bar.
+ *
+ * `visit` numbers the location afresh when a click went nowhere (see Shell):
+ * the same place under a new location, which takes the frame back from what
+ * was clicked to the screen on show.
  */
-export function frameLocation(screen: Screen): string {
+export function frameLocation(screen: Screen, visit = 0): string {
   const place = PLACES[screen];
-  return `${place}${place.includes("?") ? "&" : "?"}shown`;
+  return `${place}${place.includes("?") ? "&" : "?"}shown${visit ? `=${visit}` : ""}`;
 }
 
 /** The screen a frame destination names, or null for one this app does not have. */
