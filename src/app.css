@@ -1921,17 +1921,19 @@ matched to the system's
    14. Buttons are capsules
 
    Cliff's final design (user decision of 2026-10-14): every button the
-   pages draw has fully round corners, the design system's Button and
-   IconButton (both copies above), the buttons carried over from the
-   pre-system markup, the chips and the small icon and text buttons. Shape
-   only: size, colours, labels and behaviour stay as they were. Rows, tabs,
-   menu options, tiles and cards, controls that draw no box (text and bare
-   icon actions), form controls and the Google button (Google's own rules,
-   as in the design's sign-in card) keep their shapes. A segmented group
-   stays one control: its outer corners are round, its seams square.
+   pages draw has fully round corners, the design system's Button,
+   IconButton and GoogleButton (both copies above; the Google button as the
+   shared design system's own now is, a shape Google's rules allow), the
+   buttons carried over from the pre-system markup, the chips and the small
+   icon and text buttons. Shape only: size, colours, labels and behaviour
+   stay as they were. Rows, tabs, menu options, tiles and cards, controls
+   that draw no box (text and bare icon actions) and form controls keep
+   their shapes. A segmented group stays one control: its outer corners
+   are round, its seams square.
    ============================================================ */
 
 .as-btn:not(.as-btn--plain),
+.as-google,
 .primary-button,
 .secondary-button,
 .upload-button,
@@ -1948,6 +1950,32 @@ matched to the system's
 .payload-modal-actions button,
 .session-folders__new,
 .session-folder__actions button { border-radius: var(--radius-full); }
+
+/* Three places draw the browser's own button: the compare banner's Cancel,
+   the compare dialog's Edit, and the JSON view's Copy and Close. Given a
+   radius, the browser drops its own look for a heavy two-tone border, so
+   these keep that look themselves: its 1px line and fill at rest, hovered
+   and pressed, in the same box (its 2px border and 1px 6px padding). The
+   page is light only (color-scheme above). */
+.compare-prompt button,
+.compare-actions button,
+.payload-modal-actions button {
+  padding: 2px 7px;
+  border: 1px solid #767676;
+  background-color: #efefef;
+}
+.compare-prompt button:hover,
+.compare-actions button:hover,
+.payload-modal-actions button:hover {
+  border-color: #4f4f4f;
+  background-color: #e5e5e5;
+}
+.compare-prompt button:active,
+.compare-actions button:active,
+.payload-modal-actions button:active {
+  border-color: #8d8d8d;
+  background-color: #f5f5f5;
+}
 
 .as-btn-group--segmented > .as-btn { border-radius: 0; }
 .as-btn-group--segmented > .as-btn:first-child {
