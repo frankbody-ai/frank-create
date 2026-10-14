@@ -1,4 +1,5 @@
 import React from "react";
+import { myAdminScope } from "autosolutions-os";
 import { OsWorkspaceFrame } from "autosolutions-os/frame";
 
 import { Icon } from "./ds";
@@ -98,6 +99,46 @@ function useListsInsideSheet(column: React.RefObject<HTMLDivElement | null>) {
 }
 
 /**
+ * Whether this person manages anything, which shows Admin at the foot of the
+ * rail. Studio, Settings, Admin portal and Health each mount their own Shell,
+ * so a frame left to ask the core itself asked again on every change between
+ * them and drew the rail without Admin until the answer came. The core is
+ * asked once per page, as the frame's company context is, and the answer is
+ * handed to every frame; a failure is not kept, so the next screen asks again.
+ * Until the first answer the rail has no Admin row, as before.
+ */
+let managesAnswer: boolean | undefined;
+let managesAsk: Promise<boolean> | null = null;
+
+function askManages(): Promise<boolean> {
+  if (!managesAsk) {
+    managesAsk = myAdminScope(os).then(
+      (scope) => (managesAnswer = scope.isPlatformAdmin || scope.managesTenants.length > 0),
+      () => {
+        managesAsk = null;
+        return false;
+      },
+    );
+  }
+  return managesAsk;
+}
+
+function useManages(): boolean {
+  const [manages, setManages] = React.useState(() => managesAnswer ?? false);
+  React.useEffect(() => {
+    if (managesAnswer !== undefined) return undefined;
+    let live = true;
+    void askManages().then((answer) => {
+      if (live) setManages(answer);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+  return manages;
+}
+
+/**
  * The application shell: the AutoSolutions OS workspace frame every app on the
  * core wears (autosolutions-os/frame). The 56px bar with the OS lockup, the
  * search and the company plate; the rail (Hub, Finance, Marketing, Commercial,
@@ -129,6 +170,7 @@ export function Shell({
   );
   const columnRef = React.useRef<HTMLDivElement>(null);
   useListsInsideSheet(columnRef);
+  const manages = useManages();
 
   const go = (target: Screen) => {
     if (onSelectInApp) onSelectInApp(target);
@@ -179,6 +221,7 @@ export function Shell({
       companySwitch="os"
       panelFooter={navExtra == null ? undefined : <div className="studio-panel-extra">{navExtra}</div>}
       onSignOut={signOut}
+      admin={manages}
       settingsPath={placeFor("settings")}
       {...(narrow ? { initialOpen: false } : {})}
     >
