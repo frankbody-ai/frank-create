@@ -1959,3 +1959,138 @@ matched to the system's
   border-end-end-radius: var(--radius-full);
 }
 
+
+/* ============================================================
+   15. The sign-in card
+
+   Cliff's sign-in card from the final design (user decision of
+   2026-10-14), look only; the values are the design's own
+   (components/auth/auth.css). A white card on the brand background, two
+   columns: an image panel, then the "AutoSolutions | OS" lockup (its
+   near-black cut), the heading, the providers and the note. Below 820px it
+   stacks, as the design does. The card has its own class names, so the
+   older .as-auth card rules of both design-system copies do not reach it.
+   ============================================================ */
+
+.studio-signin-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-1200) var(--space-400);
+  background: var(--color-bg) url("/brand/auth-background.jpg") center / cover no-repeat;
+}
+.studio-signin {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20rem 26rem;
+  gap: var(--space-800);
+  width: 100%;
+  max-width: 50.5rem;
+  padding: var(--space-500);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: 20px;
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-400);
+  overflow: hidden;
+}
+/* The design's image panel: a placeholder until the artwork lands. */
+.studio-signin__media {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 26rem;
+  padding: var(--space-500);
+  border: 1px dashed var(--color-border);
+  border-radius: 14px;
+  background: var(--color-bg-surface-secondary);
+}
+.studio-signin__media-note {
+  font-size: var(--type-body-sm-size);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.studio-signin__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 var(--space-500) 0 0;
+}
+.studio-signin__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-400);
+  margin-block-start: 25px;
+}
+/* The final lockup, byte for byte from the design; its width follows the
+   column and its height the artwork's own ratio. */
+.studio-signin__os {
+  display: block;
+  width: 75%;
+  height: auto;
+  aspect-ratio: 274.57 / 28.16;
+  background: center / contain no-repeat url("/brand/os-lockup.svg");
+}
+/* Pushed down to the providers, as in the design. The design shows a short
+   card only; when an error or a second button makes it taller, the heading
+   keeps 24px from the lockup instead of touching it. */
+.studio-signin__head {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-150);
+  margin-block-start: auto;
+  padding-block: var(--space-600) 50px;
+}
+.studio-signin__title {
+  margin: 0;
+  font-size: calc(var(--type-heading-xl-size) * 2.9);
+  line-height: 1.02;
+  font-weight: var(--type-heading-xl-weight);
+  letter-spacing: var(--type-heading-xl-tracking);
+  text-wrap: balance;
+  color: var(--color-text);
+}
+.studio-signin__description {
+  margin: 0;
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+/* The design puts an error between the heading and the providers. */
+.studio-signin__body > .as-banner { margin-block-end: var(--space-300); }
+.studio-signin__providers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-200);
+  padding-block-end: 20px;
+}
+.studio-signin__foot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-400);
+  padding-block-end: 40px;
+}
+.studio-signin__note {
+  margin: 0;
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+@media (max-width: 820px) {
+  .studio-signin {
+    grid-template-columns: minmax(0, 26rem);
+    justify-content: center;
+    gap: var(--space-500);
+  }
+  .studio-signin__media { min-height: 12rem; }
+  .studio-signin__body {
+    justify-content: flex-start;
+    padding: 0 var(--space-300) var(--space-300);
+  }
+}
