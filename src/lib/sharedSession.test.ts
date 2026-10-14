@@ -8,8 +8,10 @@
  * it with bun: change "vitest" to "bun:test" in the import.
  *
  * No network: global fetch throws, and every session here is far from expiry,
- * so supabase-js never tries to refresh.
+ * so supabase-js never tries to refresh, except in the refresh checks at the
+ * end, whose fake token endpoint answers in the test.
  */
+import { createClient } from "@supabase/supabase-js";
 import { afterEach, describe, expect, test } from "vitest";
 
 import { adoptSharedSession, followSharedSession, publishSessionChanges, readSharedSessionCookie } from "./sharedSession";
@@ -272,5 +274,101 @@ describe("a sign-out that races this app's own refresh", () => {
     // a page loading later must not adopt the copy the sign-out just ended
     adoptSharedSession(REF);
     expect(storage.getItem(KEY)).toBeNull();
+  });
+});
+
+describe("this app's refresh while another app shares a newer copy", () => {
+  const ORIGIN = `https://${REF}.supabase.co`;
+  const now = () => Math.floor(Date.now() / 1000);
+  /** u1's session, with an access token that names its sign-in, like Supabase's. */
+  const signedIn = (refreshToken: string, expiresAt: number) => ({ ...session("u1", refreshToken, expiresAt), access_token: token("s1") });
+
+  /**
+   * A real supabase-js client in this page, its copy inside supabase-js's
+   * 90-second margin, so getSession() refreshes; `during` runs while that token
+   * request is on the wire. supabase-js reads its storage before and after the
+   * request and throws the refresh away when the copy changed in between, so
+   * getSession() answered with no session when this page took the newer copy then.
+   */
+  async function refreshWhile(during: (jar: Jar, win: EventTarget) => void) {
+    const g = globalThis as Record<string, unknown>;
+    const realFetch = g.fetch;
+    const realBroadcast = g.BroadcastChannel;
+    const jar = new Jar();
+    const { storage, win, reloads } = page(jar);
+    const refreshes: string[] = [];
+    let reply: unknown = null;
+    const fakeFetch = async (input: unknown, init?: { body?: unknown }) => {
+      const url = typeof input === "string" ? input : (input as { url: string }).url;
+      if (!url.startsWith(`${ORIGIN}/auth/v1/token`)) throw new Error(`no network in this test: ${url}`);
+      refreshes.push((JSON.parse(String(init?.body ?? "{}")) as { refresh_token?: string }).refresh_token ?? "");
+      during(jar, win);
+      return new Response(JSON.stringify(reply), { status: 200, headers: { "content-type": "application/json" } });
+    };
+    g.fetch = fakeFetch;
+    delete g.BroadcastChannel;
+    let client: ReturnType<typeof createClient> | null = null;
+    try {
+      // Shared and fresh first, so the client starts without a refresh.
+      putShared(jar, signedIn("r0", now() + 3000));
+      adoptSharedSession(REF);
+      client = createClient(ORIGIN, "sb_publishable_test", {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+        global: { fetch: fakeFetch as unknown as typeof fetch },
+      });
+      publishSessionChanges(client, REF);
+      followSharedSession(client, REF);
+      await client.auth.initialize();
+      // Time passes: both copies are due now, and equal.
+      const due = signedIn("r0", now() + 30);
+      storage.setItem(KEY, JSON.stringify(due));
+      putShared(jar, due);
+      reply = signedIn("app-r1", now() + 3600);
+      const first = await client.auth.getSession();
+      const second = await client.auth.getSession();
+      return {
+        refreshes,
+        reloads: reloads.length,
+        error: first.error ? `${first.error.name}: ${first.error.message}` : null,
+        first: first.data.session?.refresh_token ?? null,
+        second: second.data.session?.refresh_token ?? null,
+      };
+    } finally {
+      await client?.auth.stopAutoRefresh();
+      g.fetch = realFetch;
+      g.BroadcastChannel = realBroadcast;
+    }
+  }
+
+  /** The Hub's rotated copy of the same sign-in, shared once while the request is on the wire. */
+  const hubShares = (focus: boolean) => {
+    let done = false;
+    return (jar: Jar, win: EventTarget) => {
+      if (done) return;
+      done = true;
+      putShared(jar, signedIn("hub-r1", now() + 3600));
+      if (focus) win.dispatchEvent(new Event("focus"));
+    };
+  };
+
+  test("the Hub shares a newer copy while the refresh is on the wire: getSession still answers with the session", async () => {
+    const out = await refreshWhile(hubShares(false));
+    expect(out.refreshes).toEqual(["r0"]);
+    expect(out.error).toBeNull();
+    expect(out.first).not.toBeNull();
+    expect(out.reloads).toBe(0);
+  });
+
+  test("the same with a focus event while the refresh is on the wire", async () => {
+    const out = await refreshWhile(hubShares(true));
+    expect(out.refreshes).toEqual(["r0"]);
+    expect(out.error).toBeNull();
+    expect(out.first).not.toBeNull();
+    expect(out.reloads).toBe(0);
+  });
+
+  test("the next getSession after that overlap answers with a session too", async () => {
+    const out = await refreshWhile(hubShares(false));
+    expect(out.second).not.toBeNull();
   });
 });

@@ -43,9 +43,12 @@
  *    a copy older than the shared one. Wherever the two copies meet (on load,
  *    when a tab comes back to focus or into view, and whenever supabase-js reads
  *    its session, which it does before every refresh), the one that expires
- *    later is kept; on a tie, the shared one. Until 0.2.5 the app's own copy
- *    always won, so an app opened after the Hub had refreshed refreshed with a
- *    retired token, was signed out, and took the Hub's session with it.
+ *    later is kept; on a tie, the shared one. While the page's own refresh is
+ *    in flight, a newer copy of the same person waits for the next read, as
+ *    supabase-js throws a refresh away when its copy changes under it. Until
+ *    0.2.5 the app's own copy always won, so an app opened after the Hub had
+ *    refreshed refreshed with a retired token, was signed out, and took the
+ *    Hub's session with it.
  * 2. Only an explicit sign-out (`client.auth.signOut()`) clears the shared
  *    session, and it clears it everywhere: it leaves a note in the cookie jar
  *    so every app drops any copy at least as old as the one signed out, or of
@@ -212,6 +215,8 @@ type Page = {
   following: boolean;
   signingOut: boolean;
   reloading: boolean;
+  /** Whether supabase-js has a token request in flight (followSharedSession sets it). */
+  refreshing: () => boolean;
 };
 
 const pages = new WeakMap<object, Map<string, Page>>();
@@ -224,13 +229,13 @@ function pageFor(key: string): Page {
   }
   let page = byKey.get(key);
   if (!page) {
-    page = { dead: new Set(), user: undefined, following: false, signingOut: false, reloading: false };
+    page = { dead: new Set(), user: undefined, following: false, signingOut: false, reloading: false, refreshing: () => false };
     byKey.set(key, page);
   }
   return page;
 }
 
-type Outcome = "none" | "same" | "adopted" | "published" | "dropped";
+type Outcome = "none" | "same" | "later" | "adopted" | "published" | "dropped";
 
 /** Bring this origin's copy and the shared one in step: the newest wins. */
 function reconcile(key: string, page: Page): Outcome {
@@ -266,6 +271,12 @@ function reconcile(key: string, page: Page): Outcome {
   }
   if (local.raw === theirs.raw) return "same";
   if (theirs.expiresAt >= local.expiresAt) {
+    // supabase-js reads its storage before and after a token request and throws
+    // a valid refresh away when the copy changed in between. While one is in
+    // flight, a newer copy of the same person waits for the next read; another
+    // person is taken at once (the page reloads), so this page's refresh of the
+    // previous person cannot replace that sign-in.
+    if (page.refreshing() && theirs.userId !== null && theirs.userId === local.userId) return "later";
     window.localStorage.setItem(key, theirs.raw);
     return "adopted";
   }
@@ -384,7 +395,9 @@ const GUARDED = Symbol.for("autosolutions-os.sharedSession.guarded");
  * - takes the newest session whenever the tab comes back into view or to
  *   focus, before supabase-js's own wake-up (which refreshes) reads it;
  * - takes it whenever supabase-js reads its session, which it does before
- *   every refresh, so a refresh never uses a token older than the shared one;
+ *   every refresh, so a refresh never uses a token older than the shared one
+ *   (while one is in flight, a newer copy of the same person waits for the
+ *   next read, so supabase-js keeps that refresh);
  * - makes `client.auth.signOut()` (any scope but "others") the sign-out that
  *   clears the shared session everywhere.
  *
@@ -398,7 +411,9 @@ export function followSharedSession(client: { auth: object }, projectRef: string
     const page = pageFor(key);
     if (page.following) return;
     page.following = true;
-    const auth = client.auth as { storage?: StorageLike; signOut?: (...args: unknown[]) => unknown };
+    const auth = client.auth as { storage?: StorageLike; signOut?: (...args: unknown[]) => unknown; refreshingDeferred?: unknown };
+    // supabase-js holds a token request in flight in refreshingDeferred (internal, like storage).
+    page.refreshing = () => auth.refreshingDeferred != null;
     guardReads(auth, key, page);
     signOutEverywhere(auth, key, page);
     const wake = () => {
