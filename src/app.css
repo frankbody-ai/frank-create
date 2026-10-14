@@ -1915,3 +1915,47 @@ matched to the system's
   color: var(--as-text-secondary, #6b6b6b); display: inline-flex;
 }
 .session-folder__actions button:hover { background: rgba(0, 0, 0, 0.1); }
+
+
+/* ============================================================
+   14. Buttons are capsules
+
+   Cliff's final design (user decision of 2026-10-14): every button the
+   pages draw has fully round corners, the design system's Button and
+   IconButton (both copies above), the buttons carried over from the
+   pre-system markup, the chips and the small icon and text buttons. Shape
+   only: size, colours, labels and behaviour stay as they were. Rows, tabs,
+   menu options, tiles and cards, controls that draw no box (text and bare
+   icon actions), form controls and the Google button (Google's own rules,
+   as in the design's sign-in card) keep their shapes. A segmented group
+   stays one control: its outer corners are round, its seams square.
+   ============================================================ */
+
+.as-btn:not(.as-btn--plain),
+.primary-button,
+.secondary-button,
+.upload-button,
+.ghost-button,
+.filter-chip,
+.mask-chip,
+.reference-tag-hint-chip,
+.turn-meta button,
+.turn-copy-prompt,
+.turn-chip-json,
+.lightbox-actions button,
+.compare-prompt button,
+.compare-actions button,
+.payload-modal-actions button,
+.session-folders__new,
+.session-folder__actions button { border-radius: var(--radius-full); }
+
+.as-btn-group--segmented > .as-btn { border-radius: 0; }
+.as-btn-group--segmented > .as-btn:first-child {
+  border-start-start-radius: var(--radius-full);
+  border-end-start-radius: var(--radius-full);
+}
+.as-btn-group--segmented > .as-btn:last-child {
+  border-start-end-radius: var(--radius-full);
+  border-end-end-radius: var(--radius-full);
+}
+
