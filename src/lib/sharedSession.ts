@@ -2,7 +2,7 @@
  * The copy of the shared-session code for apps that build their own Supabase
  * client instead of calling createOsClient.
  *
- * It is autosolutions-os 0.2.6's src/session.ts, unchanged, plus the helpers
+ * It is autosolutions-os 0.2.7's src/session.ts, unchanged, plus the helpers
  * these apps import from it (projectRefFromUrl, sharedSessionStorageKey and the
  * server half, readSharedSessionCookie and readSharedAccessToken). Change the
  * package first and regenerate this file (plans/sso/make-canonical.mjs) rather
@@ -13,7 +13,7 @@
  *   adoptSharedSession(ref);                 // before createClient reads storage
  *   const supabase = createClient(...);
  *   publishSessionChanges(supabase, ref);
- *   followSharedSession(supabase, ref);      // new in 0.2.5
+ *   followSharedSession(supabase, ref);      // since 0.2.5
  *
  * Import and CALL them. A bare `import "./sharedSession"` is removed by the
  * bundler in any package marked "sideEffects": false, and the build still
@@ -53,7 +53,9 @@
  *    session, and it clears it everywhere: it leaves a note in the cookie jar
  *    so every app drops any copy at least as old as the one signed out, or of
  *    a session it ended, rather than putting it back. A missing local session,
- *    a failed refresh or blocked storage clears nothing.
+ *    a failed refresh or blocked storage clears nothing, and neither does a
+ *    sign-out that does not happen (supabase-js reports a failure and keeps
+ *    the session): the note goes back to what it was.
  * 3. A different person signing in elsewhere replaces the session here. A page
  *    that was showing someone else reloads, and so does a page on its sign-in
  *    screen when a session arrives, so it shows that person.
@@ -464,7 +466,14 @@ function rememberDead(key: string, page: Page): void {
 
 /**
  * An explicit sign-out signs out every app: clear the cookie and leave the note
- * first, and again once supabase-js has finished signing out.
+ * first, and again once supabase-js has finished signing out. A sign-out that
+ * does not happen changes nothing: when supabase-js reports a failure and still
+ * holds the session here, the note goes back to what it was and the session is
+ * shared again, so a retry can still end it on the server. supabase-js 2.106
+ * keeps the session when the server's logout fails, and every version keeps it
+ * when the refresh it makes first fails on the network. 2.112 and later remove
+ * it even when the logout fails: that is a sign-out here, so it is one
+ * everywhere.
  */
 function signOutEverywhere(
   auth: { signOut?: (...args: unknown[]) => unknown },
@@ -494,28 +503,85 @@ function signOutEverywhere(
       // The sign-out itself still runs.
     }
   };
-  auth.signOut = (...args: unknown[]) => {
-    const scope = (args[0] as { scope?: unknown } | undefined)?.scope;
-    if (scope !== "others") {
-      page.signingOut = true;
-      seal();
+  /**
+   * The sign-outs in flight here (a double click starts two; supabase-js runs
+   * them one after the other), the note's raw value before the first of them
+   * (null when there was none), and whether one of them signed out.
+   */
+  let inFlight = 0;
+  let noteBefore: string | null = null;
+  let ended = false;
+  /** supabase-js still holds a session here. */
+  const stillHere = (): boolean => {
+    try {
+      return parseCopy(window.localStorage.getItem(key)) !== null;
+    } catch {
+      return false;
     }
-    const done = () => {
+  };
+  /** None of them signed out, and supabase-js kept the session: undo the seal. */
+  const restore = (): void => {
+    try {
+      document.cookie = noteBefore === null
+        ? `${signedOutName(key)}=; Domain=.${PARENT_DOMAIN}; Path=/; Max-Age=0; SameSite=Lax; Secure`
+        : `${signedOutName(key)}=${noteBefore}; Domain=.${PARENT_DOMAIN}; Path=/; Max-Age=${MAX_AGE}; SameSite=Lax; Secure`;
+      // The seal cleared the cookie: share this origin's copy again, unless the
+      // shared one is newer by now (a sign-in elsewhere meanwhile).
+      publishLocal(key);
+    } catch {
+      // Nothing more to put back.
+    }
+  };
+  const finish = (failed: boolean): void => {
+    inFlight -= 1;
+    if (!failed || !stillHere()) {
+      ended = true;
       // When this origin's copy is due, supabase-js's signOut first waits for a
       // refresh already in flight, or refreshes itself, and that refresh saves
       // a rotated copy that expires after the note above. The note's session
       // ids keep that copy out of the cookie only when its access token names
       // its session, so seal again once the sign-out has finished: the note
       // then covers the copy by its expiry too, and the cookie ends empty.
-      if (scope !== "others") seal();
-      page.signingOut = false;
-    };
+      seal();
+    }
+    if (inFlight > 0) return;
+    if (!ended) restore();
+    page.signingOut = false;
+  };
+  auth.signOut = (...args: unknown[]) => {
+    const scope = (args[0] as { scope?: unknown } | undefined)?.scope;
+    // "others" signs out other devices only: this browser keeps its session.
+    if (scope === "others") return Promise.resolve(original.apply(auth, args));
+    if (inFlight === 0) {
+      ended = false;
+      try {
+        noteBefore = cookieJar().get(signedOutName(key)) ?? null;
+      } catch {
+        noteBefore = null;
+      }
+    }
+    inFlight += 1;
+    page.signingOut = true;
+    seal();
+    let pending: unknown;
     try {
-      return Promise.resolve(original.apply(auth, args)).finally(done);
+      pending = original.apply(auth, args);
     } catch (error) {
-      done();
+      finish(true);
       throw error;
     }
+    // supabase-js answers a failed sign-out with { error }, or throws.
+    return Promise.resolve(pending).then(
+      (result) => {
+        const error = (result as { error?: unknown } | null | undefined)?.error;
+        finish(error !== null && error !== undefined);
+        return result;
+      },
+      (error: unknown) => {
+        finish(true);
+        throw error;
+      },
+    );
   };
 }
 

@@ -1,6 +1,6 @@
 // @vitest-environment node
 /**
- * The shared session in this app (sharedSession.ts, autosolutions-os 0.2.6's
+ * The shared session in this app (sharedSession.ts, autosolutions-os 0.2.7's
  * copy). The package runs the full suite; this checks the copy behaves the
  * same here, and that this app's client module wires all three calls.
  *
@@ -370,5 +370,94 @@ describe("this app's refresh while another app shares a newer copy", () => {
   test("the next getSession after that overlap answers with a session too", async () => {
     const out = await refreshWhile(hubShares(false));
     expect(out.second).not.toBeNull();
+  });
+});
+
+describe("a sign-out whose server logout fails", () => {
+  const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  /**
+   * supabase-js's signOut when the server's logout fails: it returns the error
+   * and keeps the session (2.106, Smart LeadGen CRM's), or, with `removes`,
+   * removes it all the same (2.112 and later). `logouts` counts the calls.
+   */
+  function clientWithLogout(storage: { getItem: (k: string) => string | null }, removes = false) {
+    const client = fakeClient();
+    const endSession = client.auth.signOut;
+    const logout = { failing: false, calls: 0 };
+    const auth = client.auth as { signOut: () => Promise<{ error: Error | null }> };
+    auth.signOut = async () => {
+      if (storage.getItem(KEY) !== null) {
+        logout.calls += 1;
+        if (logout.failing) {
+          if (removes) await endSession();
+          return { error: new Error("logout unavailable") };
+        }
+      }
+      return endSession();
+    };
+    publishSessionChanges(client, REF);
+    followSharedSession(client, REF);
+    client.auth.emit("SIGNED_IN", session("u1", "r1", LATER));
+    return { client, logout };
+  }
+
+  test("while supabase-js keeps the session, the session stays here, is shared again, and no note is left", async () => {
+    const jar = new Jar();
+    const { storage, win, reloads } = page(jar);
+    storage.setItem(KEY, JSON.stringify(session("u1", "r1", LATER)));
+    const { client, logout } = clientWithLogout(storage);
+    expect(shared(jar)?.refresh_token).toBe("r1");
+    logout.failing = true;
+    const result = await client.auth.signOut();
+    expect(result.error).not.toBeNull();
+    expect(local(storage)).toBe("r1");
+    expect(shared(jar)?.refresh_token).toBe("r1");
+    expect(jar.cookies.has(`${KEY}-signed-out`)).toBe(false);
+    // coming back to the tab keeps it
+    win.dispatchEvent(new Event("focus"));
+    await tick();
+    expect(local(storage)).toBe("r1");
+    expect(reloads.length).toBe(0);
+  });
+
+  test("after it, a sign-out with the logout working calls it once and ends the session everywhere", async () => {
+    const jar = new Jar();
+    const { storage, win } = page(jar);
+    storage.setItem(KEY, JSON.stringify(session("u1", "r1", LATER)));
+    const { client, logout } = clientWithLogout(storage);
+    logout.failing = true;
+    await client.auth.signOut();
+    win.dispatchEvent(new Event("focus"));
+    logout.failing = false;
+    logout.calls = 0;
+    await client.auth.signOut();
+    expect(logout.calls).toBe(1);
+    expect(storage.getItem(KEY)).toBeNull();
+    expect(shared(jar)).toBeNull();
+    expect(jar.cookies.get(`${KEY}-signed-out`)).toBe(String(LATER));
+    // another app still holding the copy drops it instead of sharing it
+    const other = page(jar);
+    other.storage.setItem(KEY, JSON.stringify(session("u1", "r1", LATER)));
+    adoptSharedSession(REF);
+    expect(other.storage.getItem(KEY)).toBeNull();
+    expect(shared(jar)).toBeNull();
+  });
+
+  test("while supabase-js removes the session (2.112 and later), it is a sign-out here, so it is one everywhere", async () => {
+    const jar = new Jar();
+    const { storage } = page(jar);
+    storage.setItem(KEY, JSON.stringify(session("u1", "r1", LATER)));
+    const { client, logout } = clientWithLogout(storage, true);
+    logout.failing = true;
+    const result = await client.auth.signOut();
+    expect(result.error).not.toBeNull();
+    expect(storage.getItem(KEY)).toBeNull();
+    expect(shared(jar)).toBeNull();
+    expect(jar.cookies.get(`${KEY}-signed-out`)).toBe(String(LATER));
+    const other = page(jar);
+    other.storage.setItem(KEY, JSON.stringify(session("u1", "r1", LATER)));
+    adoptSharedSession(REF);
+    expect(other.storage.getItem(KEY)).toBeNull();
   });
 });
