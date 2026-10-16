@@ -1994,8 +1994,9 @@ matched to the system's
    Cliff's sign-in card from the final design (user decision of
    2026-10-14), look only; the values are the design's own
    (components/auth/auth.css). A white card on the brand background, two
-   columns: an image panel, then the "AutoSolutions | OS" lockup (its
-   near-black cut), the heading, the providers and the note. Below 820px it
+   columns: an image panel, then the "Autosolutions | OS" lockup (its
+   black cut, Cliff Edit (2) of 2026-10-16), the heading, the providers and
+   the note. Below 820px it
    stacks, as the design does. The card has its own class names, so the
    older .as-auth card rules of both design-system copies do not reach it.
    ============================================================ */
@@ -2052,14 +2053,16 @@ matched to the system's
   gap: var(--space-400);
   margin-block-start: 25px;
 }
-/* The final lockup, byte for byte from the design; its width follows the
-   column and its height the artwork's own ratio. */
+/* Cliff's newest lockup in its black cut (Cliff Edit (2)), byte for byte the
+   design system's assets/brand/autosolutions-os-black.svg, drawn as his
+   sign-in export draws it: three quarters of the column wide, its height
+   from the artwork's own ratio, centred in its box. */
 .studio-signin__os {
   display: block;
   width: 75%;
   height: auto;
-  aspect-ratio: 274.57 / 28.16;
-  background: center / contain no-repeat url("/brand/os-lockup.svg");
+  aspect-ratio: 4069.66 / 519.71;
+  background: center / contain no-repeat url("/brand/autosolutions-os-black.svg");
 }
 /* Pushed down to the providers, as in the design. The design shows a short
    card only; when an error or a second button makes it taller, the heading
