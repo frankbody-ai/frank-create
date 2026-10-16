@@ -127,6 +127,13 @@ describe("a click in the frame", () => {
     expect(lastFrame().location).toBe(shown);
   });
 
+  it("comes from a button, as on the old side nav: the studio's places are not addresses", async () => {
+    const Shell = await loadShell();
+    render(<Shell screen="prompt" />);
+    // os 0.2.4 and later draw an app's own rows and tabs as links unless told not to.
+    expect(frames[frames.length - 1]).toHaveProperty("hrefFor", null);
+  });
+
   it("is the studio's own mode change inside App, with no hash written", async () => {
     const Shell = await loadShell();
     const onSelectInApp = vi.fn();

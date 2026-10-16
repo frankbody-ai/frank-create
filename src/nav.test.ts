@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { osFrame } from "autosolutions-os/nav";
+import { HUB_URL, OS_HUB_MENU, osFrame } from "autosolutions-os/nav";
 import type { OsFrameState } from "autosolutions-os/nav";
 // The glyph table on its own: the package index also loads the components.
 import { NAV_ICONS } from "autosolutions-design-system/components/media/navIcons.js";
@@ -38,9 +38,9 @@ describe("the studio in the workspace frame", () => {
     const frame = studioFrame();
     const at = (screen: Screen) => frame.locate(frameLocation(screen));
 
-    // The tool row and the Studio tab share the studio's place and the row
-    // claims it first: the frame shows the first tab, Studio, as current.
-    expect(at("studio")).toEqual({ fn: "marketing", item: "image-generator", tab: null });
+    // The tool row and the Studio tab share the studio's place and the tab
+    // claims it first (os 0.2.4 and later): Studio is the current tab.
+    expect(at("studio")).toEqual({ fn: "marketing", item: "image-generator", tab: "studio" });
     expect(at("prompt")).toEqual({ fn: "marketing", item: "image-generator", tab: "prompt" });
     expect(at("upscaler")).toEqual({ fn: "marketing", item: "image-generator", tab: "upscaler" });
     expect(at("admin")).toEqual({ fn: "marketing", item: "image-generator", tab: "admin" });
@@ -73,10 +73,26 @@ describe("the studio in the workspace frame", () => {
     expect(click("studio", "settings", null, null)).toEqual({ href: "/settings", external: false });
     // A state the frame did not report as a click on what it shows: no navigation.
     expect(click("prompt", "marketing", "image-generator", "prompt")).toBeNull();
-    // The rail's Hub, Back to hub and Admin leave for the Hub.
-    expect(click("studio", "hub", null, null)?.external).toBe(true);
-    expect(click("prompt", "hub", null, null, { back: true })?.external).toBe(true);
+    // The rail's Hub opens the Hub panel, which is no navigation; its rows and
+    // Admin leave for the Hub.
+    expect(click("studio", "hub", null, null)).toBeNull();
+    expect(click("studio", "hub", "inbox", null)).toEqual({ href: `${HUB_URL}/comms/inbox`, external: true });
+    expect(click("prompt", "hub", "voice", null)).toEqual({ href: `${HUB_URL}/launcher?section=brandvoice`, external: true });
     expect(click("studio", "admin", null, null)?.external).toBe(true);
+  });
+
+  it("shows the design's Hub panel when the rail's Hub is picked", () => {
+    const hub = studioFrame().sections.hub ?? [];
+    expect(hub.map((section) => section.title)).toEqual(OS_HUB_MENU.map((section) => section.title));
+    expect(hub.flatMap((section) => section.items.map((row) => row.label))).toEqual([
+      "Overview", "Inbox", "Calendar", "Tasks", "Slack", "Monday", "Accounts", "Configuration",
+      "Unmarked Agent", "Brand Voice Capture", "Signature Generator",
+    ]);
+    // Every row is a link into the Hub, none a place of this app.
+    for (const row of hub.flatMap((section) => section.items)) {
+      expect(row.href?.startsWith(`${HUB_URL}/`), row.id).toBe(true);
+      expect(row.path, row.id).toBeUndefined();
+    }
   });
 
   it("runs a click on the tab already shown again, as the old side nav did", () => {

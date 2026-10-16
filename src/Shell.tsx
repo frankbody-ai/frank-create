@@ -141,16 +141,18 @@ function useManages(): boolean {
 /**
  * The application shell: the AutoSolutions OS workspace frame every app on the
  * core wears (autosolutions-os/frame). The 56px bar with the OS lockup, the
- * search and the company plate; the rail (Hub, Finance, Marketing, Commercial,
- * Operations; Admin, Settings, Sign out at the foot); and, in the work area,
- * this app drilled open as Marketing > Creative > Artificial Design Studio,
- * its screens as the tool's tabs with the session organiser under them.
+ * search and the company plate with its chevron; the rail (Hub, Finance,
+ * Marketing, Commercial, Operations; Admin, Settings, Sign out at the foot);
+ * and the menu panel opened on this app, Marketing > Creative > Artificial
+ * Design Studio: the tool's icon and name, then its screens as the tool's
+ * tabs, the session organiser under them.
  *
  * The frame follows `screen`, which this app's hash router (and App's mode)
  * decides, and reports only clicks: a tab, the one already shown included,
  * becomes the same mode change or hash navigation the old side nav made.
- * Other apps' tools, the rail's Hub and Admin open in the same tab, through
- * the catalogue.
+ * The tabs stay buttons, as the old side nav's items were: the studio's
+ * places are not addresses. The rail's Hub opens the Hub panel; its rows,
+ * other apps' tools and Admin open in the same tab, through the catalogue.
  */
 export function Shell({
   screen,
@@ -205,10 +207,12 @@ export function Shell({
         const target = screenForPlace(href);
         if (target) go(target);
       }}
-      /* The frame always draws the search box, so it stays controlled on every
-         render: a screen that adds its search after a first render (AdminPortal,
-         once it knows the role) must not switch the input from uncontrolled to
-         controlled. A screen without search keeps the frame's own "Search". */
+      hrefFor={null}
+      /* The frame draws the search box only for a screen that searches, as the
+         old top bar did. Its value stays controlled on every render, so a
+         screen that adds its search after a first render (AdminPortal, once it
+         knows the role) never switches the input from uncontrolled to
+         controlled. */
       search={{
         placeholder: onSearchChange ? searchPlaceholder : undefined,
         value: search ?? "",

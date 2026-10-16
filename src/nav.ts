@@ -34,9 +34,10 @@ export function isInApp(screen: Screen): screen is InAppScreen {
  *
  * The studio's place carries its own mode, although its URL does not: the
  * tool is placed at the studio's place, and a bare "/" would claim every
- * place, so health would read as the studio's first tab and a click on
- * Studio from health would go nowhere. These places never reach the address
- * bar: a click goes through screenForPlace and then the hash router.
+ * place, so health would read as on the studio's row and a click on that row
+ * from health would go nowhere. These places never reach the address bar
+ * (the frame draws its tabs as buttons): a click goes through screenForPlace
+ * and then the hash router.
  */
 const PLACES: Record<Screen, string> = {
   studio: "/?mode=studio",
@@ -88,10 +89,11 @@ export function screenForPlace(href: string): Screen | null {
 }
 
 /**
- * The tool's views: the frame's third menu under Marketing > Creative >
- * Artificial Design Studio. Icons are NAV_ICONS glyph ids, which the frame
- * draws inline. Admin portal is last and shown to everyone, as before: the
- * page checks the role and keeps its own Users / Feedback / Prompt agent tabs.
+ * The tool's views: opened (Marketing > Creative > Artificial Design Studio),
+ * the frame's menu panel shows the tool's icon and name, then these tabs.
+ * Icons are NAV_ICONS glyph ids, which the frame draws inline. Admin portal
+ * is last and shown to everyone, as before: the page checks the role and
+ * keeps its own Users / Feedback / Prompt agent tabs.
  */
 export const STUDIO_TABS: OsTab[] = [
   { id: "studio", label: "Studio", icon: "mkt-image-generator", path: PLACES.studio },
