@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { CORE_SUPABASE_PUBLISHABLE_KEY, CORE_SUPABASE_URL } from "./coreConfig";
-import { adoptSharedSession, publishSessionChanges } from "./sharedSession";
+import { adoptSharedSession, followSharedSession, publishSessionChanges } from "./sharedSession";
 
 // supabase-js keys its stored session by the project ref in its URL, so the
 // ref is derived from the same resolved URL rather than pinned separately.
@@ -45,6 +45,9 @@ export const os = supabase.schema("public");
 
 // Signing in or out here carries to every other AutoSolutions app.
 publishSessionChanges(supabase, CORE_PROJECT_REF);
+// While the page is open the newest session wins: when the tab comes back,
+// and before supabase-js refreshes, so it never refreshes with an older token.
+followSharedSession(supabase, CORE_PROJECT_REF);
 
 /**
  * Fully clear the local Supabase session: signs out via the SDK, then
