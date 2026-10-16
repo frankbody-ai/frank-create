@@ -15,8 +15,8 @@
         "@tanstack/react-router": "1.170.18",
         "@tanstack/react-start": "1.168.32",
         "@tanstack/router-plugin": "1.168.23",
-        "autosolutions-design-system": "^6.5.0",
-        "autosolutions-os": "^0.3.0",
+        "autosolutions-design-system": "^6.5.1",
+        "autosolutions-os": "^0.3.1",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "tailwindcss": "^4.2.1",
@@ -432,9 +432,9 @@
 
     "assertion-error": ["assertion-error@2.0.1", "", {}, "sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA=="],
 
-    "autosolutions-design-system": ["autosolutions-design-system@6.5.0", "", { "peerDependencies": { "react": ">=18" } }, "sha512-mNA+VMS22lWq3adOiHBZNZ5TkkhAJ45oB6fGb2FTvaVx/XfJerbMzDMqG/bRps1CpFLF4xXqXT7Pwvgab7Bbcg=="],
+    "autosolutions-design-system": ["autosolutions-design-system@6.5.1", "", { "peerDependencies": { "react": ">=18" } }, "sha512-FjxNJRKCGDc1rLzqowL7fBVbsJCQdmnp5ce9BG4BClDCLqGEP9Qdlr84v8BFM16nNdhnOivdUcRVnil9kWGndg=="],
 
-    "autosolutions-os": ["autosolutions-os@0.3.0", "", { "peerDependencies": { "@supabase/supabase-js": ">=2.40.0", "autosolutions-design-system": ">=6.5.0 <7", "react": ">=18" }, "optionalPeers": ["autosolutions-design-system", "react"] }, "sha512-cCwbKqxfmOLaWbKVBrqdNP4gkx8MpLJyxfMjectCGm8BuYUslQ0eAuNM0xUjGDA2UEar5aK9DRBEDbjMU7G3jw=="],
+    "autosolutions-os": ["autosolutions-os@0.3.1", "", { "peerDependencies": { "@supabase/supabase-js": ">=2.40.0", "autosolutions-design-system": ">=6.5.0 <7", "react": ">=18" }, "optionalPeers": ["autosolutions-design-system", "react"] }, "sha512-ZLh0ULeWWH+CRIiRRVLgyjV/m3qDYEpX9QeJO2bacQa6Ot9TT2PmfY6oj8txnJrDnFaX2A4r5Bw7A/+TW/x/rg=="],
 
     "babel-dead-code-elimination": ["babel-dead-code-elimination@1.0.12", "", { "dependencies": { "@babel/core": "^7.23.7", "@babel/parser": "^7.23.6", "@babel/traverse": "^7.23.7", "@babel/types": "^7.23.6" } }, "sha512-GERT7L2TiYcYDtYk1IpD+ASAYXjKbLTDPhBtYj7X1NuRMDTMtAx9kyBenub1Ev41lo91OHCKdmP+egTDmfQ7Ig=="],
 

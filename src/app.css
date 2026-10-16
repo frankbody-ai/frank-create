@@ -28,15 +28,16 @@
    Explicit user instruction, so it deliberately replaces the library artwork.
    Cliff's newest "Autosolutions | OS" lockup (Cliff Edit (2), user decision
    of 2026-10-16): the black cut on light surfaces, the white cut for the
-   inverse class, byte for byte the design system's assets/brand files, 7.83
-   to 1. The frame's own top bar draws its logo itself and is not reached. */
+   inverse class, loaded from the design system's own assets/brand files so
+   each release's art shows (6.5.1: "AutoSolutions", capital S), 7.83 to 1.
+   The frame's own top bar draws its logo itself and is not reached. */
 .as-logo {
   aspect-ratio: 4069.66 / 519.71;
-  background-image: url("/brand/autosolutions-os-black.svg");
+  background-image: url("autosolutions-design-system/assets/brand/autosolutions-os-black.svg");
 }
 .as-logo--inverse {
   aspect-ratio: 4069.66 / 519.71;
-  background-image: url("/brand/autosolutions-os-white.svg");
+  background-image: url("autosolutions-design-system/assets/brand/autosolutions-os-white.svg");
 }
 
 /* Sign-in card: the OS lockup spans the full card width, matching the
@@ -2063,8 +2064,8 @@ matched to the system's
   gap: var(--space-400);
   margin-block-start: 25px;
 }
-/* Cliff's newest lockup in its black cut (Cliff Edit (2)), byte for byte the
-   design system's assets/brand/autosolutions-os-black.svg, drawn as his
+/* Cliff's lockup in its black cut, the design system's own
+   assets/brand/autosolutions-os-black.svg (6.5.1: his final logo), drawn as his
    sign-in export draws it: three quarters of the column wide, its height
    from the artwork's own ratio, centred in its box. */
 .studio-signin__os {
@@ -2072,7 +2073,7 @@ matched to the system's
   width: 75%;
   height: auto;
   aspect-ratio: 4069.66 / 519.71;
-  background: center / contain no-repeat url("/brand/autosolutions-os-black.svg");
+  background: center / contain no-repeat url("autosolutions-design-system/assets/brand/autosolutions-os-black.svg");
 }
 /* Pushed down to the providers, as in the design. The design shows a short
    card only; when an error or a second button makes it taller, the heading
