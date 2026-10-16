@@ -25,11 +25,18 @@
 @import "autosolutions-design-system/frame.css";
 
 /* Project brand override: the supplied AutoSolutions lockup, everywhere.
-   Explicit user instruction, so it deliberately replaces the library artwork. */
-.as-logo,
+   Explicit user instruction, so it deliberately replaces the library artwork.
+   Cliff's newest "Autosolutions | OS" lockup (Cliff Edit (2), user decision
+   of 2026-10-16): the black cut on light surfaces, the white cut for the
+   inverse class, byte for byte the design system's assets/brand files, 7.83
+   to 1. The frame's own top bar draws its logo itself and is not reached. */
+.as-logo {
+  aspect-ratio: 4069.66 / 519.71;
+  background-image: url("/brand/autosolutions-os-black.svg");
+}
 .as-logo--inverse {
-  aspect-ratio: 5.6742; /* 1010×178 supplied artwork */
-  background-image: url("/brand/autosolutions-os.svg");
+  aspect-ratio: 4069.66 / 519.71;
+  background-image: url("/brand/autosolutions-os-white.svg");
 }
 
 /* Sign-in card: the OS lockup spans the full card width, matching the
@@ -1620,7 +1627,9 @@ matched to the system's
   background: var(--color-bg);
 }
 .consent__card { display: flex; flex-direction: column; align-items: center; gap: var(--space-500); width: min(420px, 100%); }
-.consent__logo { width: var(--logo-width-compact); height: var(--logo-height-compact); }
+/* Cliff's compact lockup height (24px, sign-in cards and dense headers);
+   the width follows the artwork. */
+.consent__logo { width: auto; height: 1.5rem; }
 .consent__card .as-card { width: 100%; }
 .consent__body { display: flex; flex-direction: column; gap: var(--space-300); }
 .consent__loading { display: flex; align-items: center; gap: var(--space-200); }
@@ -1651,7 +1660,8 @@ matched to the system's
     box-shadow: var(--shadow-200);
     text-align: center;
   }
-  .small-screen__logo { width: var(--logo-width-compact); height: var(--logo-height-compact); }
+  /* Cliff's compact lockup height, as on the consent page. */
+  .small-screen__logo { width: auto; height: 1.5rem; }
 }
 
 /* ============================================================
