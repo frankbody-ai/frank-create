@@ -3,7 +3,8 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase, os, hardSignOut } from "./lib/supabaseClient";
 import { APP_KEY } from "./lib/coreConfig";
 import { getMyAccessState } from "./lib/admin";
-import { AuthLayout, SignIn, GoogleButton, Button, Spinner, Text } from "./ds";
+import { GoogleButton, Button, Spinner, Text } from "./ds";
+import { SignInCard, SignInPage } from "./components/SignInCard";
 
 type Status = "loading" | "signed-out" | "denied" | "pending" | "ready";
 
@@ -89,11 +90,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const pending = status === "pending";
 
   return (
-    <AuthLayout>
-      <SignIn
-        app="design-studio"
-        appName="art-ificial design studio"
-        method="sso"
+    <SignInPage>
+      <SignInCard
         title={pending ? "Waiting for approval" : "Sign in"}
         description={
           pending
@@ -101,7 +99,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             : "Sign in with your work account."
         }
         error={error}
-        loading={busy}
         providers={
           status === "loading" ? (
             <div className="as-auth__loading">
@@ -137,6 +134,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         }
       />
 
-    </AuthLayout>
+    </SignInPage>
   );
 }

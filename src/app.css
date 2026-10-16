@@ -18,27 +18,26 @@
 /* Attached design system (NEW AutoSolutions OS v3). Loaded after the older
    vendored port so its token values and component skins take precedence. */
 @import "./design-system/new-autosolutions-os-e87004/design-system/autosolutions/styles.css";
+/* The OS workspace frame (top bar, rail, menus, work sheet), from the shared
+   package. Unlayered and last, so it outranks both copies above on the frame's
+   class names; it styles nothing outside the frame, so page bodies keep what
+   they inherit. */
+@import "autosolutions-design-system/frame.css";
 
 /* Project brand override: the supplied AutoSolutions lockup, everywhere.
-   Explicit user instruction, so it deliberately replaces the library artwork. */
-.as-logo,
+   Explicit user instruction, so it deliberately replaces the library artwork.
+   Cliff's newest "Autosolutions | OS" lockup (Cliff Edit (2), user decision
+   of 2026-10-16): the black cut on light surfaces, the white cut for the
+   inverse class, loaded from the design system's own assets/brand files so
+   each release's art shows (6.5.1: "AutoSolutions", capital S), 7.83 to 1.
+   The frame's own top bar draws its logo itself and is not reached. */
+.as-logo {
+  aspect-ratio: 4069.66 / 519.71;
+  background-image: url("autosolutions-design-system/assets/brand/autosolutions-os-black.svg");
+}
 .as-logo--inverse {
-  aspect-ratio: 5.6742; /* 1010×178 supplied artwork */
-  background-image: url("/brand/autosolutions-os.svg");
-}
-
-/* The shell lockup is the masthead for the navigation rail. Its width follows
-   the rail while its height derives from the artwork's own aspect ratio. */
-.as-topbar > .as-topbar__brand {
-  justify-content: flex-start;
-  width: var(--sidenav-width);
-  height: var(--topbar-height);
-  padding-inline: var(--space-400);
-}
-
-.as-topbar > .as-topbar__brand .as-logo {
-  width: 100%;
-  height: auto;
+  aspect-ratio: 4069.66 / 519.71;
+  background-image: url("autosolutions-design-system/assets/brand/autosolutions-os-white.svg");
 }
 
 /* Sign-in card: the OS lockup spans the full card width, matching the
@@ -1629,7 +1628,9 @@ matched to the system's
   background: var(--color-bg);
 }
 .consent__card { display: flex; flex-direction: column; align-items: center; gap: var(--space-500); width: min(420px, 100%); }
-.consent__logo { width: var(--logo-width-compact); height: var(--logo-height-compact); }
+/* Cliff's compact lockup height (24px, sign-in cards and dense headers);
+   the width follows the artwork. */
+.consent__logo { width: auto; height: 1.5rem; }
 .consent__card .as-card { width: 100%; }
 .consent__body { display: flex; flex-direction: column; gap: var(--space-300); }
 .consent__loading { display: flex; align-items: center; gap: var(--space-200); }
@@ -1660,7 +1661,8 @@ matched to the system's
     box-shadow: var(--shadow-200);
     text-align: center;
   }
-  .small-screen__logo { width: var(--logo-width-compact); height: var(--logo-height-compact); }
+  /* Cliff's compact lockup height, as on the consent page. */
+  .small-screen__logo { width: auto; height: 1.5rem; }
 }
 
 /* ============================================================
@@ -1688,17 +1690,33 @@ matched to the system's
 
 
 /* ============================================================
-   13. Shell corrections
+   13. The page column inside the workspace frame
 
-   The system's TopBar leans on the search field's auto margins to push the
-   right-hand cluster over. Screens without a searchable list lose that, so the
-   cluster needs its own push.
+   The frame's sheet has no width cap. A screen that asks for a column cap
+   (Shell's maxWidth) gets it here, centred, as the old AppFrame drew it, with
+   the same section gap and query container, so page bodies lay out as before.
+   The sheet's padding stands in for the old page gutters.
    ============================================================ */
 
-.as-topbar:not(:has(.as-topbar__search)) .as-topbar__cluster { margin-inline-start: auto; }
+.studio-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--page-section-gap);
+  width: 100%;
+  min-width: 0;
+  margin-inline: auto;
+  container-type: inline-size;
+}
 
-/* Nothing may sit on top of the nav's footer group — Settings lives there. */
-.as-nav__list--footer { background: var(--color-nav-bg); }
+/* The frame's sheet stretches the page to its own height, so the column is
+   no longer only as tall as its content. Stacked (a column of 768px or
+   less), the studio's settings rail is a column item whose 100% basis then
+   resolves against that height and squeezes the rounds feed below it, which
+   hides the rounds it cannot show. Sized by its content, as the old page
+   column sized it, every round shows again. */
+@container (max-width: 768px) {
+  .studio-page .studio-columns > .studio-rail { flex-basis: auto; }
+}
 
 /* Reference picker pagination — 10 cards per page keeps the overlay instant. */
 .reference-picker-pagination {
@@ -1863,15 +1881,15 @@ matched to the system's
   font-size: 0.875rem;
 }
 
-/* Session organiser in the left nav */
-.as-nav__extra {
-  padding: 8px 10px 4px;
+/* Session organiser, in the frame's menu panel under the tool's tabs, set off
+   from them by the rule it had under the old side nav's items. The panel is
+   narrower than the old side nav, so the organiser reaches into its padding,
+   8px from the panel's edges as the old nav's rows were from its edges: the
+   list keeps the old list's 204px and session names as many characters. */
+.studio-panel-extra {
+  margin-inline: -8px -9px;
+  padding-top: 8px;
   border-top: 1px solid var(--as-border, rgba(0, 0, 0, 0.08));
-  margin-top: 6px;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 .session-folders { display: flex; flex-direction: column; gap: 6px; min-height: 0; }
 .session-folders__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -1908,3 +1926,213 @@ matched to the system's
   color: var(--as-text-secondary, #6b6b6b); display: inline-flex;
 }
 .session-folder__actions button:hover { background: rgba(0, 0, 0, 0.1); }
+
+
+/* ============================================================
+   14. Buttons are capsules
+
+   Cliff's final design (user decision of 2026-10-14): every button the
+   pages draw has fully round corners, the design system's Button,
+   IconButton and GoogleButton (both copies above; the Google button as the
+   shared design system's own now is, a shape Google's rules allow), the
+   buttons carried over from the pre-system markup, the chips and the small
+   icon and text buttons. Shape only: size, colours, labels and behaviour
+   stay as they were. Rows, tabs, menu options, tiles and cards, controls
+   that draw no box (text and bare icon actions) and form controls keep
+   their shapes. A segmented group stays one control: its outer corners
+   are round, its seams square.
+   ============================================================ */
+
+.as-btn:not(.as-btn--plain),
+.as-google,
+.primary-button,
+.secondary-button,
+.upload-button,
+.ghost-button,
+.filter-chip,
+.mask-chip,
+.reference-tag-hint-chip,
+.turn-meta button,
+.turn-copy-prompt,
+.turn-chip-json,
+.lightbox-actions button,
+.compare-prompt button,
+.compare-actions button,
+.payload-modal-actions button,
+.session-folders__new,
+.session-folder__actions button { border-radius: var(--radius-full); }
+
+/* Three places draw the browser's own button: the compare banner's Cancel,
+   the compare dialog's Edit, and the JSON view's Copy and Close. Given a
+   radius, the browser drops its own look for a heavy two-tone border, so
+   these keep that look themselves: its 1px line and fill at rest, hovered
+   and pressed, in the same box (its 2px border and 1px 6px padding). The
+   page is light only (color-scheme above). */
+.compare-prompt button,
+.compare-actions button,
+.payload-modal-actions button {
+  padding: 2px 7px;
+  border: 1px solid #767676;
+  background-color: #efefef;
+}
+.compare-prompt button:hover,
+.compare-actions button:hover,
+.payload-modal-actions button:hover {
+  border-color: #4f4f4f;
+  background-color: #e5e5e5;
+}
+.compare-prompt button:active,
+.compare-actions button:active,
+.payload-modal-actions button:active {
+  border-color: #8d8d8d;
+  background-color: #f5f5f5;
+}
+
+.as-btn-group--segmented > .as-btn { border-radius: 0; }
+.as-btn-group--segmented > .as-btn:first-child {
+  border-start-start-radius: var(--radius-full);
+  border-end-start-radius: var(--radius-full);
+}
+.as-btn-group--segmented > .as-btn:last-child {
+  border-start-end-radius: var(--radius-full);
+  border-end-end-radius: var(--radius-full);
+}
+
+
+/* ============================================================
+   15. The sign-in card
+
+   Cliff's sign-in card from the final design (user decision of
+   2026-10-14), look only; the values are the design's own
+   (components/auth/auth.css). A white card on the brand background, two
+   columns: an image panel, then the "Autosolutions | OS" lockup (its
+   black cut, Cliff Edit (2) of 2026-10-16), the heading, the providers and
+   the note. Below 820px it
+   stacks, as the design does. The card has its own class names, so the
+   older .as-auth card rules of both design-system copies do not reach it.
+   ============================================================ */
+
+.studio-signin-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-1200) var(--space-400);
+  background: var(--color-bg) url("/brand/auth-background.jpg") center / cover no-repeat;
+}
+.studio-signin {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20rem 26rem;
+  gap: var(--space-800);
+  width: 100%;
+  max-width: 50.5rem;
+  padding: var(--space-500);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: 20px;
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-400);
+  overflow: hidden;
+}
+/* The design's image panel: a placeholder until the artwork lands. */
+.studio-signin__media {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 26rem;
+  padding: var(--space-500);
+  border: 1px dashed var(--color-border);
+  border-radius: 14px;
+  background: var(--color-bg-surface-secondary);
+}
+.studio-signin__media-note {
+  font-size: var(--type-body-sm-size);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.studio-signin__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 var(--space-500) 0 0;
+}
+.studio-signin__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-400);
+  margin-block-start: 25px;
+}
+/* Cliff's lockup in its black cut, the design system's own
+   assets/brand/autosolutions-os-black.svg (6.5.1: his final logo), drawn as his
+   sign-in export draws it: three quarters of the column wide, its height
+   from the artwork's own ratio, centred in its box. */
+.studio-signin__os {
+  display: block;
+  width: 75%;
+  height: auto;
+  aspect-ratio: 4069.66 / 519.71;
+  background: center / contain no-repeat url("autosolutions-design-system/assets/brand/autosolutions-os-black.svg");
+}
+/* Pushed down to the providers, as in the design. The design shows a short
+   card only; when an error or a second button makes it taller, the heading
+   keeps 24px from the lockup instead of touching it. */
+.studio-signin__head {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-150);
+  margin-block-start: auto;
+  padding-block: var(--space-600) 50px;
+}
+.studio-signin__title {
+  margin: 0;
+  font-size: calc(var(--type-heading-xl-size) * 2.9);
+  line-height: 1.02;
+  font-weight: var(--type-heading-xl-weight);
+  letter-spacing: var(--type-heading-xl-tracking);
+  text-wrap: balance;
+  color: var(--color-text);
+}
+.studio-signin__description {
+  margin: 0;
+  font-size: var(--type-body-md-size);
+  line-height: var(--type-body-md-line);
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+/* The design puts an error between the heading and the providers. */
+.studio-signin__body > .as-banner { margin-block-end: var(--space-300); }
+.studio-signin__providers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-200);
+  padding-block-end: 20px;
+}
+.studio-signin__foot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-400);
+  padding-block-end: 40px;
+}
+.studio-signin__note {
+  margin: 0;
+  font-size: var(--type-body-sm-size);
+  line-height: var(--type-body-sm-line);
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+@media (max-width: 820px) {
+  .studio-signin {
+    grid-template-columns: minmax(0, 26rem);
+    justify-content: center;
+    gap: var(--space-500);
+  }
+  .studio-signin__media { min-height: 12rem; }
+  .studio-signin__body {
+    justify-content: flex-start;
+    padding: 0 var(--space-300) var(--space-300);
+  }
+}

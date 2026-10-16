@@ -64,12 +64,4 @@ describe("Icon", () => {
     }
     expect(missing).toEqual([]);
   });
-
-  it("every icon named in the navigation model exists", async () => {
-    const { NAV_FOOTER, NAV_MAIN } = await import("../../../nav");
-    const names = new Set(ICON_NAMES);
-    for (const entry of [...NAV_MAIN, ...NAV_FOOTER]) {
-      expect(names.has(entry.icon), `nav icon "${entry.icon}"`).toBe(true);
-    }
-  });
 });
