@@ -199,6 +199,9 @@ export function Shell({
 
   return (
     <OsWorkspaceFrame
+      /* The tab keeps the AutoSolutions icon from the page head, not the
+         menu glyph (owner's choice, 2026-10-17). */
+      favicon={false}
       os={os}
       appKey={APP_KEY}
       tools={STUDIO_TOOLS}

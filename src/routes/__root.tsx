@@ -14,7 +14,14 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
     ],
-    links: [{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
+    links: [
+      // Browser tab icon: the AutoSolutions colour square icon (Cliff Edit design,
+      // assets/brand/app-icon-pink.png), resized into public/.
+      { rel: "icon", href: "/favicon.ico?v=5", type: "image/x-icon", sizes: "16x16 32x32 48x48" },
+      { rel: "icon", href: "/favicon-32x32.png?v=5", type: "image/png", sizes: "32x32" },
+      { rel: "icon", href: "/favicon-192x192.png?v=5", type: "image/png", sizes: "192x192" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png?v=5", sizes: "180x180" },
+    ],
   }),
   component: RootDocument,
   // Unknown *paths* land here; unknown *hashes* are caught by `resolveScreen`
