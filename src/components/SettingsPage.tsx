@@ -7,6 +7,7 @@ import { fallbackConfig } from "../lib/presets";
 import { maxCountForModel, modelsForMedia } from "../lib/studio";
 import { readRunDefaults, updateRunDefaults } from "../lib/preferences";
 import type { StudioModel } from "../lib/types";
+import { WhatsNewButton } from "./WhatsNewButton";
 
 /**
  * Workspace settings.
@@ -45,7 +46,7 @@ export function SettingsPage() {
 
   return (
     <Shell screen="settings" maxWidth="var(--content-max-width-one-column)">
-      <PageHeader title="Settings" subtitle="Workspace defaults for this tenant." />
+      <PageHeader title="Settings" subtitle="Workspace defaults for this tenant." actions={<WhatsNewButton />} />
 
       <Card
         title="Theme"

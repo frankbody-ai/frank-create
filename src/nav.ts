@@ -8,6 +8,7 @@
  * which.
  */
 
+import { osSettingsTab } from "autosolutions-os/nav";
 import type { OsAppTool, OsTab } from "autosolutions-os/nav";
 
 export type Screen =
@@ -30,14 +31,16 @@ export function isInApp(screen: Screen): screen is InAppScreen {
  * Where each screen sits in the OS workspace frame, as the pathname plus query
  * the frame reads. The frame never sees the real URL: the screen comes from
  * this app's own hash router (and App's mode), and these are its names for it.
- * Settings is the rail footer's Settings; health is reachable by URL only.
+ * Settings is the tool's last tab (autosolutions-os 0.3.2: the rail's
+ * Settings opens the Hub's settings in every app); health is reachable by URL
+ * only.
  *
  * The studio's place carries its own mode, although its URL does not: the
  * tool is placed at the studio's place, and a bare "/" would claim every
  * place, so health would read as on the studio's row and a click on that row
- * from health would go nowhere. These places never reach the address bar
- * (the frame draws its tabs as buttons): a click goes through screenForPlace
- * and then the hash router.
+ * from health would go nowhere. A click goes through screenForPlace and then
+ * the hash router; the links the frame draws for its tabs carry each place's
+ * real address (linkFor).
  */
 const PLACES: Record<Screen, string> = {
   studio: "/?mode=studio",
@@ -92,14 +95,16 @@ export function screenForPlace(href: string): Screen | null {
  * The tool's views: opened (Marketing > Creative > Artificial Design Studio),
  * the frame's menu panel shows the tool's icon and name, then these tabs.
  * Icons are NAV_ICONS glyph ids, which the frame draws inline. Admin portal
- * is last and shown to everyone, as before: the page checks the role and
- * keeps its own Users / Feedback / Prompt agent tabs.
+ * is shown to everyone, as before: the page checks the role and keeps its
+ * own Users / Feedback / Prompt agent tabs. Settings is last, with the rail's
+ * settings glyph (osSettingsTab, autosolutions-os 0.3.2).
  */
 export const STUDIO_TABS: OsTab[] = [
   { id: "studio", label: "Studio", icon: "mkt-image-generator", path: PLACES.studio },
   { id: "prompt", label: "Prompt generator", icon: "agent", path: PLACES.prompt },
   { id: "upscaler", label: "Upscaler", icon: "ops-demand-plan", path: PLACES.upscaler },
   { id: "admin", label: "Admin portal", icon: "fin-approvals", path: PLACES.admin },
+  osSettingsTab(PLACES.settings),
 ];
 
 /** This app in the OS menu, by its menu-map id. */
@@ -117,6 +122,18 @@ export function hashFor(screen: Screen): string {
 
 export function navigate(screen: Screen): void {
   window.location.hash = hashFor(screen);
+}
+
+/**
+ * The address a frame place is a link to: the screen's hash on the app's
+ * root, so a middle-click, a Cmd or Ctrl click and Copy link open that screen
+ * from any page, one opened by its path (/settings) included. A plain click
+ * never follows it: the frame sends it through screenForPlace. Null for a
+ * place this app does not have, which the frame then draws as a button.
+ */
+export function linkFor(place: string): string | null {
+  const screen = screenForPlace(place);
+  return screen ? `/${hashFor(screen)}` : null;
 }
 
 /**

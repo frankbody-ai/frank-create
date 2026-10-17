@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Badge, Button, Card, IconButton, PageHeader, Spinner, Text, TextField } from "../ds";
 import { promptAgentChat, fetchPromptAgentConfig } from "../lib/api";
+import { WhatsNewButton } from "./WhatsNewButton";
 import {
   deletePromptChat,
   listPromptChats,
@@ -459,6 +460,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
             <Button icon="arrow-path" disabled={busy || !messages.length} onClick={startNewChat}>
               Start a new chat
             </Button>
+            <WhatsNewButton />
           </>
         }
       />
