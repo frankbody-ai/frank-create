@@ -2053,16 +2053,16 @@ matched to the system's
   gap: var(--space-400);
   margin-block-start: 25px;
 }
-/* Cliff's lockup in its black cut, the design system's own
-   assets/brand/autosolutions-os-black.svg (6.5.1: his final logo), drawn as his
-   sign-in export draws it: three quarters of the column wide, its height
-   from the artwork's own ratio, centred in its box. */
+/* Cliff's lockup in its colour cut, the design system's own
+   assets/brand/autosolutions-os-color.svg (6.7.0: magenta-to-violet mark,
+   black words), drawn as his sign-in export draws it: three quarters of the
+   column wide, its height from the artwork's own ratio, centred in its box. */
 .studio-signin__os {
   display: block;
   width: 75%;
   height: auto;
   aspect-ratio: 4069.66 / 519.71;
-  background: center / contain no-repeat url("autosolutions-design-system/assets/brand/autosolutions-os-black.svg");
+  background: center / contain no-repeat url("autosolutions-design-system/assets/brand/autosolutions-os-color.svg");
 }
 /* Pushed down to the providers, as in the design. The design shows a short
    card only; when an error or a second button makes it taller, the heading
