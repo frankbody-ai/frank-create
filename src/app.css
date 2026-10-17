@@ -2034,22 +2034,11 @@ matched to the system's
   box-shadow: var(--shadow-400);
   overflow: hidden;
 }
-/* The design's image panel: a placeholder until the artwork lands. */
+/* The design's image panel: CubeWaves from the design system (6.6.0) fills
+   it and brings its own dark ground. */
 .studio-signin__media {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
   min-height: 26rem;
-  padding: var(--space-500);
-  border: 1px dashed var(--color-border);
   border-radius: 14px;
-  background: var(--color-bg-surface-secondary);
-}
-.studio-signin__media-note {
-  font-size: var(--type-body-sm-size);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
 }
 .studio-signin__body {
   display: flex;

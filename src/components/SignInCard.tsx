@@ -1,11 +1,13 @@
 import React from "react";
 
+import { CubeWaves } from "autosolutions-design-system";
+
 import { Banner } from "../ds";
 
 /**
  * Cliff's sign-in card from the final design (user decision of 2026-10-14),
  * look only. A white card on the brand background: an image panel (the
- * design's placeholder until its artwork lands), then the "AutoSolutions |
+ * design system's cube waves, 6.6.0), then the "AutoSolutions |
  * OS" lockup, the heading, the error, the providers and the note.
  *
  * It takes the props the design system's SignIn took from AuthGate (title,
@@ -31,9 +33,7 @@ export function SignInPage({ children }: { children: React.ReactNode }) {
 export function SignInCard({ title, description, error, providers, note }: SignInCardProps) {
   return (
     <form className="studio-signin" onSubmit={(event) => event.preventDefault()}>
-      <div className="studio-signin__media" aria-hidden="true">
-        <span className="studio-signin__media-note">Image</span>
-      </div>
+      <CubeWaves className="studio-signin__media" />
 
       <div className="studio-signin__body">
         <div className="studio-signin__brand">
