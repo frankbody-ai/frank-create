@@ -42,6 +42,7 @@ import {
 } from "../lib/feedback";
 import { supabase } from "../lib/supabaseClient";
 import { PromptAgentTab } from "./admin/PromptAgentTab";
+import { WhatsNewButton } from "./WhatsNewButton";
 
 const ROLES: AppRole[] = ["user", "manager", "admin"];
 const BOARD_COLUMNS: { key: FeedbackStatus; label: string }[] = [
@@ -92,7 +93,7 @@ export function AdminPortal() {
   if (isAdmin === null) {
     return (
       <Shell screen="admin">
-        <PageHeader title="Admin portal" subtitle="Checking your role." />
+        <PageHeader title="Admin portal" subtitle="Checking your role." actions={<WhatsNewButton />} />
         <Card>
           <Spinner />
         </Card>
@@ -103,7 +104,7 @@ export function AdminPortal() {
   if (!isAdmin) {
     return (
       <Shell screen="admin" maxWidth="var(--content-max-width-one-column)">
-        <PageHeader title="Admin portal" />
+        <PageHeader title="Admin portal" actions={<WhatsNewButton />} />
         <Banner
           tone="critical"
           title="You don't have access to this portal"
@@ -127,9 +128,12 @@ export function AdminPortal() {
         subtitle="Manage roles, triage feedback, and edit the prompt generator agent."
         badge={<Badge tone="info">Admin only</Badge>}
         actions={
-          <Button icon="arrow-left" onClick={() => navigate("studio")}>
-            Back to studio
-          </Button>
+          <>
+            <Button icon="arrow-left" onClick={() => navigate("studio")}>
+              Back to studio
+            </Button>
+            <WhatsNewButton />
+          </>
         }
       />
 

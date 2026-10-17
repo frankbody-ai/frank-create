@@ -4,13 +4,12 @@ import type { OsFrameState } from "autosolutions-os/nav";
 // The glyph table on its own: the package index also loads the components.
 import { NAV_ICONS } from "autosolutions-design-system/components/media/navIcons.js";
 
-import { STUDIO_TABS, STUDIO_TOOLS, frameLocation, navigate, placeFor, resolveScreen, screenForPlace } from "./nav";
+import { STUDIO_TABS, STUDIO_TOOLS, frameLocation, linkFor, navigate, placeFor, resolveScreen, screenForPlace } from "./nav";
 import type { Screen } from "./nav";
 
 const SCREENS: Screen[] = ["studio", "prompt", "upscaler", "admin", "settings", "health"];
 
-const studioFrame = () =>
-  osFrame({ appKey: "frank_create", tools: STUDIO_TOOLS, settingsPath: placeFor("settings") });
+const studioFrame = () => osFrame({ appKey: "frank_create", tools: STUDIO_TOOLS });
 
 describe("the studio in the workspace frame", () => {
   it("draws every tab with a glyph the frame carries inline", () => {
@@ -19,11 +18,13 @@ describe("the studio in the workspace frame", () => {
     }
   });
 
-  it("keeps the old menu's screens and order, Admin portal last", () => {
-    expect(STUDIO_TABS.map((tab) => tab.id)).toEqual(["studio", "prompt", "upscaler", "admin"]);
+  it("keeps the old menu's screens and order, the app's own Settings last", () => {
+    expect(STUDIO_TABS.map((tab) => tab.id)).toEqual(["studio", "prompt", "upscaler", "admin", "settings"]);
     expect(STUDIO_TABS.map((tab) => tab.label)).toEqual([
-      "Studio", "Prompt generator", "Upscaler", "Admin portal",
+      "Studio", "Prompt generator", "Upscaler", "Admin portal", "Settings",
     ]);
+    // os 0.3.2: the rail's settings glyph, on the settings page's place.
+    expect(STUDIO_TABS[STUDIO_TABS.length - 1]).toMatchObject({ icon: "settings", path: placeFor("settings") });
   });
 
   it("names every screen by a place that leads back to it", () => {
@@ -44,7 +45,7 @@ describe("the studio in the workspace frame", () => {
     expect(at("prompt")).toEqual({ fn: "marketing", item: "image-generator", tab: "prompt" });
     expect(at("upscaler")).toEqual({ fn: "marketing", item: "image-generator", tab: "upscaler" });
     expect(at("admin")).toEqual({ fn: "marketing", item: "image-generator", tab: "admin" });
-    expect(at("settings")).toEqual({ fn: "settings", item: null, tab: null });
+    expect(at("settings")).toEqual({ fn: "marketing", item: "image-generator", tab: "settings" });
     // Health is no tab's place: Marketing, with nothing marked as current.
     expect(at("health")).toEqual({ fn: "marketing", item: null, tab: null });
 
@@ -54,7 +55,7 @@ describe("the studio in the workspace frame", () => {
     }
   });
 
-  it("turns a tab click into that screen, and Settings into the app's own page", () => {
+  it("turns a tab click into that screen, and the rail's Settings into the Hub's", () => {
     const frame = studioFrame();
     const click = (from: Screen, fn: string, item: string | null, tab: string | null, flags: Partial<OsFrameState> = {}) =>
       frame.targetFor(
@@ -70,7 +71,9 @@ describe("the studio in the workspace frame", () => {
     expect(click("health", "marketing", "image-generator", "studio")).toEqual({ href: "/?mode=studio", external: false });
     expect(click("health", "marketing", "image-generator", null)).toEqual({ href: "/?mode=studio", external: false });
     expect(screenForPlace("/?mode=studio")).toBe("studio");
-    expect(click("studio", "settings", null, null)).toEqual({ href: "/settings", external: false });
+    expect(click("studio", "marketing", "image-generator", "settings")).toEqual({ href: "/settings", external: false });
+    // os 0.3.2: the rail's Settings is the Hub's in every app.
+    expect(click("studio", "settings", null, null)).toEqual({ href: `${HUB_URL}/comms/settings`, external: true });
     // A state the frame did not report as a click on what it shows: no navigation.
     expect(click("prompt", "marketing", "image-generator", "prompt")).toBeNull();
     // The rail's Hub opens the Hub panel, which is no navigation; its rows and
@@ -108,12 +111,10 @@ describe("the studio in the workspace frame", () => {
     expect(again("prompt", "marketing", "image-generator", "prompt")).toEqual({ href: "/?mode=prompt", external: false });
     expect(again("upscaler", "marketing", "image-generator", "upscaler")).toEqual({ href: "/?mode=upscaler", external: false });
     expect(again("admin", "marketing", "image-generator", "admin")).toEqual({ href: "/admin", external: false });
-    // Settings on Settings is the same hash navigation it was.
-    expect(again("settings", "settings", null, null)).toEqual({ href: "/settings", external: false });
+    // Settings on Settings is the same hash navigation it was, from its tab.
+    expect(again("settings", "marketing", "image-generator", "settings")).toEqual({ href: "/settings", external: false });
     for (const screen of ["studio", "prompt", "upscaler", "admin", "settings"] as Screen[]) {
-      const target = screen === "settings"
-        ? again(screen, "settings", null, null)
-        : again(screen, "marketing", "image-generator", screen);
+      const target = again(screen, "marketing", "image-generator", screen);
       expect(screenForPlace(target?.href ?? ""), screen).toBe(screen);
     }
   });
@@ -140,6 +141,23 @@ describe("the studio in the workspace frame", () => {
 describe("the hash router the frame's clicks go through", () => {
   const at = (url: string) => window.history.replaceState(null, "", url);
   afterEach(() => at("/"));
+
+  it("writes every tab and the tool's row as a link to its screen's address", () => {
+    expect(STUDIO_TABS.map((tab) => linkFor(tab.path ?? ""))).toEqual([
+      "/#/", "/#/?mode=prompt", "/#/?mode=upscaler", "/#/admin", "/#/settings",
+    ]);
+    expect(linkFor(STUDIO_TOOLS[0].path ?? "")).toBe("/#/");
+    expect(linkFor("/somewhere-else")).toBeNull();
+    // Opened from any page (a middle-click, a new tab, a copied link), the
+    // address is the tab's screen, a page opened by its path included.
+    for (const from of ["/", "/settings", "/admin", "/health"]) {
+      for (const tab of STUDIO_TABS) {
+        at(from);
+        at(linkFor(tab.path ?? "") ?? "");
+        expect(resolveScreen().screen, `${from} -> ${tab.id}`).toBe(tab.id);
+      }
+    }
+  });
 
   it("reaches every screen from the app's own root", () => {
     for (const screen of SCREENS) {

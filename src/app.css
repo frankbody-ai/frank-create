@@ -40,6 +40,16 @@
   background-image: url("autosolutions-design-system/assets/brand/autosolutions-os-white.svg");
 }
 
+/* The consent page and the small-screen notice are sign-in surfaces: they
+   show the lockup's colour cut (magenta-to-violet mark, black words), as
+   every sign-in card does from design system 6.7.0 (owner's rule), loaded
+   from the same assets/brand file as this app's sign-in card. Only these two
+   logos: the frame's top bar draws its own. */
+.consent__logo.as-logo,
+.small-screen__logo.as-logo {
+  background-image: url("autosolutions-design-system/assets/brand/autosolutions-os-color.svg");
+}
+
 /* Sign-in card: the OS lockup spans the full card width, matching the
    Sign in with Google button. Width is set; height derives from the
    artwork's aspect ratio. Lives here so it beats the library's locked

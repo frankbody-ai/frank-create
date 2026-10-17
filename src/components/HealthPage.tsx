@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Badge, Button, Card, DataTable, PageHeader, Text } from "../ds";
 import type { DataTableColumn } from "../ds";
 import { Shell } from "../Shell";
+import { WhatsNewButton } from "./WhatsNewButton";
 import { fetchHealth, fetchModels } from "../lib/api";
 import { supabase } from "../lib/supabaseClient";
 
@@ -183,6 +184,7 @@ export function HealthPage() {
             <Button icon="document-duplicate" disabled={!results} onClick={() => void copyReport()}>
               {copied ? "Copied" : "Copy report"}
             </Button>
+            <WhatsNewButton />
           </>
         }
       />

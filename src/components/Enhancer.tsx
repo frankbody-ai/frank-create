@@ -3,6 +3,7 @@ import { Banner, Button, ButtonGroup, Card, Checkbox, Icon, PageHeader, Select, 
 import { createEnhancement, createReference, uploadReferenceToStorage } from "../lib/api";
 import { thumbnailUrl, upscaleModelsForMedia } from "../lib/studio";
 import BeforeAfterSlider from "./BeforeAfterSlider";
+import { WhatsNewButton } from "./WhatsNewButton";
 import type { Asset, EnhanceSettings, StudioModel } from "../lib/types";
 
 type MediaKind = "image" | "video";
@@ -222,6 +223,7 @@ export default function Enhancer({
       <PageHeader
         title="Upscaler"
         subtitle="Drop a still or clip in, pick an upscaler on the right, and run it."
+        actions={<WhatsNewButton />}
       />
 
       <div className="upscaler-columns">

@@ -98,6 +98,7 @@ import { useEventCallback } from "./lib/useEventCallback";
 // gradient, the blurred blob and the accent from one brand colour.
 /** Tiles painted per page in the Add references overlay, upload tile included. */
 import { TurnCard } from "./studio/TurnCard";
+import { WhatsNewButton } from "./components/WhatsNewButton";
 import {
   AssetPreviewMedia,
   CompareDialog,
@@ -2500,6 +2501,7 @@ export default function App() {
           title="Studio"
           subtitle="Brief the shot in plain English. References and settings are optional."
           badge={activeSession ? <Badge tone="neutral">{activeSession.name}</Badge> : null}
+          actions={<WhatsNewButton />}
         />
 
         {/* The session metric strip was removed on purpose — the studio starts here. */}

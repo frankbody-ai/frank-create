@@ -22,7 +22,7 @@ vi.mock("autosolutions-os", () => ({ myAdminScope: (os: unknown) => myAdminScope
 vi.mock("./lib/supabaseClient", () => ({ os: {}, hardSignOut: vi.fn(() => Promise.resolve()) }));
 vi.mock("./components/FeedbackWidget", () => ({ FeedbackWidget: () => null }));
 vi.mock("./components/ReleaseNotesModal", () => ({ ReleaseNotesModal: () => null }));
-vi.mock("./ds", () => ({ Icon: () => null }));
+vi.mock("./ds", () => ({ Button: () => null }));
 
 /* Shell keeps the admin answer for the page, so each case loads it afresh. */
 const loadShell = async () => (await import("./Shell")).Shell;
@@ -92,6 +92,37 @@ describe("the Admin row at the foot of the rail", () => {
   });
 });
 
+describe("the bar", () => {
+  beforeEach(() => {
+    myAdminScope.mockResolvedValue({ isPlatformAdmin: false, managesTenants: [], groupAdminOf: [] });
+  });
+
+  it("is the Hub's: nothing in its actions, and no settings page of the app's own", async () => {
+    const Shell = await loadShell();
+    for (const screen of ["studio", "prompt", "upscaler", "admin", "settings", "health"] as const) {
+      frames.length = 0;
+      const view = render(<Shell screen={screen} />);
+      expect(lastFrame(), screen).not.toHaveProperty("actions");
+      expect(lastFrame(), screen).not.toHaveProperty("settingsPath");
+      view.unmount();
+    }
+  });
+
+  it("keeps a screen's own search, and leaves the OS menu search to a screen with none", async () => {
+    const Shell = await loadShell();
+    const onSearchChange = vi.fn();
+    const own = render(<Shell screen="admin" search="ann" onSearchChange={onSearchChange} searchPlaceholder="Search operators by email" />);
+    expect((lastFrame() as unknown as { search: unknown }).search).toEqual({
+      placeholder: "Search operators by email", value: "ann", onChange: onSearchChange,
+    });
+    own.unmount();
+    render(<Shell screen="settings" />);
+    const search = (lastFrame() as unknown as { search: { onChange?: unknown; placeholder?: string } }).search;
+    expect(search.onChange).toBeUndefined();
+    expect(search.placeholder).toBeUndefined();
+  });
+});
+
 describe("a click in the frame", () => {
   beforeEach(() => {
     myAdminScope.mockResolvedValue({ isPlatformAdmin: false, managesTenants: [], groupAdminOf: [] });
@@ -127,11 +158,12 @@ describe("a click in the frame", () => {
     expect(lastFrame().location).toBe(shown);
   });
 
-  it("comes from a button, as on the old side nav: the studio's places are not addresses", async () => {
+  it("comes from a link to the screen's address, as the Hub's rows are links", async () => {
     const Shell = await loadShell();
     render(<Shell screen="prompt" />);
-    // os 0.2.4 and later draw an app's own rows and tabs as links unless told not to.
-    expect(frames[frames.length - 1]).toHaveProperty("hrefFor", null);
+    const hrefFor = (lastFrame() as unknown as { hrefFor: (path: string) => string | null }).hrefFor;
+    expect(hrefFor("/?mode=prompt")).toBe("/#/?mode=prompt");
+    expect(hrefFor("/settings")).toBe("/#/settings");
   });
 
   it("is the studio's own mode change inside App, with no hash written", async () => {

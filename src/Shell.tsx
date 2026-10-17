@@ -2,12 +2,12 @@ import React from "react";
 import { myAdminScope } from "autosolutions-os";
 import { OsWorkspaceFrame } from "autosolutions-os/frame";
 
-import { Icon } from "./ds";
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { ReleaseNotesModal } from "./components/ReleaseNotesModal";
+import { WhatsNewContext } from "./components/WhatsNewButton";
 import { hardSignOut, os } from "./lib/supabaseClient";
 import { APP_KEY } from "./lib/coreConfig";
-import { STUDIO_TOOLS, frameLocation, navigate, placeFor, resolveScreen, screenForPlace } from "./nav";
+import { STUDIO_TOOLS, frameLocation, linkFor, navigate, resolveScreen, screenForPlace } from "./nav";
 import type { Screen } from "./nav";
 
 export interface ShellProps {
@@ -18,12 +18,13 @@ export interface ShellProps {
    * Only `App` passes this; everywhere else a menu click is a real navigation.
    */
   onSelectInApp?: (screen: Screen) => void;
-  /** Top-bar search. Each screen filters its own primary list with this. */
+  /**
+   * Top-bar search. Each screen that has one filters its own primary list
+   * with this; a screen without one gets the OS menu search.
+   */
   search?: string;
   onSearchChange?: (value: string) => void;
   searchPlaceholder?: string;
-  /** Extra controls in the top bar, before What's new and the company plate. */
-  actions?: React.ReactNode;
   /** Rendered in the menu panel under the tool's tabs: the session organiser. */
   navExtra?: React.ReactNode;
   /**
@@ -141,18 +142,23 @@ function useManages(): boolean {
 /**
  * The application shell: the AutoSolutions OS workspace frame every app on the
  * core wears (autosolutions-os/frame). The 56px bar with the OS lockup, the
- * search and the company plate with its chevron; the rail (Hub, Finance,
- * Marketing, Commercial, Operations; Admin, Settings, Sign out at the foot);
- * and the menu panel opened on this app, Marketing > Creative > Artificial
- * Design Studio: the tool's icon and name, then its screens as the tool's
- * tabs, the session organiser under them.
+ * search and the company plate with its chevron, as the Hub's bar; the rail
+ * (Hub, Finance, Marketing, Commercial, Operations; Admin, Settings, Sign out
+ * at the foot); and the menu panel opened on this app, Marketing > Creative >
+ * Artificial Design Studio: the tool's icon and name, then its screens as the
+ * tool's tabs, Settings last, the session organiser under them.
  *
  * The frame follows `screen`, which this app's hash router (and App's mode)
  * decides, and reports only clicks: a tab, the one already shown included,
  * becomes the same mode change or hash navigation the old side nav made.
- * The tabs stay buttons, as the old side nav's items were: the studio's
- * places are not addresses. The rail's Hub opens the Hub panel; its rows,
- * other apps' tools and Admin open in the same tab, through the catalogue.
+ * The tabs and the tool's row are links to each screen's address (linkFor),
+ * as in the Hub, so a middle-click, a Cmd or Ctrl click and Copy link open
+ * that screen; a plain click still goes through the hash router. The rail's
+ * Hub opens the Hub panel; its rows, other apps' tools, Admin and the rail's
+ * Settings (the Hub's settings, autosolutions-os 0.3.2) open in the same tab.
+ *
+ * Nothing goes in the bar's actions: "What's new" is in each page's header
+ * (WhatsNewButton), and opens the release notes kept here.
  */
 export function Shell({
   screen,
@@ -160,12 +166,12 @@ export function Shell({
   search,
   onSearchChange,
   searchPlaceholder = "Search sessions and picks",
-  actions,
   navExtra,
   maxWidth = "var(--page-max-width)",
   children,
 }: ShellProps) {
   const [notesOpen, setNotesOpen] = React.useState(false);
+  const openNotes = React.useCallback(() => setNotesOpen(true), []);
   /* Read once: every route that renders the shell renders in the browser only. */
   const [narrow] = React.useState(
     () => typeof window !== "undefined" && window.matchMedia(NARROW).matches,
@@ -210,43 +216,30 @@ export function Shell({
         const target = screenForPlace(href);
         if (target) go(target);
       }}
-      hrefFor={null}
-      /* The frame draws the search box only for a screen that searches, as the
-         old top bar did. Its value stays controlled on every render, so a
-         screen that adds its search after a first render (AdminPortal, once it
-         knows the role) never switches the input from uncontrolled to
-         controlled. */
+      hrefFor={linkFor}
+      /* A screen that searches keeps its own search in the bar; on any other
+         screen the bar's field is the OS menu search (autosolutions-os 0.3.2).
+         The value stays controlled on every render, so a screen that adds its
+         search after a first render (AdminPortal, once it knows the role)
+         never switches the input from uncontrolled to controlled. */
       search={{
         placeholder: onSearchChange ? searchPlaceholder : undefined,
         value: search ?? "",
         onChange: onSearchChange,
       }}
-      actions={
-        <>
-          {actions}
-          <button
-            type="button"
-            className="as-topbar__target"
-            aria-label="What's new"
-            title="What's new"
-            onClick={() => setNotesOpen(true)}
-          >
-            <Icon source="sparkles" size={20} tone="inherit" />
-          </button>
-        </>
-      }
       companySwitch="os"
       panelFooter={navExtra == null ? undefined : <div className="studio-panel-extra">{navExtra}</div>}
       onSignOut={signOut}
       admin={manages}
-      settingsPath={placeFor("settings")}
       {...(narrow ? { initialOpen: false } : {})}
     >
-      <div className="studio-page" style={column} ref={columnRef}>
-        {children}
-        <FeedbackWidget variant="fixed" />
-        <ReleaseNotesModal forceOpen={notesOpen} onClose={() => setNotesOpen(false)} />
-      </div>
+      <WhatsNewContext.Provider value={openNotes}>
+        <div className="studio-page" style={column} ref={columnRef}>
+          {children}
+          <FeedbackWidget variant="fixed" />
+          <ReleaseNotesModal forceOpen={notesOpen} onClose={() => setNotesOpen(false)} />
+        </div>
+      </WhatsNewContext.Provider>
     </OsWorkspaceFrame>
   );
 }
