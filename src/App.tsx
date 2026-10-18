@@ -2415,7 +2415,7 @@ export default function App() {
       }
       search={roundSearch}
       onSearchChange={setRoundSearch}
-      searchPlaceholder="Search sessions and picks"
+      searchLabel="Search sessions and picks"
       maxWidth="var(--page-max-width-wide)"
     >
       {desktopNotice ? (

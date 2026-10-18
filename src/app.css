@@ -5,7 +5,7 @@
    redefines a token it owns. What belongs here is only what the system does not
    cover: the dark rounds panel, run cards and the output grid, the reference
    dock and @-mention picker, the composer, the overlays, the sign-in plate and
-   the small-screen gate.
+   the small-screen notice.
 
    Conventions, matching the system:
    - 8px radius for anything you click, 12px for anything that contains things.
@@ -40,7 +40,7 @@
   background-image: url("autosolutions-design-system/assets/brand/autosolutions-os-white.svg");
 }
 
-/* The consent page and the small-screen notice are sign-in surfaces: they
+/* The consent page (a sign-in surface) and the small-screen notice's card
    show the lockup's colour cut (magenta-to-violet mark, black words), as
    every sign-in card does from design system 6.7.0 (owner's rule), loaded
    from the same assets/brand file as this app's sign-in card. Only these two
@@ -1646,18 +1646,27 @@ matched to the system's
 .consent__loading { display: flex; align-items: center; gap: var(--space-200); }
 .consent__actions { display: flex; justify-content: flex-end; gap: var(--space-200); }
 
-/* The gate is CSS-only: it hides every sibling of #root below the breakpoint,
-   so it works before any JS measures anything. */
+/* Below 1024px the studio's screens do not lay out yet. The frame stays at
+   every width, as in every app (bar, rail and menus), and the work sheet shows
+   the notice in the page's place: Shell renders both, and this decides. It is
+   CSS-only, so it works before any JS measures anything. Above it the page's
+   wrapper draws no box of its own, so the page column lays out as before. */
+.studio-page__screen { display: contents; }
 .small-screen { display: none; }
 @media (max-width: 1023px) {
-  #root > *:not(.small-screen) { display: none !important; }
+  .studio-page__screen { display: none; }
+  /* Shell's column cap (an inline style) is the page's; the notice takes the
+     sheet's whole width, so the card keeps its 420px or the screen's width. */
+  .studio-page { max-width: none !important; }
   .small-screen {
     display: flex;
-    align-items: center;
     justify-content: center;
-    min-height: 100vh;
-    padding: var(--space-600);
-    background: var(--color-bg);
+    /* With the menu open on a phone the sheet narrows: the notice keeps the
+       width it has with the menu closed and runs on past the screen's edge,
+       as every app's page does, rather than squeeze into the strip beside
+       the menu. */
+    min-width: min(420px, calc(100vw - var(--ws-rail-width) - var(--ws-hairline) - 2 * var(--space-400)));
+    padding-block: var(--space-600);
   }
   .small-screen__card {
     display: flex;
@@ -1673,6 +1682,13 @@ matched to the system's
   }
   /* Cliff's compact lockup height, as on the consent page. */
   .small-screen__logo { width: auto; height: 1.5rem; }
+}
+
+/* On a phone the open menu spans the screen, and the Feedback pill sat over
+   it. Nothing is drawn over the frame's menu in any other app, so the pill
+   stands down while the menu is open there and comes back when it closes. */
+@media (max-width: 767px) {
+  .as-frame.as-ws:has(> .as-frame__body > .as-frame__content > .as-frame__panel.is-open) .feedback-fab { display: none; }
 }
 
 /* ============================================================

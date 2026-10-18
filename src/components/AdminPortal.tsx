@@ -121,7 +121,7 @@ export function AdminPortal() {
       screen="admin"
       search={search}
       onSearchChange={setSearch}
-      searchPlaceholder={tab === "users" ? "Search operators by email" : "Search feedback"}
+      searchLabel={tab === "users" ? "Search operators by email" : "Search feedback"}
     >
       <PageHeader
         title="Admin portal"

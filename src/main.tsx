@@ -4,7 +4,6 @@ import App from "./App";
 import { AuthGate } from "./AuthGate";
 import { StatusBanner } from "./components/StatusBanner";
 import { ErrorToast } from "./components/ErrorToast";
-import { SmallScreenNotice } from "./components/SmallScreenNotice";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 // Eager: routes/__root.tsx already imports this for its notFoundComponent,
 // so a lazy chunk here would only add a Suspense boundary for nothing.
@@ -80,7 +79,6 @@ function Router() {
 export function StudioRoot() {
   return (
     <React.StrictMode>
-      <SmallScreenNotice />
       <StatusBanner />
       <ErrorToast />
       <AppErrorBoundary>
