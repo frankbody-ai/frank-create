@@ -16,7 +16,7 @@
         "@tanstack/react-start": "1.168.32",
         "@tanstack/router-plugin": "1.168.23",
         "autosolutions-design-system": "^6.7.0",
-        "autosolutions-os": "^0.3.2",
+        "autosolutions-os": "^0.3.3",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "tailwindcss": "^4.2.1",
@@ -434,7 +434,7 @@
 
     "autosolutions-design-system": ["autosolutions-design-system@6.7.0", "", { "peerDependencies": { "react": ">=18" } }, "sha512-wf0tWiWXHZjz3XcF7JRps7gcjba78fW6ajNMzsA7qwpTvIg2Bv7u5tu3kp+sLxhS3wzFIqrXBJm21oePbS/4kw=="],
 
-    "autosolutions-os": ["autosolutions-os@0.3.2", "", { "peerDependencies": { "@supabase/supabase-js": ">=2.40.0", "autosolutions-design-system": ">=6.5.0 <7", "react": ">=18" }, "optionalPeers": ["autosolutions-design-system", "react"] }, "sha512-AqOcSbtTWK/KNI5Th17cE26ZT6e6FJmuy0MiDhHBf5Mnw1MiYI+gKzPs9NtD1jFoICS+q1hqBzgu2V1oNR+rPw=="],
+    "autosolutions-os": ["autosolutions-os@0.3.3", "", { "peerDependencies": { "@supabase/supabase-js": ">=2.40.0", "autosolutions-design-system": ">=6.5.0 <7", "react": ">=18" }, "optionalPeers": ["autosolutions-design-system", "react"] }, "sha512-N0X1uZDKU7aTrg0/UdDWm8b/UTqLILei4CtNopM6dmYTeKK8Q6FcJrkMaviXF+7Kl+P3SduCGP9cre6clvH7/w=="],
 
     "babel-dead-code-elimination": ["babel-dead-code-elimination@1.0.12", "", { "dependencies": { "@babel/core": "^7.23.7", "@babel/parser": "^7.23.6", "@babel/traverse": "^7.23.7", "@babel/types": "^7.23.6" } }, "sha512-GERT7L2TiYcYDtYk1IpD+ASAYXjKbLTDPhBtYj7X1NuRMDTMtAx9kyBenub1Ev41lo91OHCKdmP+egTDmfQ7Ig=="],
 
