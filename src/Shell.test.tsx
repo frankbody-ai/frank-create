@@ -2,7 +2,8 @@ import React from "react";
 import { act, cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-/* The frame stands in as a probe: it keeps every set of props it is given. */
+/* The frame stands in as a probe: it keeps every set of props it is given,
+   and draws a bar with the design system's field, named by its placeholder. */
 const frames: Record<string, unknown>[] = [];
 const lastFrame = () => frames[frames.length - 1] as {
   location: string;
@@ -15,14 +16,29 @@ const myAdminScope = vi.fn();
 vi.mock("autosolutions-os/frame", () => ({
   OsWorkspaceFrame: (props: Record<string, unknown> & { children?: React.ReactNode }) => {
     frames.push(props);
-    return <>{props.children}</>;
+    const word = (props.search as { placeholder?: string } | undefined)?.placeholder ?? "Search";
+    return (
+      <div className="as-frame as-ws">
+        <header className="as-topbar">
+          <label className="as-topbar__search">
+            <input type="search" placeholder={word} aria-label={word} />
+          </label>
+        </header>
+        <div className="as-frame__content">{props.children}</div>
+      </div>
+    );
   },
 }));
 vi.mock("autosolutions-os", () => ({ myAdminScope: (os: unknown) => myAdminScope(os) }));
 vi.mock("./lib/supabaseClient", () => ({ os: {}, hardSignOut: vi.fn(() => Promise.resolve()) }));
 vi.mock("./components/FeedbackWidget", () => ({ FeedbackWidget: () => null }));
 vi.mock("./components/ReleaseNotesModal", () => ({ ReleaseNotesModal: () => null }));
-vi.mock("./ds", () => ({ Button: () => null }));
+vi.mock("./ds", () => ({
+  Button: () => null,
+  Text: ({ children, as: Tag = "span", id }: { children?: React.ReactNode; as?: React.ElementType; id?: string }) => (
+    <Tag id={id}>{children}</Tag>
+  ),
+}));
 
 /* Shell keeps the admin answer for the page, so each case loads it afresh. */
 const loadShell = async () => (await import("./Shell")).Shell;
@@ -111,15 +127,45 @@ describe("the bar", () => {
   it("keeps a screen's own search, and leaves the OS menu search to a screen with none", async () => {
     const Shell = await loadShell();
     const onSearchChange = vi.fn();
-    const own = render(<Shell screen="admin" search="ann" onSearchChange={onSearchChange} searchPlaceholder="Search operators by email" />);
+    const own = render(<Shell screen="admin" search="ann" onSearchChange={onSearchChange} searchLabel="Search operators by email" />);
     expect((lastFrame() as unknown as { search: unknown }).search).toEqual({
-      placeholder: "Search operators by email", value: "ann", onChange: onSearchChange,
+      placeholder: "Search", value: "ann", onChange: onSearchChange,
     });
     own.unmount();
     render(<Shell screen="settings" />);
     const search = (lastFrame() as unknown as { search: { onChange?: unknown; placeholder?: string } }).search;
     expect(search.onChange).toBeUndefined();
     expect(search.placeholder).toBeUndefined();
+  });
+
+  it("reads Search, the Hub's word, and names the field by what the screen searches", async () => {
+    const Shell = await loadShell();
+    const field = () => document.querySelector<HTMLInputElement>(".as-topbar__search input");
+    const own = render(<Shell screen="health" search="" onSearchChange={vi.fn()} searchLabel="Search checks" />);
+    expect(field()?.placeholder).toBe("Search");
+    expect(field()?.getAttribute("aria-label")).toBe("Search checks");
+    own.unmount();
+    render(<Shell screen="settings" />);
+    expect(field()?.placeholder).toBe("Search");
+    expect(field()?.getAttribute("aria-label")).toBe("Search");
+  });
+});
+
+describe("the work sheet", () => {
+  beforeEach(() => {
+    myAdminScope.mockResolvedValue({ isPlatformAdmin: false, managesTenants: [], groupAdminOf: [] });
+  });
+
+  it("holds the small-screen notice next to the page, inside the frame", async () => {
+    const Shell = await loadShell();
+    const view = render(
+      <Shell screen="studio">
+        <p>the page</p>
+      </Shell>,
+    );
+    const column = view.container.querySelector(".as-frame .as-frame__content .studio-page");
+    expect(column?.querySelector(":scope > .small-screen")?.textContent).toContain("Open this on a desktop");
+    expect(column?.querySelector(":scope > .studio-page__screen")?.textContent).toBe("the page");
   });
 });
 

@@ -170,7 +170,7 @@ export function HealthPage() {
       maxWidth="var(--content-max-width-one-column)"
       search={search}
       onSearchChange={setSearch}
-      searchPlaceholder="Search checks"
+      searchLabel="Search checks"
     >
       <PageHeader
         title="App health"

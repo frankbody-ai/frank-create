@@ -4,6 +4,7 @@ import { OsWorkspaceFrame } from "autosolutions-os/frame";
 
 import { FeedbackWidget } from "./components/FeedbackWidget";
 import { ReleaseNotesModal } from "./components/ReleaseNotesModal";
+import { SmallScreenNotice } from "./components/SmallScreenNotice";
 import { WhatsNewContext } from "./components/WhatsNewButton";
 import { hardSignOut, os } from "./lib/supabaseClient";
 import { APP_KEY } from "./lib/coreConfig";
@@ -20,11 +21,13 @@ export interface ShellProps {
   onSelectInApp?: (screen: Screen) => void;
   /**
    * Top-bar search. Each screen that has one filters its own primary list
-   * with this; a screen without one gets the OS menu search.
+   * with this; a screen without one gets the OS menu search. The field reads
+   * "Search" on every screen, as the Hub's does; `searchLabel` is its
+   * accessible name, which says what this screen searches.
    */
   search?: string;
   onSearchChange?: (value: string) => void;
-  searchPlaceholder?: string;
+  searchLabel?: string;
   /** Rendered in the menu panel under the tool's tabs: the session organiser. */
   navExtra?: React.ReactNode;
   /**
@@ -37,6 +40,25 @@ export interface ShellProps {
 
 /** The frame opens with its menu closed on a phone-width screen. */
 const NARROW = "(max-width: 767px)";
+
+/** The bar's field, in every app as in the Hub (owner's rule: one bar everywhere). */
+const SEARCH = "Search";
+
+/**
+ * The design system names the bar's field by its placeholder, which is
+ * "Search" on every screen. A screen with a search of its own gives the field
+ * back the name that says what it searches, once the bar is drawn; the OS
+ * menu search keeps "Search". The bar is found from the page column, as the
+ * list fitting below finds it.
+ */
+function useSearchFieldName(column: React.RefObject<HTMLDivElement | null>, name: string) {
+  React.useEffect(() => {
+    const field = column.current
+      ?.closest(".as-frame")
+      ?.querySelector<HTMLInputElement>(":scope > .as-topbar .as-topbar__search input");
+    if (field && field.getAttribute("aria-label") !== name) field.setAttribute("aria-label", name);
+  });
+}
 
 /**
  * Lists a page opens upward from its own control: the brief's @ reference
@@ -165,7 +187,7 @@ export function Shell({
   onSelectInApp,
   search,
   onSearchChange,
-  searchPlaceholder = "Search sessions and picks",
+  searchLabel = "Search sessions and picks",
   navExtra,
   maxWidth = "var(--page-max-width)",
   children,
@@ -178,6 +200,7 @@ export function Shell({
   );
   const columnRef = React.useRef<HTMLDivElement>(null);
   useListsInsideSheet(columnRef);
+  useSearchFieldName(columnRef, onSearchChange ? searchLabel : SEARCH);
   const manages = useManages();
   const [visit, setVisit] = React.useState(0);
 
@@ -219,11 +242,12 @@ export function Shell({
       hrefFor={linkFor}
       /* A screen that searches keeps its own search in the bar; on any other
          screen the bar's field is the OS menu search (autosolutions-os 0.3.2).
+         Either way the field reads "Search", the Hub's word.
          The value stays controlled on every render, so a screen that adds its
          search after a first render (AdminPortal, once it knows the role)
          never switches the input from uncontrolled to controlled. */
       search={{
-        placeholder: onSearchChange ? searchPlaceholder : undefined,
+        placeholder: onSearchChange ? SEARCH : undefined,
         value: search ?? "",
         onChange: onSearchChange,
       }}
@@ -235,7 +259,10 @@ export function Shell({
     >
       <WhatsNewContext.Provider value={openNotes}>
         <div className="studio-page" style={column} ref={columnRef}>
-          {children}
+          {/* Below 1024px the sheet shows the notice in the page's place
+              (app.css); the frame around it stays, as in every app. */}
+          <SmallScreenNotice />
+          <div className="studio-page__screen">{children}</div>
           <FeedbackWidget variant="fixed" />
           <ReleaseNotesModal forceOpen={notesOpen} onClose={() => setNotesOpen(false)} />
         </div>
