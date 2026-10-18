@@ -23,7 +23,7 @@
     "@tanstack/react-start": "1.168.32",
     "@tanstack/router-plugin": "1.168.23",
     "autosolutions-design-system": "^6.7.0",
-    "autosolutions-os": "^0.3.2",
+    "autosolutions-os": "^0.3.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "tailwindcss": "^4.2.1",
