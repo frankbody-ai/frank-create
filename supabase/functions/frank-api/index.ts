@@ -189,21 +189,22 @@ async function storeOrFallback(args: {
 }
 
 const DEFAULT_MODEL = {
-  id: "google-nb-pro",
-  label: "Gemini 3 Pro Image / Nano Banana Pro",
-  short_label: "Nano Banana Pro",
+  // The default image model since 19 October 2026 (owner): Nano Banana 2.1.
+  id: "google-nb-2-1",
+  label: "Gemini Nano Banana 2.1 / Nano Banana 2.1",
+  short_label: "Nano Banana 2.1",
   provider: "openrouter",
-  provider_model: "google/gemini-3-pro-image",
+  provider_model: "google/gemini-nano-banana-2.1",
   status: "ready" as const,
   badge: "4K",
   max_resolution_label: "4K",
-  description: "Nano Banana Pro (Gemini 3 Pro Image) via OpenRouter — 1K / 2K / 4K, wide aspect enum, up to 14 reference images.",
+  description: "Nano Banana 2.1 via OpenRouter — Google's newest Flash-tier image model, after Nano Banana 2 and Pro: better product recontextualization, 1K / 2K / 4K, up to 14 refs.",
   capabilities: { generation: true, edit: true, masked_edit: false, video: false },
-  allowed_aspect_ratios: ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"],
+  allowed_aspect_ratios: ["1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9"],
   allowed_image_sizes: ["1K", "2K", "4K"],
   reference_image_limit: 14,
   max_count: 4,
-  cost_label: "premium",
+  cost_label: "fast",
   configured: true,
   missing_env_vars: [],
 };
@@ -405,6 +406,8 @@ const MODEL_MAP: Record<string, string> = {
 // roster, through its dedicated /v1/images and /v1/videos endpoints. Only the
 // upscaler path stays on Replicate.
 const OPENROUTER_IMAGE_MAP: Record<string, string> = {
+  "google-nb-2-1": "google/gemini-nano-banana-2.1",
+  "nano-banana-2-1": "google/gemini-nano-banana-2.1",
   "google-nb-pro": "google/gemini-3-pro-image",
   "nano-banana-pro": "google/gemini-3-pro-image",
   "google-nb-2": "google/gemini-3.1-flash-image",
@@ -1503,7 +1506,7 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
   if (!prompt.trim()) throw new Error("Prompt is required");
 
   const turnId = shard?.turnId ?? crypto.randomUUID();
-  const modelId: string = body.model || "google-nb-pro";
+  const modelId: string = body.model || "google-nb-2-1";
   const reqSettings: any = body.settings || {};
   const settingsSnapshot: any = {
     kind: body.kind || "generate",
@@ -1532,6 +1535,7 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
 
 
   const MAX_COUNT_BY_MODEL: Record<string, number> = {
+    "google-nb-2-1": 4,
     "google-nb-pro": 4,
     "google-nb-2": 4,
     "openai-gpt-image-2-5-sunburst": 10,

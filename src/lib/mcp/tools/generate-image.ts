@@ -12,7 +12,7 @@ export default defineTool({
     prompt: z.string().describe("The full image prompt / brief to render."),
     model: z
       .string()
-      .describe("Model id from list_studio_options, e.g. 'nano-banana-pro'. Defaults to nano-banana-pro.")
+      .describe("Model id from list_studio_options, e.g. 'nano-banana-2-1'. Defaults to nano-banana-2-1.")
       .optional(),
     aspect_ratio: z.string().describe("Aspect ratio such as '1:1', '3:4', '16:9'.").optional(),
     size: z.string().describe("Size or quality tier the model allows, e.g. '1K', '2K', '1536x1024'.").optional(),
@@ -38,7 +38,7 @@ export default defineTool({
         body: {
           session_id: input.session_id,
           kind: refs.length ? "edit" : "generate",
-          model: input.model || "nano-banana-pro",
+          model: input.model || "nano-banana-2-1",
           prompt,
           frank_body_mode: false,
           settings: {
