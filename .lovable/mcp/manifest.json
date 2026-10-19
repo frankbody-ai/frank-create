@@ -113,7 +113,7 @@
             },
             "model": {
               "type": "string",
-              "description": "Model id from list_studio_options, e.g. 'nano-banana-pro'. Defaults to nano-banana-pro."
+              "description": "Model id from list_studio_options, e.g. 'nano-banana-2-1'. Defaults to nano-banana-2-1."
             },
             "aspect_ratio": {
               "type": "string",
