@@ -71,6 +71,28 @@ export const fallbackConfig: FrankConfig = {
 
   models: [
     {
+      // The default image model since 19 October 2026 (owner).
+      id: "google-nb-2-1",
+      label: "Gemini Nano Banana 2.1 / Nano Banana 2.1",
+      short_label: "Nano Banana 2.1",
+      provider: "openrouter",
+      provider_model: "google/gemini-nano-banana-2.1",
+      status: "ready",
+      badge: "4K",
+      max_resolution_label: "4K",
+      description: "Nano Banana 2.1 via OpenRouter — Google's newest Flash-tier image model, after Nano Banana 2 and Pro: better product recontextualization, 1K / 2K / 4K, up to 14 refs.",
+      capabilities: { generation: true, edit: true, masked_edit: false, video: false },
+      allowed_aspect_ratios: [
+        "1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9"
+      ],
+      allowed_image_sizes: ["1K", "2K", "4K"],
+      reference_image_limit: 14,
+      max_count: 4,
+      cost_label: "fast",
+      configured: true,
+      missing_env_vars: []
+    },
+    {
       id: "google-nb-pro",
       label: "Gemini 3 Pro Image / Nano Banana Pro",
       short_label: "Nano Banana Pro",

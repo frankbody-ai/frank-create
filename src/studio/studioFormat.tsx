@@ -186,6 +186,40 @@ export const LAST_MODEL_KEY = "frank.lastUsedModelId";
 
 export const LAST_MODEL_BY_MEDIA_KEY = "frank.lastUsedModelIdByMedia";
 
+/** The image model a run starts on (owner, 19 October 2026: Nano Banana 2.1). */
+export const DEFAULT_IMAGE_MODEL_ID = "google-nb-2-1";
+
+/** The default this browser has already moved to. */
+export const DEFAULT_MODEL_SEEN_KEY = "frank.defaultImageModelSeen";
+
+/**
+ * When the default image model changes, an image model remembered from before
+ * is set aside once, so everyone starts on the new default (the What's new
+ * note says so). Whatever the person picks after that is remembered as usual.
+ * A remembered video model is kept.
+ */
+export function adoptNewDefaultModel(): void {
+  try {
+    if (typeof window === "undefined") return;
+    if (window.localStorage.getItem(DEFAULT_MODEL_SEEN_KEY) === DEFAULT_IMAGE_MODEL_ID) return;
+    window.localStorage.setItem(DEFAULT_MODEL_SEEN_KEY, DEFAULT_IMAGE_MODEL_ID);
+    let byMedia: Record<string, string> = {};
+    try {
+      byMedia = JSON.parse(window.localStorage.getItem(LAST_MODEL_BY_MEDIA_KEY) ?? "{}") ?? {};
+    } catch {
+      byMedia = {};
+    }
+    if (byMedia.image) {
+      delete byMedia.image;
+      window.localStorage.setItem(LAST_MODEL_BY_MEDIA_KEY, JSON.stringify(byMedia));
+    }
+    const last = window.localStorage.getItem(LAST_MODEL_KEY);
+    if (last && last !== byMedia.video) window.localStorage.removeItem(LAST_MODEL_KEY);
+  } catch {
+    /* storage blocked — nothing was remembered either */
+  }
+}
+
 export function readLastUsedModelId(media?: "image" | "video"): string | null {
   try {
     if (typeof window === "undefined") return null;
@@ -228,6 +262,7 @@ export function preferredStudioModel(models: StudioModel[], preferredId?: string
   const usable = (model: StudioModel) => model.configured !== false && model.legacy !== true;
   return (
     (preferredId ? models.find((model) => model.id === preferredId && usable(model)) : undefined) ??
+    models.find((model) => model.id === DEFAULT_IMAGE_MODEL_ID && usable(model)) ??
     models.find((model) => model.id === "google-nb-pro" && usable(model)) ??
     models.find(usable) ??
     models[0] ??

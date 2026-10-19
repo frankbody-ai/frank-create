@@ -120,6 +120,8 @@ import {
   modelReferenceLimitAction,
   preferredStudioModel,
   promptForTask,
+  adoptNewDefaultModel,
+  DEFAULT_IMAGE_MODEL_ID,
   readLastUsedModelId,
   referenceUrlForGeneration,
   safeFileStem,
@@ -162,9 +164,11 @@ export default function App() {
   const [turns, setTurns] = useState<StudioTurn[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [prompt, setPrompt] = useState("");
-  const [selectedModelId, setSelectedModelId] = useState(
-    () => preferredStudioModel(fallbackConfig.models, readLastUsedModelId()).id
-  );
+  const [selectedModelId, setSelectedModelId] = useState(() => {
+    // A new default image model starts everyone on it once (studioFormat).
+    adoptNewDefaultModel();
+    return preferredStudioModel(fallbackConfig.models, readLastUsedModelId()).id;
+  });
   const [expandedPromptTurnIds, setExpandedPromptTurnIds] = useState<string[]>([]);
   const [selectedPresetKey, setSelectedPresetKey] = useState<string | null>(null);
   const [frankBodyMode, setFrankBodyMode] = useState(false);
@@ -497,7 +501,9 @@ export default function App() {
     // A model the user picked before for this media kind wins over any default.
     const remembered = readLastUsedModelId(kind);
     const restored = remembered ? pool.find((model) => model.id === remembered) : null;
-    return restored ?? pool.find((model) => model.status === "ready" && !model.degraded) ?? pool[0] ?? null;
+    const ready = (model: (typeof pool)[number]) => model.status === "ready" && !model.degraded;
+    const preferred = kind === "image" ? pool.find((model) => model.id === DEFAULT_IMAGE_MODEL_ID && ready(model)) : undefined;
+    return restored ?? preferred ?? pool.find(ready) ?? pool[0] ?? null;
   }
 
   function selectModel(id: string) {

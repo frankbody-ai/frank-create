@@ -248,6 +248,7 @@ const IMAGE_COST_TIERS: Record<string, 1 | 2 | 3> = {
   "seedream-5-pro": 1,
   "seedream-4-5": 1,
   "grok-imagine-image": 1,
+  "google-nb-2-1": 1,
   "google-nb-2": 2,
   "openai-gpt-image-2-5-sunburst": 2,
   "openai-gpt-image-2-5-flare": 1,
@@ -836,6 +837,8 @@ export function thumbnailUrl(
  */
 const IMAGE_PRICES: Record<string, Record<string, number>> = {
   "google-nb-pro": { "1K": 0.134, "2K": 0.134, "4K": 0.24 },
+  // Nano Banana 2.1: OpenRouter bills image output at half of Nano Banana 2's rate.
+  "google-nb-2-1": { "1K": 0.02, "2K": 0.03, "4K": 0.06 },
   "google-nb-2": { "1K": 0.04, "2K": 0.06, "4K": 0.12 },
   "openai-gpt-image-2-5-sunburst": { "1K": 0.04, "2K": 0.08 },
   "openai-gpt-image-2-5-flare": { "1K": 0.02, "2K": 0.04 },

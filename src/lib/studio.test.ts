@@ -66,6 +66,7 @@ describe("studio helpers", () => {
 
   it("keeps the fallback launch registry aligned with the Cliff model roster", () => {
     expect(fallbackConfig.models.map((model) => model.id)).toEqual([
+      "google-nb-2-1",
       "google-nb-pro",
       "google-nb-2",
       "openai-gpt-image-2-5-sunburst",

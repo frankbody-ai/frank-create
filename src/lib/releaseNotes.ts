@@ -15,6 +15,16 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-10-19-nano-banana-2-1",
+    date: "19 October 2026",
+    title: "Nano Banana 2.1 is the new default",
+    items: [
+      "New image model: Nano Banana 2.1, Google's newest Flash-tier model, with better product recontextualization.",
+      "Every new run starts on it: 1K, 2K or 4K, up to 14 reference images, and extra-wide or extra-tall formats from 1:8 to 8:1.",
+      "It costs about half as much per image as Nano Banana 2. Every other model is still in the model picker.",
+    ],
+  },
+  {
     id: "2026-09-10-gpt-image-2-5-compression-fix",
     date: "10 September 2026",
     title: "GPT Image 2.5 runs land again",
