@@ -1343,8 +1343,10 @@ async function openrouterImage(
     // often exhausted. Rather than fail the round, rerun on Nano Banana 2,
     // which accepts the same shapes, sizes and references.
     const fallback = NB_FALLBACK[opts.model];
-    if (!fallback || !(err instanceof ProviderRunError) || err.status !== 429) throw err;
-    console.warn(`[images] ${opts.model} rate limited upstream; falling back to ${fallback}`);
+    const upstreamDown = err instanceof ProviderRunError &&
+      (err.status === 429 || (err.status ?? 0) >= 500 || err.code === "provider_unavailable");
+    if (!fallback || !upstreamDown) throw err;
+    console.warn(`[images] ${opts.model} unavailable upstream (${(err as ProviderRunError).status ?? (err as ProviderRunError).code}); falling back to ${fallback}`);
     const retry = { ...payload, model: fallback };
     opts.onRequest?.(providerRequestRecord("POST https://openrouter.ai/api/v1/images", retry));
     j = await openrouterPost("/images", retry);
