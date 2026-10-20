@@ -167,7 +167,7 @@ function useManages(): boolean {
  * search and the company plate with its chevron, as the Hub's bar; the rail
  * (Hub, Finance, Marketing, Commercial, Operations; Admin, Settings, Sign out
  * at the foot); and the menu panel opened on this app, Marketing > Creative >
- * Artificial Design Studio: the tool's icon and name, then its screens as the
+ * Image generator: the tool's icon and name, then its screens as the
  * tool's tabs, Settings last, the session organiser under them.
  *
  * The frame follows `screen`, which this app's hash router (and App's mode)

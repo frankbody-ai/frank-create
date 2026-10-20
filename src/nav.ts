@@ -92,7 +92,7 @@ export function screenForPlace(href: string): Screen | null {
 }
 
 /**
- * The tool's views: opened (Marketing > Creative > Artificial Design Studio),
+ * The tool's views: opened (Marketing > Creative > Image generator),
  * the frame's menu panel shows the tool's icon and name, then these tabs.
  * Icons are NAV_ICONS glyph ids, which the frame draws inline. Admin portal
  * is shown to everyone, as before: the page checks the role and keeps its
