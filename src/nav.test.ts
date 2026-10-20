@@ -67,7 +67,7 @@ describe("the studio in the workspace frame", () => {
     expect(click("prompt", "marketing", "image-generator", "upscaler")).toEqual({ href: "/?mode=upscaler", external: false });
     expect(click("upscaler", "marketing", "image-generator", "studio")).toEqual({ href: "/?mode=studio", external: false });
     expect(click("studio", "marketing", "image-generator", "admin")).toEqual({ href: "/admin", external: false });
-    // From health, Studio and Marketing > Artificial Design Studio both go to the studio.
+    // From health, Studio and Marketing > Creative > Image generator both go to the studio.
     expect(click("health", "marketing", "image-generator", "studio")).toEqual({ href: "/?mode=studio", external: false });
     expect(click("health", "marketing", "image-generator", null)).toEqual({ href: "/?mode=studio", external: false });
     expect(screenForPlace("/?mode=studio")).toBe("studio");
