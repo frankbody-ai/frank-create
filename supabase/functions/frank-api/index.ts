@@ -433,6 +433,11 @@ const GPT_IMAGE_25_MODELS = new Set<string>([
   "openai/gpt-image-2.5-flare",
 ]);
 
+// Upstream-quota fallbacks: when the first model is rate limited, rerun on the second.
+const NB_FALLBACK: Record<string, string> = {
+  "google/gemini-nano-banana-2.1": "google/gemini-3.1-flash-image",
+};
+
 // Models that accept n > 1 natively; everything else is fanned out as parallel
 // single-image calls.
 const OPENROUTER_NATIVE_N = new Set<string>([
@@ -1330,7 +1335,20 @@ async function openrouterImage(
   if (referenceImageUrls.length) payload.input_references = imageRefParts(referenceImageUrls);
 
   opts.onRequest?.(providerRequestRecord("POST https://openrouter.ai/api/v1/images", payload));
-  const j = await openrouterPost("/images", payload);
+  let j: any;
+  try {
+    j = await openrouterPost("/images", payload);
+  } catch (err) {
+    // Nano Banana 2.1 has a single upstream (Google AI Studio) whose quota is
+    // often exhausted. Rather than fail the round, rerun on Nano Banana 2,
+    // which accepts the same shapes, sizes and references.
+    const fallback = NB_FALLBACK[opts.model];
+    if (!fallback || !(err instanceof ProviderRunError) || err.status !== 429) throw err;
+    console.warn(`[images] ${opts.model} rate limited upstream; falling back to ${fallback}`);
+    const retry = { ...payload, model: fallback };
+    opts.onRequest?.(providerRequestRecord("POST https://openrouter.ai/api/v1/images", retry));
+    j = await openrouterPost("/images", retry);
+  }
 
   const out: Array<{ b64?: string; url?: string; mime: string }> = [];
   for (const item of (Array.isArray(j?.data) ? j.data : [])) {

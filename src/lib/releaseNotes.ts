@@ -15,6 +15,14 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-10-20-nano-banana-2-1-fallback",
+    date: "20 October 2026",
+    title: "Nano Banana 2.1 rounds no longer fail when Google is busy",
+    items: [
+      "When Google runs out of capacity for Nano Banana 2.1, the round now finishes on Nano Banana 2 with the same settings and references, so it doesn't fail with \"rate limited\".",
+    ],
+  },
+  {
     id: "2026-10-19-nano-banana-2-1",
     date: "19 October 2026",
     title: "Nano Banana 2.1 is the new default",
