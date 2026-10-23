@@ -41,6 +41,13 @@ import {
 } from "./lib/api";
 
 import { fallbackConfig } from "./lib/presets";
+import {
+  generateGate,
+  mergeAssetList,
+  mergeTurns,
+  readLastLaunchSessionId,
+  writeLastLaunchSessionId
+} from "./lib/history";
 import { supabase } from "./lib/supabaseClient";
 import {
   buildTurnRequest,
@@ -205,8 +212,16 @@ export default function App() {
   const [referencePickerBusy, setReferencePickerBusy] = useState(false);
   const [referencePickerNote, setReferencePickerNote] = useState<string | null>(null);
   const [referenceLibraryLoading, setReferenceLibraryLoading] = useState(false);
-  // True once bootstrap settled, so empty-state tiles never flash before turns load.
+  // True once the first rounds settled, so empty-state tiles never flash before turns load.
   const [studioBooted, setStudioBooted] = useState(false);
+  // The session's earlier rounds and their pictures load after the composer is
+  // ready, each on its own, so a first run never waits for old work.
+  const [turnsLoading, setTurnsLoading] = useState(true);
+  const [assetsLoading, setAssetsLoading] = useState(true);
+  const historyTicketRef = useRef(0);
+  // A run asked for before the studio finished connecting. It starts by itself
+  // once the session is known; until then the brief is locked so it stays as sent.
+  const [queuedRun, setQueuedRun] = useState(false);
   // The picker paints 10 cards at a time so the overlay opens instantly even
   // when the library holds hundreds of approved picks and uploads.
   const [referencePickerPage, setReferencePickerPage] = useState(0);
@@ -378,6 +393,11 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
+    // The session whose rounds are loading or loaded. The studio opens on the
+    // same session almost every time, so its history starts loading right away,
+    // next to the session list, instead of after it.
+    let historyFor: string | null = readLastLaunchSessionId();
+    if (historyFor) loadSessionHistory(historyFor);
 
     async function bootstrap(attempt = 1) {
       // Naming the stage is the point: one shared try meant any failure read as
@@ -400,29 +420,29 @@ export default function App() {
           nextSessions = [created.session];
         }
 
-        stage = "session history";
-        const [turnResult, assetResult] = await Promise.all([
-          listTurns(nextSession.id),
-          listAssets({ sessionId: nextSession.id })
-        ]);
-
         if (cancelled) {
           return;
         }
 
+        // Settings and the session are all a run needs, so the composer is
+        // ready now. Earlier rounds keep loading behind it: waiting for every
+        // old picture first is what kept Generate from working for many seconds.
         setConfig(freshConfig);
         setSelectedModelId(preferredStudioModel(freshConfig.models, readLastUsedModelId()).id);
         setSessions(nextSessions);
         setActiveSession(nextSession);
         setActiveReferenceIds([]);
-        setTurns(turnResult.turns);
-        setAssets(assetResult.assets);
-        setSelectedAsset(firstReviewableAsset(assetResult.assets));
 
         setConnection("online");
         setOfflineReason(null);
         setStatusText("Studio is connected.");
-        setStudioBooted(true);
+        writeLastLaunchSessionId(nextSession.id);
+        if (historyFor !== nextSession.id) {
+          // No guess, or a wrong one: start over on the session that opened.
+          clearHistory();
+          historyFor = nextSession.id;
+          loadSessionHistory(nextSession.id);
+        }
       } catch (error) {
         if (cancelled) {
           return;
@@ -438,6 +458,9 @@ export default function App() {
         setSessions([localSession]);
       setActiveSession(localSession);
       setConnection("offline");
+      // Whatever history loaded belongs to the backend session, not this local one.
+      clearHistory();
+      historyFor = null;
       const persisted = loadLocalAssets();
       if (persisted.length) {
         setAssets(persisted);
@@ -461,9 +484,67 @@ export default function App() {
     bootstrap();
     return () => {
       cancelled = true;
+      historyTicketRef.current += 1;
       if (retryTimer) window.clearTimeout(retryTimer);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Empty the thread, and drop any history answer still on its way, so it
+  // cannot land in the session that comes next.
+  function clearHistory() {
+    historyTicketRef.current += 1;
+    setTurns([]);
+    setAssets([]);
+    setSelectedAsset(null);
+    setTurnsLoading(false);
+    setAssetsLoading(false);
+  }
+
+  // Load one session's earlier rounds and their pictures. The two lists arrive
+  // on their own and each shows as soon as it lands: rounds are a small, quick
+  // read, pictures wait on signed links. Both merge into what is on screen, so
+  // a run started meanwhile stays put.
+  function loadSessionHistory(sessionId: string, attempt = 1) {
+    const ticket = ++historyTicketRef.current;
+    const current = () => historyTicketRef.current === ticket;
+    // A backend that is still warming up can refuse the first read. Try the
+    // pair again a couple of times before saying so.
+    let retrying = false;
+    const failed = (what: string) => {
+      if (!current() || retrying) return;
+      if (attempt < 3) {
+        retrying = true;
+        window.setTimeout(() => {
+          if (current()) loadSessionHistory(sessionId, attempt + 1);
+        }, attempt * 2000);
+        return;
+      }
+      setStatusText(`Earlier ${what} did not load. Reload the page to try again.`);
+    };
+    setTurnsLoading(true);
+    setAssetsLoading(true);
+    listTurns(sessionId)
+      .then((result) => {
+        if (current()) setTurns((shown) => mergeTurns(shown, result.turns));
+      })
+      .catch(() => failed("rounds"))
+      .finally(() => {
+        if (!current() || retrying) return;
+        setTurnsLoading(false);
+        setStudioBooted(true);
+      });
+    listAssets({ sessionId })
+      .then((result) => {
+        if (!current()) return;
+        setAssets((shown) => mergeAssetList(shown, result.assets));
+        setSelectedAsset((picked) => picked ?? firstReviewableAsset(mergeAssetList([], result.assets)));
+      })
+      .catch(() => failed("pictures"))
+      .finally(() => {
+        if (current() && !retrying) setAssetsLoading(false);
+      });
+  }
 
 
   useEffect(() => {
@@ -484,6 +565,20 @@ export default function App() {
     void handleGenerate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryRunToken]);
+
+  // A run asked for during start-up goes the moment the session is known. If
+  // the backend turned out to be offline, handleGenerate says so.
+  useEffect(() => {
+    if (!queuedRun || connection === "checking" || !activeSession) return;
+    setQueuedRun(false);
+    void handleGenerate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queuedRun, connection, activeSession]);
+
+  function cancelQueuedRun() {
+    setQueuedRun(false);
+    setStatusText("Run cancelled. Your prompt is still here.");
+  }
 
   const modelOptions = useMemo(() => selectModelOptions(config.models, selectedModelId), [config.models, selectedModelId]);
   // In side-by-side mode the model pool follows the compare sub-media toggle.
@@ -762,7 +857,12 @@ export default function App() {
     });
   }, [turns, roundSearch, activeSession?.name]);
 
-  const outputAssets = assets.filter((asset) => !["reference", "mask"].includes(asset.kind));
+  // Memoised: a fresh array here rebuilt assetsByTurn on every render, which gave
+  // every TurnCard new props and re-rendered the whole history on each keystroke.
+  const outputAssets = useMemo(
+    () => assets.filter((asset) => !["reference", "mask"].includes(asset.kind)),
+    [assets]
+  );
   const displayOutputAssets = outputAssets;
   // Indexed once per asset change. The timeline used to filter the whole library
   // inside every card, on every render — O(rounds x assets) for each keystroke.
@@ -860,9 +960,7 @@ export default function App() {
       setSessions((current) => [created.session, ...current]);
       setActiveSession(created.session);
       setActiveReferenceIds([]);
-      setTurns([]);
-      setAssets([]);
-      setSelectedAsset(null);
+      clearHistory();
       setPrompt("");
       clearEditSource();
       clearCompare();
@@ -874,9 +972,7 @@ export default function App() {
     setSessions((current) => [localSession, ...current]);
     setActiveSession(localSession);
     setActiveReferenceIds([]);
-    setTurns([]);
-    setAssets([]);
-    setSelectedAsset(null);
+    clearHistory();
     setPrompt("");
     clearEditSource();
     clearCompare();
@@ -895,13 +991,9 @@ export default function App() {
       return;
     }
 
-    const [turnResult, assetResult] = await Promise.all([
-      listTurns(session.id),
-      listAssets({ sessionId: session.id })
-    ]);
-    setTurns(turnResult.turns);
-    setAssets(assetResult.assets);
-    setSelectedAsset(firstReviewableAsset(assetResult.assets));
+    // The old session's rounds leave at once; the new ones show as they land.
+    clearHistory();
+    loadSessionHistory(session.id);
   }
 
   async function archiveSession(session: StudioSession) {
@@ -919,9 +1011,7 @@ export default function App() {
     const next = chooseLaunchSession(remaining) ?? null;
     setActiveSession(next);
     setActiveReferenceIds([]);
-    setTurns([]);
-    setAssets([]);
-    setSelectedAsset(null);
+    clearHistory();
     clearEditSource();
     clearCompare();
     if (next && connection === "online") {
@@ -1490,8 +1580,25 @@ export default function App() {
     const activePromptMode: typeof promptMode = editSource
       ? (!override && maskAsset ? "masked_edit" : "edit")
       : "generate";
-    if (!activeSession || !selectedModel || !promptText.trim()) {
-      setStatusText("Give the studio a prompt first.");
+    const gate = generateGate({
+      prompt: promptText,
+      connection,
+      hasSession: Boolean(activeSession && selectedModel),
+    });
+    if (gate === "empty") {
+      setStatusText("Enter a prompt to generate.");
+      return null;
+    }
+    if (gate === "wait" || !activeSession || !selectedModel) {
+      // Pressed while the studio is still connecting. The prompt is there; only
+      // the session is not known yet. Keep the press and run it the moment the
+      // studio is ready, instead of claiming the prompt is missing.
+      if (!override) {
+        setQueuedRun(true);
+        setStatusText("Connecting to the studio. Your run starts by itself in a moment.");
+      } else {
+        setStatusText("The studio is still connecting. Try again in a moment.");
+      }
       return null;
     }
 
@@ -1724,21 +1831,8 @@ export default function App() {
         listTurns(activeSession.id),
         listAssets({ sessionId: activeSession.id }),
       ]);
-      setTurns((current) => {
-        const byId = new Map(current.map((t) => [t.id, t]));
-        for (const turn of turnResult.turns) byId.set(turn.id, turn);
-        return Array.from(byId.values()).sort(
-          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
-      });
-      setAssets((current) => {
-        const byId = new Map(current.map((a) => [a.id, a]));
-        for (const asset of assetResult.assets) byId.set(asset.id, asset);
-        return Array.from(byId.values()).sort(
-          (a, b) =>
-            new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
-        );
-      });
+      setTurns((current) => mergeTurns(current, turnResult.turns));
+      setAssets((current) => mergeAssetList(current, assetResult.assets));
       return { turns: turnResult.turns, assets: assetResult.assets };
     } catch {
       /* reconcile is best-effort */
@@ -1865,8 +1959,12 @@ export default function App() {
 
 
   async function handleVideoGenerate() {
-    if (!activeSession || !prompt.trim()) {
+    if (!prompt.trim()) {
       setStatusText("Brief the motion first.");
+      return;
+    }
+    if (!activeSession) {
+      setStatusText("The studio is still connecting. Try again in a moment.");
       return;
     }
 
@@ -1986,8 +2084,12 @@ export default function App() {
    * with a shared compare group so the timeline renders them as one A/B row.
    */
   async function handleCompareGenerate() {
-    if (!activeSession || !prompt.trim()) {
-      setStatusText("Give the studio a prompt first.");
+    if (!prompt.trim()) {
+      setStatusText("Enter a prompt to generate.");
+      return;
+    }
+    if (!activeSession) {
+      setStatusText("The studio is still connecting. Try again in a moment.");
       return;
     }
     const modelA = selectedModel;
@@ -2538,12 +2640,21 @@ export default function App() {
                   </div>
                 ) : null}
 
-
+                {queuedRun ? (
+                  <div className="edit-banner queued-run-banner" role="status" aria-live="polite">
+                    <Spinner size="small" />
+                    Connecting to the studio. Your run starts by itself.
+                    <button type="button" onClick={cancelQueuedRun}>
+                      Cancel
+                    </button>
+                  </div>
+                ) : null}
 
                 <div className="prompt-mention-wrap">
                 <textarea
                   ref={promptInputRef}
                   value={prompt}
+                  readOnly={queuedRun}
                   onChange={(event) => {
                     setPrompt(event.target.value);
                     syncMention(event.target.value, event.target.selectionStart);
@@ -2771,14 +2882,16 @@ export default function App() {
                     <button
                       className="primary-button"
                       type="submit"
-                      disabled={busy || !prompt.trim() || hasStudioFieldErrors(fieldErrors)}
+                      disabled={busy || queuedRun || !prompt.trim() || hasStudioFieldErrors(fieldErrors)}
                       aria-label={primaryActionLabel}
                       title={
-                        !prompt.trim()
-                          ? "Enter a prompt to generate"
-                          : hasStudioFieldErrors(fieldErrors)
-                            ? "Fix the highlighted settings before generating"
-                            : primaryActionLabel
+                        queuedRun
+                          ? "Starts as soon as the studio connects"
+                          : !prompt.trim()
+                            ? "Enter a prompt to generate"
+                            : hasStudioFieldErrors(fieldErrors)
+                              ? "Fix the highlighted settings before generating"
+                              : primaryActionLabel
                       }
                     >
                       <Icon source="bolt" tone="inherit" size={18} />
@@ -2997,6 +3110,7 @@ export default function App() {
                         turnAssets={assetsByTurn.get(turn.id) ?? NO_ASSETS}
                         assetsById={assetsById}
                         isNewest={rowIdx === 0}
+                        assetsLoading={assetsLoading}
                         promptExpanded={expandedPromptTurnIds.includes(turn.id)}
                         selectedAssetId={selectedAsset?.id}
                         onTogglePrompt={handleTogglePrompt}
@@ -3013,6 +3127,12 @@ export default function App() {
                   </div>
                   ))
 
+                ) : turnsLoading && !turns.length ? (
+                  <div className="empty-thread" role="status" aria-live="polite">
+                    <Spinner size="small" />
+                    <strong>Loading earlier rounds</strong>
+                    <span>You can write and generate now. Earlier rounds appear here as they load.</span>
+                  </div>
                 ) : roundSearch.trim() && turns.length ? (
                   <div className="empty-thread">
                     <Icon source="magnifying-glass" tone="inherit" size={38} />
