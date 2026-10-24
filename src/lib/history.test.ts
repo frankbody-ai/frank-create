@@ -43,7 +43,12 @@ describe("generateGate", () => {
 
   it("waits, never says the prompt is missing, while the studio is still connecting", () => {
     expect(generateGate({ prompt: "a red tube", connection: "checking", hasSession: false })).toBe("wait");
-    expect(generateGate({ prompt: "a red tube", connection: "online", hasSession: false })).toBe("wait");
+    expect(generateGate({ prompt: "a red tube", connection: "checking", hasSession: true })).toBe("wait");
+  });
+
+  it("does not wait forever when connected with no session open", () => {
+    expect(generateGate({ prompt: "a red tube", connection: "online", hasSession: false })).toBe("no-session");
+    expect(generateGate({ prompt: "a red tube", connection: "offline", hasSession: false })).toBe("no-session");
   });
 
   it("runs once the session is known, online or offline (offline says so itself)", () => {

@@ -34,12 +34,14 @@ export function mergeAssetList(current: Asset[], incoming: Asset[]): Asset[] {
  * - "empty": there is no prompt to send.
  * - "wait": the prompt is fine but the studio has not finished connecting yet,
  *   so the run waits and starts by itself when it can.
+ * - "no-session": connected, but no session is open (the last one was
+ *   archived). Waiting would never end, so the user is asked to pick one.
  * - "run": send it now.
  *
  * Before this existed, a press during start-up said "give the studio a prompt
  * first" although the prompt was there: the real gap was the missing session.
  */
-export type GenerateGate = "empty" | "wait" | "run";
+export type GenerateGate = "empty" | "wait" | "no-session" | "run";
 
 export function generateGate(input: {
   prompt: string;
@@ -47,7 +49,8 @@ export function generateGate(input: {
   hasSession: boolean;
 }): GenerateGate {
   if (!input.prompt.trim()) return "empty";
-  if (input.connection === "checking" || !input.hasSession) return "wait";
+  if (input.connection === "checking") return "wait";
+  if (!input.hasSession) return "no-session";
   return "run";
 }
 

@@ -194,6 +194,59 @@ describe("studio start-up", () => {
     expect(api.createInferenceTurn).not.toHaveBeenCalled();
   });
 
+  it("loads the session again when the early load gave up while the backend warmed up", async () => {
+    const values = new Map<string, string>([["frank.lastLaunchSessionId", SESSION.id]]);
+    const original = Object.getOwnPropertyDescriptor(window, "localStorage");
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => void values.set(key, String(value)),
+        removeItem: (key: string) => void values.delete(key)
+      }
+    });
+    // A fake clock steps through the 2 s and 4 s retry waits, so the test does
+    // not depend on how busy the machine is.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const tick = (ms: number) =>
+      act(async () => {
+        await vi.advanceTimersByTimeAsync(ms);
+      });
+    try {
+      const sessions = deferred<{ sessions: (typeof SESSION)[] }>();
+      api.listSessions.mockReturnValue(sessions.promise);
+      const warming = new Error("Service is temporarily unavailable");
+      api.listTurns
+        .mockRejectedValueOnce(warming)
+        .mockRejectedValueOnce(warming)
+        .mockRejectedValueOnce(warming)
+        .mockResolvedValue({ turns: [DONE_TURN] });
+      api.listAssets.mockResolvedValue({ assets: [] });
+
+      render(<App />);
+      // The early load for the remembered session tries 3 times, then gives up.
+      await tick(0);
+      expect(api.listTurns).toHaveBeenCalledTimes(1);
+      await tick(2100);
+      expect(api.listTurns).toHaveBeenCalledTimes(2);
+      await tick(4100);
+      expect(api.listTurns).toHaveBeenCalledTimes(3);
+      await tick(10);
+
+      // The session list lands after that: the studio loads the session again.
+      await act(async () => {
+        sessions.resolve({ sessions: [SESSION] });
+      });
+      await tick(10);
+      expect(api.listTurns).toHaveBeenCalledTimes(4);
+      expect(screen.getByText("An earlier round")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+      if (original) Object.defineProperty(window, "localStorage", original);
+      else delete (window as { localStorage?: Storage }).localStorage;
+    }
+  });
+
   it("shows old rounds before their pictures, without calling them failed", async () => {
     api.listSessions.mockResolvedValue({ sessions: [SESSION] });
     api.listTurns.mockResolvedValue({ turns: [DONE_TURN] });

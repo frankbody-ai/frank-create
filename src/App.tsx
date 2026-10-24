@@ -219,6 +219,9 @@ export default function App() {
   const [turnsLoading, setTurnsLoading] = useState(true);
   const [assetsLoading, setAssetsLoading] = useState(true);
   const historyTicketRef = useRef(0);
+  // The session whose history is loading or loaded; null once the thread is
+  // cleared or a load gave up, so start-up knows whether it must load again.
+  const historySessionRef = useRef<string | null>(null);
   // A run asked for before the studio finished connecting. It starts by itself
   // once the session is known; until then the brief is locked so it stays as sent.
   const [queuedRun, setQueuedRun] = useState(false);
@@ -393,11 +396,11 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
-    // The session whose rounds are loading or loaded. The studio opens on the
-    // same session almost every time, so its history starts loading right away,
-    // next to the session list, instead of after it.
-    let historyFor: string | null = readLastLaunchSessionId();
-    if (historyFor) loadSessionHistory(historyFor);
+    // The studio opens on the same session almost every time, so that
+    // session's history starts loading right away, next to the session list,
+    // instead of after it.
+    const guessedSessionId = readLastLaunchSessionId();
+    if (guessedSessionId) loadSessionHistory(guessedSessionId);
 
     async function bootstrap(attempt = 1) {
       // Naming the stage is the point: one shared try meant any failure read as
@@ -437,10 +440,10 @@ export default function App() {
         setOfflineReason(null);
         setStatusText("Studio is connected.");
         writeLastLaunchSessionId(nextSession.id);
-        if (historyFor !== nextSession.id) {
-          // No guess, or a wrong one: start over on the session that opened.
+        if (historySessionRef.current !== nextSession.id) {
+          // No guess, a wrong one, or one that gave up or was cleared while
+          // the backend warmed up: load the session that opened.
           clearHistory();
-          historyFor = nextSession.id;
           loadSessionHistory(nextSession.id);
         }
       } catch (error) {
@@ -458,9 +461,14 @@ export default function App() {
         setSessions([localSession]);
       setActiveSession(localSession);
       setConnection("offline");
-      // Whatever history loaded belongs to the backend session, not this local one.
-      clearHistory();
-      historyFor = null;
+      if (historySessionRef.current) {
+        // History loaded for the backend session does not belong to this local one.
+        clearHistory();
+      } else {
+        // A later failed reconnect: keep what is on screen, just stop the loading state.
+        setTurnsLoading(false);
+        setAssetsLoading(false);
+      }
       const persisted = loadLocalAssets();
       if (persisted.length) {
         setAssets(persisted);
@@ -494,11 +502,14 @@ export default function App() {
   // cannot land in the session that comes next.
   function clearHistory() {
     historyTicketRef.current += 1;
+    historySessionRef.current = null;
     setTurns([]);
     setAssets([]);
     setSelectedAsset(null);
     setTurnsLoading(false);
     setAssetsLoading(false);
+    // The thread is known now (empty), so the ways-to-start tiles may show.
+    setStudioBooted(true);
   }
 
   // Load one session's earlier rounds and their pictures. The two lists arrive
@@ -508,6 +519,7 @@ export default function App() {
   function loadSessionHistory(sessionId: string, attempt = 1) {
     const ticket = ++historyTicketRef.current;
     const current = () => historyTicketRef.current === ticket;
+    historySessionRef.current = sessionId;
     // A backend that is still warming up can refuse the first read. Try the
     // pair again a couple of times before saying so.
     let retrying = false;
@@ -520,6 +532,7 @@ export default function App() {
         }, attempt * 2000);
         return;
       }
+      historySessionRef.current = null;
       setStatusText(`Earlier ${what} did not load. Reload the page to try again.`);
     };
     setTurnsLoading(true);
@@ -566,13 +579,18 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryRunToken]);
 
-  // A run asked for during start-up goes the moment the session is known. If
-  // the backend turned out to be offline, handleGenerate says so.
+  // A run asked for during start-up goes once the studio has connected. It
+  // fires through the retry token, so it runs on the next render, after the
+  // settings have been fitted to the model the backend config picked. If the
+  // backend turned out to be offline, handleGenerate says so.
   useEffect(() => {
-    if (!queuedRun || connection === "checking" || !activeSession) return;
+    if (!queuedRun || connection === "checking") return;
     setQueuedRun(false);
-    void handleGenerate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!activeSession) {
+      setStatusText("Pick or start a session first.");
+      return;
+    }
+    setRetryRunToken((token) => token + 1);
   }, [queuedRun, connection, activeSession]);
 
   function cancelQueuedRun() {
@@ -1589,7 +1607,7 @@ export default function App() {
       setStatusText("Enter a prompt to generate.");
       return null;
     }
-    if (gate === "wait" || !activeSession || !selectedModel) {
+    if (gate === "wait") {
       // Pressed while the studio is still connecting. The prompt is there; only
       // the session is not known yet. Keep the press and run it the moment the
       // studio is ready, instead of claiming the prompt is missing.
@@ -1599,6 +1617,11 @@ export default function App() {
       } else {
         setStatusText("The studio is still connecting. Try again in a moment.");
       }
+      return null;
+    }
+    if (gate === "no-session" || !activeSession || !selectedModel) {
+      // Connected, but no session is open (the last one was archived).
+      setStatusText("Pick or start a session first.");
       return null;
     }
 
@@ -2900,7 +2923,7 @@ export default function App() {
 
                   </div>
                 </div>
-                {studioBooted && !turns.length && !prompt.trim() && productTaskShortcuts.length ? (
+                {studioBooted && !turnsLoading && !turns.length && !prompt.trim() && productTaskShortcuts.length ? (
                   <div className="task-shortcut-list composer-task-shortcuts" aria-label="Ways to start">
                     {productTaskShortcuts.map((task) => (
                       <button
