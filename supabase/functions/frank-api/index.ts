@@ -117,6 +117,31 @@ async function signed(path: string): Promise<string> {
   return data?.signedUrl ?? "";
 }
 
+/**
+ * Signed links for many files in one storage call. The asset list used to sign
+ * each file on its own, one request per picture, and the slowest of those set
+ * the pace for the whole list: 1.5 to 19 seconds for 19 pictures. Anything the
+ * batch could not sign falls back to the one-at-a-time call.
+ */
+async function signedMany(paths: string[]): Promise<Map<string, string>> {
+  const unique = Array.from(new Set(paths.filter(Boolean)));
+  const out = new Map<string, string>();
+  if (!unique.length) return out;
+  try {
+    const { data, error } = await supabase().storage.from(BUCKET).createSignedUrls(unique, 60 * 60 * 24);
+    if (!error) {
+      for (const item of data ?? []) {
+        if (item?.path && item.signedUrl) out.set(item.path, item.signedUrl);
+      }
+    }
+  } catch {
+    /* fall through to the single calls below */
+  }
+  const missing = unique.filter((path) => !out.has(path));
+  await Promise.all(missing.map(async (path) => out.set(path, await signed(path))));
+  return out;
+}
+
 // The storage backend caps objects at 50 MB; stay just under it. Anything larger
 // (long 4K video, big upscales) still has a usable provider URL, so we keep the
 // asset row and fall back to that temporary URL instead of failing the whole run.
@@ -2634,7 +2659,9 @@ Deno.serve(async (req) => {
         .order("created_at", { ascending: true });
       if (sid) q = q.eq("session_id", sid);
       const { data } = await q;
-      const items = await Promise.all((data || []).map(async (r: any) => rowToAsset(r, await signed(r.storage_path))));
+      const rows = data || [];
+      const links = await signedMany(rows.map((r: any) => String(r.storage_path || "")));
+      const items = rows.map((r: any) => rowToAsset(r, links.get(String(r.storage_path || "")) ?? ""));
       return json({ assets: items });
     }
 

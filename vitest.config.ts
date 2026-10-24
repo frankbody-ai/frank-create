@@ -5,6 +5,8 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
+  // Resolves the "@/" imports the app uses, so a test can render App.
+  resolve: { tsconfigPaths: true },
   test: {
     environment: "jsdom",
     globals: true,

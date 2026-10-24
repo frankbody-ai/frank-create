@@ -13,6 +13,7 @@ import {
   turnKindLabel
 } from "./studioFormat";
 import { parseCompareMeta, parseJsonList, referenceTagFor } from "../lib/studio";
+import { expectedOutputCount } from "../lib/history";
 import { clampWords } from "../lib/clampWords";
 import type { Asset, FrankConfig, StudioTurn } from "../lib/types";
 
@@ -92,6 +93,11 @@ export interface TurnCardProps {
   assetsById: Map<string, Asset>;
   /** Newest round in the timeline — earns the "New" badge for its first 30s. */
   isNewest: boolean;
+  /**
+   * The session's pictures are still loading. A finished round then shows
+   * placeholders for its picks, not "0 of 4 succeeded".
+   */
+  assetsLoading?: boolean;
   promptExpanded: boolean;
   selectedAssetId?: string;
   onTogglePrompt: (turnId: string) => void;
@@ -110,6 +116,7 @@ function TurnCardBase({
   turnAssets,
   assetsById,
   isNewest,
+  assetsLoading = false,
   promptExpanded,
   selectedAssetId,
   onTogglePrompt,
@@ -144,7 +151,10 @@ function TurnCardBase({
   } catch {
     partial = [];
   }
-  const showPartial = partial.length > 0 || (requested > 0 && produced < requested);
+  const live = turn.status === "queued" || turn.status === "running";
+  // Picks still on their way from the history load: show where they will land.
+  const awaitingPicks = assetsLoading && !live && produced < expectedOutputCount(turn, requested || 1);
+  const showPartial = !awaitingPicks && (partial.length > 0 || (requested > 0 && produced < requested));
   const missing = Math.max(0, requested - produced);
   const anyRetryable = partial.some((p) => p?.retryable !== false);
 
@@ -306,8 +316,8 @@ function TurnCardBase({
             assets={turnAssets}
             onSelect={onSelectAsset}
             emptyLabel={turnEmptyLabel(turn)}
-            pending={turn.status === "queued" || turn.status === "running"}
-            pendingCount={turnExpectedCount(turn)}
+            pending={live || awaitingPicks}
+            pendingCount={awaitingPicks ? expectedOutputCount(turn, requested || 1) : turnExpectedCount(turn)}
             pendingAspect={turnAspect(turn)}
             selectedAssetId={selectedAssetId}
           />
