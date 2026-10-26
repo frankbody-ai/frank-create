@@ -1081,6 +1081,18 @@ matched to the system's
 .agent-attachments { display: flex; flex-wrap: wrap; gap: var(--space-200); }
 .agent-attachment { position: relative; }
 .agent-attachment img { width: 56px; height: 56px; border-radius: var(--radius-200); object-fit: cover; }
+/* The @ref tag a reference answers to, as in the Studio brief. */
+.agent-attachment__tag {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  padding: 0 4px;
+  border-radius: var(--radius-100);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 10px;
+  line-height: 14px;
+}
 .agent-attachment .as-btn {
   position: absolute;
   inset-block-start: calc(var(--space-100) * -1);

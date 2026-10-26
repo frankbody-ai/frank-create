@@ -98,6 +98,8 @@ export interface TurnCardProps {
    * placeholders for its picks, not "0 of 4 succeeded".
    */
   assetsLoading?: boolean;
+  /** The session's pictures did not load: say so, never "0 of 4 succeeded". */
+  assetsFailed?: boolean;
   promptExpanded: boolean;
   selectedAssetId?: string;
   onTogglePrompt: (turnId: string) => void;
@@ -117,6 +119,7 @@ function TurnCardBase({
   assetsById,
   isNewest,
   assetsLoading = false,
+  assetsFailed = false,
   promptExpanded,
   selectedAssetId,
   onTogglePrompt,
@@ -154,7 +157,8 @@ function TurnCardBase({
   const live = turn.status === "queued" || turn.status === "running";
   // Picks still on their way from the history load: show where they will land.
   const awaitingPicks = assetsLoading && !live && produced < expectedOutputCount(turn, requested || 1);
-  const showPartial = !awaitingPicks && (partial.length > 0 || (requested > 0 && produced < requested));
+  const picturesMissing = assetsFailed && !live && produced === 0;
+  const showPartial = !awaitingPicks && !picturesMissing && (partial.length > 0 || (requested > 0 && produced < requested));
   const missing = Math.max(0, requested - produced);
   const anyRetryable = partial.some((p) => p?.retryable !== false);
 
@@ -315,7 +319,7 @@ function TurnCardBase({
           <OutputStrip
             assets={turnAssets}
             onSelect={onSelectAsset}
-            emptyLabel={turnEmptyLabel(turn)}
+            emptyLabel={picturesMissing ? "Pictures did not load. Reload the page to try again." : turnEmptyLabel(turn)}
             pending={live || awaitingPicks}
             pendingCount={awaitingPicks ? expectedOutputCount(turn, requested || 1) : turnExpectedCount(turn)}
             pendingAspect={turnAspect(turn)}

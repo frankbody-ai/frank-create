@@ -3,6 +3,12 @@ import { Badge, Button, Card, IconButton, PageHeader, Spinner, Text, TextField }
 import { promptAgentChat, fetchPromptAgentConfig } from "../lib/api";
 import { WhatsNewButton } from "./WhatsNewButton";
 import {
+  REFERENCE_TAG_NOTE,
+  REFERENCE_TAG_PATTERN,
+  detectReferenceMention,
+  referenceTagOptions
+} from "../lib/referenceTags";
+import {
   deletePromptChat,
   listPromptChats,
   loadPromptChat,
@@ -209,6 +215,9 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
   const savedSignature = useRef<string>("");
   const fileRef = useRef<HTMLInputElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  // "@" in the message opens the reference tags, as in the Studio brief.
+  const [mention, setMention] = useState<{ start: number; query: string } | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   function refreshChats() {
@@ -345,6 +354,38 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
     return true;
   }
 
+  // Tags follow the order references were attached in this chat. Use prompt
+  // carries them to the Studio in the same order, so @ref2 here is @ref2 there.
+  const refOptions = referenceTagOptions(conversationImages());
+  const mentionMatches = mention
+    ? refOptions.filter((option) => option.tag.slice(1).toLowerCase().startsWith(mention.query.toLowerCase()))
+    : [];
+  const mentionOpen = Boolean(mention) && mentionMatches.length > 0;
+  const activeMention = mentionOpen ? mentionMatches[Math.min(mentionIndex, mentionMatches.length - 1)] : undefined;
+
+  function syncMention(value: string, caret: number | null) {
+    setMention(caret == null ? null : detectReferenceMention(value, caret));
+    setMentionIndex(0);
+  }
+
+  function applyMention(tag: string) {
+    if (!mention) return;
+    const caret = inputRef.current?.selectionStart ?? input.length;
+    const before = input.slice(0, mention.start);
+    const after = input.slice(caret);
+    const insert = `${tag}${after.startsWith(" ") ? "" : " "}`;
+    const nextCaret = before.length + insert.length;
+    setInput(`${before}${insert}${after}`);
+    setMention(null);
+    setMentionIndex(0);
+    requestAnimationFrame(() => {
+      const node = inputRef.current;
+      if (!node) return;
+      node.focus();
+      node.setSelectionRange(nextCaret, nextCaret);
+    });
+  }
+
   async function send(text: string, options?: { wizardKickoff?: boolean }) {
 
     const trimmed = text.trim();
@@ -377,9 +418,13 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
       if (currentImageBytes > MAX_REQUEST_IMAGE_BYTES) {
         throw new Error("Those references are too large together. Remove one image and try again.");
       }
-      const payload: ChatMessage[] = options?.wizardKickoff
-        ? [...compactHistory, { role: "user", content: WIZARD_INSTRUCTION, hidden: true }]
+      // Tell the agent what the tags point at. Hidden, like the wizard's own note.
+      const tagged: ChatMessage[] = REFERENCE_TAG_PATTERN.test(trimmed)
+        ? [...compactHistory, { role: "user", content: REFERENCE_TAG_NOTE, hidden: true }]
         : compactHistory;
+      const payload: ChatMessage[] = options?.wizardKickoff
+        ? [...tagged, { role: "user", content: WIZARD_INSTRUCTION, hidden: true }]
+        : tagged;
       const result = await promptAgentChat({ messages: payload, skill });
       if (options?.wizardKickoff) {
         const questions = parseWizardQuestions(result.reply);
@@ -732,6 +777,9 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               {attachments.map((src, index) => (
                 <div className="agent-attachment" key={index}>
                   <img src={src} alt={`Attached reference ${index + 1}`} />
+                  <span className="agent-attachment__tag">
+                    {refOptions.find((option) => option.src === src)?.tag}
+                  </span>
                   <IconButton
                     icon="x-mark"
                     label="Remove reference image"
@@ -742,6 +790,7 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               ))}
             </div>
           ) : null}
+          <div className="prompt-mention-wrap">
           <TextField
             label="Message"
             labelHidden
@@ -750,8 +799,12 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
             value={input}
             inputRef={inputRef as never}
             error={error ?? undefined}
-            placeholder="Brief the agent. Enter to send, Shift+Enter for a new line. Paste or drop reference images here."
-            onChange={(event) => setInput(event.target.value)}
+            placeholder="Brief the agent. Enter to send, Shift+Enter for a new line. Paste or drop reference images here. Type @ to point at one."
+            onChange={(event) => {
+              setInput(event.target.value);
+              syncMention(event.target.value, (event.target as HTMLTextAreaElement).selectionStart);
+            }}
+            onBlur={() => window.setTimeout(() => setMention(null), 120)}
             onPaste={(event: React.ClipboardEvent) => {
               const files = Array.from(event.clipboardData?.files ?? []);
               if (files.length) {
@@ -767,6 +820,24 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
               }
             }}
             onKeyDown={(event) => {
+              if (mentionOpen) {
+                if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                  event.preventDefault();
+                  const step = event.key === "ArrowDown" ? 1 : -1;
+                  setMentionIndex((i) => (i + step + mentionMatches.length) % mentionMatches.length);
+                  return;
+                }
+                if ((event.key === "Enter" || event.key === "Tab") && activeMention) {
+                  event.preventDefault();
+                  applyMention(activeMention.tag);
+                  return;
+                }
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  setMention(null);
+                  return;
+                }
+              }
               // Enter sends, Shift+Enter breaks the line.
               if (event.key !== "Enter") return;
               if (event.shiftKey) return;
@@ -775,6 +846,27 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
             }}
 
           />
+          {mentionOpen ? (
+            <div className="prompt-mention-popover" role="listbox" aria-label="Reference tags">
+              {mentionMatches.map((option, i) => (
+                <button
+                  key={option.tag}
+                  type="button"
+                  role="option"
+                  aria-selected={activeMention?.tag === option.tag}
+                  className={`prompt-mention-option${activeMention?.tag === option.tag ? " is-active" : ""}`}
+                  onMouseEnter={() => setMentionIndex(i)}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => applyMention(option.tag)}
+                >
+                  <img src={option.src} alt="" />
+                  <strong>{option.tag}</strong>
+                  <span>Reference image {i + 1}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+          </div>
           <div className="agent-composer__actions">
             <input
               ref={fileRef}

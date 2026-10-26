@@ -247,6 +247,26 @@ describe("studio start-up", () => {
     }
   });
 
+  it("says the pictures did not load, instead of calling finished rounds failed", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      api.listSessions.mockResolvedValue({ sessions: [SESSION] });
+      api.listTurns.mockResolvedValue({ turns: [DONE_TURN] });
+      api.listAssets.mockRejectedValue(new Error("Frank Create API failed (546)"));
+
+      render(<App />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(7000);
+      });
+      expect(screen.getByText("An earlier round")).toBeInTheDocument();
+      expect(screen.getByText("Pictures did not load. Reload the page to try again.")).toBeInTheDocument();
+      expect(screen.queryByText(/succeeded/)).toBeNull();
+      expect(screen.queryByText("Waiting for provider output")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("shows old rounds before their pictures, without calling them failed", async () => {
     api.listSessions.mockResolvedValue({ sessions: [SESSION] });
     api.listTurns.mockResolvedValue({ turns: [DONE_TURN] });

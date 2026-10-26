@@ -118,27 +118,42 @@ async function signed(path: string): Promise<string> {
 }
 
 /**
- * Signed links for many files in one storage call. The asset list used to sign
- * each file on its own, one request per picture, and the slowest of those set
- * the pace for the whole list: 1.5 to 19 seconds for 19 pictures. Anything the
- * batch could not sign falls back to the one-at-a-time call.
+ * Signed links for many files, a few storage calls of up to 200 files each.
+ * The asset list used to sign each file on its own, one request per picture:
+ * 1.5 to 19 seconds for 19 pictures, and a session of 1,500 pictures did not
+ * load at all, so every round said "Waiting for provider output". Anything a
+ * batch could not sign falls back to the one-at-a-time call, a few at a time.
  */
+const SIGN_BATCH = 200;
+const SIGN_PARALLEL = 4;
+
+async function inGroups<T>(items: T[], size: number, run: (item: T) => Promise<void>) {
+  for (let i = 0; i < items.length; i += size) {
+    await Promise.all(items.slice(i, i + size).map(run));
+  }
+}
+
 async function signedMany(paths: string[]): Promise<Map<string, string>> {
   const unique = Array.from(new Set(paths.filter(Boolean)));
   const out = new Map<string, string>();
   if (!unique.length) return out;
-  try {
-    const { data, error } = await supabase().storage.from(BUCKET).createSignedUrls(unique, 60 * 60 * 24);
-    if (!error) {
+  const batches: string[][] = [];
+  for (let i = 0; i < unique.length; i += SIGN_BATCH) batches.push(unique.slice(i, i + SIGN_BATCH));
+  await inGroups(batches, SIGN_PARALLEL, async (batch) => {
+    try {
+      const { data, error } = await supabase().storage.from(BUCKET).createSignedUrls(batch, 60 * 60 * 24);
+      if (error) return;
       for (const item of data ?? []) {
         if (item?.path && item.signedUrl) out.set(item.path, item.signedUrl);
       }
+    } catch {
+      /* the single calls below pick these up */
     }
-  } catch {
-    /* fall through to the single calls below */
-  }
+  });
   const missing = unique.filter((path) => !out.has(path));
-  await Promise.all(missing.map(async (path) => out.set(path, await signed(path))));
+  await inGroups(missing, 20, async (path) => {
+    out.set(path, await signed(path).catch(() => ""));
+  });
   return out;
 }
 

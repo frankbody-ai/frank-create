@@ -218,6 +218,9 @@ export default function App() {
   // ready, each on its own, so a first run never waits for old work.
   const [turnsLoading, setTurnsLoading] = useState(true);
   const [assetsLoading, setAssetsLoading] = useState(true);
+  // The pictures did not load after the retries. Rounds then say so, rather
+  // than "0 of 4 succeeded" or "Waiting for provider output".
+  const [assetsFailed, setAssetsFailed] = useState(false);
   const historyTicketRef = useRef(0);
   // The session whose history is loading or loaded; null once the thread is
   // cleared or a load gave up, so start-up knows whether it must load again.
@@ -508,6 +511,7 @@ export default function App() {
     setSelectedAsset(null);
     setTurnsLoading(false);
     setAssetsLoading(false);
+    setAssetsFailed(false);
     // The thread is known now (empty), so the ways-to-start tiles may show.
     setStudioBooted(true);
   }
@@ -533,10 +537,12 @@ export default function App() {
         return;
       }
       historySessionRef.current = null;
+      if (what === "pictures") setAssetsFailed(true);
       setStatusText(`Earlier ${what} did not load. Reload the page to try again.`);
     };
     setTurnsLoading(true);
     setAssetsLoading(true);
+    setAssetsFailed(false);
     listTurns(sessionId)
       .then((result) => {
         if (current()) setTurns((shown) => mergeTurns(shown, result.turns));
@@ -1230,7 +1236,9 @@ export default function App() {
     setReferenceLibraryLoading(true);
     try {
       const { assets: library } = await listAssets({});
-      splitReferenceLibrary(library ?? assets);
+      // This session's newest uploads and picks always show, even if the
+      // library answer was read before they landed.
+      splitReferenceLibrary([...(library ?? []), ...assets]);
     } catch (err) {
       console.error("[frank] reference library load failed", err);
       splitReferenceLibrary(assets);
@@ -1856,6 +1864,7 @@ export default function App() {
       ]);
       setTurns((current) => mergeTurns(current, turnResult.turns));
       setAssets((current) => mergeAssetList(current, assetResult.assets));
+      setAssetsFailed(false);
       return { turns: turnResult.turns, assets: assetResult.assets };
     } catch {
       /* reconcile is best-effort */
@@ -3134,6 +3143,7 @@ export default function App() {
                         assetsById={assetsById}
                         isNewest={rowIdx === 0}
                         assetsLoading={assetsLoading}
+                        assetsFailed={assetsFailed}
                         promptExpanded={expandedPromptTurnIds.includes(turn.id)}
                         selectedAssetId={selectedAsset?.id}
                         onTogglePrompt={handleTogglePrompt}
