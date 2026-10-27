@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, os, hardSignOut } from "./lib/supabaseClient";
 import { APP_KEY } from "./lib/coreConfig";
@@ -8,8 +8,27 @@ import { SignInCard, SignInPage } from "./components/SignInCard";
 
 type Status = "loading" | "signed-out" | "denied" | "pending" | "ready";
 
+// Waits between tries of the access check: one network blip is not an answer.
+export const ACCESS_CHECK_WAITS_MS = [0, 500, 1500];
+
+async function checkEntitled() {
+  let last: Awaited<ReturnType<typeof os.rpc>> | undefined;
+  for (const wait of ACCESS_CHECK_WAITS_MS) {
+    if (wait) await new Promise((resolve) => setTimeout(resolve, wait));
+    last = await os.rpc("is_entitled", { app_key: APP_KEY });
+    if (!last.error) return last;
+  }
+  return last!;
+}
+
 export function AuthGate({ children }: { children: React.ReactNode }) {
-  const [status, setStatus] = useState<Status>("loading");
+  const [status, setStatusState] = useState<Status>("loading");
+  // The status the latest check left, for the auth listener's closure.
+  const statusRef = useRef<Status>("loading");
+  const setStatus = (next: Status) => {
+    statusRef.current = next;
+    setStatusState(next);
+  };
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -25,11 +44,15 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       // The OS decides who gets in: the company must own Create Studio and
       // the person must be assigned it (admins bypass). No email-domain
       // guesswork, and no second login.
-      const { data: entitled, error: entitlementError } = await os.rpc("is_entitled", {
-        app_key: APP_KEY,
-      });
+      const { data: entitled, error: entitlementError } = await checkEntitled();
       if (!mounted) return;
       if (entitlementError) {
+        // A failed check is not a "no". This runs again on every auth event,
+        // the hourly token refresh included, and a blip there used to unmount
+        // the studio: the brief, the reference dock and pending rounds were
+        // lost. Someone already in keeps working; only a definite "no" or a
+        // failed first check stops them.
+        if (statusRef.current === "ready") return;
         setError("Could not check your access with AutoSolutions OS. Try again shortly.");
         return setStatus("denied");
       }
