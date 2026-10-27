@@ -4,12 +4,13 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { loadPromptAgentConfig, buildPromptAgentSystem, DEFAULT_CONFIG } from "./promptAgent.ts";
+import { removeUnusedFiles } from "./files.ts";
 
 // Which code is live. This function is deployed by hand (Lovable deploys it on
 // request, merging to main does not), so /health reports this string and a
 // deploy is confirmed by reading it back. CI fails a PR that changes this
 // function without changing the string: date, then the number of that day's change.
-const SERVER_VERSION = "2026-10-27.1";
+const SERVER_VERSION = "2026-10-27.2";
 
 
 // Identity, entitlements and studio data all live in the AutoSolutions OS
@@ -2750,16 +2751,15 @@ Deno.serve(async (req) => {
     if (turnDelMatch && method === "DELETE") {
       const tid = turnDelMatch[1];
       const sb = supabase();
-      // Best-effort: remove storage objects, then asset rows, then the message row.
+      // Asset rows, then the message row, then only the files no row still
+      // uses: a reference made from one of these picks shares its file.
       const { data: assetRows } = await sb.from("assets").select("id,storage_path")
         .eq("user_id", userId).eq("message_id", tid);
       const paths = (assetRows || []).map((r: any) => r.storage_path).filter(Boolean);
-      if (paths.length) {
-        try { await sb.storage.from("studio-images").remove(paths); } catch (_) { /* ignore */ }
-      }
       await sb.from("assets").delete().eq("user_id", userId).eq("message_id", tid);
       const { error } = await sb.from("messages").delete().eq("user_id", userId).eq("id", tid);
       if (error) throw error;
+      await removeUnusedFiles(sb, paths);
       return json({ ok: true });
     }
 
@@ -2786,11 +2786,11 @@ Deno.serve(async (req) => {
       const aid = assetIdMatch[1];
       const sb = supabase();
       const { data: row } = await sb.from("assets").select("*").eq("user_id", userId).eq("id", aid).maybeSingle();
-      if (row?.storage_path) {
-        try { await sb.storage.from("studio-images").remove([row.storage_path]); } catch (_) { /* ignore */ }
-      }
       const { error } = await sb.from("assets").delete().eq("user_id", userId).eq("id", aid);
       if (error) throw error;
+      // The row is gone; its file goes only if no other row uses it. Removing a
+      // reference from the dock must not blank the pick it was made from.
+      if (row?.storage_path) await removeUnusedFiles(sb, [row.storage_path]);
       return json({ asset: row ? rowToAsset(row) : null });
     }
 
