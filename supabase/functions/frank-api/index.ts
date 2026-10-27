@@ -157,6 +157,26 @@ async function signedMany(paths: string[]): Promise<Map<string, string>> {
   return out;
 }
 
+/**
+ * Every row of a list query, read in pages. The database API returns at most
+ * 1,000 rows per call and says nothing when it cuts the rest. Lists are oldest
+ * first, so a session with more than 1,000 pictures lost its newest ones: their
+ * rounds said "0 of 4 succeeded · 4 failed" while the files were in storage.
+ * `build` must return a fresh, fully ordered query each time.
+ */
+const PAGE_ROWS = 1000;
+
+async function selectAll(build: () => any): Promise<any[]> {
+  const rows: any[] = [];
+  for (let from = 0; ; from += PAGE_ROWS) {
+    const { data, error } = await build().range(from, from + PAGE_ROWS - 1);
+    if (error) throw error;
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < PAGE_ROWS) return rows;
+  }
+}
+
 // The storage backend caps objects at 50 MB; stay just under it. Anything larger
 // (long 4K video, big upscales) still has a usable provider URL, so we keep the
 // asset row and fall back to that temporary URL instead of failing the whole run.
@@ -2661,20 +2681,21 @@ Deno.serve(async (req) => {
       const sid = url.searchParams.get("session_id");
       // Service role bypasses RLS, so ownership is enforced here — always,
       // session filter or not. A session UUID is not an access token.
-      let q = supabase().from("messages").select("*").eq("user_id", userId)
-        .order("seq", { ascending: true });
-      if (sid) q = q.eq("session_id", sid);
-      const { data } = await q;
-      return json({ turns: (data || []).map(rowToTurn) });
+      const data = await selectAll(() => {
+        let q = supabase().from("messages").select("*").eq("user_id", userId);
+        if (sid) q = q.eq("session_id", sid);
+        return q.order("seq", { ascending: true }).order("id", { ascending: true });
+      });
+      return json({ turns: data.map(rowToTurn) });
     }
 
     if (path.startsWith("/assets") && method === "GET") {
       const sid = url.searchParams.get("session_id");
-      let q = supabase().from("assets").select("*").eq("user_id", userId)
-        .order("created_at", { ascending: true });
-      if (sid) q = q.eq("session_id", sid);
-      const { data } = await q;
-      const rows = data || [];
+      const rows = await selectAll(() => {
+        let q = supabase().from("assets").select("*").eq("user_id", userId);
+        if (sid) q = q.eq("session_id", sid);
+        return q.order("created_at", { ascending: true }).order("id", { ascending: true });
+      });
       const links = await signedMany(rows.map((r: any) => String(r.storage_path || "")));
       const items = rows.map((r: any) => rowToAsset(r, links.get(String(r.storage_path || "")) ?? ""));
       return json({ assets: items });
