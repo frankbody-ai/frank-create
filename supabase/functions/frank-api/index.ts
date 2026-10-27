@@ -5,12 +5,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { loadPromptAgentConfig, buildPromptAgentSystem, DEFAULT_CONFIG } from "./promptAgent.ts";
 import { removeUnusedFiles } from "./files.ts";
+import { inRequestedOrder, uniqueReferenceUrls } from "./refs.ts";
 
 // Which code is live. This function is deployed by hand (Lovable deploys it on
 // request, merging to main does not), so /health reports this string and a
 // deploy is confirmed by reading it back. CI fails a PR that changes this
 // function without changing the string: date, then the number of that day's change.
-const SERVER_VERSION = "2026-10-27.2";
+const SERVER_VERSION = "2026-10-27.3";
 
 
 // Identity, entitlements and studio data all live in the AutoSolutions OS
@@ -1528,7 +1529,9 @@ async function loadReferenceDataUrls(assetIds: string[], userId: string): Promis
   const { data } = await sb.from("assets").select("id,storage_path,metadata_json")
     .eq("user_id", userId).in("id", assetIds);
   const out: string[] = [];
-  for (const row of data || []) {
+  // The database returns rows in its own order. @ref numbers and video frames
+  // (first frame, then last) follow the order the app attached them in.
+  for (const row of inRequestedOrder(assetIds, data || [])) {
     const url = await signed(row.storage_path);
     if (url) out.push(url);
   }
@@ -1697,10 +1700,12 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
       ...(body.edit_source_asset_id ? [body.edit_source_asset_id] : []),
       ...((body.reference_asset_ids as string[]) || []),
     ];
-    const refUrls = normalizeReferenceUrls([
+    // The app's links and the server's fresh links name the same files: keep
+    // one link per file, or every reference is sent twice.
+    const refUrls = uniqueReferenceUrls(normalizeReferenceUrls([
       ...normalizeReferenceUrls(body.reference_image_urls),
       ...(await loadReferenceDataUrls(refIds, userId)),
-    ]);
+    ]));
     // The client composes a reference manifest (@ref1, @ref2 …) so a prompt can
     // target one specific attached image. Trust it when present, otherwise fall
     // back to the generic identity lock.
