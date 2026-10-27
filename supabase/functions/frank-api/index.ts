@@ -6,12 +6,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { loadPromptAgentConfig, buildPromptAgentSystem, DEFAULT_CONFIG } from "./promptAgent.ts";
 import { removeUnusedFiles } from "./files.ts";
 import { inRequestedOrder, uniqueReferenceUrls } from "./refs.ts";
+import { closedFanout, ShardErrorNotSaved, updateSnapshot, withShardError } from "./turns.ts";
 
 // Which code is live. This function is deployed by hand (Lovable deploys it on
 // request, merging to main does not), so /health reports this string and a
 // deploy is confirmed by reading it back. CI fails a PR that changes this
 // function without changing the string: date, then the number of that day's change.
-const SERVER_VERSION = "2026-10-27.3";
+const SERVER_VERSION = "2026-10-27.4";
 
 
 // Identity, entitlements and studio data all live in the AutoSolutions OS
@@ -1654,6 +1655,8 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
       requested_count: requestedCount,
       fanout: true,
       fanout_started_at: nowIso(),
+      // Workers write this snapshot at the same time; rev guards each write (turns.ts).
+      rev: 1,
     };
     await sb.from("messages").update({ settings_snapshot_json: fanoutSnapshot }).eq("id", turnId);
     const shardBody = { ...body, session_id: sessionId, settings: { ...reqSettings, count: 1 }, count: 1 };
@@ -1798,16 +1801,18 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
     if (shard) {
       // One image of a fan-out failed. Record it without failing the whole turn:
       // the status poll decides the outcome once every shard has reported.
-      const current = await sb.from("messages").select("settings_snapshot_json").eq("id", turnId).maybeSingle();
-      const snap = (current.data?.settings_snapshot_json ?? settingsSnapshot) as any;
-      const shardErrors = Array.isArray(snap.shard_errors) ? snap.shard_errors : [];
-      shardErrors.push({
+      const shardError = {
         index: shard.index, code: mapped.code, message: msg,
         retryable: mapped.retryable, status: mapped.status ?? null,
-      });
-      await sb.from("messages").update({
-        settings_snapshot_json: { ...snap, shard_errors: shardErrors, provider_request: providerRequest ?? snap.provider_request ?? null },
-      }).eq("id", turnId);
+      };
+      try {
+        await updateSnapshot(sb, turnId, (snap) => ({
+          ...withShardError(snap, shardError),
+          provider_request: providerRequest ?? snap.provider_request ?? null,
+        }));
+      } catch (writeErr) {
+        throw new ShardErrorNotSaved(shardError, writeErr);
+      }
       return { turn: null as any, status: "failed" as const, error: { code: mapped.code, message: msg, retryable: mapped.retryable } as any };
     }
     await sb.from("messages").update({ settings_snapshot_json: failedSnapshot }).eq("id", turnId);
@@ -1843,18 +1848,16 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
   if (shard) {
     // Assets are the source of truth for a fan-out round; only record provider
     // detail and let the status poll close the turn when all shards have landed.
-    const current = await sb.from("messages").select("settings_snapshot_json").eq("id", turnId).maybeSingle();
-    const snap = (current.data?.settings_snapshot_json ?? settingsSnapshot) as any;
-    await sb.from("messages").update({
-      settings_snapshot_json: {
-        ...snap,
-        provider_request: providerRequest ?? snap.provider_request ?? null,
-        provider: providerPayload.provider,
-        provider_model: providerPayload.model,
-        fallback: usedFallback ?? snap.fallback ?? undefined,
-        last_shard_at: nowIso(),
-      },
-    }).eq("id", turnId);
+    // The asset row already counts this picture as landed. If only this detail
+    // cannot be saved, the worker still succeeded: never report it as failed.
+    await updateSnapshot(sb, turnId, (snap) => ({
+      ...snap,
+      provider_request: providerRequest ?? snap.provider_request ?? null,
+      provider: providerPayload.provider,
+      provider_model: providerPayload.model,
+      fallback: usedFallback ?? snap.fallback ?? undefined,
+      last_shard_at: nowIso(),
+    })).catch((err) => console.error("[frank-api] shard detail not saved", turnId, shard.index, errMessage(err)));
     return { turn: null as any, status: "complete" as const, assets: [] };
   }
 
@@ -1964,7 +1967,9 @@ async function handleTurnStatus(body: any, userId: string) {
   const turnId = String(body?.turn_id || "");
   if (!turnId) throw new Error("turn_id is required.");
 
-  const msgRes = await sb.from("messages").select("*").eq("id", turnId).maybeSingle();
+  // The service role skips row security, so the owner check is here: a turn id
+  // alone must not read someone else's round.
+  const msgRes = await sb.from("messages").select("*").eq("id", turnId).eq("user_id", userId).maybeSingle();
   if (msgRes.error) throw msgRes.error;
   const row = msgRes.data;
   if (!row) throw new Error("Turn not found.");
@@ -1987,37 +1992,18 @@ async function handleTurnStatus(body: any, userId: string) {
   if (snapshot.status === "running" && snapshot.fanout) {
     const requested = Math.max(Number(snapshot.requested_count) || 1, 1);
     const assetRows = await sb.from("assets").select("id").eq("message_id", turnId);
-    const done = (assetRows.data ?? []).length;
-    const shardErrors: any[] = Array.isArray(snapshot.shard_errors) ? snapshot.shard_errors : [];
-    const startedAt = new Date(snapshot.fanout_started_at || row.created_at).getTime();
-    const ageMs = Date.now() - startedAt;
-    const expired = Number.isFinite(ageMs) && ageMs > 8 * 60_000;
-
-    if (done >= requested || done + shardErrors.length >= requested || expired) {
-      if (!done) {
-        const first = shardErrors[0];
-        const failed = {
-          ...snapshot,
-          status: "failed",
-          error: first?.message || "Every image in this round failed. Retry the run.",
-          error_code: first?.code || "worker_interrupted",
-          error_retryable: first?.retryable ?? true,
-        };
-        await sb.from("messages").update({ settings_snapshot_json: failed }).eq("id", turnId);
-        const result = await finishWithRows(failed, "failed");
-        return { ...result, error: { code: failed.error_code, message: failed.error, retryable: failed.error_retryable } };
-      }
-      const ids = (assetRows.data ?? []).map((r: any) => r.id);
-      const complete = {
-        ...snapshot,
-        status: "complete",
-        output_asset_ids: ids,
-        partial_errors: shardErrors.length ? shardErrors : undefined,
-      };
-      await sb.from("messages").update({ settings_snapshot_json: complete }).eq("id", turnId);
-      return await finishWithRows(complete, "complete");
+    const ids = (assetRows.data ?? []).map((r: any) => r.id);
+    const due = (snap: any) => closedFanout(snap, ids, Date.now(), row.created_at);
+    // Close against the snapshot as stored now, not the copy read above: a
+    // worker may have just recorded its error (turns.ts).
+    const stored = due(snapshot) ? await updateSnapshot(sb, turnId, due) : null;
+    const current = stored ?? snapshot;
+    if (current.status === "failed") {
+      const result = await finishWithRows(current, "failed");
+      return { ...result, error: { code: current.error_code, message: current.error, retryable: current.error_retryable } };
     }
-    return await finishWithRows({ ...snapshot, pending_count: requested - done }, "running");
+    if (current.status === "complete") return await finishWithRows(current, "complete");
+    return await finishWithRows({ ...current, pending_count: Math.max(0, requested - ids.length) }, "running");
   }
 
   // ---- Video runs: resume the provider job from its stored polling URL ------
@@ -2635,12 +2621,24 @@ Deno.serve(async (req) => {
         return json({ error: { message: "Forbidden" } }, 403);
       }
       const body = await readJson(req);
-      const result = await handleInference(
-        body.payload ?? {},
-        String(body.user_id || ""),
-        { turnId: String(body.turn_id || ""), index: Number(body.shard_index) || 0 },
-      );
-      return json({ status: result.status });
+      const turnId = String(body.turn_id || "");
+      const index = Number(body.shard_index) || 0;
+      try {
+        const result = await handleInference(body.payload ?? {}, String(body.user_id || ""), { turnId, index });
+        return json({ status: result.status });
+      } catch (err) {
+        // A failure after the provider answered (download, upload, asset row)
+        // used to escape to the generic 500 and leave no trace, so the round
+        // closed one picture short with no reason. Record it as this worker's error.
+        console.error("[frank-api] shard failed", turnId, index, errMessage(err));
+        // The provider's own error when that is what could not be saved.
+        const shardError = err instanceof ShardErrorNotSaved
+          ? err.shardError
+          : { index, code: "worker_failed", message: "This picture could not be saved. Retry it.", retryable: true, status: null };
+        await updateSnapshot(supabase(), turnId, (snap) => withShardError(snap, shardError))
+          .catch((recordErr) => console.error("[frank-api] shard error not recorded", turnId, index, errMessage(recordErr)));
+        return json({ status: "failed" });
+      }
     }
 
 
