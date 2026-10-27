@@ -173,8 +173,17 @@ export function isMainDemoSession(session: StudioSession) {
   return session.name.trim().toLowerCase() === "frank body demo studio";
 }
 
-export function chooseLaunchSession(sessions: StudioSession[]) {
-  return sessions.find(isMainDemoSession) ?? sessions[0];
+/**
+ * The session the studio opens on: the one used last when it still exists,
+ * else the demo studio, else the first. Sessions come oldest first, so a
+ * reload used to open the oldest one and recent work looked lost.
+ */
+export function chooseLaunchSession(sessions: StudioSession[], lastUsedId?: string | null) {
+  return (
+    (lastUsedId ? sessions.find((session) => session.id === lastUsedId) : undefined) ??
+    sessions.find(isMainDemoSession) ??
+    sessions[0]
+  );
 }
 
 export function firstReviewableAsset(assets: Asset[]) {

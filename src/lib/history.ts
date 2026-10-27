@@ -67,8 +67,8 @@ export function expectedOutputCount(turn: StudioTurn, fallback: number): number 
   return Math.min(24, listed || fallback);
 }
 
-// The session the studio opened on last time. Its history can start loading
-// while the session list is still on its way, instead of after it.
+// The session used last: the studio opens on it again, and its history can
+// start loading while the session list is still on its way, instead of after it.
 const LAST_LAUNCH_SESSION_KEY = "frank.lastLaunchSessionId";
 
 export function readLastLaunchSessionId(): string | null {
