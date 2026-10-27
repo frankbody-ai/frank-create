@@ -63,6 +63,9 @@ jobs:
       - name: Type-check the edge function
         run: deno check supabase/functions/frank-api/index.ts || (sleep 15 && deno check supabase/functions/frank-api/index.ts)
 
+      - name: Edge function tests
+        run: deno test supabase/functions/frank-api/
+
       # Merging does not deploy frank-api. /health reports SERVER_VERSION, so a
       # change must carry a new one, or nobody can tell whether it is live.
       - name: SERVER_VERSION changes with the function
