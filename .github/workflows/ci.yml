@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: tests / build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Lovable installs with bun and keeps bun.lock current; package-lock.json
+      # is stale, so `npm ci` would refuse to install.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Same clock zone on every machine, so date output in tests is stable.
+      - name: Unit tests
+        run: bunx vitest run
+        env:
+          TZ: UTC
+
+      # Typecheck, then the production build exactly as Lovable runs it:
+      # LOVABLE_SANDBOX=1 makes nitro write dist/server, which the bundle check
+      # reads. Without it nitro writes .output/ and the check fails.
+      - name: Typecheck, build, bundle check
+        run: bun run build
+        env:
+          LOVABLE_SANDBOX: "1"
+
+  frank-api:
+    name: frank-api check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      # The edge function is outside tsc and vitest, so a type error would
+      # only show up after a deploy. One retry: the remote import can flake.
+      - name: Type-check the edge function
+        run: deno check supabase/functions/frank-api/index.ts || (sleep 15 && deno check supabase/functions/frank-api/index.ts)
+
+      # Merging does not deploy frank-api. /health reports SERVER_VERSION, so a
+      # change must carry a new one, or nobody can tell whether it is live.
+      - name: SERVER_VERSION changes with the function
+        if: github.event_name == 'pull_request'
+        run: |
+          base="origin/${{ github.base_ref }}"
+          if git diff --quiet "$base"...HEAD -- supabase/functions/; then
+            echo "frank-api is unchanged."
+            exit 0
+          fi
+          if git diff "$base"...HEAD -- supabase/functions/frank-api/index.ts | grep -q '^+const SERVER_VERSION = '; then
+            echo "SERVER_VERSION changed."
+          else
+            echo "::error file=supabase/functions/frank-api/index.ts::supabase/functions changed but SERVER_VERSION did not. Change it so /health shows when this code is live."
+            exit 1
+          fi

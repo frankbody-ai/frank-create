@@ -5,6 +5,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { loadPromptAgentConfig, buildPromptAgentSystem, DEFAULT_CONFIG } from "./promptAgent.ts";
 
+// Which code is live. This function is deployed by hand (Lovable deploys it on
+// request, merging to main does not), so /health reports this string and a
+// deploy is confirmed by reading it back. CI fails a PR that changes this
+// function without changing the string: date, then the number of that day's change.
+const SERVER_VERSION = "2026-10-27.1";
 
 
 // Identity, entitlements and studio data all live in the AutoSolutions OS
@@ -2612,7 +2617,7 @@ Deno.serve(async (req) => {
   try {
     // ---- Public endpoints ----
     if (path === "/health" || path === "/") {
-      return json({ ok: true, product: "frank-create", store: "lovable-cloud" });
+      return json({ ok: true, product: "frank-create", store: "lovable-cloud", version: SERVER_VERSION });
     }
     if (path === "/config") return json(STUDIO_CONFIG);
     if (path === "/models") return json({ models: STUDIO_CONFIG.models, backlogModels: [], promptPresets: STUDIO_CONFIG.promptPresets });
