@@ -416,7 +416,7 @@ export default function App() {
 
         const [rawConfig, sessionResult] = await Promise.all([fetchConfig(), listSessions()]);
         const freshConfig = mergeConfig(rawConfig);
-        let nextSession = chooseLaunchSession(sessionResult.sessions);
+        let nextSession = chooseLaunchSession(sessionResult.sessions, guessedSessionId);
         let nextSessions = sessionResult.sessions;
 
         if (!nextSession) {
@@ -983,6 +983,7 @@ export default function App() {
       const created = await createSession(sessionPayload);
       setSessions((current) => [created.session, ...current]);
       setActiveSession(created.session);
+      writeLastLaunchSessionId(created.session.id);
       setActiveReferenceIds([]);
       clearHistory();
       setPrompt("");
@@ -1015,6 +1016,8 @@ export default function App() {
       return;
     }
 
+    // A reload opens this session again (chooseLaunchSession).
+    writeLastLaunchSessionId(session.id);
     // The old session's rounds leave at once; the new ones show as they land.
     clearHistory();
     loadSessionHistory(session.id);
