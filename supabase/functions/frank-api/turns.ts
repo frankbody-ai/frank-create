@@ -13,11 +13,13 @@ export type ShardError = {
 };
 
 /**
- * How long a fan-out round waits for a silent worker. The slowest picture on
- * record landed 177 s after its round started; a worker still silent after
- * 5 minutes has died, and the user should not wait 8 for it.
+ * How long a fan-out round waits for a silent worker. It stays above the edge
+ * function's own time limit: a worker can retry OpenRouter, then poll the
+ * Replicate fallback for 180 s, so a shorter wait could close a round under a
+ * healthy worker and offer a paid retry for a picture still on its way. Worker
+ * errors no longer get lost, so a failed round closes at once without it.
  */
-export const FANOUT_EXPIRY_MS = 5 * 60_000;
+export const FANOUT_EXPIRY_MS = 8 * 60_000;
 
 /** Recorded for each picture that never arrived and never reported an error. */
 export const MISSING_PICTURE = {
@@ -77,6 +79,17 @@ export async function updateSnapshot(
     await new Promise((resolve) => setTimeout(resolve, 15 + Math.random() * 60 * (attempt + 1)));
   }
   throw new Error(`Round ${turnId} was busy; its update was not saved after ${MAX_TRIES} tries.`);
+}
+
+/**
+ * A worker's own error that could not be saved. The shard route catches it and
+ * tries once more with this error, instead of a generic one, so a picture
+ * that cannot work is not offered as retryable.
+ */
+export class ShardErrorNotSaved extends Error {
+  constructor(readonly shardError: ShardError, cause: unknown) {
+    super(`Worker ${shardError.index} error not saved: ${cause instanceof Error ? cause.message : String(cause)}`);
+  }
 }
 
 /** The snapshot with one more worker error, keeping every error already there. */

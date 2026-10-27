@@ -6,7 +6,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { loadPromptAgentConfig, buildPromptAgentSystem, DEFAULT_CONFIG } from "./promptAgent.ts";
 import { removeUnusedFiles } from "./files.ts";
 import { inRequestedOrder, uniqueReferenceUrls } from "./refs.ts";
-import { closedFanout, updateSnapshot, withShardError } from "./turns.ts";
+import { closedFanout, ShardErrorNotSaved, updateSnapshot, withShardError } from "./turns.ts";
 
 // Which code is live. This function is deployed by hand (Lovable deploys it on
 // request, merging to main does not), so /health reports this string and a
@@ -1801,13 +1801,18 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
     if (shard) {
       // One image of a fan-out failed. Record it without failing the whole turn:
       // the status poll decides the outcome once every shard has reported.
-      await updateSnapshot(sb, turnId, (snap) => ({
-        ...withShardError(snap, {
-          index: shard.index, code: mapped.code, message: msg,
-          retryable: mapped.retryable, status: mapped.status ?? null,
-        }),
-        provider_request: providerRequest ?? snap.provider_request ?? null,
-      }));
+      const shardError = {
+        index: shard.index, code: mapped.code, message: msg,
+        retryable: mapped.retryable, status: mapped.status ?? null,
+      };
+      try {
+        await updateSnapshot(sb, turnId, (snap) => ({
+          ...withShardError(snap, shardError),
+          provider_request: providerRequest ?? snap.provider_request ?? null,
+        }));
+      } catch (writeErr) {
+        throw new ShardErrorNotSaved(shardError, writeErr);
+      }
       return { turn: null as any, status: "failed" as const, error: { code: mapped.code, message: msg, retryable: mapped.retryable } as any };
     }
     await sb.from("messages").update({ settings_snapshot_json: failedSnapshot }).eq("id", turnId);
@@ -1843,6 +1848,8 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
   if (shard) {
     // Assets are the source of truth for a fan-out round; only record provider
     // detail and let the status poll close the turn when all shards have landed.
+    // The asset row already counts this picture as landed. If only this detail
+    // cannot be saved, the worker still succeeded: never report it as failed.
     await updateSnapshot(sb, turnId, (snap) => ({
       ...snap,
       provider_request: providerRequest ?? snap.provider_request ?? null,
@@ -1850,7 +1857,7 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
       provider_model: providerPayload.model,
       fallback: usedFallback ?? snap.fallback ?? undefined,
       last_shard_at: nowIso(),
-    }));
+    })).catch((err) => console.error("[frank-api] shard detail not saved", turnId, shard.index, errMessage(err)));
     return { turn: null as any, status: "complete" as const, assets: [] };
   }
 
@@ -2624,9 +2631,12 @@ Deno.serve(async (req) => {
         // used to escape to the generic 500 and leave no trace, so the round
         // closed one picture short with no reason. Record it as this worker's error.
         console.error("[frank-api] shard failed", turnId, index, errMessage(err));
-        await updateSnapshot(supabase(), turnId, (snap) => withShardError(snap, {
-          index, code: "worker_failed", message: "This picture could not be saved. Retry it.", retryable: true, status: null,
-        })).catch((recordErr) => console.error("[frank-api] shard error not recorded", turnId, index, errMessage(recordErr)));
+        // The provider's own error when that is what could not be saved.
+        const shardError = err instanceof ShardErrorNotSaved
+          ? err.shardError
+          : { index, code: "worker_failed", message: "This picture could not be saved. Retry it.", retryable: true, status: null };
+        await updateSnapshot(supabase(), turnId, (snap) => withShardError(snap, shardError))
+          .catch((recordErr) => console.error("[frank-api] shard error not recorded", turnId, index, errMessage(recordErr)));
         return json({ status: "failed" });
       }
     }
