@@ -766,6 +766,14 @@ export function PromptGenerator({ onUsePrompt, onStatus }: Props) {
         <form
           className="agent-composer"
           data-paste-scope="prompt-agent"
+          onDragOver={(event) => {
+            if (Array.from(event.dataTransfer?.types ?? []).includes("Files")) event.preventDefault();
+          }}
+          onDrop={(event) => {
+            if (event.defaultPrevented || !event.dataTransfer?.files?.length) return;
+            event.preventDefault();
+            void addFiles(event.dataTransfer.files);
+          }}
           onSubmit={(event) => {
             event.preventDefault();
             void send(input, { wizardKickoff: shouldRunWizard(input) });
