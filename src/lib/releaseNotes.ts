@@ -15,6 +15,14 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-11-04-prompt-drop-references",
+    date: "4 November 2026",
+    title: "Drag images into the prompt generator",
+    items: [
+      "You can now drop reference images anywhere on the prompt generator's message area, including on the Attach reference button, instead of picking them from your folders.",
+    ],
+  },
+  {
     id: "2026-10-20-nano-banana-2-1-fallback",
     date: "20 October 2026",
     title: "Nano Banana 2.1 rounds no longer fail when Google is busy",
