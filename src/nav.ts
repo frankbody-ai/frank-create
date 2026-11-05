@@ -96,7 +96,7 @@ export function screenForPlace(href: string): Screen | null {
  * the frame's menu panel shows the tool's icon and name, then these tabs.
  * Icons are NAV_ICONS glyph ids, which the frame draws inline. Admin portal
  * is shown to everyone, as before: the page checks the role and keeps its
- * own Users / Feedback / Prompt agent tabs. Settings is last, with the rail's
+ * own Users / Prompt agent tabs (feedback is the ? in the top bar, 0.4.0). Settings is last, with the rail's
  * settings glyph (osSettingsTab, autosolutions-os 0.3.2).
  */
 export const STUDIO_TABS: OsTab[] = [

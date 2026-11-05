@@ -2,7 +2,6 @@ import React from "react";
 import { myAdminScope } from "autosolutions-os";
 import { OsWorkspaceFrame } from "autosolutions-os/frame";
 
-import { FeedbackWidget } from "./components/FeedbackWidget";
 import { ReleaseNotesModal } from "./components/ReleaseNotesModal";
 import { SmallScreenNotice } from "./components/SmallScreenNotice";
 import { WhatsNewContext } from "./components/WhatsNewButton";
@@ -263,7 +262,6 @@ export function Shell({
               (app.css); the frame around it stays, as in every app. */}
           <SmallScreenNotice />
           <div className="studio-page__screen">{children}</div>
-          <FeedbackWidget variant="fixed" />
           <ReleaseNotesModal forceOpen={notesOpen} onClose={() => setNotesOpen(false)} />
         </div>
       </WhatsNewContext.Provider>

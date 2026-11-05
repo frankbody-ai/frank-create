@@ -30,34 +30,18 @@ import {
   type AppRole,
 } from "../lib/admin";
 
-
-import {
-  listFeedback,
-  updateFeedbackStatus,
-  getFeedbackScreenshotUrl,
-  isCurrentUserPlatformAdmin,
-  listVisibleCompanies,
-  type FeedbackRow,
-  type FeedbackStatus,
-} from "../lib/feedback";
+import { HUB_URL } from "autosolutions-os";
+import { APP_KEY } from "../lib/coreConfig";
 import { supabase } from "../lib/supabaseClient";
 import { PromptAgentTab } from "./admin/PromptAgentTab";
 import { WhatsNewButton } from "./WhatsNewButton";
 
 const ROLES: AppRole[] = ["user", "manager", "admin"];
-const BOARD_COLUMNS: { key: FeedbackStatus; label: string }[] = [
-  { key: "open", label: "Open" },
-  { key: "in_progress", label: "In progress" },
-  { key: "done", label: "Done" },
-];
-const STATUS_OPTIONS = [
-  { value: "open", label: "Open" },
-  { value: "in_progress", label: "In progress" },
-  { value: "done", label: "Done" },
-  { value: "dismissed", label: "Dismiss" },
-];
+/* Feedback from every app lives in the Hub since autosolutions-os 0.4.0: the
+   ? in the top bar sends it, and Admin > Feedback lists it. */
+const HUB_FEEDBACK = `${HUB_URL}/admin?view=feedback&app=${APP_KEY}`;
 
-type Tab = "users" | "feedback" | "prompt-agent";
+type Tab = "users" | "prompt-agent";
 
 function fmt(iso: string | null) {
   if (!iso) return "—";
@@ -77,13 +61,18 @@ function fmt(iso: string | null) {
 export function AdminPortal() {
   const [tab, setTab] = useState<Tab>(() => {
     const t = adminTabFromUrl();
-    return t === "feedback" || t === "prompt-agent" ? t : "users";
+    return t === "prompt-agent" ? t : "users";
   });
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [meId, setMeId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [feedbackCount, setFeedbackCount] = useState<number | null>(null);
   const [userCount, setUserCount] = useState<number | null>(null);
+
+  /* An old link to the feedback board (/admin/feedback, the old Slack DMs)
+     opens this app's feedback in the Hub. */
+  useEffect(() => {
+    if (adminTabFromUrl() === "feedback") window.location.replace(HUB_FEEDBACK);
+  }, []);
 
   useEffect(() => {
     void isCurrentUserAdmin().then(setIsAdmin);
@@ -121,11 +110,11 @@ export function AdminPortal() {
       screen="admin"
       search={search}
       onSearchChange={setSearch}
-      searchLabel={tab === "users" ? "Search operators by email" : "Search feedback"}
+      searchLabel={tab === "users" ? "Search operators by email" : "Search"}
     >
       <PageHeader
         title="Admin portal"
-        subtitle="Manage roles, triage feedback, and edit the prompt generator agent."
+        subtitle="Manage roles and edit the prompt generator agent. Feedback from every app is in the Hub, under Admin > Feedback."
         badge={<Badge tone="info">Admin only</Badge>}
         actions={
           <>
@@ -140,7 +129,6 @@ export function AdminPortal() {
       <Tabs
         tabs={[
           { id: "users", label: "Users", count: userCount ?? undefined },
-          { id: "feedback", label: "Feedback tasks", count: feedbackCount ?? undefined },
           { id: "prompt-agent", label: "Prompt agent" },
         ]}
         selected={tab}
@@ -149,8 +137,6 @@ export function AdminPortal() {
 
       {tab === "users" ? (
         <UsersTab meId={meId} search={search} onCount={setUserCount} />
-      ) : tab === "feedback" ? (
-        <FeedbackBoard search={search} onCount={setFeedbackCount} />
       ) : (
         <PromptAgentTab />
       )}
@@ -380,195 +366,5 @@ function UsersTab({
         admin role ends your access to this portal.
       </Text>
     </>
-  );
-}
-
-function FeedbackBoard({ search, onCount }: { search: string; onCount: (n: number) => void }) {
-  const [rows, setRows] = useState<FeedbackRow[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [shots, setShots] = useState<Record<string, string>>({});
-  const [showDismissed, setShowDismissed] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [superAdmin, setSuperAdmin] = useState(false);
-  const [companies, setCompanies] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    void (async () => {
-      const [isSuper, names] = await Promise.all([
-        isCurrentUserPlatformAdmin(),
-        listVisibleCompanies(),
-      ]);
-      setSuperAdmin(isSuper);
-      setCompanies(names);
-    })();
-  }, []);
-
-  const refresh = async () => {
-    setRefreshing(true);
-    try {
-      const next = await listFeedback();
-      setRows(next);
-      onCount(next.filter((r) => r.status !== "dismissed").length);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load feedback. Refresh to try again.");
-    } finally {
-      setRefreshing(false);
-    }
-  };
-  useEffect(() => {
-    void refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const onStatus = async (id: string, status: FeedbackStatus) => {
-    try {
-      await updateFeedbackStatus({ id, status });
-      await refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't move that task.");
-    }
-  };
-
-  const loadShot = async (id: string, path: string) => {
-    if (shots[id]) return;
-    try {
-      const { url } = await getFeedbackScreenshotUrl({ path });
-      setShots((s) => ({ ...s, [id]: url }));
-    } catch {
-      /* a missing screenshot is not worth an error banner */
-    }
-  };
-
-  const grouped = useMemo(() => {
-    const map: Record<FeedbackStatus, FeedbackRow[]> = {
-      open: [],
-      in_progress: [],
-      done: [],
-      dismissed: [],
-    };
-    const q = search.trim().toLowerCase();
-    (rows ?? [])
-      .filter((r) => !q || `${r.message} ${r.page_path ?? ""}`.toLowerCase().includes(q))
-      .forEach((r) => map[r.status].push(r));
-    return map;
-  }, [rows, search]);
-
-  const columns = showDismissed
-    ? [...BOARD_COLUMNS, { key: "dismissed" as FeedbackStatus, label: "Dismissed" }]
-    : BOARD_COLUMNS;
-
-  return (
-    <>
-      {error ? <Banner tone="critical" title="Something went wrong">{error}</Banner> : null}
-
-      <div className="admin-toolbar admin-toolbar--bare">
-        <Button icon="arrow-path" loading={refreshing} onClick={() => void refresh()}>
-          Refresh board
-        </Button>
-        <Checkbox
-          label={`Show dismissed (${grouped.dismissed.length})`}
-          checked={showDismissed}
-          onChange={(e) => setShowDismissed(e.target.checked)}
-        />
-        <Badge tone={superAdmin ? "success" : "neutral"}>
-          {superAdmin ? "All companies" : "This company"}
-        </Badge>
-      </div>
-
-      <Text variant="bodySm" tone="secondary" as="p">
-        {superAdmin
-          ? "You are a super admin: this board shows feedback from every company."
-          : "You see feedback from the company you are acting in. Super admins see every company."}
-      </Text>
-
-
-      {rows === null ? (
-        <Card>
-          <Spinner />
-        </Card>
-      ) : (
-        <div className="feedback-board">
-          {columns.map((col) => (
-            <Card
-              key={col.key}
-              title={col.label}
-              actions={<Badge tone="neutral">{String(grouped[col.key].length)}</Badge>}
-            >
-              <div className="feedback-board__stack">
-                {grouped[col.key].length === 0 ? (
-                  <Text variant="bodySm" tone="secondary" as="p">
-                    Nothing in this column.
-                  </Text>
-                ) : null}
-                {grouped[col.key].map((r) => (
-                  <FeedbackCard
-                    key={r.id}
-                    row={r}
-                    companyName={r.tenant_id ? (companies[r.tenant_id] ?? null) : null}
-                    onStatus={onStatus}
-                    onLoadShot={loadShot}
-                    shotUrl={shots[r.id] ?? null}
-                  />
-                ))}
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </>
-  );
-}
-
-function FeedbackCard({
-  row,
-  companyName,
-  onStatus,
-  onLoadShot,
-  shotUrl,
-}: {
-  row: FeedbackRow;
-  companyName?: string | null;
-  onStatus: (id: string, s: FeedbackStatus) => void;
-  onLoadShot: (id: string, path: string) => void;
-  shotUrl: string | null;
-}) {
-  useEffect(() => {
-    if (row.screenshot_path && !shotUrl) void onLoadShot(row.id, row.screenshot_path);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [row.id, row.screenshot_path]);
-
-  return (
-    <article className="feedback-card">
-      <div className="feedback-card__meta">
-        <span>{fmt(row.created_at)}</span>
-        {companyName ? (
-          <>
-            <span aria-hidden="true">·</span>
-            <Badge tone="neutral">{companyName}</Badge>
-          </>
-        ) : null}
-        {row.page_path ? (
-          <>
-            <span aria-hidden="true">·</span>
-            <code title={row.page_path}>{row.page_path}</code>
-          </>
-        ) : null}
-      </div>
-      <p className="feedback-card__message">{row.message}</p>
-      {shotUrl ? (
-        <a href={shotUrl} target="_blank" rel="noreferrer" className="feedback-card__shot">
-          <img src={shotUrl} alt={`Screenshot attached to feedback from ${fmt(row.created_at)}`} />
-        </a>
-      ) : null}
-      {row.viewport ? <div className="feedback-card__meta">Viewport {row.viewport}</div> : null}
-      <Select
-        label="Status"
-        labelHidden
-        options={STATUS_OPTIONS}
-        value={row.status}
-        onChange={(e) => onStatus(row.id, e.target.value as FeedbackStatus)}
-      />
-    </article>
   );
 }

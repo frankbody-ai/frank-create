@@ -31,7 +31,6 @@ vi.mock("autosolutions-os/frame", () => ({
 }));
 vi.mock("autosolutions-os", () => ({ myAdminScope: (os: unknown) => myAdminScope(os) }));
 vi.mock("./lib/supabaseClient", () => ({ os: {}, hardSignOut: vi.fn(() => Promise.resolve()) }));
-vi.mock("./components/FeedbackWidget", () => ({ FeedbackWidget: () => null }));
 vi.mock("./components/ReleaseNotesModal", () => ({ ReleaseNotesModal: () => null }));
 vi.mock("./ds", () => ({
   Button: () => null,

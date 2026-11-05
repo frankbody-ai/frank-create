@@ -186,12 +186,6 @@ export default function App() {
     return () => sub.subscription.unsubscribe();
   }, []);
   const [studioMode, setStudioMode] = useState<InAppScreen>(() => modeFromUrl());
-  useEffect(() => {
-    document.body.dataset.feedbackView = studioMode;
-    return () => {
-      delete document.body.dataset.feedbackView;
-    };
-  }, [studioMode]);
   const [settings, setSettings] = useState<StudioSettings>(defaultStudioSettings(fallbackConfig.models[0]));
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [lightboxAsset, setLightboxAsset] = useState<Asset | null>(null);
