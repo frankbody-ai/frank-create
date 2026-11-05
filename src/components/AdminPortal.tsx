@@ -68,10 +68,12 @@ export function AdminPortal() {
   const [search, setSearch] = useState("");
   const [userCount, setUserCount] = useState<number | null>(null);
 
-  /* An old link to the feedback board (/admin/feedback, the old Slack DMs)
-     opens this app's feedback in the Hub. */
+  /* An old link to the feedback board opens this app's feedback in the Hub:
+     the path /admin/feedback (the link in the old Slack DMs) or its hash
+     form #/admin/feedback. */
   useEffect(() => {
-    if (adminTabFromUrl() === "feedback") window.location.replace(HUB_FEEDBACK);
+    const path = window.location.pathname.replace(/\/$/, "");
+    if (path === "/admin/feedback" || adminTabFromUrl() === "feedback") window.location.replace(HUB_FEEDBACK);
   }, []);
 
   useEffect(() => {
