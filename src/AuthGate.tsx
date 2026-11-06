@@ -58,7 +58,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       }
       if (!entitled) {
         setError(
-          `${email ?? "This account"} is not entitled to Create Studio in the workspace you are signed in to. Ask your workspace admin to grant it from the AutoSolutions hub.`,
+          `${email ?? "This account"} is not entitled to Create Studio in the workspace you are signed in to. Ask an AutoSolutions OS admin to grant it from the AutoSolutions hub.`,
         );
         return setStatus("denied");
       }
@@ -153,7 +153,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         note={
           pending
             ? "Ask your team lead to approve your access in the admin portal."
-            : "Access is granted per company in AutoSolutions OS. Ask your workspace admin to add Create Studio to your account."
+            : "Access is granted per company in AutoSolutions OS. Ask an AutoSolutions OS admin to add Create Studio to your account."
         }
       />
 
