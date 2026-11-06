@@ -266,7 +266,7 @@ export function OsAppSwitcher({ client, appKey, variant = "menu", onOpen }: {
         </div>
       ))}
       {columns.length === 0 && (
-        <p className="osx-empty">You are not entitled to any apps in this workspace. Ask your AutoSolutions administrator.</p>
+        <p className="osx-empty">You are not entitled to any apps in this workspace. Ask an AutoSolutions OS admin.</p>
       )}
     </div>
   );
