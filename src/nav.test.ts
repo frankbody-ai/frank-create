@@ -80,7 +80,7 @@ describe("the studio in the workspace frame", () => {
     // Admin leave for the Hub.
     expect(click("studio", "hub", null, null)).toBeNull();
     expect(click("studio", "hub", "inbox", null)).toEqual({ href: `${HUB_URL}/comms/inbox`, external: true });
-    expect(click("prompt", "hub", "voice", null)).toEqual({ href: `${HUB_URL}/launcher?section=brandvoice`, external: true });
+    expect(click("prompt", "hub", "signature", null)).toEqual({ href: `${HUB_URL}/launcher?section=signature`, external: true });
     expect(click("studio", "admin", null, null)?.external).toBe(true);
   });
 
@@ -89,7 +89,7 @@ describe("the studio in the workspace frame", () => {
     expect(hub.map((section) => section.title)).toEqual(OS_HUB_MENU.map((section) => section.title));
     expect(hub.flatMap((section) => section.items.map((row) => row.label))).toEqual([
       "Overview", "Inbox", "Calendar", "Tasks", "Slack", "Monday", "Accounts", "Configuration",
-      "Unmarked Agent", "Brand Voice Capture", "Signature Generator",
+      "Unmarked Agent", "Signature Generator",
     ]);
     // Every row is a link into the Hub, none a place of this app.
     for (const row of hub.flatMap((section) => section.items)) {
