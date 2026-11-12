@@ -40,7 +40,7 @@ import {
   updateSession
 } from "./lib/api";
 
-import { fallbackConfig } from "./lib/presets";
+import { currentModelId, fallbackConfig } from "./lib/presets";
 import {
   generateGate,
   mergeAssetList,
@@ -2379,8 +2379,9 @@ export default function App() {
     try {
       const parsed = JSON.parse(turn.settings_json || "{}") as Partial<StudioSettings>;
       setPrompt(turn.prompt || "");
-      
-      if (turn.model) setSelectedModelId(turn.model);
+      // A round made on a model that was replaced runs again on its replacement.
+      const runModelId = currentModelId(turn.model);
+      if (runModelId) setSelectedModelId(runModelId);
       if (turn.preset_key) setSelectedPresetKey(turn.preset_key); else setSelectedPresetKey(null);
       setFrankBodyMode(!!turn.frank_body_mode);
       // Restore the exact reference dock this round ran with, in the same order,
@@ -2392,7 +2393,7 @@ export default function App() {
       setSettings((current) => ({
         ...current,
         ...parsed,
-        ...(typeof overrideCount === "number" ? { count: Math.max(1, Math.min(maxCountForModel(config.models.find((m) => m.id === turn.model) ?? selectedModel), overrideCount)) } : {}),
+        ...(typeof overrideCount === "number" ? { count: Math.max(1, Math.min(maxCountForModel(config.models.find((m) => m.id === runModelId) ?? selectedModel), overrideCount)) } : {}),
       }));
       setStatusText(typeof overrideCount === "number" ? `Retrying ${overrideCount} missing…` : "Retrying with previous settings…");
       setRetryRunToken((token) => token + 1);

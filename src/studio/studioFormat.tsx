@@ -1,5 +1,5 @@
 import { Icon } from "../ds";
-import { fallbackConfig } from "../lib/presets";
+import { currentModelId, fallbackConfig } from "../lib/presets";
 import {
   buildTurnRequest,
   makeLocalId,
@@ -237,11 +237,13 @@ export function readLastUsedModelId(media?: "image" | "video"): string | null {
       if (raw) {
         const parsed = JSON.parse(raw) as Record<string, string>;
         const stored = parsed?.[media];
-        if (typeof stored === "string" && stored) return stored;
+        // A pick from before a model was replaced comes back as its replacement.
+        if (typeof stored === "string" && stored) return currentModelId(stored);
       }
       return null;
     }
-    return window.localStorage.getItem(LAST_MODEL_KEY);
+    const last = window.localStorage.getItem(LAST_MODEL_KEY);
+    return last ? currentModelId(last) : null;
   } catch {
     return null;
   }

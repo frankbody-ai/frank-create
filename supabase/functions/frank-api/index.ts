@@ -7,12 +7,13 @@ import { loadPromptAgentConfig, buildPromptAgentSystem, DEFAULT_CONFIG } from ".
 import { removeUnusedFiles } from "./files.ts";
 import { inRequestedOrder, uniqueReferenceUrls } from "./refs.ts";
 import { closedFanout, ShardErrorNotSaved, updateSnapshot, withShardError } from "./turns.ts";
+import { currentImageModelId, GPT_IMAGE_MODELS, gptImageFields, nearestGptImageAspect, providerUsageRecord } from "./gptImage.ts";
 
 // Which code is live. This function is deployed by hand (Lovable deploys it on
 // request, merging to main does not), so /health reports this string and a
 // deploy is confirmed by reading it back. CI fails a PR that changes this
 // function without changing the string: date, then the number of that day's change.
-const SERVER_VERSION = "2026-10-27.4";
+const SERVER_VERSION = "2026-11-12.1";
 
 
 // Identity, entitlements and studio data all live in the AutoSolutions OS
@@ -480,8 +481,8 @@ const OPENROUTER_IMAGE_MAP: Record<string, string> = {
   "nano-banana-pro": "google/gemini-3-pro-image",
   "google-nb-2": "google/gemini-3.1-flash-image",
   "nano-banana-2": "google/gemini-3.1-flash-image",
-  "openai-gpt-image-2-5-sunburst": "openai/gpt-image-2.5-sunburst",
-  "openai-gpt-image-2-5-flare": "openai/gpt-image-2.5-flare",
+  "openai-gpt-image-2-6-sunburst": "openai/gpt-image-2.6-sunburst",
+  "openai-gpt-image-2-6-flare": "openai/gpt-image-2.6-flare",
   "seedream-5-pro": "bytedance-seed/seedream-5-0-pro",
   "seedream-4-5": "bytedance-seed/seedream-4.5",
 
@@ -494,12 +495,8 @@ const OPENROUTER_IMAGE_MAP: Record<string, string> = {
   "grok-imagine-image": "x-ai/grok-imagine-image-quality",
 };
 
-// GPT Image 2.5 accepts background / moderation / output_compression on top of
-// the shared image params.
-const GPT_IMAGE_25_MODELS = new Set<string>([
-  "openai/gpt-image-2.5-sunburst",
-  "openai/gpt-image-2.5-flare",
-]);
+// GPT Image (GPT_IMAGE_MODELS, gptImage.ts) accepts background / moderation /
+// output_compression on top of the shared image params.
 
 // Upstream-quota fallbacks: when the first model is rate limited, rerun on the second.
 const NB_FALLBACK: Record<string, string> = {
@@ -509,8 +506,7 @@ const NB_FALLBACK: Record<string, string> = {
 // Models that accept n > 1 natively; everything else is fanned out as parallel
 // single-image calls.
 const OPENROUTER_NATIVE_N = new Set<string>([
-  "openai/gpt-image-2.5-sunburst",
-  "openai/gpt-image-2.5-flare",
+  ...GPT_IMAGE_MODELS,
   "bytedance-seed/seedream-5-0-pro",
   "bytedance-seed/seedream-4.5",
 
@@ -1363,41 +1359,30 @@ async function openrouterImage(
     moderation?: string;
     n?: number;
     onRequest?: (record: unknown) => void;
+    onResponse?: (record: Record<string, unknown>) => void;
   } = { model: "google/gemini-3.1-flash-image" },
 ): Promise<Array<{ b64?: string; url?: string; mime: string }>> {
   const payload: Record<string, unknown> = { model: opts.model, prompt };
   if (opts.aspectRatio && opts.aspectRatio !== "match_input_image" && opts.aspectRatio !== "adaptive") {
-    payload.aspect_ratio = opts.aspectRatio;
-    // GPT Image 2.5 only accepts a fixed set of ratios (no 4:5, 5:4, ...); a ratio
-    // carried over from another model would 400 the whole run, so snap to nearest.
-    if (GPT_IMAGE_25_MODELS.has(opts.model)) {
-      const accepted = ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"];
-      if (!accepted.includes(opts.aspectRatio)) {
-        const toNum = (r: string) => { const [w, h] = r.split(":").map(Number); return w / h; };
-        const want = toNum(opts.aspectRatio);
-        payload.aspect_ratio = Number.isFinite(want)
-          ? accepted.reduce((best, r) => Math.abs(Math.log(toNum(r) / want)) < Math.abs(Math.log(toNum(best) / want)) ? r : best, "1:1")
-          : "auto";
-      }
-    }
+    // GPT Image takes a fixed set of ratios; one carried over from another model
+    // would fail the whole run, so it snaps to the nearest.
+    payload.aspect_ratio = GPT_IMAGE_MODELS.has(opts.model)
+      ? nearestGptImageAspect(opts.aspectRatio)
+      : opts.aspectRatio;
   }
   if (opts.size) {
     const res = String(opts.size).toUpperCase().replace("512", "512");
     if (["512", "1K", "2K", "4K"].includes(res)) payload.resolution = res;
   }
   if (opts.quality && ["auto", "low", "medium", "high", "xhigh", "max"].includes(opts.quality)) payload.quality = opts.quality;
-  // GPT Image 2.5 (Sunburst / Flare) is the only family in the roster whose
+  // GPT Image 2.6 (Sunburst / Flare) is the only family in the roster whose
   // schema exposes these; sending them to another provider is a 400.
-  if (GPT_IMAGE_25_MODELS.has(opts.model)) {
-    if (opts.background && ["auto", "opaque"].includes(opts.background)) payload.background = opts.background;
-    if (opts.moderation && ["auto", "low"].includes(opts.moderation)) payload.moderation = opts.moderation;
-    // OpenAI rejects output_compression unless output_format is jpeg/webp, so
-    // only send the pair when the user actually asked for a smaller file.
-    const compression = Number(opts.outputCompression);
-    if (Number.isFinite(compression) && compression >= 0 && compression < 100) {
-      payload.output_compression = Math.round(compression);
-      payload.output_format = "jpeg";
-    }
+  if (GPT_IMAGE_MODELS.has(opts.model)) {
+    Object.assign(payload, gptImageFields({
+      background: opts.background,
+      moderation: opts.moderation,
+      outputCompression: opts.outputCompression,
+    }));
   }
   if (opts.n && opts.n > 1) payload.n = opts.n;
   if (referenceImageUrls.length) payload.input_references = imageRefParts(referenceImageUrls);
@@ -1419,6 +1404,8 @@ async function openrouterImage(
     opts.onRequest?.(providerRequestRecord("POST https://openrouter.ai/api/v1/images", retry));
     j = await openrouterPost("/images", retry);
   }
+  const usage = providerUsageRecord(j);
+  if (usage) opts.onResponse?.(usage);
 
   const out: Array<{ b64?: string; url?: string; mime: string }> = [];
   for (const item of (Array.isArray(j?.data) ? j.data : [])) {
@@ -1596,7 +1583,8 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
   if (!prompt.trim()) throw new Error("Prompt is required");
 
   const turnId = shard?.turnId ?? crypto.randomUUID();
-  const modelId: string = body.model || "google-nb-2-1";
+  // An id the studio retired (GPT Image 2.5) runs on the model that replaced it.
+  const modelId: string = currentImageModelId(body.model || "google-nb-2-1");
   const reqSettings: any = body.settings || {};
   const settingsSnapshot: any = {
     kind: body.kind || "generate",
@@ -1628,8 +1616,8 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
     "google-nb-2-1": 4,
     "google-nb-pro": 4,
     "google-nb-2": 4,
-    "openai-gpt-image-2-5-sunburst": 10,
-    "openai-gpt-image-2-5-flare": 10,
+    "openai-gpt-image-2-6-sunburst": 10,
+    "openai-gpt-image-2-6-flare": 10,
     "seedream-5-pro": 6,
     "seedream-4-5": 6,
 
@@ -1694,6 +1682,8 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
   const partialErrors: Array<{ code: string; message: string; retryable: boolean; status?: number; request_id?: string }> = [];
   // The sanitised body we sent upstream, stored on the turn for troubleshooting.
   let providerRequest: unknown = null;
+  // What OpenRouter said back (its id, the model that ran, the usage it billed).
+  let providerUsage: Record<string, unknown> | null = null;
   // Set when the round had to be re-run on Replicate after OpenRouter failed.
   let usedFallback: { from: string; to: string; reason: string } | null = null;
   const openrouterModel = OPENROUTER_IMAGE_MAP[modelId] as string | undefined;
@@ -1739,6 +1729,7 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
           outputCompression: reqSettings.output_compression,
           n: nativeN ? count : 1,
           onRequest: (record) => { providerRequest = record; },
+          onResponse: (record) => { providerUsage = record; },
         })
       ),
     );
@@ -1853,6 +1844,7 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
     await updateSnapshot(sb, turnId, (snap) => ({
       ...snap,
       provider_request: providerRequest ?? snap.provider_request ?? null,
+      provider_usage: providerUsage ?? snap.provider_usage ?? undefined,
       provider: providerPayload.provider,
       provider_model: providerPayload.model,
       fallback: usedFallback ?? snap.fallback ?? undefined,
@@ -1868,6 +1860,7 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
     requested_count: count,
     partial_errors: partialErrors.length ? partialErrors : undefined,
     provider_request: providerRequest,
+    provider_usage: providerUsage ?? undefined,
     provider: providerPayload.provider,
     provider_model: providerPayload.model,
     fallback: usedFallback ?? undefined,
@@ -2459,7 +2452,7 @@ function classifyReplicateModelError(raw: string, status: string): ProviderRunEr
   // fails within a second, before inference, regardless of prompt or params.
   if (text.includes("e001") || text.includes("modelerror")) {
     return new ProviderRunError(
-      "This model is temporarily unavailable on the provider side. Try Nano Banana Pro, Seedream 5.0 Pro, or GPT-image-2.",
+      "This model is temporarily unavailable on the provider side. Try Nano Banana Pro, Seedream 5.0 Pro, or GPT Image 2.6 Sunburst.",
       "provider_unavailable",
       true,
       undefined,

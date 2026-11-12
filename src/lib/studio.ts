@@ -104,7 +104,7 @@ export function filterSizesForAspect(sizes: string[], aspect: string): string[] 
 }
 
 /**
- * Provider-specific extras (GPT Image 2.5 quality / background / compression /
+ * Provider-specific extras (GPT Image 2.6 quality / background / compression /
  * moderation). Values the selected model doesn't advertise are dropped so a
  * model switch can never send an unsupported field.
  */
@@ -250,8 +250,8 @@ const IMAGE_COST_TIERS: Record<string, 1 | 2 | 3> = {
   "grok-imagine-image": 1,
   "google-nb-2-1": 1,
   "google-nb-2": 2,
-  "openai-gpt-image-2-5-sunburst": 2,
-  "openai-gpt-image-2-5-flare": 1,
+  "openai-gpt-image-2-6-sunburst": 2,
+  "openai-gpt-image-2-6-flare": 1,
   "flux-2-pro": 2,
   "qwen-image-3-pro": 2,
   "krea-2-large": 2,
@@ -840,8 +840,9 @@ const IMAGE_PRICES: Record<string, Record<string, number>> = {
   // Nano Banana 2.1: OpenRouter bills image output at half of Nano Banana 2's rate.
   "google-nb-2-1": { "1K": 0.02, "2K": 0.03, "4K": 0.06 },
   "google-nb-2": { "1K": 0.04, "2K": 0.06, "4K": 0.12 },
-  "openai-gpt-image-2-5-sunburst": { "1K": 0.04, "2K": 0.08 },
-  "openai-gpt-image-2-5-flare": { "1K": 0.02, "2K": 0.04 },
+  // GPT Image 2.6 bills the same token rates as 2.5 (OpenAI pricing, Nov 2026).
+  "openai-gpt-image-2-6-sunburst": { "1K": 0.04, "2K": 0.08 },
+  "openai-gpt-image-2-6-flare": { "1K": 0.02, "2K": 0.04 },
   "seedream-5-pro": { "2K": 0.03, "4K": 0.06 },
   "seedream-4-5": { "2K": 0.03, "4K": 0.06 },
   "flux-2-pro": { "1K": 0.04, "2K": 0.04, "4K": 0.06 },
@@ -870,7 +871,7 @@ export function imageUnitPrice(
 
 /** Live estimate for the current size / count selection, e.g. "~$0.24 · 4 × 2K". */
 /**
- * Rough per-image multiplier for the GPT Image 2.5 quality tiers. The provider
+ * Rough per-image multiplier for the GPT Image 2.6 quality tiers. The provider
  * bills more tokens at the higher tiers, so the estimate scales with it.
  */
 const QUALITY_MULTIPLIERS: Record<string, number> = {

@@ -284,13 +284,13 @@ export interface StudioSettings {
   count: number;
   /** Gemini "Nano Banana Pro" thinking budget (tokens). 0 = off, 1000 = low, 5000 = high. */
   thinking_budget?: number;
-  /** GPT Image 2.5: provider quality tier ("auto" | "low" | … | "max"). */
+  /** GPT Image 2.6: provider quality tier ("auto" | "low" | … | "max"). */
   quality?: string;
-  /** GPT Image 2.5: background handling ("auto" | "opaque"). */
+  /** GPT Image 2.6: background handling ("auto" | "opaque" | "transparent"). */
   background?: string;
-  /** GPT Image 2.5: returned file compression, 0–100. */
+  /** GPT Image 2.6: returned file compression, 0–100. */
   output_compression?: number;
-  /** GPT Image 2.5: moderation strictness ("auto" | "low"). */
+  /** GPT Image 2.6: moderation strictness ("auto" | "low"). */
   moderation?: string;
   /** Video-only: clip length in seconds. */
   duration?: number;

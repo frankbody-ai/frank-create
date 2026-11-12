@@ -15,6 +15,17 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-11-12-gpt-image-2-6",
+    date: "12 November 2026",
+    title: "GPT Image 2.6 replaces GPT Image 2.5",
+    items: [
+      "GPT Image 2.6 Sunburst and GPT Image 2.6 Flare, OpenAI's newest image models, replace the 2.5 models in the model picker.",
+      "New on both: a Transparent background, for cut-outs you can put on any design.",
+      "Rounds made on 2.5 keep their name. When you run one again, it runs on 2.6.",
+      "The price per image is the same as on 2.5.",
+    ],
+  },
+  {
     id: "2026-11-04-prompt-drop-references",
     date: "4 November 2026",
     title: "Drag images into the prompt generator",

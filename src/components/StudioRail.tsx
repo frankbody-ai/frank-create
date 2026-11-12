@@ -51,7 +51,7 @@ const QUALITY_LABELS: Record<string, string> = {
   max: "Max"
 };
 
-const BACKGROUND_LABELS: Record<string, string> = { auto: "Auto", opaque: "Opaque" };
+const BACKGROUND_LABELS: Record<string, string> = { auto: "Auto", opaque: "Opaque", transparent: "Transparent" };
 
 const MODERATION_LABELS: Record<string, string> = { auto: "Standard", low: "Relaxed" };
 
