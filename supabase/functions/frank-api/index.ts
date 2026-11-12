@@ -1407,9 +1407,12 @@ async function openrouterImage(
   const usage = providerUsageRecord(j);
   if (usage) opts.onResponse?.(usage);
 
+  // OpenRouter may leave media_type out. Then the format we asked for (jpeg or
+  // webp when compressed) names the file, not png.
+  const askedMime = typeof payload.output_format === "string" ? `image/${payload.output_format}` : "image/png";
   const out: Array<{ b64?: string; url?: string; mime: string }> = [];
   for (const item of (Array.isArray(j?.data) ? j.data : [])) {
-    const mime = String(item?.media_type || "image/png").toLowerCase();
+    const mime = String(item?.media_type || askedMime).toLowerCase();
     if (item?.b64_json) out.push({ b64: item.b64_json, mime });
     else if (item?.url) out.push({ url: item.url, mime });
   }
@@ -1844,7 +1847,10 @@ async function handleInference(body: any, userId: string, shard?: { turnId: stri
     await updateSnapshot(sb, turnId, (snap) => ({
       ...snap,
       provider_request: providerRequest ?? snap.provider_request ?? null,
-      provider_usage: providerUsage ?? snap.provider_usage ?? undefined,
+      // One usage record per picture, by shard index: shards finish in any order.
+      provider_usages: providerUsage
+        ? { ...(snap.provider_usages ?? {}), [String(shard.index)]: providerUsage }
+        : snap.provider_usages ?? undefined,
       provider: providerPayload.provider,
       provider_model: providerPayload.model,
       fallback: usedFallback ?? snap.fallback ?? undefined,

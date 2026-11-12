@@ -81,9 +81,11 @@ export function gptImageFields(opts: GptImageOptions): Record<string, unknown> {
 }
 
 /**
- * What OpenRouter said about a finished image call: its id, the model that ran
- * and the usage it billed. Stored on the round so a run shows which model
- * really answered and what it cost. Null when the answer carries none of these.
+ * What OpenRouter said about a finished image call: its id and model when it
+ * sends them, and the usage it billed (OpenRouter's usage carries the cost).
+ * Stored in the round's settings snapshot only (provider_usage, or
+ * provider_usages by picture in a multi-picture round); the app does not show
+ * it. Null when the answer carries none of these.
  */
 export function providerUsageRecord(response: unknown): Record<string, unknown> | null {
   if (!response || typeof response !== "object") return null;
