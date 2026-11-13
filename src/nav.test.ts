@@ -88,7 +88,7 @@ describe("the studio in the workspace frame", () => {
     const hub = studioFrame().sections.hub ?? [];
     expect(hub.map((section) => section.title)).toEqual(OS_HUB_MENU.map((section) => section.title));
     expect(hub.flatMap((section) => section.items.map((row) => row.label))).toEqual([
-      "Overview", "Inbox", "Calendar", "Tasks", "Slack", "Monday", "Accounts", "Configuration",
+      "Overview", "Inbox", "Calendar", "Tasks", "Slack", "Monday", "Accounts",
       "Unmarked Agent", "Signature Generator",
     ]);
     // Every row is a link into the Hub, none a place of this app.
