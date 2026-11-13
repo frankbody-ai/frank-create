@@ -9,6 +9,8 @@
  * screen says so rather than implying the values follow the operator.
  */
 
+import { currentModelId } from "./presets";
+
 const KEY = "frank-create.run-defaults";
 
 export interface RunDefaults {
@@ -26,7 +28,7 @@ export function readRunDefaults(): RunDefaults {
     if (!parsed || typeof parsed !== "object") return {};
     const { model_id, aspect_ratio, image_size, count } = parsed as RunDefaults;
     return {
-      model_id: typeof model_id === "string" ? model_id : undefined,
+      model_id: typeof model_id === "string" ? currentModelId(model_id) : undefined,
       aspect_ratio: typeof aspect_ratio === "string" ? aspect_ratio : undefined,
       image_size: typeof image_size === "string" ? image_size : undefined,
       count: typeof count === "number" && count > 0 ? count : undefined,

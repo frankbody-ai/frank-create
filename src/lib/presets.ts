@@ -135,12 +135,62 @@ export const fallbackConfig: FrankConfig = {
       missing_env_vars: []
     },
     {
+      id: "openai-gpt-image-2-6-sunburst",
+      label: "OpenAI GPT Image 2.6 Sunburst",
+      short_label: "GPT Image 2.6 Sunburst",
+      provider: "openrouter",
+      provider_model: "openai/gpt-image-2.6-sunburst",
+      status: "ready",
+      badge: "2K",
+      max_resolution_label: "2K",
+      description: "GPT Image 2.6 Sunburst via OpenRouter. The precision tier: detailed creative work where editing accuracy matters more than speed. Takes transparent backgrounds.",
+      capabilities: { generation: true, edit: true, masked_edit: true, video: false },
+      allowed_aspect_ratios: ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"],
+      allowed_image_sizes: ["1K", "2K"],
+      allowed_qualities: ["auto", "low", "medium", "high", "xhigh", "max"],
+      allowed_backgrounds: ["auto", "opaque", "transparent"],
+      supports_output_compression: true,
+      allowed_moderation: ["auto", "low"],
+      reference_image_limit: 16,
+      max_count: 10,
+      cost_label: "premium",
+      configured: true,
+      missing_env_vars: []
+    },
+    {
+      id: "openai-gpt-image-2-6-flare",
+      label: "OpenAI GPT Image 2.6 Flare",
+      short_label: "GPT Image 2.6 Flare",
+      provider: "openrouter",
+      provider_model: "openai/gpt-image-2.6-flare",
+      status: "ready",
+      badge: "2K",
+      max_resolution_label: "2K",
+      description: "GPT Image 2.6 Flare via OpenRouter. The speed tier: high-volume everyday generation and rapid prototyping. Takes transparent backgrounds.",
+      capabilities: { generation: true, edit: true, masked_edit: true, video: false },
+      allowed_aspect_ratios: ["1:1", "3:2", "2:3", "4:3", "3:4", "16:9", "9:16", "21:9"],
+      allowed_image_sizes: ["1K", "2K"],
+      allowed_qualities: ["auto", "low", "medium", "high", "xhigh", "max"],
+      allowed_backgrounds: ["auto", "opaque", "transparent"],
+      supports_output_compression: true,
+      allowed_moderation: ["auto", "low"],
+      reference_image_limit: 16,
+      max_count: 10,
+      cost_label: "fast",
+      configured: true,
+      missing_env_vars: []
+    },
+    // Replaced by GPT Image 2.6 on 12 November 2026. Hidden from the pickers;
+    // kept so past rounds still show their model name. A run that names one
+    // goes to its 2.6 replacement (RETIRED_MODEL_IDS).
+    {
       id: "openai-gpt-image-2-5-sunburst",
       label: "OpenAI GPT Image 2.5 Sunburst",
       short_label: "GPT Image 2.5 Sunburst",
       provider: "openrouter",
       provider_model: "openai/gpt-image-2.5-sunburst",
       status: "ready",
+      legacy: true,
       badge: "2K",
       max_resolution_label: "2K",
       description: "GPT Image 2.5 Sunburst via OpenRouter — the precision tier: detailed creative work where editing accuracy matters more than speed.",
@@ -164,6 +214,7 @@ export const fallbackConfig: FrankConfig = {
       provider: "openrouter",
       provider_model: "openai/gpt-image-2.5-flare",
       status: "ready",
+      legacy: true,
       badge: "2K",
       max_resolution_label: "2K",
       description: "GPT Image 2.5 Flare via OpenRouter — the speed tier: high-volume everyday generation and rapid prototyping.",
@@ -708,3 +759,21 @@ export const defaultBrief = {
   prompt: "",
   negativePrompt: ""
 };
+
+/**
+ * Studio model ids that were replaced, and the model that replaced each one
+ * (12 November 2026: GPT Image 2.5 by GPT Image 2.6). A remembered pick, a run
+ * default or a past round that names an old id runs on its replacement. The
+ * edge function keeps the same list (frank-api/gptImage.ts).
+ */
+export const RETIRED_MODEL_IDS: Record<string, string> = {
+  "openai-gpt-image-2-5-sunburst": "openai-gpt-image-2-6-sunburst",
+  "openai-gpt-image-2-5-flare": "openai-gpt-image-2-6-flare",
+};
+
+/** The id to run: the replacement of a retired id, else the id itself. */
+export function currentModelId(id: string): string;
+export function currentModelId(id: string | null | undefined): string | null | undefined;
+export function currentModelId(id: string | null | undefined) {
+  return id ? (RETIRED_MODEL_IDS[id] ?? id) : id;
+}

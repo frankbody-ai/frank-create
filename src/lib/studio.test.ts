@@ -69,6 +69,8 @@ describe("studio helpers", () => {
       "google-nb-2-1",
       "google-nb-pro",
       "google-nb-2",
+      "openai-gpt-image-2-6-sunburst",
+      "openai-gpt-image-2-6-flare",
       "openai-gpt-image-2-5-sunburst",
       "openai-gpt-image-2-5-flare",
       "seedream-5-pro",
@@ -159,17 +161,19 @@ describe("studio helpers", () => {
     expect(hasStudioFieldErrors(errors)).toBe(false);
   });
 
-  it("exposes the GPT Image 2.5 extras only on Sunburst and Flare", () => {
-    const withExtras = fallbackConfig.models.filter((m) => (m.allowed_qualities ?? []).length).map((m) => m.id);
-    expect(withExtras).toEqual(["openai-gpt-image-2-5-sunburst", "openai-gpt-image-2-5-flare"]);
-    const sunburst = fallbackConfig.models.find((m) => m.id === "openai-gpt-image-2-5-sunburst")!;
-    expect(sunburst.allowed_backgrounds).toEqual(["auto", "opaque"]);
+  it("exposes the GPT Image 2.6 extras only on Sunburst and Flare", () => {
+    const withExtras = fallbackConfig.models
+      .filter((m) => m.legacy !== true && (m.allowed_qualities ?? []).length)
+      .map((m) => m.id);
+    expect(withExtras).toEqual(["openai-gpt-image-2-6-sunburst", "openai-gpt-image-2-6-flare"]);
+    const sunburst = fallbackConfig.models.find((m) => m.id === "openai-gpt-image-2-6-sunburst")!;
+    expect(sunburst.allowed_backgrounds).toEqual(["auto", "opaque", "transparent"]);
     expect(sunburst.allowed_moderation).toEqual(["auto", "low"]);
     expect(sunburst.supports_output_compression).toBe(true);
   });
 
-  it("defaults the extras on GPT Image 2.5 and drops them on other models", () => {
-    const sunburst = fallbackConfig.models.find((m) => m.id === "openai-gpt-image-2-5-sunburst")!;
+  it("defaults the extras on GPT Image 2.6 and drops them on other models", () => {
+    const sunburst = fallbackConfig.models.find((m) => m.id === "openai-gpt-image-2-6-sunburst")!;
     const withExtras = normalizeStudioSettingsForModel(
       { aspect_ratio: "1:1", image_size: "2K", count: 2 },
       sunburst
@@ -194,7 +198,7 @@ describe("studio helpers", () => {
   });
 
   it("scales the price estimate with the chosen quality", () => {
-    const sunburst = fallbackConfig.models.find((m) => m.id === "openai-gpt-image-2-5-sunburst")!;
+    const sunburst = fallbackConfig.models.find((m) => m.id === "openai-gpt-image-2-6-sunburst")!;
     const low = estimateImageCost(sunburst, { aspect_ratio: "1:1", image_size: "2K", count: 1, quality: "low" })!;
     const max = estimateImageCost(sunburst, { aspect_ratio: "1:1", image_size: "2K", count: 1, quality: "max" })!;
     expect(low).not.toEqual(max);
