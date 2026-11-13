@@ -2,7 +2,13 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { currentModelId, fallbackConfig, RETIRED_MODEL_IDS } from "../lib/presets";
 import { readRunDefaults } from "../lib/preferences";
-import { estimateImageCost, modelsForMedia, normalizeStudioSettingsForModel } from "../lib/studio";
+import {
+  estimateImageCost,
+  gptImageOutputTokens,
+  gptImageUnitPrice,
+  modelsForMedia,
+  normalizeStudioSettingsForModel
+} from "../lib/studio";
 import {
   LAST_MODEL_BY_MEDIA_KEY,
   LAST_MODEL_KEY,
@@ -99,8 +105,51 @@ describe("GPT Image 2.6", () => {
     expect(next.background).toBeUndefined();
   });
 
-  it("keeps the 2.5 price estimate (same OpenAI token rates)", () => {
-    expect(estimateImageCost(byId("openai-gpt-image-2-6-flare"), { aspect_ratio: "1:1", image_size: "1K", count: 1, quality: "auto" } as never)).toContain("0.02");
-    expect(estimateImageCost(byId("openai-gpt-image-2-6-sunburst"), { aspect_ratio: "1:1", image_size: "1K", count: 1, quality: "auto" } as never)).toContain("0.04");
+  it("offers 1K only, since OpenRouter takes no size for GPT Image", () => {
+    for (const id of ["openai-gpt-image-2-6-sunburst", "openai-gpt-image-2-6-flare"]) {
+      expect(byId(id).allowed_image_sizes).toEqual(["1K"]);
+      expect(byId(id).badge).toBe("1K");
+    }
+    const moved = normalizeStudioSettingsForModel(
+      { aspect_ratio: "1:1", image_size: "2K", count: 1 },
+      byId("openai-gpt-image-2-6-sunburst")
+    );
+    expect(moved.image_size).toBe("1K");
+  });
+
+  it("counts output tokens exactly like OpenAI's calculator", () => {
+    // Values from OpenAI's GptImageTokenCalculator (image generation guide, Nov 2026).
+    const cases: Array<[number, number, string, number]> = [
+      [1024, 1024, "low", 823],
+      [1024, 1024, "medium", 1449],
+      [1024, 1024, "high", 1756],
+      [1024, 1024, "xhigh", 3122],
+      [1024, 1024, "max", 7024],
+      [1536, 1024, "low", 664],
+      [1536, 1024, "high", 1372],
+      [1536, 864, "medium", 924],
+      [1536, 656, "max", 2960]
+    ];
+    for (const [width, height, quality, tokens] of cases) {
+      expect(gptImageOutputTokens(width, height, quality)).toBe(tokens);
+      expect(gptImageOutputTokens(height, width, quality)).toBe(tokens);
+    }
+    expect(gptImageOutputTokens(1024, 1024, "auto")).toBeNull();
+  });
+
+  it("prices one picture from those tokens at $30 per 1M", () => {
+    // The live 2.6 Flare run at 1024x1024 low (13 Nov 2026) billed 824 image tokens.
+    expect(gptImageUnitPrice("1:1", "low")).toBeCloseTo(0.02469, 5);
+    expect(gptImageUnitPrice("1:1", "max")).toBeCloseTo(0.21072, 5);
+    // auto is estimated as high
+    expect(gptImageUnitPrice("1:1", "auto")).toBe(gptImageUnitPrice("1:1", "high"));
+    expect(gptImageUnitPrice("16:9", "high")).toBeCloseTo(1078 * 30e-6, 8);
+  });
+
+  it("shows the token-based estimate, the same on Sunburst and Flare", () => {
+    const settings = { aspect_ratio: "1:1", image_size: "1K", count: 2, quality: "medium" } as never;
+    const flare = estimateImageCost(byId("openai-gpt-image-2-6-flare"), settings);
+    expect(flare).toBe("~$0.09 · 2 images @ 1K · medium quality · $0.04/image");
+    expect(estimateImageCost(byId("openai-gpt-image-2-6-sunburst"), settings)).toBe(flare);
   });
 });
