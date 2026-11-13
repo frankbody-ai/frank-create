@@ -250,8 +250,9 @@ const IMAGE_COST_TIERS: Record<string, 1 | 2 | 3> = {
   "grok-imagine-image": 1,
   "google-nb-2-1": 1,
   "google-nb-2": 2,
+  // Same OpenAI token count and price for both (image generation guide calculator).
   "openai-gpt-image-2-6-sunburst": 2,
-  "openai-gpt-image-2-6-flare": 1,
+  "openai-gpt-image-2-6-flare": 2,
   "flux-2-pro": 2,
   "qwen-image-3-pro": 2,
   "krea-2-large": 2,
@@ -840,9 +841,7 @@ const IMAGE_PRICES: Record<string, Record<string, number>> = {
   // Nano Banana 2.1: OpenRouter bills image output at half of Nano Banana 2's rate.
   "google-nb-2-1": { "1K": 0.02, "2K": 0.03, "4K": 0.06 },
   "google-nb-2": { "1K": 0.04, "2K": 0.06, "4K": 0.12 },
-  // GPT Image 2.6 bills the same token rates as 2.5 (OpenAI pricing, Nov 2026).
-  "openai-gpt-image-2-6-sunburst": { "1K": 0.04, "2K": 0.08 },
-  "openai-gpt-image-2-6-flare": { "1K": 0.02, "2K": 0.04 },
+  // GPT Image 2.6 is priced from OpenAI's token formula: gptImageUnitPrice.
   "seedream-5-pro": { "2K": 0.03, "4K": 0.06 },
   "seedream-4-5": { "2K": 0.03, "4K": 0.06 },
   "flux-2-pro": { "1K": 0.04, "2K": 0.04, "4K": 0.06 },
@@ -869,35 +868,70 @@ export function imageUnitPrice(
   return values.length ? Math.min(...values) : null;
 }
 
-/** Live estimate for the current size / count selection, e.g. "~$0.24 · 4 × 2K". */
 /**
- * Rough per-image multiplier for the GPT Image 2.6 quality tiers. The provider
- * bills more tokens at the higher tiers, so the estimate scales with it.
+ * GPT Image 2.6 through OpenRouter: the pixel size OpenAI returns for each
+ * aspect ratio. OpenRouter takes no size for it; these are the sizes Studio
+ * rounds came back at (September to November 2026).
  */
-const QUALITY_MULTIPLIERS: Record<string, number> = {
-  auto: 1,
-  low: 0.5,
-  medium: 1,
-  high: 1.6,
-  xhigh: 2.4,
-  max: 3
+const GPT_IMAGE_OUTPUT_SIZES: Record<string, [number, number]> = {
+  "1:1": [1024, 1024],
+  "3:2": [1536, 1024],
+  "2:3": [1024, 1536],
+  "4:3": [1536, 1152],
+  "3:4": [1152, 1536],
+  "16:9": [1536, 864],
+  "9:16": [864, 1536],
+  "21:9": [1536, 656]
 };
 
-export function qualityCostMultiplier(
-  model: StudioModel | undefined | null,
-  quality?: string
-): number {
-  if (!model?.allowed_qualities?.length || !quality) return 1;
-  return QUALITY_MULTIPLIERS[quality] ?? 1;
+/** USD per image output token for GPT Image 2.6 (OpenAI pricing: $30 per 1M). */
+const GPT_IMAGE_OUTPUT_USD_PER_TOKEN = 30 / 1_000_000;
+
+// OpenAI's own token calculator (image generation guide, "Calculating costs",
+// November 2026). Grid cells by quality, and the extra factor GPT Image 2.6
+// applies at low and medium. A live 2.6 Flare run at 1024x1024 low billed 824
+// image tokens; this formula gives 823.
+const GPT_IMAGE_GRID: Record<string, number> = { low: 16, medium: 24, high: 48, xhigh: 64, max: 96 };
+const GPT_IMAGE_26_FACTOR: Record<string, number> = { low: 4.2, medium: 3.3, high: 1, xhigh: 1, max: 1 };
+
+/** Image output tokens for one GPT Image 2.6 picture, or null for an unknown quality. */
+export function gptImageOutputTokens(width: number, height: number, quality: string): number | null {
+  const grid = GPT_IMAGE_GRID[quality];
+  if (!grid || !width || !height) return null;
+  const long = Math.max(width, height);
+  const short = Math.min(width, height);
+  const exact = grid / (long / short);
+  const floor = Math.floor(exact);
+  // Round half to even, as OpenAI's calculator does.
+  const cells = grid * (exact - floor === 0.5 ? floor + (floor % 2) : Math.round(exact));
+  const tokens = Math.ceil((cells * (2_000_000 + width * height)) / 4_000_000);
+  return Math.round(tokens * GPT_IMAGE_26_FACTOR[quality]);
 }
 
+function isGptImageModel(model: StudioModel | undefined | null): boolean {
+  return Boolean(model?.provider_model?.startsWith("openai/gpt-image-2.6"));
+}
+
+/**
+ * USD for one GPT Image 2.6 picture's output tokens. "auto" lets OpenAI pick
+ * the quality per image, so it is estimated as high. Input tokens (prompt and
+ * reference images) come on top and are not counted here.
+ */
+export function gptImageUnitPrice(aspectRatio: string | undefined, quality: string | undefined): number | null {
+  const [width, height] = GPT_IMAGE_OUTPUT_SIZES[aspectRatio ?? ""] ?? GPT_IMAGE_OUTPUT_SIZES["1:1"];
+  const tokens = gptImageOutputTokens(width, height, !quality || quality === "auto" ? "high" : quality);
+  return tokens == null ? null : tokens * GPT_IMAGE_OUTPUT_USD_PER_TOKEN;
+}
+
+/** Live estimate for the current size / count selection, e.g. "~$0.24 · 4 × 2K". */
 export function estimateImageCost(
   model: StudioModel | undefined | null,
   settings: StudioSettings
 ): string | null {
-  const base = imageUnitPrice(model, settings.image_size);
-  if (base == null) return null;
-  const unit = base * qualityCostMultiplier(model, settings.quality);
+  const unit = isGptImageModel(model)
+    ? gptImageUnitPrice(settings.aspect_ratio, settings.quality)
+    : imageUnitPrice(model, settings.image_size);
+  if (unit == null) return null;
   const count = Math.max(1, Number(settings.count) || 1);
   const size = settings.image_size ? ` @ ${settings.image_size}` : "";
   const qualityLabel = model?.allowed_qualities?.length && settings.quality && settings.quality !== "auto"

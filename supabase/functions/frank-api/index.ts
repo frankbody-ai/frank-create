@@ -13,7 +13,7 @@ import { currentImageModelId, GPT_IMAGE_MODELS, gptImageFields, nearestGptImageA
 // request, merging to main does not), so /health reports this string and a
 // deploy is confirmed by reading it back. CI fails a PR that changes this
 // function without changing the string: date, then the number of that day's change.
-const SERVER_VERSION = "2026-11-12.1";
+const SERVER_VERSION = "2026-11-13.1";
 
 
 // Identity, entitlements and studio data all live in the AutoSolutions OS
@@ -1370,7 +1370,9 @@ async function openrouterImage(
       ? nearestGptImageAspect(opts.aspectRatio)
       : opts.aspectRatio;
   }
-  if (opts.size) {
+  // OpenRouter lists no resolution (or size) for GPT Image: it ignored "2K"
+  // and returned about 1.5 MP, so GPT Image gets no resolution field.
+  if (opts.size && !GPT_IMAGE_MODELS.has(opts.model)) {
     const res = String(opts.size).toUpperCase().replace("512", "512");
     if (["512", "1K", "2K", "4K"].includes(res)) payload.resolution = res;
   }

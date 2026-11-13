@@ -15,6 +15,16 @@ export interface ReleaseNote {
  */
 export const RELEASES: ReleaseNote[] = [
   {
+    id: "2026-11-13-gpt-image-size-and-price",
+    date: "13 November 2026",
+    title: "GPT Image: the real size and price",
+    items: [
+      "GPT Image 2.6 now offers 1K only. The 2K choice never made bigger pictures: OpenAI returns about 1 to 1.5 MP (1024 × 1024 for a square).",
+      "The price shown before a run now follows OpenAI's own token count. A square picture costs about $0.025 at Low, $0.04 at Medium, $0.05 at High, $0.09 at X-High and $0.21 at Max.",
+      "On 2.6, Low and Medium cost more than they did on 2.5. High and above cost the same. Sunburst and Flare cost the same.",
+    ],
+  },
+  {
     id: "2026-11-12-gpt-image-2-6",
     date: "12 November 2026",
     title: "GPT Image 2.6 replaces GPT Image 2.5",
@@ -22,7 +32,7 @@ export const RELEASES: ReleaseNote[] = [
       "GPT Image 2.6 Sunburst and GPT Image 2.6 Flare, OpenAI's newest image models, replace the 2.5 models in the model picker.",
       "New on both: a Transparent background, for cut-outs you can put on any design.",
       "Rounds made on 2.5 keep their name. When you run one again, it runs on 2.6.",
-      "The price per image is the same as on 2.5.",
+      "OpenAI charges the same rate per token as on 2.5.",
     ],
   },
   {
